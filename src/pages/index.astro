@@ -1,0 +1,503 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// URLs reales de Hotmart (los TODOs son los placeholders pendientes de fill)
+const hotmart = {
+  libroPM: 'https://go.hotmart.com/R105710415P',
+  libroMSL: 'https://go.hotmart.com/Y105718405Y',
+  libroCR: 'https://go.hotmart.com/U105724060O',
+  bundle: '#TODO-bundle-hotmart-url', // pendiente: URL del bundle Hotmart
+  cursoCV: 'https://go.hotmart.com/B104495115T',
+  hotmartProfile: 'https://hotmart.com/es/profile/oscarsolca', // ajustar al perfil real
+};
+
+const linkedIn = {
+  newsletter: '#TODO-linkedin-newsletter-id', // pendiente: id real del newsletter Solca Insight
+  profile: '#TODO-linkedin-profile-handle',   // pendiente: handle real (linkedin.com/in/...)
+};
+
+const youtube = {
+  channel: 'https://youtube.com/@oscarsolca',
+  // Placeholders hasta tener videos publicados
+  video1: { id: 'REPLACE-VIDEO-ID-1', title: 'Título del video 1 · reemplazar' },
+  video2: { id: 'REPLACE-VIDEO-ID-2', title: 'Título del video 2 · reemplazar' },
+  video3: { id: 'REPLACE-VIDEO-ID-3', title: 'Título del video 3 · reemplazar' },
+};
+
+// Form provider — durante Fase 1 mantenemos Google Forms placeholder.
+// En Fase 3 se reemplaza por embed de Beehiiv.
+const formAction = 'https://docs.google.com/forms/d/e/REPLACE-FORM-ID/formResponse';
+---
+<BaseLayout
+  title="Solca · Ciencia y Consultoría — De doctorado a industria farmacéutica"
+  description="Acompaño a PhDs en ciencias biológicas, biomédicas y de la salud en su transición a la industria farmacéutica. Tres libros, curso CV+LinkedIn y guía gratis."
+>
+
+<!-- ==================== NAV ==================== -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="#top" class="nav-brand">
+      <span class="dot"></span>
+      <span>Solca</span>
+    </a>
+    <div class="nav-links">
+      <a href="#libros">Libros</a>
+      <a href="#curso">Curso</a>
+      <a href="#guia-gratis">Guía gratis</a>
+      <a href="#videos">Videos</a>
+      <a href="#sobre">Sobre Solca</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ==================== HERO ==================== -->
+<section class="hero" id="top">
+  <div class="diagonals"></div>
+  <div class="container hero-grid">
+    <div class="hero-text">
+      <div class="eyebrow">
+        <span class="dot"></span>
+        <span>Ciencia y Consultoría</span>
+      </div>
+      <h1 class="hero-title">De doctorado a <em>industria farmacéutica</em>.</h1>
+      <p class="hero-lead">
+        Si tienes un PhD en ciencias biológicas, biomédicas o de la salud y la academia ya no es tu siguiente paso, este es tu mapa. Tres libros que traducen tu doctorado al lenguaje de la industria — Project Manager, Medical Science Liaison y Clinical Research.
+      </p>
+      <div class="hero-ctas">
+        <a href="#guia-gratis" class="btn btn-primary">Empieza con la guía gratis</a>
+        <a href={linkedIn.newsletter} class="btn btn-secondary" target="_blank" rel="noopener">Suscribirse al newsletter</a>
+      </div>
+      <p class="hero-supporting">
+        O sígueme en <a href={linkedIn.profile} target="_blank" rel="noopener">LinkedIn</a> donde publico cada semana.
+      </p>
+    </div>
+    <div class="hero-visual">
+      <svg viewBox="0 0 400 400" class="brand-mark" aria-hidden="true">
+        <defs>
+          <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#E8743A"/>
+            <stop offset="100%" stop-color="#F09161"/>
+          </linearGradient>
+        </defs>
+        <circle cx="200" cy="200" r="186" fill="none" stroke="#F7F5EE" stroke-width="6" opacity="0.95"/>
+        <rect x="178" y="92" width="44" height="216" rx="8" fill="none" stroke="#F7F5EE" stroke-width="4" opacity="0.45"/>
+        <rect x="92" y="178" width="216" height="44" rx="8" fill="none" stroke="#F7F5EE" stroke-width="4" opacity="0.45"/>
+        <path d="M 130 110 Q 200 145 270 110 Q 200 200 130 200 Q 200 240 270 200 Q 200 290 130 290"
+              fill="none" stroke="url(#g1)" stroke-width="6" stroke-linecap="round"/>
+        <path d="M 130 110 Q 200 75 270 110 Q 200 200 130 200 Q 200 165 270 200 Q 200 290 130 290"
+              fill="none" stroke="#F7F5EE" stroke-width="6" stroke-linecap="round" opacity="0.85"/>
+        <line x1="142" y1="124" x2="258" y2="124" stroke="#E8743A" stroke-width="4" stroke-linecap="round"/>
+        <line x1="142" y1="180" x2="258" y2="180" stroke="#F7F5EE" stroke-width="4" stroke-linecap="round" opacity="0.7"/>
+        <line x1="142" y1="220" x2="258" y2="220" stroke="#F7F5EE" stroke-width="4" stroke-linecap="round" opacity="0.7"/>
+        <line x1="142" y1="276" x2="258" y2="276" stroke="#E8743A" stroke-width="4" stroke-linecap="round"/>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== TRUST STRIP ==================== -->
+<section class="trust-strip">
+  <div class="container trust-grid">
+    <div class="trust-item">
+      <div class="trust-num">3</div>
+      <div class="trust-label">Libros publicados</div>
+    </div>
+    <div class="trust-item">
+      <div class="trust-num">5</div>
+      <div class="trust-label">Países LATAM cubiertos</div>
+    </div>
+    <div class="trust-item">
+      <div class="trust-num">100%</div>
+      <div class="trust-label">Fuentes verificables</div>
+    </div>
+    <div class="trust-item">
+      <div class="trust-num">PhD</div>
+      <div class="trust-label">Para tu perfil</div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== LIBROS ==================== -->
+<section class="libros" id="libros">
+  <div class="container">
+    <div class="section-header">
+      <div class="eyebrow">
+        <span class="dot"></span>
+        <span>La trilogía</span>
+      </div>
+      <h2 class="section-title">Tres puertas a la industria farmacéutica</h2>
+      <p class="section-lead">
+        Cada libro funciona por separado; los tres juntos forman un mapa del ecosistema. Cinco módulos por libro, cuadernos de trabajo, glosario inglés-español y referencias verificables. Sin promesas vacías.
+      </p>
+    </div>
+
+    <div class="libros-grid">
+      <!-- LIBRO 1 -->
+      <article class="libro-card">
+        <div class="libro-cover-wrap">
+          <img src="/covers/portada_pm.png" alt="Portada · De Doctorado a Project Manager" class="libro-cover" loading="lazy" />
+        </div>
+        <div class="libro-body">
+          <h3 class="libro-title">De Doctorado a Project Manager</h3>
+          <p class="libro-sub">Guía de transición para profesionales de ciencias biológicas, biomédicas y de la salud.</p>
+          <ul class="libro-meta">
+            <li>116 páginas · 24 figuras</li>
+            <li>Metodologías Waterfall, Agile, Scrum, Kanban</li>
+            <li>Salarios LATAM por país</li>
+            <li>Módulo de IA para PMs</li>
+          </ul>
+          <a href={hotmart.libroPM} class="btn btn-primary btn-block" target="_blank" rel="noopener">Comprar en Hotmart</a>
+        </div>
+      </article>
+
+      <!-- LIBRO 2 -->
+      <article class="libro-card libro-featured">
+        <div class="libro-flag">Más reciente</div>
+        <div class="libro-cover-wrap">
+          <img src="/covers/portada_msl.png" alt="Portada · De Doctorado a MSL" class="libro-cover" loading="lazy" />
+        </div>
+        <div class="libro-body">
+          <h3 class="libro-title">De Doctorado a MSL</h3>
+          <p class="libro-sub">Cómo convertir tu PhD en una carrera de Medical Affairs · Latinoamérica.</p>
+          <ul class="libro-meta">
+            <li>193 páginas · 35 figuras</li>
+            <li>Compliance LATAM por país (5)</li>
+            <li>BCMAS · MAPS · MSL Society</li>
+            <li>Módulo de IA para MSLs</li>
+          </ul>
+          <a href={hotmart.libroMSL} class="btn btn-primary btn-block" target="_blank" rel="noopener">Comprar en Hotmart</a>
+        </div>
+      </article>
+
+      <!-- LIBRO 3 -->
+      <article class="libro-card">
+        <div class="libro-cover-wrap">
+          <img src="/covers/portada_cr.png" alt="Portada · De Doctorado a Clinical Research" class="libro-cover" loading="lazy" />
+        </div>
+        <div class="libro-body">
+          <h3 class="libro-title">De Doctorado a Clinical Research</h3>
+          <p class="libro-sub">Cómo entrar a investigación clínica desde la academia · Enfoque Latinoamérica.</p>
+          <ul class="libro-meta">
+            <li>198 páginas · 33 figuras</li>
+            <li>ICH E6(R3) actualizado a 2025</li>
+            <li>Cinco países LATAM regulados</li>
+            <li>Módulo nuevo de IA en clinical research</li>
+          </ul>
+          <a href={hotmart.libroCR} class="btn btn-primary btn-block" target="_blank" rel="noopener">Comprar en Hotmart</a>
+        </div>
+      </article>
+    </div>
+
+    <!-- Bundle CTA -->
+    <div class="bundle-cta">
+      <div class="bundle-text">
+        <h3>¿La trilogía completa?</h3>
+        <p>Los tres libros juntos cubren las trayectorias más comunes a la industria farmacéutica para PhDs en LATAM. Si todavía no decides cuál camino seguir, este es el bundle que conviene.</p>
+      </div>
+      <a href={hotmart.bundle} class="btn btn-orange btn-large" target="_blank" rel="noopener">Comprar la trilogía</a>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== CURSO ==================== -->
+<section class="curso" id="curso">
+  <div class="container">
+    <div class="curso-card">
+      <div class="curso-text">
+        <div class="eyebrow eyebrow-light">
+          <span class="dot"></span>
+          <span>Curso · siguiente paso</span>
+        </div>
+        <h2>CV en ciencias biológicas y de la salud · ATS y LinkedIn</h2>
+        <p class="curso-lead">
+          Después de la guía gratis, el curso. Cuatro horas de video, plantillas editables, ejercicios paso a paso para construir el CV optimizado para ATS y un perfil de LinkedIn que reclutadores de pharma encuentran. Diseñado específicamente para PhDs en transición.
+        </p>
+        <ul class="curso-bullets">
+          <li>CV ATS-friendly · plantilla editable y revisión guiada</li>
+          <li>Headline y summary de LinkedIn que sube tu visibilidad ante reclutadores</li>
+          <li>Banco de verbos accionables para roles científicos</li>
+          <li>Ejemplos antes/después de PhDs reales (anonimizados)</li>
+          <li>Acceso de por vida + actualizaciones</li>
+        </ul>
+        <a href={hotmart.cursoCV} class="btn btn-orange btn-large" target="_blank" rel="noopener">Ver el curso en Hotmart</a>
+      </div>
+      <div class="curso-visual">
+        <div class="tier-diagram">
+          <div class="tier tier-free"><span>1</span><div><strong>Guía gratis</strong><small>PDF · 28 pp.</small></div></div>
+          <div class="tier-arrow">↓</div>
+          <div class="tier tier-mid tier-current"><span>2</span><div><strong>Curso CV + LinkedIn</strong><small>Video · plantillas</small></div></div>
+          <div class="tier-arrow">↓</div>
+          <div class="tier tier-top"><span>3</span><div><strong>Libros · trilogía</strong><small>Profundidad por rol</small></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== LEAD MAGNET (FREE GUIDE) ==================== -->
+<section class="lead-magnet" id="guia-gratis">
+  <div class="container lead-grid">
+    <div class="lead-text">
+      <div class="eyebrow eyebrow-light">
+        <span class="dot"></span>
+        <span>Recurso gratuito</span>
+      </div>
+      <h2 class="lead-title">Guía express · Cómo aplicar a tu primer puesto en industria farmacéutica desde un PhD</h2>
+      <p class="lead-sub">
+        Una guía PDF de 28 páginas extraída del Módulo 3 de la serie. Cubre LinkedIn, currículum, networking, las cinco fases de la entrevista y errores comunes que descalifican PhDs antes de la primera ronda. Actualizada para 2026.
+      </p>
+      <ul class="lead-checklist">
+        <li>Cómo traducir tu CV académico al formato de industria</li>
+        <li>El método STAR adaptado a entrevistas en pharma</li>
+        <li>Banco de 20 preguntas frecuentes con guía estructural</li>
+        <li>Plantilla de elevator pitch para PhDs en transición</li>
+        <li>Negociación de oferta sin sonar agresivo</li>
+      </ul>
+    </div>
+
+    <div class="lead-form-card">
+      <h3>Recibe la guía gratis</h3>
+      <p class="lead-form-sub">Tu email no se comparte. Recibirás la guía y, durante las siguientes dos semanas, una serie corta con tips accionables sobre la transición. Te puedes dar de baja en cualquier momento.</p>
+      <p class="lead-form-alt">¿Prefieres en LinkedIn? <a href={linkedIn.newsletter} target="_blank" rel="noopener">Suscríbete al newsletter quincenal</a> · contenido más extenso, sin captura de email.</p>
+
+      {/* TODO Fase 3: reemplazar este formulario con embed de Beehiiv */}
+      <form class="lead-form" action={formAction} method="POST" target="_blank">
+        <label class="sr-only" for="entry-name">Nombre</label>
+        <input type="text" name="entry.NAME_ID" id="entry-name" placeholder="Tu nombre" required />
+        <label class="sr-only" for="entry-email">Email</label>
+        <input type="email" name="entry.EMAIL_ID" id="entry-email" placeholder="tu@email.com" required />
+        <label class="sr-only" for="entry-pais">País</label>
+        <select name="entry.COUNTRY_ID" id="entry-pais" required>
+          <option value="">Tu país</option>
+          <option value="México">México</option>
+          <option value="Colombia">Colombia</option>
+          <option value="Argentina">Argentina</option>
+          <option value="Chile">Chile</option>
+          <option value="Brasil">Brasil</option>
+          <option value="España">España</option>
+          <option value="Otro LATAM">Otro LATAM</option>
+          <option value="Otro">Otro</option>
+        </select>
+        <button type="submit" class="btn btn-orange btn-block">Descargar la guía</button>
+      </form>
+
+      <p class="lead-fineprint">
+        Recibirás la guía en tu email en menos de 5 minutos.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== YOUTUBE VIDEOS ==================== -->
+<section class="videos" id="videos">
+  <div class="container">
+    <div class="section-header">
+      <div class="eyebrow">
+        <span class="dot"></span>
+        <span>Videos</span>
+      </div>
+      <h2 class="section-title">Aprende viendo</h2>
+      <p class="section-lead">
+        Conversaciones con CRAs, MSLs y Project Managers latinoamericanos sobre cómo hicieron la transición. Análisis de tendencias en industria farmacéutica. Tips operativos cortos.
+      </p>
+    </div>
+
+    <div class="videos-grid">
+      <div class="video-card">
+        <div class="video-iframe-wrap">
+          <iframe src={`https://www.youtube.com/embed/${youtube.video1.id}`}
+                  title={youtube.video1.title}
+                  frameborder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowfullscreen></iframe>
+        </div>
+        <h3 class="video-title">{youtube.video1.title}</h3>
+      </div>
+      <div class="video-card">
+        <div class="video-iframe-wrap">
+          <iframe src={`https://www.youtube.com/embed/${youtube.video2.id}`}
+                  title={youtube.video2.title}
+                  frameborder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowfullscreen></iframe>
+        </div>
+        <h3 class="video-title">{youtube.video2.title}</h3>
+      </div>
+      <div class="video-card">
+        <div class="video-iframe-wrap">
+          <iframe src={`https://www.youtube.com/embed/${youtube.video3.id}`}
+                  title={youtube.video3.title}
+                  frameborder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowfullscreen></iframe>
+        </div>
+        <h3 class="video-title">{youtube.video3.title}</h3>
+      </div>
+    </div>
+
+    <div class="centered-cta">
+      <a href={youtube.channel} class="btn btn-secondary" target="_blank" rel="noopener" style="color: var(--navy); border-color: var(--navy);">Ver canal completo</a>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== ABOUT ==================== -->
+<section class="about" id="sobre">
+  <div class="container about-grid">
+    <div class="about-text">
+      <div class="eyebrow">
+        <span class="dot"></span>
+        <span>Sobre Solca</span>
+      </div>
+      <h2 class="section-title">Por qué este proyecto existe</h2>
+      <p>Cada año, miles de PhDs en ciencias biológicas, biomédicas o de la salud terminan su formación en Latinoamérica y descubren que el mercado para el que se prepararon —el de la investigación académica continua— ofrece menos plazas estables que talento disponible. La industria los necesita; pero los necesita hablando un idioma distinto al que aprendieron en el laboratorio.</p>
+      <p>Solca nació de esa observación. Soy Oscar Solís, doctor en ciencias y consultor científico. Acompaño a profesionales que están haciendo la transición con tres herramientas: libros, contenido en redes y consultoría individual. La promesa es la misma en los tres frentes: cero invención, fuentes verificables, voz de tuteo y lenguaje accionable.</p>
+      <p><strong>Las puertas de Solca están abiertas.</strong> Si quieres conversar tu transición específica —tu área terapéutica, tu país, tu calendario, tu CV—, escríbeme en LinkedIn.</p>
+      <a href={linkedIn.profile} class="btn btn-secondary" target="_blank" rel="noopener" style="color: var(--navy); border-color: var(--navy);">LinkedIn</a>
+    </div>
+    <div class="about-photo-wrap">
+      <img src="/oscar.jpg" alt="Oscar Omar Solís Castro" class="about-photo" loading="lazy" onerror="this.style.display='none'" />
+    </div>
+  </div>
+</section>
+
+<!-- ==================== FAQ ==================== -->
+<section class="faq" id="faq">
+  <div class="container">
+    <div class="section-header">
+      <div class="eyebrow">
+        <span class="dot"></span>
+        <span>Preguntas frecuentes</span>
+      </div>
+      <h2 class="section-title">Antes de comprar</h2>
+    </div>
+    <div class="faq-grid">
+      <details class="faq-item">
+        <summary>¿En qué se diferencian los tres libros?</summary>
+        <p>Cada libro cubre un rol distinto en la industria farmacéutica: Project Manager (gestión), Medical Science Liaison (intercambio científico con KOLs) y Clinical Research (operación de ensayos). La estructura de cinco módulos es paralela, pero el contenido es completamente distinto. Si no decides cuál camino seguir, lee el Módulo 1 de cada uno.</p>
+      </details>
+      <details class="faq-item">
+        <summary>¿Sirven si vivo en España y no en LATAM?</summary>
+        <p>El énfasis regulatorio y salarial es LATAM (México, Argentina, Colombia, Chile, Brasil), pero los marcos internacionales (ICH E6(R3), PhRMA, FDA, EMA) y las trayectorias de carrera aplican igual. Lectores en España y EE. UU. lo encuentran útil si están considerando trabajar para una multinacional con presencia regional.</p>
+      </details>
+      <details class="faq-item">
+        <summary>¿Necesito experiencia previa en industria?</summary>
+        <p>No. Los libros están escritos asumiendo que vienes de la academia. El módulo 1 de cada uno te explica el ecosistema desde cero; el módulo 4 cubre tus primeros noventa días.</p>
+      </details>
+      <details class="faq-item">
+        <summary>¿Las cifras salariales están actualizadas?</summary>
+        <p>Las cifras se basan en fuentes públicas (Glassdoor, SalaryExpert, surveys de industria) y en cada celda de las tablas se marca la calidad de la fuente con un sistema semáforo. Recomiendo siempre triangular con benchmarks locales antes de aceptar una oferta.</p>
+      </details>
+      <details class="faq-item">
+        <summary>¿Cuál compro primero si tengo solo presupuesto para uno?</summary>
+        <p>Depende de tu perfil. Si vienes de biología molecular o farmacología y tu fortaleza es la lectura crítica de literatura, MSL es probablemente el match más natural. Si tu fortaleza es organización y gestión de equipos, Project Manager. Si quieres operación clínica directa con sitios, pacientes y protocolos, Clinical Research.</p>
+      </details>
+      <details class="faq-item">
+        <summary>¿Hay reembolso si no me sirve?</summary>
+        <p>Hotmart ofrece garantía de 7 días sin preguntas. Si después de leerlo consideras que no te aporta, pides el reembolso directamente desde tu cuenta de comprador.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== FINAL CTA ==================== -->
+<section class="final-cta">
+  <div class="container">
+    <div class="diagonals diagonals-final"></div>
+    <div class="final-cta-content">
+      <h2>La transición no es de capacidad. Es de traducción.</h2>
+      <p>Empieza con la guía gratis. Después decides si quieres profundizar.</p>
+      <a href="#guia-gratis" class="btn btn-orange btn-large">Recibir la guía</a>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== FOOTER ==================== -->
+<footer class="footer">
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      <div class="eyebrow eyebrow-light">
+        <span class="dot"></span>
+        <span>Solca · Ciencia y Consultoría</span>
+      </div>
+      <p>Acompañamiento profesional en la transición de academia a industria farmacéutica para PhDs en LATAM.</p>
+    </div>
+    <div class="footer-links">
+      <h4>Libros</h4>
+      <a href="#libros">Project Manager</a>
+      <a href="#libros">MSL</a>
+      <a href="#libros">Clinical Research</a>
+    </div>
+    <div class="footer-links">
+      <h4>Recursos</h4>
+      <a href="#guia-gratis">Guía gratis</a>
+      <a href="#videos">YouTube</a>
+      <a href="#sobre">Sobre Solca</a>
+    </div>
+    <div class="footer-links">
+      <h4>Conecta</h4>
+      <a href={linkedIn.profile} target="_blank" rel="noopener">LinkedIn</a>
+      <a href={youtube.channel} target="_blank" rel="noopener">YouTube</a>
+      <a href={hotmart.hotmartProfile} target="_blank" rel="noopener">Hotmart</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2026 Oscar Omar Solís Castro · Solca · Ciencia y Consultoría. Todos los derechos reservados.</p>
+  </div>
+</footer>
+
+<script>
+  // 1. Smooth scroll for in-page anchors
+  document.querySelectorAll('a[href^="#"]').forEach((a) => {
+    a.addEventListener('click', (e) => {
+      const id = a.getAttribute('href');
+      if (!id || id === '#' || id.length < 2) return;
+      const el = document.querySelector(id);
+      if (!el) return;
+      e.preventDefault();
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      history.replaceState(null, '', id);
+    });
+  });
+
+  // 2. FAQ accordion: close other open <details> when one is opened
+  document.querySelectorAll('.faq-item').forEach((item) => {
+    item.addEventListener('toggle', () => {
+      const detailsItem = item as HTMLDetailsElement;
+      if (!detailsItem.open) return;
+      document.querySelectorAll('.faq-item').forEach((other) => {
+        const otherDetails = other as HTMLDetailsElement;
+        if (otherDetails !== detailsItem) otherDetails.open = false;
+      });
+    });
+  });
+
+  // 3. Highlight nav link based on scroll position
+  const sectionIds = ['libros', 'guia-gratis', 'videos', 'sobre'];
+  const sections = sectionIds
+    .map((id) => ({ id, el: document.getElementById(id) }))
+    .filter((x): x is { id: string; el: HTMLElement } => x.el !== null);
+
+  const navLinks = document.querySelectorAll<HTMLAnchorElement>('.nav-links a');
+
+  if (sections.length && navLinks.length) {
+    let current = '';
+    const onScroll = () => {
+      const y = window.scrollY + 100;
+      let next = '';
+      sections.forEach((s) => {
+        if (s.el.offsetTop <= y) next = s.id;
+      });
+      if (next !== current) {
+        current = next;
+        navLinks.forEach((a) => {
+          const matches = a.getAttribute('href') === '#' + current;
+          a.style.color = matches ? '#F7F5EE' : '';
+        });
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+  }
+</script>
+
+</BaseLayout>
