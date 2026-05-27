@@ -1,0 +1,250 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const lastUpdated = 'Mayo 2026';
+---
+<BaseLayout
+  title="Aviso de privacidad · Solca"
+  description="Aviso de privacidad de Solca · Ciencia y Consultoría. Qué datos recopilamos, cómo los usamos, tus derechos."
+>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <span class="dot"></span>
+      <span>Solca</span>
+    </a>
+    <div class="nav-links">
+      <a href="/#libros">Libros</a>
+      <a href="/#curso">Curso</a>
+      <a href="/revisar-cv">Revisar CV</a>
+      <a href="/#sobre">Sobre</a>
+      <a href="/contacto">Contacto</a>
+    </div>
+  </div>
+</nav>
+
+<section class="legal-hero">
+  <div class="container legal-hero-inner">
+    <div class="eyebrow eyebrow-light">
+      <span class="dot"></span>
+      <span>Legal</span>
+    </div>
+    <h1 class="legal-title">Aviso de privacidad</h1>
+    <p class="legal-lead">Última actualización: {lastUpdated}</p>
+  </div>
+</section>
+
+<section class="legal-body">
+  <div class="container legal-content">
+    <p class="intro">
+      Este aviso describe cómo Solca · Ciencia y Consultoría trata los datos personales que nos compartes al usar nuestro sitio web, herramientas (incluido el análisis de CV asistido por IA) y suscribirte a comunicaciones. Está redactado en cumplimiento con la Ley Federal de Protección de Datos Personales en Posesión de los Particulares de México (LFPDPPP) y aplica los principios del RGPD europeo para usuarios en España.
+    </p>
+
+    <h2>1. Responsable del tratamiento</h2>
+    <p>
+      Oscar Omar Solís Castro, operando como Solca · Ciencia y Consultoría.
+      Contacto: <a href="mailto:hello@solcaciencia.com">hello@solcaciencia.com</a>.
+      Ubicación: Mérida, Yucatán, México.
+    </p>
+
+    <h2>2. Datos que recopilamos</h2>
+    <p>Dependiendo del servicio que uses, recopilamos:</p>
+    <ul>
+      <li><strong>Email.</strong> Cuando solicitas el análisis de CV o te suscribes al newsletter.</li>
+      <li><strong>País (opcional).</strong> Para contextualizar el análisis o personalizar contenido.</li>
+      <li><strong>Texto de tu CV (procesamiento efímero).</strong> Lo procesamos en memoria al momento de generar el análisis y <strong>no lo conservamos</strong> después de entregarte el resultado. No se guarda en bases de datos, no se usa para entrenar modelos, no se comparte con terceros más allá del procesamiento descrito en la sección 4.</li>
+      <li><strong>Dirección IP.</strong> Registrada únicamente para prevenir abuso de servicios (rate-limiting) y diagnosticar errores. No se vincula a tu identidad para fines comerciales.</li>
+      <li><strong>Datos técnicos básicos.</strong> Logs del servidor (navegador, tipo de dispositivo, timestamp) recopilados automáticamente por Cloudflare (nuestro proveedor de hosting) para seguridad y rendimiento.</li>
+    </ul>
+    <p>
+      <strong>No recopilamos</strong>: datos bancarios, números de identificación oficial, ni datos sensibles. Las compras de libros y cursos se procesan en plataformas externas (Hotmart, Amazon) — esas tienen sus propios avisos de privacidad.
+    </p>
+
+    <h2>3. Finalidades del tratamiento</h2>
+    <p>Tus datos se usan para:</p>
+    <ul>
+      <li><strong>Finalidades primarias:</strong> generar tu análisis de CV; enviarte el resultado y comunicaciones que solicitaste (newsletter, tips de la transición academia → industria).</li>
+      <li><strong>Finalidades secundarias:</strong> mejorar nuestros servicios; medir métricas agregadas y anónimas de uso (cuántas personas usan el análisis, en qué países).</li>
+    </ul>
+    <p>
+      Si no quieres recibir comunicaciones secundarias, puedes manifestarlo respondiendo cualquier email con "baja" o usando el link de desuscripción al pie de cada correo.
+    </p>
+
+    <h2>4. Terceros que procesan tus datos</h2>
+    <p>Para operar el servicio dependemos de proveedores externos:</p>
+    <ul>
+      <li>
+        <strong>Anthropic (Claude API).</strong> El texto de tu CV se envía a la API de Anthropic para generar el análisis. Anthropic <a href="https://www.anthropic.com/legal/commercial-terms" target="_blank" rel="noopener">declara públicamente</a> que los inputs procesados vía API no se usan para entrenar sus modelos. Los datos se retienen hasta 30 días para detección de abuso y luego se eliminan.
+      </li>
+      <li>
+        <strong>Cloudflare.</strong> Hosting del sitio y procesamiento de solicitudes. Recopila logs técnicos de acceso (IP, user-agent, timestamps) según su <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">aviso de privacidad</a>.
+      </li>
+      <li>
+        <strong>GitHub.</strong> Almacenamiento del código del sitio (no de tus datos personales).
+      </li>
+    </ul>
+    <p>
+      No vendemos, alquilamos ni compartimos tus datos personales con anunciantes ni terceros con fines comerciales distintos de los descritos arriba.
+    </p>
+
+    <h2>5. Retención de datos</h2>
+    <ul>
+      <li><strong>Texto del CV:</strong> efímero. Se procesa en memoria, se entrega el resultado, se descarta. No se guarda en nuestros servidores.</li>
+      <li><strong>Email:</strong> hasta que solicites la baja o nuestra lista de suscriptores cierre, lo que ocurra primero.</li>
+      <li><strong>IP y logs técnicos:</strong> 30 días para análisis de seguridad, luego se eliminan o anonimizan.</li>
+      <li><strong>Resultados del análisis:</strong> no se guardan. Si quieres conservar tu análisis, usa el botón "Imprimir / guardar como PDF" en la página de resultado.</li>
+    </ul>
+
+    <h2>6. Tus derechos ARCO</h2>
+    <p>Conforme a la LFPDPPP tienes derecho a:</p>
+    <ul>
+      <li><strong>Acceso.</strong> Conocer qué datos tuyos tenemos.</li>
+      <li><strong>Rectificación.</strong> Corregir datos inexactos.</li>
+      <li><strong>Cancelación.</strong> Solicitar que se eliminen tus datos.</li>
+      <li><strong>Oposición.</strong> Limitar el uso de tus datos para ciertas finalidades.</li>
+    </ul>
+    <p>
+      Para ejercer cualquiera de estos derechos, envía un email a <a href="mailto:hello@solcaciencia.com">hello@solcaciencia.com</a> con el asunto "Derechos ARCO" e indica qué deseas ejercer. Responderemos dentro de 20 días hábiles.
+    </p>
+    <p>
+      Si estás en la Unión Europea, también tienes derechos adicionales bajo el RGPD (portabilidad de datos, restricción del tratamiento, presentar reclamación ante la autoridad nacional de protección de datos). El proceso de solicitud es el mismo.
+    </p>
+
+    <h2>7. Cookies y rastreadores</h2>
+    <p>
+      Actualmente Solca <strong>no usa cookies de rastreo, analytics de terceros ni pixels de redes sociales</strong>. Cloudflare usa cookies estrictamente técnicas para enrutamiento y seguridad (no rastreables a tu identidad). Si en el futuro agregamos analytics anónimas (por ejemplo Cloudflare Web Analytics), actualizaremos este aviso.
+    </p>
+
+    <h2>8. Seguridad</h2>
+    <p>
+      Aplicamos medidas técnicas razonables para proteger tus datos: HTTPS forzado en todo el sitio, secrets cifrados en infraestructura, sin almacenamiento del contenido de CVs. Aún así, ninguna transmisión por Internet es 100% segura — te recomendamos no incluir datos altamente sensibles en tu CV (números de identificación, datos médicos, etc.) para análisis.
+    </p>
+
+    <h2>9. Cambios al aviso</h2>
+    <p>
+      Este aviso puede actualizarse. Publicaremos la nueva versión en esta misma URL con la fecha de "Última actualización" arriba. Si los cambios son sustantivos (por ejemplo, agregamos un proveedor nuevo o cambiamos cómo usamos tus datos), te avisaremos por email.
+    </p>
+
+    <h2>10. Contacto</h2>
+    <p>
+      Cualquier pregunta sobre este aviso, escribe a <a href="mailto:hello@solcaciencia.com">hello@solcaciencia.com</a>.
+    </p>
+
+    <p class="legal-footer-note">
+      Solca · Ciencia y Consultoría · Oscar Omar Solís Castro · Mérida, Yucatán, México.
+    </p>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      <div class="eyebrow eyebrow-light">
+        <span class="dot"></span>
+        <span>Solca · Ciencia y Consultoría</span>
+      </div>
+      <p>Acompañamiento profesional en la transición de academia a industria farmacéutica para PhDs en LATAM y España.</p>
+    </div>
+    <div class="footer-links">
+      <h4>Recursos</h4>
+      <a href="/revisar-cv">Análisis de CV</a>
+      <a href="/#libros">Libros</a>
+      <a href="/#curso">Curso CV+LinkedIn</a>
+    </div>
+    <div class="footer-links">
+      <h4>Sitio</h4>
+      <a href="/">Inicio</a>
+      <a href="/#sobre">Sobre Solca</a>
+      <a href="/privacidad">Privacidad</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2026 Oscar Omar Solís Castro · Solca · Ciencia y Consultoría.</p>
+  </div>
+</footer>
+
+<style>
+  .legal-hero {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-deep) 100%);
+    color: var(--off-white);
+    padding: 60px 0 50px;
+  }
+  .legal-hero-inner { max-width: 820px; }
+  .legal-title {
+    font-family: 'Inter', sans-serif;
+    font-weight: 900;
+    font-size: clamp(32px, 5vw, 48px);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--off-white);
+    margin: 6px 0 8px;
+  }
+  .legal-lead {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--off-white-mute);
+  }
+
+  .legal-body { background: var(--bg); padding: 60px 0 90px; }
+  .legal-content {
+    max-width: 760px;
+    background: var(--off-white);
+    border-radius: var(--radius);
+    padding: 48px 44px;
+    box-shadow: var(--shadow-sm);
+  }
+  .legal-content p.intro {
+    font-size: 16px;
+    line-height: 1.65;
+    color: var(--text);
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 2px solid var(--rule);
+  }
+  .legal-content h2 {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: 20px;
+    color: var(--navy);
+    margin: 32px 0 12px;
+    letter-spacing: -0.005em;
+  }
+  .legal-content p {
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+  .legal-content ul {
+    margin: 8px 0 16px;
+    padding-left: 22px;
+  }
+  .legal-content li {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+  .legal-content a {
+    color: var(--blue-mid);
+    text-decoration: underline;
+    font-weight: 500;
+  }
+  .legal-content strong { font-weight: 700; color: var(--navy); }
+  .legal-footer-note {
+    margin-top: 40px;
+    padding-top: 22px;
+    border-top: 1px solid var(--rule);
+    font-size: 13px;
+    color: var(--text-mute);
+    font-style: italic;
+  }
+  @media (max-width: 720px) {
+    .legal-content { padding: 30px 24px; }
+  }
+</style>
+
+</BaseLayout>

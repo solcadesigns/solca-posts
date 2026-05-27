@@ -1,36 +1,27 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 
-// URLs reales de Hotmart (los TODOs son los placeholders pendientes de fill)
+// URLs reales de Hotmart
 const hotmart = {
   libroPM: 'https://go.hotmart.com/R105710415P',
   libroMSL: 'https://go.hotmart.com/Y105718405Y',
   libroCR: 'https://go.hotmart.com/U105724060O',
-  bundle: '#TODO-bundle-hotmart-url', // pendiente: URL del bundle Hotmart
   cursoCV: 'https://go.hotmart.com/B104495115T',
   hotmartProfile: 'https://hotmart.com/es/profile/oscarsolca', // ajustar al perfil real
 };
 
 const linkedIn = {
-  newsletter: '#TODO-linkedin-newsletter-id', // pendiente: id real del newsletter Solca Insight
+  newsletter: 'https://www.linkedin.com/build-relation/newsletter-follow?entityUrn=7432492458158120960', // pendiente: id real del newsletter Solca Insight
   profile: '#TODO-linkedin-profile-handle',   // pendiente: handle real (linkedin.com/in/...)
 };
 
 const youtube = {
-  channel: 'https://youtube.com/@oscarsolca',
-  // Placeholders hasta tener videos publicados
-  video1: { id: 'REPLACE-VIDEO-ID-1', title: 'Título del video 1 · reemplazar' },
-  video2: { id: 'REPLACE-VIDEO-ID-2', title: 'Título del video 2 · reemplazar' },
-  video3: { id: 'REPLACE-VIDEO-ID-3', title: 'Título del video 3 · reemplazar' },
+  channel: 'https://youtube.com/@oscarsolca', // se rehabilita en footer cuando haya canal con contenido
 };
-
-// Form provider — durante Fase 1 mantenemos Google Forms placeholder.
-// En Fase 3 se reemplaza por embed de Beehiiv.
-const formAction = 'https://docs.google.com/forms/d/e/REPLACE-FORM-ID/formResponse';
 ---
 <BaseLayout
   title="Solca · Ciencia y Consultoría — De doctorado a industria farmacéutica"
-  description="Acompaño a PhDs en ciencias biológicas, biomédicas y de la salud en su transición a la industria farmacéutica. Tres libros, curso CV+LinkedIn y guía gratis."
+  description="Acompaño a PhDs en ciencias biológicas, biomédicas y de la salud en su transición a la industria farmacéutica. Tres libros, curso CV+LinkedIn y análisis gratis de CV."
 >
 
 <!-- ==================== NAV ==================== -->
@@ -43,9 +34,11 @@ const formAction = 'https://docs.google.com/forms/d/e/REPLACE-FORM-ID/formRespon
     <div class="nav-links">
       <a href="#libros">Libros</a>
       <a href="#curso">Curso</a>
-      <a href="#guia-gratis">Guía gratis</a>
-      <a href="#videos">Videos</a>
-      <a href="#sobre">Sobre Solca</a>
+      <a href="/blog">Blog</a>
+      <a href="/quiz-rol">Quiz</a>
+      <a href="/revisar-cv">Revisar CV</a>
+      <a href="#sobre">Sobre</a>
+      <a href="/contacto">Contacto</a>
     </div>
   </div>
 </nav>
@@ -64,11 +57,11 @@ const formAction = 'https://docs.google.com/forms/d/e/REPLACE-FORM-ID/formRespon
         Si tienes un PhD en ciencias biológicas, biomédicas o de la salud y la academia ya no es tu siguiente paso, este es tu mapa. Tres libros que traducen tu doctorado al lenguaje de la industria — Project Manager, Medical Science Liaison y Clinical Research.
       </p>
       <div class="hero-ctas">
-        <a href="#guia-gratis" class="btn btn-primary">Empieza con la guía gratis</a>
-        <a href={linkedIn.newsletter} class="btn btn-secondary" target="_blank" rel="noopener">Suscribirse al newsletter</a>
+        <a href="/quiz-rol" class="btn btn-primary">Quiz · ¿Qué rol te queda?</a>
+        <a href="/revisar-cv" class="btn btn-secondary">Analizar mi CV</a>
       </div>
       <p class="hero-supporting">
-        O sígueme en <a href={linkedIn.profile} target="_blank" rel="noopener">LinkedIn</a> donde publico cada semana.
+        Dos apps gratuitas. <a href={linkedIn.newsletter} target="_blank" rel="noopener">O suscríbete al newsletter</a> · publico cada semana en LinkedIn.
       </p>
     </div>
     <div class="hero-visual">
@@ -113,6 +106,31 @@ const formAction = 'https://docs.google.com/forms/d/e/REPLACE-FORM-ID/formRespon
     <div class="trust-item">
       <div class="trust-num">PhD</div>
       <div class="trust-label">Para tu perfil</div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== QUIZ TEASER ==================== -->
+<section class="quiz-teaser" id="quiz-teaser">
+  <div class="container quiz-teaser-grid">
+    <div class="quiz-teaser-text">
+      <div class="eyebrow">
+        <span class="dot"></span>
+        <span>Quiz · 2 minutos</span>
+      </div>
+      <h2 class="quiz-teaser-title">¿No sabes a cuál de las 3 puertas apuntar?</h2>
+      <p class="quiz-teaser-lead">
+        Ocho preguntas sobre cómo trabajas, qué te energiza y qué prefieres. Resultado inmediato: te recomendamos el rol que mejor te queda (PM, MSL o Clinical Research) y qué libro Solca leer primero.
+      </p>
+      <a href="/quiz-rol" class="btn btn-orange btn-large">Tomar el quiz →</a>
+    </div>
+    <div class="quiz-teaser-visual" aria-hidden="true">
+      <div class="quiz-role-stack">
+        <div class="quiz-role-card top"><span class="quiz-role-label">PM</span><span class="quiz-role-bar"><span class="quiz-role-fill" style="width: 78%;"></span></span></div>
+        <div class="quiz-role-card"><span class="quiz-role-label">MSL</span><span class="quiz-role-bar"><span class="quiz-role-fill" style="width: 45%;"></span></span></div>
+        <div class="quiz-role-card"><span class="quiz-role-label">CR</span><span class="quiz-role-bar"><span class="quiz-role-fill" style="width: 32%;"></span></span></div>
+      </div>
+      <p class="quiz-teaser-caption">Ejemplo de resultado</p>
     </div>
   </div>
 </section>
@@ -187,15 +205,6 @@ const formAction = 'https://docs.google.com/forms/d/e/REPLACE-FORM-ID/formRespon
         </div>
       </article>
     </div>
-
-    <!-- Bundle CTA -->
-    <div class="bundle-cta">
-      <div class="bundle-text">
-        <h3>¿La trilogía completa?</h3>
-        <p>Los tres libros juntos cubren las trayectorias más comunes a la industria farmacéutica para PhDs en LATAM. Si todavía no decides cuál camino seguir, este es el bundle que conviene.</p>
-      </div>
-      <a href={hotmart.bundle} class="btn btn-orange btn-large" target="_blank" rel="noopener">Comprar la trilogía</a>
-    </div>
   </div>
 </section>
 
@@ -210,7 +219,7 @@ const formAction = 'https://docs.google.com/forms/d/e/REPLACE-FORM-ID/formRespon
         </div>
         <h2>CV en ciencias biológicas y de la salud · ATS y LinkedIn</h2>
         <p class="curso-lead">
-          Después de la guía gratis, el curso. Cuatro horas de video, plantillas editables, ejercicios paso a paso para construir el CV optimizado para ATS y un perfil de LinkedIn que reclutadores de pharma encuentran. Diseñado específicamente para PhDs en transición.
+          Después del análisis gratuito de tu CV, el curso. Cuatro horas de video, plantillas editables, ejercicios paso a paso para construir el CV optimizado para ATS y un perfil de LinkedIn que reclutadores de pharma encuentran. Diseñado específicamente para PhDs en transición.
         </p>
         <ul class="curso-bullets">
           <li>CV ATS-friendly · plantilla editable y revisión guiada</li>
@@ -223,7 +232,7 @@ const formAction = 'https://docs.google.com/forms/d/e/REPLACE-FORM-ID/formRespon
       </div>
       <div class="curso-visual">
         <div class="tier-diagram">
-          <div class="tier tier-free"><span>1</span><div><strong>Guía gratis</strong><small>PDF · 28 pp.</small></div></div>
+          <div class="tier tier-free"><span>1</span><div><strong>Análisis de CV</strong><small>App gratuita · 30 seg.</small></div></div>
           <div class="tier-arrow">↓</div>
           <div class="tier tier-mid tier-current"><span>2</span><div><strong>Curso CV + LinkedIn</strong><small>Video · plantillas</small></div></div>
           <div class="tier-arrow">↓</div>
@@ -234,109 +243,39 @@ const formAction = 'https://docs.google.com/forms/d/e/REPLACE-FORM-ID/formRespon
   </div>
 </section>
 
-<!-- ==================== LEAD MAGNET (FREE GUIDE) ==================== -->
-<section class="lead-magnet" id="guia-gratis">
+<!-- ==================== CV REVIEW TEASER ==================== -->
+<section class="lead-magnet" id="revisar-cv-teaser">
   <div class="container lead-grid">
     <div class="lead-text">
       <div class="eyebrow eyebrow-light">
         <span class="dot"></span>
         <span>Recurso gratuito</span>
       </div>
-      <h2 class="lead-title">Guía express · Cómo aplicar a tu primer puesto en industria farmacéutica desde un PhD</h2>
+      <h2 class="lead-title">Análisis profesional de tu CV en 30 segundos</h2>
       <p class="lead-sub">
-        Una guía PDF de 28 páginas extraída del Módulo 3 de la serie. Cubre LinkedIn, currículum, networking, las cinco fases de la entrevista y errores comunes que descalifican PhDs antes de la primera ronda. Actualizada para 2026.
+        Pega el texto de tu CV y recibe feedback estructurado contra 20 criterios reales de selección en industria farmacéutica: coherencia del perfil, métricas, palabras clave, compatibilidad ATS, posicionamiento profesional. Sin pago, sin compromiso.
       </p>
       <ul class="lead-checklist">
-        <li>Cómo traducir tu CV académico al formato de industria</li>
-        <li>El método STAR adaptado a entrevistas en pharma</li>
-        <li>Banco de 20 preguntas frecuentes con guía estructural</li>
-        <li>Plantilla de elevator pitch para PhDs en transición</li>
-        <li>Negociación de oferta sin sonar agresivo</li>
+        <li>Retroalimentación general personalizada con tu nombre</li>
+        <li>20 categorías evaluadas con qué funciona y qué no</li>
+        <li>Recomendaciones concretas y accionables por cada categoría</li>
+        <li>Análisis enfocado en transición academia → industria pharma/health</li>
+        <li>Generado por IA bajo rúbrica de Oscar Solís (PhD + consultor)</li>
       </ul>
     </div>
 
     <div class="lead-form-card">
-      <h3>Recibe la guía gratis</h3>
-      <p class="lead-form-sub">Tu email no se comparte. Recibirás la guía y, durante las siguientes dos semanas, una serie corta con tips accionables sobre la transición. Te puedes dar de baja en cualquier momento.</p>
-      <p class="lead-form-alt">¿Prefieres en LinkedIn? <a href={linkedIn.newsletter} target="_blank" rel="noopener">Suscríbete al newsletter quincenal</a> · contenido más extenso, sin captura de email.</p>
+      <h3>Recibe tu análisis</h3>
+      <p class="lead-form-sub">Toma ~30 segundos. Pegas el texto de tu CV, das tu email para enviarte el resultado, recibes el feedback en pantalla al instante.</p>
+      <p class="lead-form-alt">¿Prefieres en LinkedIn? <a href={linkedIn.newsletter} target="_blank" rel="noopener">Suscríbete al newsletter quincenal</a> · contenido extenso, sin captura de email.</p>
 
-      {/* TODO Fase 3: reemplazar este formulario con embed de Beehiiv */}
-      <form class="lead-form" action={formAction} method="POST" target="_blank">
-        <label class="sr-only" for="entry-name">Nombre</label>
-        <input type="text" name="entry.NAME_ID" id="entry-name" placeholder="Tu nombre" required />
-        <label class="sr-only" for="entry-email">Email</label>
-        <input type="email" name="entry.EMAIL_ID" id="entry-email" placeholder="tu@email.com" required />
-        <label class="sr-only" for="entry-pais">País</label>
-        <select name="entry.COUNTRY_ID" id="entry-pais" required>
-          <option value="">Tu país</option>
-          <option value="México">México</option>
-          <option value="Colombia">Colombia</option>
-          <option value="Argentina">Argentina</option>
-          <option value="Chile">Chile</option>
-          <option value="Brasil">Brasil</option>
-          <option value="España">España</option>
-          <option value="Otro LATAM">Otro LATAM</option>
-          <option value="Otro">Otro</option>
-        </select>
-        <button type="submit" class="btn btn-orange btn-block">Descargar la guía</button>
-      </form>
+      <a href="/revisar-cv" class="btn btn-orange btn-block btn-large" style="text-decoration: none;">
+        Analizar mi CV ahora
+      </a>
 
       <p class="lead-fineprint">
-        Recibirás la guía en tu email en menos de 5 minutos.
+        El texto de tu CV se procesa con IA bajo mi rúbrica y <strong>no se guarda</strong>. Solo el email queda para enviarte tips relevantes (te puedes dar de baja siempre). Ver <a href="/privacidad">aviso de privacidad</a>.
       </p>
-    </div>
-  </div>
-</section>
-
-<!-- ==================== YOUTUBE VIDEOS ==================== -->
-<section class="videos" id="videos">
-  <div class="container">
-    <div class="section-header">
-      <div class="eyebrow">
-        <span class="dot"></span>
-        <span>Videos</span>
-      </div>
-      <h2 class="section-title">Aprende viendo</h2>
-      <p class="section-lead">
-        Conversaciones con CRAs, MSLs y Project Managers latinoamericanos sobre cómo hicieron la transición. Análisis de tendencias en industria farmacéutica. Tips operativos cortos.
-      </p>
-    </div>
-
-    <div class="videos-grid">
-      <div class="video-card">
-        <div class="video-iframe-wrap">
-          <iframe src={`https://www.youtube.com/embed/${youtube.video1.id}`}
-                  title={youtube.video1.title}
-                  frameborder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowfullscreen></iframe>
-        </div>
-        <h3 class="video-title">{youtube.video1.title}</h3>
-      </div>
-      <div class="video-card">
-        <div class="video-iframe-wrap">
-          <iframe src={`https://www.youtube.com/embed/${youtube.video2.id}`}
-                  title={youtube.video2.title}
-                  frameborder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowfullscreen></iframe>
-        </div>
-        <h3 class="video-title">{youtube.video2.title}</h3>
-      </div>
-      <div class="video-card">
-        <div class="video-iframe-wrap">
-          <iframe src={`https://www.youtube.com/embed/${youtube.video3.id}`}
-                  title={youtube.video3.title}
-                  frameborder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowfullscreen></iframe>
-        </div>
-        <h3 class="video-title">{youtube.video3.title}</h3>
-      </div>
-    </div>
-
-    <div class="centered-cta">
-      <a href={youtube.channel} class="btn btn-secondary" target="_blank" rel="noopener" style="color: var(--navy); border-color: var(--navy);">Ver canal completo</a>
     </div>
   </div>
 </section>
@@ -406,8 +345,11 @@ const formAction = 'https://docs.google.com/forms/d/e/REPLACE-FORM-ID/formRespon
     <div class="diagonals diagonals-final"></div>
     <div class="final-cta-content">
       <h2>La transición no es de capacidad. Es de traducción.</h2>
-      <p>Empieza con la guía gratis. Después decides si quieres profundizar.</p>
-      <a href="#guia-gratis" class="btn btn-orange btn-large">Recibir la guía</a>
+      <p>Empieza con el quiz si todavía no decides qué rol, o con el análisis de CV si ya estás aplicando. Después decides si quieres profundizar.</p>
+      <div class="final-cta-buttons">
+        <a href="/quiz-rol" class="btn btn-orange btn-large">Tomar el quiz</a>
+        <a href="/revisar-cv" class="btn btn-secondary btn-large">Analizar mi CV</a>
+      </div>
     </div>
   </div>
 </section>
@@ -430,9 +372,11 @@ const formAction = 'https://docs.google.com/forms/d/e/REPLACE-FORM-ID/formRespon
     </div>
     <div class="footer-links">
       <h4>Recursos</h4>
-      <a href="#guia-gratis">Guía gratis</a>
-      <a href="#videos">YouTube</a>
+      <a href="/quiz-rol">Quiz de rol</a>
+      <a href="/revisar-cv">Análisis de CV</a>
       <a href="#sobre">Sobre Solca</a>
+      <a href="/contacto">Contacto</a>
+      <a href="/privacidad">Privacidad</a>
     </div>
     <div class="footer-links">
       <h4>Conecta</h4>
@@ -442,9 +386,114 @@ const formAction = 'https://docs.google.com/forms/d/e/REPLACE-FORM-ID/formRespon
     </div>
   </div>
   <div class="footer-bottom">
-    <p>© 2026 Oscar Omar Solís Castro · Solca · Ciencia y Consultoría. Todos los derechos reservados.</p>
+    <p>© 2026 Oscar Omar Solís Castro · Solca · Ciencia y Consultoría. Todos los derechos reservados. · <a href="/privacidad" style="color: inherit; text-decoration: underline;">Aviso de privacidad</a></p>
   </div>
 </footer>
+
+<style>
+  /* ============ Quiz teaser (homepage section) ============ */
+  .quiz-teaser {
+    background: var(--off-white);
+    padding: 80px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .quiz-teaser-grid {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 56px;
+    align-items: center;
+  }
+  .quiz-teaser-title {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: clamp(26px, 3.6vw, 36px);
+    line-height: 1.15;
+    color: var(--navy);
+    margin: 8px 0 14px;
+    letter-spacing: -0.01em;
+  }
+  .quiz-teaser-lead {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--text-mute);
+    margin-bottom: 24px;
+    max-width: 560px;
+  }
+  .quiz-teaser-visual {
+    background: var(--bg);
+    border-radius: var(--radius);
+    padding: 28px 26px 20px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--rule);
+  }
+  .quiz-role-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .quiz-role-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: white;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    transition: border-color 0.15s;
+  }
+  .quiz-role-card.top {
+    border-color: var(--orange);
+    box-shadow: 0 0 0 3px rgba(232, 116, 58, 0.10);
+  }
+  .quiz-role-label {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--navy);
+    min-width: 40px;
+  }
+  .quiz-role-card.top .quiz-role-label { color: var(--orange); }
+  .quiz-role-bar {
+    flex: 1;
+    height: 8px;
+    background: var(--rule);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .quiz-role-fill {
+    display: block;
+    height: 100%;
+    background: var(--blue-mid);
+    opacity: 0.42;
+    border-radius: 4px;
+  }
+  .quiz-role-card.top .quiz-role-fill {
+    background: var(--orange);
+    opacity: 1;
+  }
+  .quiz-teaser-caption {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px;
+    color: var(--text-mute);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-align: center;
+    margin-top: 8px;
+  }
+  @media (max-width: 820px) {
+    .quiz-teaser-grid { grid-template-columns: 1fr; gap: 36px; }
+    .quiz-teaser { padding: 60px 0; }
+  }
+
+  /* Final CTA: two buttons side by side */
+  .final-cta-buttons {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+</style>
 
 <script>
   // 1. Smooth scroll for in-page anchors
@@ -473,7 +522,7 @@ const formAction = 'https://docs.google.com/forms/d/e/REPLACE-FORM-ID/formRespon
   });
 
   // 3. Highlight nav link based on scroll position
-  const sectionIds = ['libros', 'guia-gratis', 'videos', 'sobre'];
+  const sectionIds = ['quiz-teaser', 'libros', 'curso', 'revisar-cv-teaser', 'sobre'];
   const sections = sectionIds
     .map((id) => ({ id, el: document.getElementById(id) }))
     .filter((x): x is { id: string; el: HTMLElement } => x.el !== null);

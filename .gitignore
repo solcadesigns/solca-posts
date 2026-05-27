@@ -26,3 +26,7 @@ pnpm-debug.log*
 
 # build/cache
 .cache/
+
+# Office/LibreOffice lock files
+.~lock.*
+*~lock.*#

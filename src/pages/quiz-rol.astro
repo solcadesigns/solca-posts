@@ -1,0 +1,1152 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const hotmart = {
+  libroPM: 'https://go.hotmart.com/R105710415P',
+  libroMSL: 'https://go.hotmart.com/Y105718405Y',
+  libroCR: 'https://go.hotmart.com/U105724060O',
+};
+
+// Definidas server-side para que tanto Astro como JS las usen.
+const QUESTIONS = [
+  {
+    text: 'Cuando me piden organizar un proyecto complejo con varios involucrados, me siento:',
+    options: [
+      { label: 'Energizado — coordinar gente, plazos y entregables es mi zona', scores: { PM: 3 } },
+      { label: 'Cómodo — lo hago bien aunque no es lo que más me llena', scores: { PM: 1, MSL: 1 } },
+      { label: 'Estresado — prefiero ejecutar mi parte y que otro coordine el equipo', scores: { CR: 2 } },
+    ],
+  },
+  {
+    text: 'Mi fortaleza académica principal durante el PhD fue:',
+    options: [
+      { label: 'Lectura crítica de literatura, integración de evidencia, escribir y presentar discusión', scores: { MSL: 3 } },
+      { label: 'Diseño experimental riguroso y ejecución disciplinada de protocolos', scores: { CR: 2, PM: 1 } },
+      { label: 'Coordinar el equipo del laboratorio, los recursos y los avances del proyecto', scores: { PM: 3 } },
+      { label: 'Generar data limpia con instrumentación compleja', scores: { CR: 3 } },
+    ],
+  },
+  {
+    text: 'En una conversación con un médico especialista sobre nueva evidencia, prefiero:',
+    options: [
+      { label: 'Discutir a profundidad la metodología y los hallazgos científicos', scores: { MSL: 3 } },
+      { label: 'Entender qué necesita para conducir bien un ensayo clínico', scores: { CR: 2 } },
+      { label: 'Mapear qué necesita para mover el proyecto adelante operativamente', scores: { PM: 2 } },
+    ],
+  },
+  {
+    text: 'Mi tolerancia para SOPs, procesos estrictos y compliance regulatorio es:',
+    options: [
+      { label: 'Alta — el rigor le da credibilidad al trabajo', scores: { CR: 3 } },
+      { label: 'Media — los respeto pero busco eficiencia donde se pueda', scores: { PM: 2 } },
+      { label: 'Variable — depende del contexto y propósito', scores: { MSL: 1 } },
+    ],
+  },
+  {
+    text: 'Si me dejaras elegir entre estas tres responsabilidades, agarro:',
+    options: [
+      { label: 'Visitar 6-8 sitios clínicos al mes, revisar source documents, asegurar calidad de data', scores: { CR: 3 } },
+      { label: 'Liderar un equipo cross-functional para lanzar un producto o estudio nuevo', scores: { PM: 3 } },
+      { label: 'Construir relaciones científicas con 20-30 KOLs en mi área terapéutica', scores: { MSL: 3 } },
+    ],
+  },
+  {
+    text: 'Cuando hablo en público sobre temas científicos:',
+    options: [
+      { label: 'Disfruto — me sale natural, me gusta el intercambio con la audiencia', scores: { MSL: 2 } },
+      { label: 'Lo hago bien si es interno con equipo, no tan cómodo con audiencia externa de KOLs', scores: { PM: 2 } },
+      { label: 'Prefiero generar la data y dejar que otros la presenten', scores: { CR: 2 } },
+    ],
+  },
+  {
+    text: 'Para mi próxima etapa profesional valoro más:',
+    options: [
+      { label: 'Variedad de tareas: gestión, finanzas, equipo, decisiones estratégicas', scores: { PM: 3 } },
+      { label: 'Profundidad científica continua: leer, traducir, defender evidencia', scores: { MSL: 3 } },
+      { label: 'Estructura operativa clara: protocolos, plazos, calidad, auditoría', scores: { CR: 3 } },
+    ],
+  },
+  {
+    text: 'Mi formación incluyó trabajo principalmente con:',
+    options: [
+      { label: 'Modelos animales, biología molecular, técnicas de bench', scores: { CR: 1, MSL: 1 } },
+      { label: 'Análisis estadístico, gestión de bases de datos, papers cuantitativos', scores: { PM: 1, MSL: 2 } },
+      { label: 'Trabajo clínico directo con pacientes o muestras humanas', scores: { CR: 2, MSL: 1 } },
+      { label: 'Gestión de proyectos académicos, redacción de propuestas, fundraising', scores: { PM: 2 } },
+    ],
+  },
+];
+---
+<BaseLayout
+  title="¿Qué rol en pharma te queda? · Quiz de 2 minutos · Solca"
+  description="Quiz interactivo de 8 preguntas que te dice cuál rol pharma (PM, MSL o Clinical Research) es tu mejor match basado en cómo trabajas y qué te energiza."
+>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <span class="dot"></span>
+      <span>Solca</span>
+    </a>
+    <div class="nav-links">
+      <a href="/#libros">Libros</a>
+      <a href="/#curso">Curso</a>
+      <a href="/revisar-cv">Revisar CV</a>
+      <a href="/quiz-rol">Quiz de rol</a>
+      <a href="/contacto">Contacto</a>
+    </div>
+  </div>
+</nav>
+
+<section class="quiz-app-section">
+  <div class="container quiz-app-container">
+    <div class="progress-wrap" id="progress-wrap" hidden>
+      <div class="progress-meta">
+        <span id="progress-text">Pregunta 1 de 8</span>
+        <span id="progress-pct">12%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    </div>
+
+    <!-- ============ EMAIL GATE (pantalla inicial) ============ -->
+    <div class="screen welcome active" id="welcome">
+      <div class="eyebrow">
+        <span class="dot"></span>
+        <span>Quiz · 2 minutos</span>
+      </div>
+      <h1 class="quiz-h1">¿Qué rol en pharma <em>te queda mejor</em>?</h1>
+      <p class="quiz-lead">
+        Ocho preguntas sobre cómo trabajas, qué te energiza y qué prefieres. Al final te recomiendo cuál de los tres roles más comunes para PhDs en industria es tu mejor match: <strong>Project Manager</strong>, <strong>Medical Science Liaison</strong>, o <strong>Clinical Research</strong>.
+      </p>
+      <ul class="quiz-features">
+        <li>Resultado inmediato basado en tus respuestas</li>
+        <li>Explicación del por qué ese rol te conviene</li>
+        <li>Recomendación del libro Solca correspondiente</li>
+      </ul>
+
+      <form id="gate-form" class="gate-form" novalidate>
+        <h3 class="gate-form-heading">Antes de empezar:</h3>
+        <div class="gate-form-grid">
+          <div class="gate-field">
+            <label for="gate-name">Tu nombre</label>
+            <input type="text" id="gate-name" name="name" placeholder="Nombre" required minlength="2" maxlength="80" autocomplete="given-name" />
+          </div>
+          <div class="gate-field">
+            <label for="gate-email">Tu email</label>
+            <input type="email" id="gate-email" name="email" placeholder="tu@email.com" required autocomplete="email" />
+          </div>
+          <div class="gate-field gate-field-full">
+            <label for="gate-country">País (opcional)</label>
+            <select id="gate-country" name="country">
+              <option value="">Selecciona</option>
+              <option value="México">México</option>
+              <option value="Brasil">Brasil</option>
+              <option value="Argentina">Argentina</option>
+              <option value="Colombia">Colombia</option>
+              <option value="Chile">Chile</option>
+              <option value="España">España</option>
+              <option value="Perú">Perú</option>
+              <option value="Ecuador">Ecuador</option>
+              <option value="Otro LATAM">Otro LATAM</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+          <div class="gate-field gate-field-full">
+            <label class="gate-consent-label">
+              <input type="checkbox" id="gate-consent" name="consent" required />
+              <span>Acepto recibir el resultado del quiz + 3 emails de bienvenida + el newsletter Solca Insight (semanal). <strong>Mi email no se comparte con terceros</strong>. Me puedo dar de baja en cualquier momento. Ver <a href="/privacidad" target="_blank" rel="noopener">aviso de privacidad</a>.</span>
+            </label>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-orange btn-large btn-block" id="gate-submit">Empezar el quiz →</button>
+        <p class="gate-fineprint">Toma ~2 minutos. Respuestas instantáneas, sin tarjeta de crédito.</p>
+      </form>
+    </div>
+
+    <!-- ============ SELF-MATCH · qué rol creen que les queda ============ -->
+    <div class="screen self-match-screen" id="self-match" hidden>
+      <h2 class="question-text">Antes de empezar el quiz: ¿qué rol crees que es el que más encaja contigo?</h2>
+      <p class="self-match-helper">Esto no afecta el resultado del quiz — es solo para entender mejor cómo se perciben los PhDs en transición. Vamos a comparar tu respuesta con el resultado del quiz al final.</p>
+      <div class="options">
+        <button type="button" class="option-btn" data-self-match="PM">
+          <span class="option-btn-name">Project Manager (PM)</span>
+          <span class="option-btn-sub">Coordino proyectos, plazos y equipos cross-funcionales</span>
+        </button>
+        <button type="button" class="option-btn" data-self-match="MSL">
+          <span class="option-btn-name">Medical Science Liaison (MSL)</span>
+          <span class="option-btn-sub">Diálogo científico con KOLs, traducción de evidencia</span>
+        </button>
+        <button type="button" class="option-btn" data-self-match="CR">
+          <span class="option-btn-name">Clinical Research (CRA / CTM)</span>
+          <span class="option-btn-sub">Monitoreo de ensayos clínicos bajo ICH/GCP</span>
+        </button>
+        <button type="button" class="option-btn" data-self-match="NS">
+          <span class="option-btn-name">No tengo idea / no estoy seguro</span>
+          <span class="option-btn-sub">Quiero que el quiz me lo diga</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ============ QUESTIONS · server-rendered ============ -->
+    {QUESTIONS.map((q, qIdx) => (
+      <div class="screen question" id={`q-${qIdx}`} data-q-index={qIdx} hidden>
+        <h2 class="question-text">{q.text}</h2>
+        <div class="options">
+          {q.options.map((opt, oIdx) => (
+            <label class="option">
+              <input type="radio" name={`q-${qIdx}`} value={oIdx.toString()} data-q={qIdx.toString()} data-o={oIdx.toString()} />
+              <span class="radio-circle" aria-hidden="true"></span>
+              <span class="option-label">{opt.label}</span>
+            </label>
+          ))}
+        </div>
+        <div class="nav-buttons">
+          <button type="button" class="btn-back" data-action="back" disabled={qIdx === 0}>← Anterior</button>
+          <button type="button" class="btn btn-orange" data-action="next" disabled>
+            {qIdx === QUESTIONS.length - 1 ? 'Ver resultado →' : 'Siguiente →'}
+          </button>
+        </div>
+      </div>
+    ))}
+
+    <!-- ============ RESULT ============ -->
+    <div class="screen result-screen" id="result" hidden>
+      <div class="eyebrow"><span class="dot"></span><span>Resultado</span></div>
+      <h2 class="quiz-result-title">Tu match principal: <em id="result-role">—</em></h2>
+      <p class="quiz-result-subtitle" id="result-subtitle"></p>
+
+      <div class="score-chart">
+        <h3>Distribución de tu perfil</h3>
+        <div id="score-rows"></div>
+      </div>
+
+      <div class="quiz-explanation">
+        <h3>Por qué este rol te queda</h3>
+        <p id="explanation-text"></p>
+      </div>
+
+      <div id="book-recommendations"></div>
+
+      <div class="result-confirmation">
+        <p>
+          <strong>Te suscribimos al newsletter Solca Insight.</strong> El primer email te llegará en minutos con recursos específicos para tu match. Si no lo ves, revisa la carpeta de spam o promociones.
+        </p>
+      </div>
+
+      <div class="share-strip"
+           data-share-url="https://solcaciencia.com/quiz-rol"
+           data-share-text="Tomé este quiz de 2 min para PhDs explorando industria farmacéutica — te dice si tu match es PM, MSL o Clinical Research.">
+        <span class="share-strip-label">Compartir el quiz</span>
+        <div class="share-strip-buttons">
+          <button type="button" class="share-btn" data-share="linkedin" aria-label="Compartir en LinkedIn" title="LinkedIn">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM8.34 17.34V10.5H6.17v6.84zM7.25 9.5a1.26 1.26 0 1 0 0-2.51 1.26 1.26 0 0 0 0 2.51zM18 17.34v-3.75c0-2-1.07-2.93-2.5-2.93a2.16 2.16 0 0 0-1.95 1.08v-.93h-2.16c.03.61 0 6.53 0 6.53h2.16v-3.82a1.48 1.48 0 0 1 .07-.53 1.18 1.18 0 0 1 1.11-.79c.78 0 1.1.6 1.1 1.47v3.67z"/></svg>
+          </button>
+          <button type="button" class="share-btn" data-share="whatsapp" aria-label="Compartir por WhatsApp" title="WhatsApp">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.1l-.9 1.2c-.2.2-.4.2-.7.1-1-.4-1.9-1-2.7-1.7-.7-.7-1.3-1.5-1.8-2.4-.1-.2 0-.5.1-.6.1-.1.2-.3.4-.4.1-.1.2-.3.3-.4.1-.1.1-.3 0-.4-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.7.4-.7.7-1.1 1.6-1.1 2.6.1 1.2.5 2.3 1.2 3.3 1.3 1.9 3 3.4 5 4.4.6.3 1 .4 1.4.5.6.2 1.1.2 1.6.1.5-.1 1.6-.7 1.8-1.3.2-.5.2-1 .2-1.1zM12 22a10 10 0 0 1-5.3-1.5L2 22l1.5-4.6A10 10 0 0 1 2 12 10 10 0 0 1 12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10z"/></svg>
+          </button>
+          <button type="button" class="share-btn" data-share="email" aria-label="Compartir por email" title="Email">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </button>
+          <button type="button" class="share-btn" data-share="copy" aria-label="Copiar enlace" title="Copiar enlace">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="quiz-result-footer">
+        <button class="retake-btn" id="retake-btn">↺ Volver a tomar el quiz</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      <div class="eyebrow eyebrow-light">
+        <span class="dot"></span>
+        <span>Solca · Ciencia y Consultoría</span>
+      </div>
+      <p>Acompañamiento profesional en la transición de academia a industria farmacéutica para PhDs en LATAM y España.</p>
+    </div>
+    <div class="footer-links">
+      <h4>Recursos</h4>
+      <a href="/quiz-rol">Quiz de rol</a>
+      <a href="/revisar-cv">Análisis de CV</a>
+      <a href="/#libros">Libros</a>
+      <a href="/#curso">Curso CV+LinkedIn</a>
+    </div>
+    <div class="footer-links">
+      <h4>Sitio</h4>
+      <a href="/">Inicio</a>
+      <a href="/#sobre">Sobre Solca</a>
+      <a href="/contacto">Contacto</a>
+      <a href="/privacidad">Privacidad</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2026 Oscar Omar Solís Castro · Solca · Ciencia y Consultoría. · <a href="/privacidad" style="color: inherit; text-decoration: underline;">Aviso de privacidad</a></p>
+  </div>
+</footer>
+
+<style>
+  [hidden] { display: none !important; }
+
+  .quiz-app-section {
+    background: var(--bg);
+    padding: 50px 0 80px;
+    min-height: calc(100vh - 80px);
+  }
+  .quiz-app-container { max-width: 720px; }
+
+  .progress-wrap { margin-bottom: 26px; }
+  .progress-meta {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px;
+    color: var(--text-mute);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .progress-bar {
+    height: 6px;
+    background: var(--rule);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--orange);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+    width: 0%;
+  }
+
+  /* Screen system · clave: por default ocultas, solo .active visible */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ============ Welcome / Email Gate ============ */
+  .quiz-h1 {
+    font-family: 'Inter', sans-serif;
+    font-weight: 900;
+    font-size: clamp(30px, 5vw, 44px);
+    line-height: 1.1;
+    color: var(--navy);
+    letter-spacing: -0.02em;
+    margin: 14px 0 14px;
+  }
+  .quiz-h1 em { font-style: normal; color: var(--orange); }
+  .quiz-lead {
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--text);
+    margin-bottom: 22px;
+  }
+  .quiz-features { list-style: none; margin: 0 0 30px; padding: 0; }
+  .quiz-features li {
+    font-size: 14px;
+    padding: 8px 0 8px 22px;
+    position: relative;
+    color: var(--text);
+  }
+  .quiz-features li::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 16px;
+    width: 12px; height: 2px;
+    background: var(--orange);
+  }
+
+  .gate-form {
+    background: var(--off-white);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 28px 30px;
+    box-shadow: var(--shadow-sm);
+    margin-top: 8px;
+  }
+  .gate-form-heading {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--navy);
+    margin-bottom: 16px;
+  }
+  .gate-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .gate-field { display: flex; flex-direction: column; gap: 5px; }
+  .gate-field-full { grid-column: 1 / -1; }
+  .gate-field label {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text);
+  }
+  .gate-field input[type="text"],
+  .gate-field input[type="email"],
+  .gate-field select {
+    padding: 12px 14px;
+    border: 1.5px solid var(--rule);
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    color: var(--text);
+    background: white;
+    transition: border-color 0.15s;
+  }
+  .gate-field input:focus,
+  .gate-field select:focus {
+    outline: 0;
+    border-color: var(--orange);
+  }
+  .gate-consent-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-mute);
+    cursor: pointer;
+    padding: 8px 0;
+  }
+  .gate-consent-label input[type="checkbox"] {
+    flex-shrink: 0;
+    margin-top: 2px;
+    width: 16px;
+    height: 16px;
+  }
+  .gate-fineprint {
+    font-size: 12px;
+    color: var(--text-mute);
+    text-align: center;
+    margin-top: 10px;
+  }
+  @media (max-width: 540px) {
+    .gate-form-grid { grid-template-columns: 1fr; }
+    .gate-form { padding: 22px 18px; }
+  }
+
+  /* ============ Self-match screen ============ */
+  .self-match-helper {
+    font-size: 14px;
+    color: var(--text-mute);
+    margin-bottom: 24px;
+    line-height: 1.55;
+  }
+  .option-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    text-align: left;
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.05s ease;
+    font-family: inherit;
+  }
+  .option-btn:hover {
+    border-color: var(--orange);
+    background: #FFF8F3;
+  }
+  .option-btn:active { transform: scale(0.995); }
+  .option-btn-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 4px;
+  }
+  .option-btn-sub {
+    font-size: 13px;
+    color: var(--text-mute);
+    line-height: 1.45;
+  }
+
+  /* ============ Question screens ============ */
+  .question-text {
+    font-family: 'Inter', sans-serif;
+    font-size: clamp(20px, 3.4vw, 26px);
+    font-weight: 800;
+    color: var(--navy);
+    line-height: 1.25;
+    margin: 14px 0 24px;
+    letter-spacing: -0.01em;
+  }
+
+  /* Options · siempre vertical, una por línea */
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .option {
+    position: relative;
+    background: var(--off-white);
+    border: 1.5px solid var(--rule);
+    border-radius: 12px;
+    padding: 16px 18px 16px 52px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--text);
+    display: block;
+    width: 100%;
+    user-select: none;
+    text-align: left;
+  }
+  .option:hover {
+    border-color: var(--orange);
+    background: rgba(232, 116, 58, 0.04);
+  }
+  .option:active { transform: scale(0.995); }
+  .option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .option .radio-circle {
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--rule);
+    background: white;
+    transition: border-color 0.15s;
+  }
+  .option .radio-circle::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--orange);
+    transform: translate(-50%, -50%) scale(0);
+    transition: transform 0.15s;
+  }
+  .option input[type="radio"]:checked ~ .radio-circle {
+    border-color: var(--orange);
+  }
+  .option input[type="radio"]:checked ~ .radio-circle::after {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  .option:has(input[type="radio"]:checked) {
+    border-color: var(--orange);
+    background: rgba(232, 116, 58, 0.06);
+  }
+  .option-label {
+    display: block;
+    width: 100%;
+  }
+
+  .nav-buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 32px;
+    gap: 12px;
+  }
+  .btn-back {
+    background: transparent;
+    border: 0;
+    color: var(--text-mute);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 8px 12px;
+    font-family: inherit;
+  }
+  .btn-back:hover { color: var(--navy); }
+  .btn-back:disabled { opacity: 0; pointer-events: none; }
+
+  /* ============ Result ============ */
+  .quiz-result-title {
+    font-family: 'Inter', sans-serif;
+    font-weight: 900;
+    font-size: clamp(28px, 5vw, 42px);
+    line-height: 1.1;
+    color: var(--navy);
+    letter-spacing: -0.02em;
+    margin: 10px 0 8px;
+  }
+  .quiz-result-title em { font-style: normal; color: var(--orange); }
+  .quiz-result-subtitle {
+    font-size: 14px;
+    color: var(--text-mute);
+    margin-bottom: 28px;
+  }
+
+  .score-chart {
+    background: var(--off-white);
+    border: 1px solid var(--rule);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 22px;
+  }
+  .score-chart h3 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+    margin-bottom: 18px;
+  }
+  /* :global() necesario: las filas se generan dinámicamente via innerHTML
+     y no reciben el hash de scope de Astro. */
+  :global(.score-row) {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 18px 24px;
+    margin-bottom: 12px;
+    background: #fff;
+    border: 1px solid #E0DCD3;
+    border-radius: 12px;
+  }
+  :global(.score-row:last-child) { margin-bottom: 0; }
+  :global(.score-row-name) {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1B3A6B;
+    min-width: 56px;
+    letter-spacing: 0.02em;
+  }
+  :global(.score-row-bar) {
+    flex: 1;
+    height: 12px;
+    background: #E0DCD3;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  :global(.score-row-fill) {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.6s ease;
+  }
+  :global(.score-row.top) {
+    background: #FFF4EC;
+    border: 2px solid #E8743A;
+    box-shadow: 0 0 0 4px rgba(232, 116, 58, 0.10);
+  }
+  :global(.score-row.top .score-row-name) { color: #E8743A; }
+  :global(.score-row.top .score-row-fill) { background: #E8743A; }
+  :global(.score-row:not(.top) .score-row-fill) { background: #99AFC7; opacity: 0.55; }
+
+  .quiz-explanation {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-deep) 100%);
+    color: var(--off-white);
+    border-radius: 14px;
+    padding: 28px 30px;
+    margin-bottom: 22px;
+  }
+  .quiz-explanation h3 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--orange);
+    margin-bottom: 12px;
+  }
+  .quiz-explanation p {
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--off-white);
+  }
+
+  .book-rec {
+    background: var(--off-white);
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--orange);
+    border-radius: 12px;
+    padding: 22px 24px;
+    margin-bottom: 14px;
+  }
+  .book-rec-eyebrow {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--orange);
+    margin-bottom: 8px;
+  }
+  .book-rec h4 {
+    font-family: 'Inter', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--navy);
+    margin-bottom: 6px;
+    letter-spacing: -0.005em;
+  }
+  .book-rec p {
+    font-size: 14px;
+    color: var(--text-mute);
+    margin-bottom: 14px;
+    line-height: 1.55;
+  }
+  .book-rec a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--orange);
+    color: white;
+    text-decoration: none;
+    padding: 10px 22px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    transition: background 0.15s;
+  }
+  .book-rec a:hover { background: var(--orange-soft); opacity: 1; }
+  .book-rec.secondary { border-left-color: var(--blue-mid); opacity: 0.94; }
+  .book-rec.secondary .book-rec-eyebrow { color: var(--blue-mid); }
+  .book-rec.secondary a {
+    background: transparent;
+    color: var(--navy);
+    border: 1.5px solid var(--navy);
+  }
+  .book-rec.secondary a:hover { background: var(--navy); color: white; }
+
+  .result-confirmation {
+    background: rgba(232, 116, 58, 0.08);
+    border: 1px solid rgba(232, 116, 58, 0.22);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin: 18px 0;
+  }
+  .result-confirmation p {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text);
+    margin: 0;
+  }
+  .result-confirmation strong { color: var(--navy); font-weight: 700; }
+
+  .quiz-result-footer {
+    display: flex;
+    justify-content: center;
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1px solid var(--rule);
+  }
+  .retake-btn {
+    background: transparent;
+    border: 0;
+    color: var(--text-mute);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 8px 14px;
+    text-decoration: underline;
+    font-family: inherit;
+  }
+  .retake-btn:hover { color: var(--orange); }
+
+  /* ============ Share strip ============ */
+  .share-strip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-top: 30px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+  }
+  .share-strip-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+  }
+  .share-strip-buttons {
+    display: flex;
+    gap: 10px;
+  }
+  .share-btn {
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+    color: var(--navy);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    padding: 0;
+  }
+  .share-btn:hover {
+    background: var(--orange);
+    border-color: var(--orange);
+    color: #fff;
+    transform: translateY(-1px);
+  }
+  .share-btn:active { transform: scale(0.95); }
+  .share-btn.share-btn-copied {
+    background: var(--navy);
+    border-color: var(--navy);
+    color: #fff;
+  }
+</style>
+
+<script define:vars={{ QUESTIONS, hotmart }}>
+  const ROLE_DATA = {
+    PM: {
+      name: 'Project Manager',
+      short: 'PM',
+      explanation:
+        'Tu perfil indica que prosperas coordinando recursos, personas y tiempos para que las cosas pasen. Project Manager en pharma es la traducción natural de un PhD donde tu fortaleza fue la disciplina de planificación, gestión de stakeholders y entrega de resultados a plazo. PMs en industria mueven proyectos de investigación clínica, registros regulatorios, lanzamientos de producto. Es un rol cross-functional con alta visibilidad ejecutiva.',
+      bookTitle: 'De Doctorado a Project Manager',
+      bookDesc:
+        '116 páginas · 24 figuras. Cubre metodologías Waterfall, Agile, Scrum, Kanban traducidas al lenguaje pharma. Salarios LATAM por país. Módulo de IA para PMs.',
+      bookURL: hotmart.libroPM,
+    },
+    MSL: {
+      name: 'Medical Science Liaison',
+      short: 'MSL',
+      explanation:
+        'Tu perfil apunta hacia MSL: rol científico-estratégico, no comercial. Es el match natural para PhDs cuya fortaleza académica fue la lectura crítica de literatura, la traducción de evidencia compleja en decisiones, y el diálogo con expertos médicos. Un MSL construye relaciones con KOLs, traduce data clínica a contexto terapéutico, no vende productos pero sí informa decisiones médicas con rigor científico.',
+      bookTitle: 'De Doctorado a MSL',
+      bookDesc:
+        '193 páginas · 35 figuras. Cubre compliance LATAM por país (5), preparación para certificaciones (BCMAS, MAPS, MSL Society) y el reverse-engineering del rol que necesitas en entrevista.',
+      bookURL: hotmart.libroMSL,
+    },
+    CR: {
+      name: 'Clinical Research',
+      short: 'CR',
+      explanation:
+        'Tu perfil encaja con investigación clínica: rigor operativo, ejecución de protocolos exigentes, atención al detalle bajo presión regulatoria. Es el match natural para PhDs disciplinados que disfrutan procesos estrictos y trabajo cercano a sitios, datos y pacientes. Los roles típicos son CRA (Clinical Research Associate), CRS (Clinical Research Specialist), CTM (Clinical Trial Manager).',
+      bookTitle: 'De Doctorado a Clinical Research',
+      bookDesc:
+        '198 páginas · 33 figuras. Incluye ICH E6(R3) actualizado a 2025, compliance LATAM por 5 países y módulo nuevo de IA en clinical research.',
+      bookURL: hotmart.libroCR,
+    },
+  };
+
+  const state = {
+    currentIndex: 0,
+    answers: new Array(QUESTIONS.length).fill(null),
+    topRole: null,
+    scores: null,
+    gateData: null,   // { name, email, country }
+    selfMatch: null,  // 'PM' | 'MSL' | 'CR' | 'NS' — el rol que cree que le queda
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const progressWrap = $('progress-wrap');
+  const progressText = $('progress-text');
+  const progressPct = $('progress-pct');
+  const progressFill = $('progress-fill');
+
+  function showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach((el) => el.classList.remove('active'));
+    const target = document.getElementById(screenId);
+    if (target) {
+      target.classList.add('active');
+      target.hidden = false;
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function showQuestion(idx) {
+    state.currentIndex = idx;
+    // Hide all question screens, show the active one
+    document.querySelectorAll('.screen').forEach((el) => {
+      el.classList.remove('active');
+    });
+    const target = document.getElementById('q-' + idx);
+    target.classList.add('active');
+    target.hidden = false;
+
+    progressWrap.hidden = false;
+    const pct = Math.round(((idx + 1) / QUESTIONS.length) * 100);
+    progressText.textContent = `Pregunta ${idx + 1} de ${QUESTIONS.length}`;
+    progressPct.textContent = `${pct}%`;
+    progressFill.style.width = `${pct}%`;
+
+    const selectedOpt = state.answers[idx];
+    const nextBtn = target.querySelector('[data-action="next"]');
+    if (selectedOpt !== null) {
+      const radio = target.querySelector(`input[value="${selectedOpt}"]`);
+      if (radio) radio.checked = true;
+      nextBtn.disabled = false;
+    } else {
+      nextBtn.disabled = true;
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ============ Gate form submit · captura email + name + suscribe a Newsletter ============
+  $('gate-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const payload = {
+      name: String(fd.get('name') ?? '').trim(),
+      email: String(fd.get('email') ?? '').trim().toLowerCase(),
+      country: String(fd.get('country') ?? '') || undefined,
+      consent: fd.get('consent') === 'on',
+      stage: 'gate',
+    };
+    if (!payload.consent) {
+      alert('Necesitamos tu consentimiento para enviarte los emails.');
+      return;
+    }
+    if (!payload.name || payload.name.length < 2) {
+      alert('Necesitamos tu nombre.');
+      return;
+    }
+    if (!payload.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
+      alert('Email inválido.');
+      return;
+    }
+
+    const btn = $('gate-submit');
+    btn.disabled = true;
+    const originalText = btn.textContent;
+    btn.textContent = 'Cargando...';
+
+    try {
+      const res = await fetch('/api/quiz-subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      // Si la API falla, igual dejamos al usuario seguir el quiz (la subscripción puede reintentarse al final)
+      if (!res.ok) {
+        console.warn('Gate subscribe failed:', res.status);
+      }
+    } catch (err) {
+      console.warn('Gate subscribe error:', err);
+    }
+
+    // Guardamos gate data y avanzamos a la pantalla de self-match
+    state.gateData = {
+      name: payload.name,
+      email: payload.email,
+      country: payload.country,
+    };
+    showScreen('self-match');
+  });
+
+  // ============ Self-match handler — qué rol creen que les queda ============
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.option-btn[data-self-match]');
+    if (!btn) return;
+    state.selfMatch = btn.dataset.selfMatch;
+    showQuestion(0);
+  });
+
+  // ============ Question navigation ============
+  document.addEventListener('change', (e) => {
+    const t = e.target;
+    if (t && t.type === 'radio' && t.name && t.name.startsWith('q-')) {
+      const qIdx = parseInt(t.dataset.q, 10);
+      const oIdx = parseInt(t.dataset.o, 10);
+      state.answers[qIdx] = oIdx;
+      const screen = document.getElementById('q-' + qIdx);
+      const nextBtn = screen.querySelector('[data-action="next"]');
+      if (nextBtn) nextBtn.disabled = false;
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('button');
+    if (!t) return;
+    const action = t.dataset.action;
+    if (action === 'next') {
+      if (state.currentIndex < QUESTIONS.length - 1) {
+        showQuestion(state.currentIndex + 1);
+      } else {
+        computeAndShowResult();
+      }
+    } else if (action === 'back') {
+      if (state.currentIndex > 0) showQuestion(state.currentIndex - 1);
+    }
+  });
+
+  function computeScores() {
+    const scores = { PM: 0, MSL: 0, CR: 0 };
+    state.answers.forEach((aIdx, qIdx) => {
+      if (aIdx === null) return;
+      const opt = QUESTIONS[qIdx].options[aIdx];
+      Object.entries(opt.scores).forEach(([role, pts]) => {
+        scores[role] += pts;
+      });
+    });
+    return scores;
+  }
+
+  async function sendCompletion(role, scores) {
+    if (!state.gateData) return;
+    try {
+      await fetch('/api/quiz-subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: state.gateData.name,
+          email: state.gateData.email,
+          country: state.gateData.country,
+          consent: true,
+          stage: 'complete',
+          role,
+          scores,
+          selfMatch: state.selfMatch,
+        }),
+      });
+    } catch (err) {
+      console.warn('Completion subscribe failed:', err);
+    }
+  }
+
+  function computeAndShowResult() {
+    const scores = computeScores();
+    const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+    const [topRole, topScore] = sorted[0];
+    const [secondRole, secondScore] = sorted[1];
+    const maxScore = Math.max(...Object.values(scores));
+
+    state.topRole = topRole;
+    state.scores = scores;
+
+    // Fire-and-forget: añadir al grupo Quiz · Match [role]
+    sendCompletion(topRole, scores);
+
+    $('result-role').textContent = ROLE_DATA[topRole].name;
+    const margin = topScore - secondScore;
+    const subtitleEl = $('result-subtitle');
+    if (margin === 0) {
+      subtitleEl.textContent = `Empate técnico entre ${ROLE_DATA[topRole].short} y ${ROLE_DATA[secondRole].short}. Te conviene leer el módulo 1 de ambos libros antes de decidir.`;
+    } else if (margin <= 2) {
+      subtitleEl.textContent = `Tu segundo match es ${ROLE_DATA[secondRole].name} — está cerca. Considera el libro de ${ROLE_DATA[topRole].short} como prioritario y el de ${ROLE_DATA[secondRole].short} en segunda etapa.`;
+    } else {
+      subtitleEl.textContent = `Match claro: ${ROLE_DATA[topRole].short} con ventaja de ${margin} puntos sobre ${ROLE_DATA[secondRole].short}.`;
+    }
+
+    const scoreRows = $('score-rows');
+    scoreRows.innerHTML = '';
+    sorted.forEach(([role, points]) => {
+      const isTop = role === topRole;
+      const pct = maxScore > 0 ? Math.round((points / maxScore) * 100) : 0;
+      const row = document.createElement('div');
+      row.className = `score-row ${isTop ? 'top' : ''}`;
+      row.innerHTML = `
+        <span class="score-row-name">${ROLE_DATA[role].short}</span>
+        <div class="score-row-bar">
+          <div class="score-row-fill" style="width: ${pct}%"></div>
+        </div>
+      `;
+      scoreRows.appendChild(row);
+    });
+
+    $('explanation-text').textContent = ROLE_DATA[topRole].explanation;
+
+    const bookRecs = $('book-recommendations');
+    bookRecs.innerHTML = '';
+    const renderBook = (role, isPrimary) => {
+      const data = ROLE_DATA[role];
+      const card = document.createElement('div');
+      card.className = `book-rec ${isPrimary ? '' : 'secondary'}`;
+      card.innerHTML = `
+        <div class="book-rec-eyebrow">${isPrimary ? 'Libro recomendado' : 'Segunda lectura recomendada'}</div>
+        <h4>${data.bookTitle}</h4>
+        <p>${data.bookDesc}</p>
+        <a href="${data.bookURL}" target="_blank" rel="noopener">${isPrimary ? 'Ver en Hotmart →' : 'Ver libro secundario →'}</a>
+      `;
+      bookRecs.appendChild(card);
+    };
+    renderBook(topRole, true);
+    if (margin <= 2 && margin > 0) renderBook(secondRole, false);
+
+    showScreen('result');
+    progressWrap.hidden = true;
+  }
+
+  $('retake-btn').addEventListener('click', () => {
+    state.currentIndex = 0;
+    state.answers = new Array(QUESTIONS.length).fill(null);
+    state.topRole = null;
+    state.scores = null;
+    // No reset state.gateData — el usuario ya está suscrito
+    document.querySelectorAll('input[type="radio"]').forEach((r) => (r.checked = false));
+    document.querySelectorAll('[data-action="next"]').forEach((b) => (b.disabled = true));
+    // Reset visibility · queremos volver al gate o directo al Q1?
+    // Si ya tienen gateData, vamos a Q1 directo
+    if (state.gateData) {
+      showQuestion(0);
+    } else {
+      showScreen('welcome');
+      progressWrap.hidden = true;
+    }
+  });
+
+  // ============ Share strip · LinkedIn / WhatsApp / Email / Copy ============
+  document.querySelectorAll('.share-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const strip = btn.closest('.share-strip');
+      if (!strip) return;
+      const shareUrl = strip.dataset.shareUrl || window.location.href;
+      const shareText = strip.dataset.shareText || '';
+      const fullText = shareText ? `${shareText} ${shareUrl}` : shareUrl;
+      const target = btn.dataset.share;
+
+      // Web Share API on mobile (native sheet) for non-specific targets
+      // (we keep targeted icons because LinkedIn etc. open the right composer)
+
+      let openUrl = '';
+      if (target === 'linkedin') {
+        // LinkedIn pulls OG metadata from the URL — no text param works reliably for share-offsite
+        openUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+      } else if (target === 'whatsapp') {
+        openUrl = `https://wa.me/?text=${encodeURIComponent(fullText)}`;
+      } else if (target === 'email') {
+        const subject = encodeURIComponent('Te recomiendo esto · Solca');
+        const body = encodeURIComponent(fullText);
+        openUrl = `mailto:?subject=${subject}&body=${body}`;
+      } else if (target === 'copy') {
+        try {
+          await navigator.clipboard.writeText(fullText);
+          btn.classList.add('share-btn-copied');
+          setTimeout(() => btn.classList.remove('share-btn-copied'), 1500);
+        } catch (err) {
+          console.warn('clipboard failed', err);
+          // Fallback: select + copy
+          const ta = document.createElement('textarea');
+          ta.value = fullText;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          btn.classList.add('share-btn-copied');
+          setTimeout(() => btn.classList.remove('share-btn-copied'), 1500);
+        }
+        return;
+      }
+      if (openUrl) {
+        window.open(openUrl, '_blank', 'noopener,noreferrer');
+      }
+    });
+  });
+</script>
+
+</BaseLayout>

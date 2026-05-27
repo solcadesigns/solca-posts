@@ -5,16 +5,22 @@ interface Props {
   title?: string;
   description?: string;
   ogImage?: string;
+  // Override the canonical URL — defaults to the page's own URL on solcaciencia.com.
+  canonicalOverride?: string;
+  // Override the og:type — defaults to "website"; blog posts pass "article".
+  ogType?: string;
 }
 
 const {
   title = 'Solca · Ciencia y Consultoría — De doctorado a industria farmacéutica',
   description = 'Acompaño a profesionales de ciencias biológicas, biomédicas y de la salud en su transición de la academia a la industria farmacéutica. Libros, consultoría y recursos gratuitos.',
   ogImage = '/og-image.png',
+  canonicalOverride,
+  ogType = 'website',
 } = Astro.props;
 
-const siteUrl = Astro.site?.toString() ?? 'https://solca.science/';
-const canonicalURL = new URL(Astro.url.pathname, siteUrl).toString();
+const siteUrl = Astro.site?.toString() ?? 'https://solcaciencia.com/';
+const canonicalURL = canonicalOverride ?? new URL(Astro.url.pathname, siteUrl).toString();
 const ogImageURL = new URL(ogImage, siteUrl).toString();
 ---
 <!DOCTYPE html>
@@ -30,7 +36,7 @@ const ogImageURL = new URL(ogImage, siteUrl).toString();
 <!-- Open Graph for LinkedIn / Facebook / WhatsApp previews -->
 <meta property="og:title" content={title} />
 <meta property="og:description" content={description} />
-<meta property="og:type" content="website" />
+<meta property="og:type" content={ogType} />
 <meta property="og:url" content={canonicalURL} />
 <meta property="og:image" content={ogImageURL} />
 <meta property="og:locale" content="es_ES" />

@@ -1,9 +1,53 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "solca",
-  "compatibility_date": "2025-01-01",
-  "assets": {
-    "directory": "./dist",
-    "not_found_handling": "404-page"
-  }
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "solca",
+	"main": "./dist/_worker.js/index.js",
+	"compatibility_date": "2025-01-01",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"assets": {
+		"binding": "ASSETS",
+		"directory": "./dist"
+	},
+	"observability": {
+		"enabled": true
+	},
+	"kv_namespaces": [
+		{
+			"binding": "CV_LIMITS",
+			"id": "5fef78fd56524764925d3c597583f0ea",
+			"remote": true
+		},
+		{
+			"binding": "EMAILS",
+			"id": "a4f0b989694a4872a3546beda9644846",
+			"remote": true
+		},
+		{
+			"binding": "CONTACTS",
+			"id": "8692d155bc394f7aac6072ba676dab5b",
+			"remote": true
+		},
+		{
+			"binding": "QUIZ_METRICS",
+			"id": "0c748230e55a45c18ff1b7c067f8ad10",
+			"remote": true
+		},
+		{
+			"binding": "CV_METRICS",
+			"id": "18d5db1a26ad41d296fc67ff4ebb9c66",
+			"remote": true
+		}
+	]
+	// KV namespaces — crear con:
+	//   npx wrangler kv namespace create EMAILS         (captura de emails de leads)
+	//   npx wrangler kv namespace create CV_LIMITS      (rate limit · 2 análisis/30 días)
+	//   npx wrangler kv namespace create CONTACTS       (mensajes del form de contacto)
+	//   npx wrangler kv namespace create QUIZ_METRICS   (métricas anónimas del quiz)
+	// y reemplazar el id correspondiente en este archivo.
+	//
+	// Secret para el endpoint /api/quiz-stats:
+	//   npx wrangler secret put STATS_KEY
+	//   (ingresa un valor random ~24 chars, lo usarás como ?key= en la URL)
 }

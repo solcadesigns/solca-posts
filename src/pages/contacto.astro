@@ -1,0 +1,447 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+<BaseLayout
+  title="Contacto · Solca"
+  description="Escríbeme para asesoría personalizada, prensa, alianzas, o cualquier duda sobre el contenido."
+>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <span class="dot"></span>
+      <span>Solca</span>
+    </a>
+    <div class="nav-links">
+      <a href="/#libros">Libros</a>
+      <a href="/#curso">Curso</a>
+      <a href="/revisar-cv">Revisar CV</a>
+      <a href="/#sobre">Sobre Solca</a>
+    </div>
+  </div>
+</nav>
+
+<section class="contact-hero">
+  <div class="diagonals"></div>
+  <div class="container contact-hero-inner">
+    <div class="eyebrow">
+      <span class="dot"></span>
+      <span>Hablemos</span>
+    </div>
+    <h1 class="contact-title">Contacto</h1>
+    <p class="contact-lead">
+      Asesoría personalizada, alianzas, prensa, o duda sobre los libros, el curso o el análisis de CV. Respondo personalmente en 24-48 horas hábiles.
+    </p>
+  </div>
+</section>
+
+<section class="contact-section" id="contact-form-section">
+  <div class="container">
+    <form id="contact-form" class="contact-form" novalidate>
+      <div class="contact-form-grid">
+        <div class="field">
+          <label for="contact-name">Tu nombre</label>
+          <input
+            type="text"
+            id="contact-name"
+            name="name"
+            placeholder="Nombre completo"
+            required
+            minlength="2"
+            maxlength="100"
+            autocomplete="name"
+          />
+        </div>
+
+        <div class="field">
+          <label for="contact-email">Tu email</label>
+          <input
+            type="email"
+            id="contact-email"
+            name="email"
+            placeholder="tu@email.com"
+            required
+            autocomplete="email"
+          />
+        </div>
+
+        <div class="field full">
+          <label for="contact-topic">¿De qué quieres hablar?</label>
+          <select id="contact-topic" name="topic" required>
+            <option value="">Selecciona un tema</option>
+            <option value="asesoria">Asesoría individual (transición a industria)</option>
+            <option value="libro">Duda sobre un libro</option>
+            <option value="curso">Duda sobre el curso CV+LinkedIn</option>
+            <option value="cv-analisis">Soporte con el análisis de CV</option>
+            <option value="prensa">Prensa, medios, podcast</option>
+            <option value="alianza">Colaboración / alianza profesional</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+
+        <div class="field full">
+          <label for="contact-message">Tu mensaje</label>
+          <textarea
+            id="contact-message"
+            name="message"
+            rows="6"
+            placeholder="Cuéntame brevemente con qué te puedo ayudar. Si es asesoría, menciona tu área (PM, MSL, CRA), país, y dónde estás en la transición."
+            required
+            minlength="20"
+            maxlength="3000"
+          ></textarea>
+          <p class="field-help">Mínimo 20 caracteres. Máximo 3,000.</p>
+        </div>
+
+        <div class="field full consent-field">
+          <label class="consent-label">
+            <input type="checkbox" id="contact-consent" name="consent" required />
+            <span>
+              Acepto que mis datos (nombre, email, mensaje) se procesen para responder a esta solicitud. <strong>No se comparten con terceros</strong>. Ver <a href="/privacidad" target="_blank" rel="noopener">aviso de privacidad</a>.
+            </span>
+          </label>
+        </div>
+
+        <div class="field full">
+          <button type="submit" id="contact-submit" class="btn btn-orange btn-large btn-block">
+            Enviar mensaje
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</section>
+
+<section class="contact-loading" id="contact-loading" hidden>
+  <div class="container">
+    <div class="loading-card">
+      <div class="spinner" aria-hidden="true"></div>
+      <h2>Enviando…</h2>
+      <p>Un momento.</p>
+    </div>
+  </div>
+</section>
+
+<section class="contact-success" id="contact-success" hidden>
+  <div class="container">
+    <div class="success-card">
+      <div class="success-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>
+      <h2>Mensaje recibido</h2>
+      <p>Gracias por escribir. Te respondo personalmente al email que dejaste en las próximas 24-48 horas hábiles.</p>
+      <p class="success-fineprint">
+        Mientras tanto: <a href="/revisar-cv">analiza tu CV</a> · <a href="/#libros">explora los libros</a>
+      </p>
+      <button type="button" id="contact-retry" class="btn btn-secondary" style="color: var(--navy); border-color: var(--navy); margin-top: 24px;">
+        Enviar otro mensaje
+      </button>
+    </div>
+  </div>
+</section>
+
+<section class="contact-error" id="contact-error" hidden>
+  <div class="container">
+    <div class="error-card">
+      <h2>No pudimos enviar el mensaje</h2>
+      <p id="contact-error-message">Intenta de nuevo en un momento. Si persiste, escríbeme directamente a <a href="mailto:hello@solcaciencia.com">hello@solcaciencia.com</a>.</p>
+      <button type="button" id="contact-error-retry" class="btn btn-primary">Intentar otra vez</button>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      <div class="eyebrow eyebrow-light">
+        <span class="dot"></span>
+        <span>Solca · Ciencia y Consultoría</span>
+      </div>
+      <p>Acompañamiento profesional en la transición de academia a industria farmacéutica para PhDs en LATAM y España.</p>
+    </div>
+    <div class="footer-links">
+      <h4>Recursos</h4>
+      <a href="/revisar-cv">Análisis de CV</a>
+      <a href="/#libros">Libros</a>
+      <a href="/#curso">Curso CV+LinkedIn</a>
+    </div>
+    <div class="footer-links">
+      <h4>Sitio</h4>
+      <a href="/">Inicio</a>
+      <a href="/#sobre">Sobre Solca</a>
+      <a href="/contacto">Contacto</a>
+      <a href="/privacidad">Privacidad</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2026 Oscar Omar Solís Castro · Solca · Ciencia y Consultoría. · <a href="/privacidad" style="color: inherit; text-decoration: underline;">Aviso de privacidad</a></p>
+  </div>
+</footer>
+
+<style>
+  .contact-hero {
+    position: relative;
+    background:
+      radial-gradient(ellipse at 80% 15%, rgba(232,116,58,0.13) 0%, transparent 55%),
+      radial-gradient(ellipse at 15% 90%, rgba(42,107,172,0.18) 0%, transparent 55%),
+      linear-gradient(135deg, var(--navy) 0%, var(--navy-deep) 100%);
+    color: var(--off-white);
+    padding: 70px 0 60px;
+    overflow: hidden;
+  }
+  .contact-hero-inner { position: relative; z-index: 2; max-width: 720px; }
+  .contact-title {
+    font-family: 'Inter', sans-serif;
+    font-weight: 900;
+    font-size: clamp(36px, 5vw, 56px);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-bottom: 14px;
+    color: var(--off-white);
+  }
+  .contact-lead {
+    font-size: 17px;
+    line-height: 1.55;
+    color: var(--off-white-mute);
+    max-width: 600px;
+  }
+
+  .contact-section { background: var(--bg); padding: 70px 0; }
+  .contact-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    max-width: 720px;
+    margin: 0 auto;
+    background: var(--off-white);
+    padding: 40px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+  }
+  .contact-form-grid .field { display: flex; flex-direction: column; gap: 6px; }
+  .contact-form-grid .field.full { grid-column: 1 / -1; }
+  .contact-form-grid label {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text);
+  }
+  .contact-form-grid input,
+  .contact-form-grid select,
+  .contact-form-grid textarea {
+    padding: 12px 14px;
+    border: 1.5px solid var(--rule);
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    color: var(--text);
+    background: white;
+    transition: border-color 0.2s;
+  }
+  .contact-form-grid input:focus,
+  .contact-form-grid select:focus,
+  .contact-form-grid textarea:focus {
+    outline: 0;
+    border-color: var(--orange);
+  }
+  .contact-form-grid textarea { resize: vertical; min-height: 140px; line-height: 1.5; }
+  .contact-form-grid .field-help { font-size: 12px; color: var(--text-mute); margin-top: 4px; }
+  .contact-form-grid .consent-field {
+    padding: 12px 14px;
+    background: var(--bg);
+    border-radius: 8px;
+    border: 1px solid var(--rule);
+  }
+  .contact-form-grid .consent-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-mute);
+    line-height: 1.5;
+    font-weight: 400;
+  }
+  .contact-form-grid .consent-label input[type="checkbox"] {
+    flex-shrink: 0;
+    margin-top: 2px;
+    width: 18px; height: 18px;
+  }
+  @media (max-width: 720px) {
+    .contact-form-grid { grid-template-columns: 1fr; padding: 28px 24px; }
+  }
+
+  .contact-loading { background: var(--bg); padding: 80px 0; }
+  .loading-card {
+    background: var(--off-white);
+    border-radius: var(--radius);
+    padding: 48px 30px;
+    max-width: 480px;
+    margin: 0 auto;
+    text-align: center;
+    box-shadow: var(--shadow-md);
+  }
+  .loading-card h2 {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    color: var(--navy);
+    margin: 18px 0 8px;
+  }
+  .loading-card p { color: var(--text-mute); font-size: 14px; }
+  .spinner {
+    width: 44px; height: 44px;
+    border: 4px solid var(--rule);
+    border-top-color: var(--orange);
+    border-radius: 50%;
+    margin: 0 auto;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .contact-success { background: var(--bg); padding: 80px 0; }
+  .success-card {
+    background: var(--off-white);
+    border-radius: var(--radius);
+    padding: 48px 36px;
+    max-width: 560px;
+    margin: 0 auto;
+    text-align: center;
+    box-shadow: var(--shadow-md);
+    border-top: 4px solid var(--orange);
+  }
+  .success-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: var(--orange);
+    color: var(--off-white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+  }
+  .success-card h2 {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: 26px;
+    color: var(--navy);
+    margin-bottom: 12px;
+  }
+  .success-card p {
+    color: var(--text);
+    font-size: 16px;
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+  .success-fineprint {
+    font-size: 14px !important;
+    color: var(--text-mute) !important;
+    margin-top: 14px;
+  }
+  .success-fineprint a {
+    color: var(--orange);
+    font-weight: 600;
+  }
+
+  .contact-error { background: var(--bg); padding: 80px 0; }
+  .error-card {
+    background: var(--off-white);
+    border-radius: var(--radius);
+    padding: 36px;
+    max-width: 540px;
+    margin: 0 auto;
+    text-align: center;
+    border-top: 4px solid var(--orange);
+  }
+  .error-card h2 {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    color: var(--navy);
+    margin-bottom: 10px;
+  }
+  .error-card p {
+    color: var(--text-mute);
+    font-size: 15px;
+    line-height: 1.5;
+    margin-bottom: 22px;
+  }
+</style>
+
+<script>
+  const form = document.getElementById('contact-form') as HTMLFormElement | null;
+  const formSection = document.getElementById('contact-form-section') as HTMLElement | null;
+  const loading = document.getElementById('contact-loading') as HTMLElement | null;
+  const success = document.getElementById('contact-success') as HTMLElement | null;
+  const errorEl = document.getElementById('contact-error') as HTMLElement | null;
+  const errorMessage = document.getElementById('contact-error-message') as HTMLElement | null;
+  const submitBtn = document.getElementById('contact-submit') as HTMLButtonElement | null;
+  const retryBtn = document.getElementById('contact-retry') as HTMLButtonElement | null;
+  const errorRetryBtn = document.getElementById('contact-error-retry') as HTMLButtonElement | null;
+
+  function hide(el: HTMLElement | null) { if (el) el.hidden = true; }
+  function show(el: HTMLElement | null) { if (el) el.hidden = false; }
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!form) return;
+    const fd = new FormData(form);
+    const payload = {
+      name: String(fd.get('name') ?? '').trim(),
+      email: String(fd.get('email') ?? '').trim(),
+      topic: String(fd.get('topic') ?? ''),
+      message: String(fd.get('message') ?? '').trim(),
+      consent: fd.get('consent') === 'on',
+    };
+
+    if (!payload.consent) {
+      alert('Debes aceptar la política de datos antes de enviar.');
+      return;
+    }
+
+    hide(formSection);
+    hide(errorEl);
+    show(loading);
+    submitBtn && (submitBtn.disabled = true);
+
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: 'Error desconocido' }));
+        throw new Error(body.message || `HTTP ${res.status}`);
+      }
+      hide(loading);
+      show(success);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      hide(loading);
+      const msg = err instanceof Error ? err.message : 'Error desconocido';
+      if (errorMessage) errorMessage.textContent = msg;
+      show(errorEl);
+      submitBtn && (submitBtn.disabled = false);
+    }
+  });
+
+  retryBtn?.addEventListener('click', () => {
+    hide(success);
+    show(formSection);
+    if (form) form.reset();
+    submitBtn && (submitBtn.disabled = false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  errorRetryBtn?.addEventListener('click', () => {
+    hide(errorEl);
+    show(formSection);
+    submitBtn && (submitBtn.disabled = false);
+  });
+</script>
+
+</BaseLayout>

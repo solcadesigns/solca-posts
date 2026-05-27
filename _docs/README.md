@@ -15,6 +15,9 @@
 | `CONTENT_CALENDAR_12_WEEKS.md` | Plan operativo de 12 semanas con fuente exacta de cada pieza |
 | `LINKEDIN_POST_TEMPLATES.md` | 6 arquetipos de post LinkedIn |
 | `NEWSLETTER_TEMPLATE.md` | Estructura del newsletter LinkedIn + email derivado |
+| `NEWSLETTER_TOPICS_REGISTRY.md` | Memoria compartida del ciclo editorial · temas usados, pool pendiente, reglas refinadas |
+| `NEWSLETTER_RESCHEDULE_PLAN.md` | Plan maestro Lun-teaser → Vie-newsletter |
+| `TOOLS_REGISTRY.md` | **Inventario completo de herramientas operativas** · ábrelo al iniciar cualquier sesión nueva |
 
 ---
 
@@ -221,5 +224,7 @@ A los ~6 meses, cuando pases 1000 subs en email:
 - `CONTENT_CALENDAR_12_WEEKS.md` — úsalo como agenda operativa. Imprímelo.
 - `LINKEDIN_POST_TEMPLATES.md` — abre cada vez que vayas a escribir un post; los arquetipos te ahorran 30 min de pensar formato.
 - `NEWSLETTER_TEMPLATE.md` — abre cada vez que vayas a escribir un newsletter.
+- `NEWSLETTER_TOPICS_REGISTRY.md` — abre al inicio de cada sesión de redacción para no repetir temas y respetar la rotación de CTA.
+- `TOOLS_REGISTRY.md` — abre al inicio de cualquier sesión nueva con Claude (o colaborador) que vaya a tocar `/revisar-cv`, `/quiz-rol`, `/registro`, inmuebles, Apps Script CRM_Solca, generación de imágenes con paleta Solca, o la serie miércoles. Sobrevive pérdidas de contexto.
 
 — Solca · Ciencia y Consultoría
