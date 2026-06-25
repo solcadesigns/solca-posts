@@ -68,6 +68,7 @@ Aplican a TODO contenido público que sale bajo la marca Solca.
 | 5 | **Referencias citadas** | Cifras numéricas con fuente identificable o softening. |
 | 6 | **Sin fabricación** | Nunca inventar números específicos. Softening con "la mayoría / frecuentemente" sí; "27 de 30" sin verificar, no. |
 | 7 | **CTA rotación** | Newsletter vacantes → `revisar-cv`; CRA → libro 3; MSL → libro 2; PM → libro 1. Documentado en `NEWSLETTER_TOPICS_REGISTRY.md`. |
+| 7b | **Link al blog ≠ CTA (establecida 25 jun 2026)** | En newsletters LinkedIn que tengan blog correspondiente en `solcaciencia.com/blog/[slug]`, el link va **dentro del cuerpo** como "versión completa en…" o "más fuentes en…" o "lectura larga en…". Es referencia/cita, no acción que se pide al lector. El CTA final sigue siendo **único** (revisar-cv o libro según rotación). Esto sostiene la regla "una sola CTA" sin perder el bridge LinkedIn → sitio. Aplicación: cada newsletter o post LinkedIn que tenga blog publicado en el sitio inserta el link del blog a media-altura del cuerpo, no al cierre. Detonante: pregunta de Oscar 25 jun 2026 sobre si tener dos enlaces (blog + revisar-cv) rompe la regla "una CTA". Sí la rompía. La solución es presentar el blog como fuente, no como acción. |
 | 8 | **Hashtags** | LinkedIn posts: 5-6. Newsletters viernes: 3-5. Base: `#PharmaLATAM #PhDtransition` + 2-3 específicos. |
 | 9 | **Lun teaser ≠ Lun followup** | Teaser ~150p sin CTA libro. Followup ~250-300p con CTA libro. |
 | 10 | **Copyright** | Máx 1 cita corta (<15 palabras) por respuesta, entre comillas. Nunca reproducir letras de canciones. |
@@ -79,6 +80,7 @@ Aplican a TODO contenido público que sale bajo la marca Solca.
 - **Viernes 10:30 CDMX** — Newsletter Solca Insight largo.
 - **Cada 4 viernes** — Newsletter vacantes (curación de 6-8 vacantes pharma LATAM del mes).
 - **Blog primero, LinkedIn después** (decisión 25 may 2026): el contenido se escribe primero como post de blog SEO; después se adapta corto para LinkedIn con link al blog.
+- **Deploy del blog antes de programar el LinkedIn** (refuerzo 25 jun 2026): la sub-regla 7b sobre "link al blog ≠ CTA" requiere que el blog ya esté deployado en producción `solcaciencia.com/blog/[slug]` antes de insertar el link dentro del newsletter o post LinkedIn. Flujo correcto: redactar blog → deploy Cloudflare → editar borrador LinkedIn programado para insertar link a media-altura → confirmar publicación. Sin deploy previo, el link rompe en producción.
 
 ---
 
