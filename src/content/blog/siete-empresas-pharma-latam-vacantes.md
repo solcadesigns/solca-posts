@@ -1,7 +1,7 @@
 ---
 title: "7 empresas concentran 64% de vacantes pharma LATAM (junio 2026)"
 description: "IQVIA, Syneos, PiSA, Pfizer, Thermo Fisher, Novartis, Medifarma. Cómo seguirlas directo y por qué LinkedIn search te muestra solo una fracción."
-pubDate: 2026-07-08
+pubDate: 2026-06-24
 heroImage: "/blog/siete-empresas-pharma-latam-vacantes.png"
 category: "carreras-pharma"
 tags: ["Vacantes Pharma", "IQVIA", "Syneos", "Empresas Pharma LATAM", "LinkedIn", "Búsqueda de Empleo", "Pharma LATAM"]

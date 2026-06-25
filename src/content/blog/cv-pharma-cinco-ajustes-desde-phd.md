@@ -1,7 +1,7 @@
 ---
 title: "CV para industria farmacéutica: cinco ajustes desde un CV PhD"
 description: "Los cinco ajustes que convierten un CV académico en CV pharma listo para reclutador LATAM. Una página, sin papers en lista, con verbos de acción."
-pubDate: 2026-07-24
+pubDate: 2026-06-24
 heroImage: "/blog/cv-pharma-cinco-ajustes-desde-phd.png"
 category: "carreras-pharma"
 tags: ["CV", "PhD", "Industria Farmacéutica", "Pharma LATAM", "Reclutamiento", "Transición Académica"]

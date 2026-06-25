@@ -1,7 +1,7 @@
 ---
 title: "Referidos pharma LATAM: por qué el \"80% mercado oculto\" es mito"
 description: "El 80% del mercado oculto es un mito de 1980. Lo que sí mueven los referidos hoy en pharma LATAM, con datos SHRM, Jobvite y Ashby 2024."
-pubDate: 2026-07-17
+pubDate: 2026-06-24
 heroImage: "/blog/referidos-mito-80-oculto-pharma-latam.png"
 category: "carreras-pharma"
 tags: ["Referidos", "Networking", "LinkedIn", "Pharma LATAM", "PhD", "Búsqueda de Empleo", "Mercado Oculto"]

@@ -1,7 +1,7 @@
 ---
 title: "Onboarding 30/60/90 en pharma: los primeros 90 días, sin caer"
 description: "Adaptación del framework de Watkins a clinical operations. Tres acciones por mes y la trampa más común de cada bloque. Datos SHRM y Pharm Tech 2025."
-pubDate: 2026-07-10
+pubDate: 2026-06-24
 heroImage: "/blog/onboarding-30-60-90-primer-rol-pharma.png"
 category: "carreras-pharma"
 tags: ["Onboarding", "30 60 90", "Primer Rol", "Pharma LATAM", "Clinical Research", "Watkins", "Carrera"]

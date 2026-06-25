@@ -1,7 +1,7 @@
 ---
 title: "CRO, big pharma o farma local: cuál es mejor primer rol LATAM"
 description: "Diferencias reales entre CRO, big pharma y farma local para tu primer rol: ritmo, salario, aprendizaje, ruta de promoción. Cuál eligen los junior."
-pubDate: 2026-07-01
+pubDate: 2026-06-24
 heroImage: "/blog/cro-vs-big-pharma-vs-farma-local-primer-rol.png"
 category: "carreras-pharma"
 tags: ["CRO", "Big Pharma", "Farma Local", "Pharma LATAM", "Primer Rol", "Entry Level", "PhD"]
