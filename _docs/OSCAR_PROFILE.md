@@ -69,6 +69,7 @@ Aplican a TODO contenido público que sale bajo la marca Solca.
 | 6 | **Sin fabricación** | Nunca inventar números específicos. Softening con "la mayoría / frecuentemente" sí; "27 de 30" sin verificar, no. |
 | 7 | **CTA rotación** | Newsletter vacantes → `revisar-cv`; CRA → libro 3; MSL → libro 2; PM → libro 1. Documentado en `NEWSLETTER_TOPICS_REGISTRY.md`. |
 | 7b | **Link al blog ≠ CTA (establecida 25 jun 2026)** | En newsletters LinkedIn que tengan blog correspondiente en `solcaciencia.com/blog/[slug]`, el link va **dentro del cuerpo** como "versión completa en…" o "más fuentes en…" o "lectura larga en…". Es referencia/cita, no acción que se pide al lector. El CTA final sigue siendo **único** (revisar-cv o libro según rotación). Esto sostiene la regla "una sola CTA" sin perder el bridge LinkedIn → sitio. Aplicación: cada newsletter o post LinkedIn que tenga blog publicado en el sitio inserta el link del blog a media-altura del cuerpo, no al cierre. Detonante: pregunta de Oscar 25 jun 2026 sobre si tener dos enlaces (blog + revisar-cv) rompe la regla "una CTA". Sí la rompía. La solución es presentar el blog como fuente, no como acción. |
+| 7c | **Excepción 7b · ediciones con vacantes NO llevan link al blog (establecida 25 jun 2026)** | Las ediciones del Newsletter Solca Insight con sección de vacantes (cadencia cada 4 viernes: #1 = 22 may, #2 = 26 jun, #3 = 24 jul, #4 = 21 ago) **NO insertan link a un blog editorial dentro del cuerpo**. Razón: la promesa de valor de esa edición es la curación de vacantes de la semana, no el insight editorial. El listado de vacantes ES el contenido principal, y un link al blog del insight diluye la atención que debe ir a las vacantes y al CTA único de revisar-cv. Las vacantes además caducan en semanas, lo que impide replicarlas en un blog SEO duradero. Aplica solo a newsletter con vacantes; los newsletter regulares y los posts feed sí mantienen sub-regla 7b. Detonante: corrección de Oscar 25 jun 2026 sobre N#8 Vie 26 jun. |
 | 8 | **Hashtags** | LinkedIn posts: 5-6. Newsletters viernes: 3-5. Base: `#PharmaLATAM #PhDtransition` + 2-3 específicos. |
 | 9 | **Lun teaser ≠ Lun followup** | Teaser ~150p sin CTA libro. Followup ~250-300p con CTA libro. |
 | 10 | **Copyright** | Máx 1 cita corta (<15 palabras) por respuesta, entre comillas. Nunca reproducir letras de canciones. |
@@ -172,6 +173,18 @@ Más detalles en `TOOLS_REGISTRY.md`.
 - DMARC `p=none` en modo monitor — primeros reportes empezarán a llegar 24-48h después del 25 may 2026.
 - Filtro Gmail "DMARC Reports" creado.
 - Revisar reportes en 2-4 semanas; considerar endurecer DMARC a `p=quarantine` si el flujo está limpio.
+
+### Producto · Solca Interview (simulador de entrevistas pharma con IA)
+
+Registro operativo, 13 jul 2026.
+
+- **Nombre del producto:** Solca Interview. Corrección sobre iteración previa "Solca Ensayo" que se descartó por ambigüedad léxica (ensayo = literario / clínico / experimental). Decisión final basada en research verificado: incluir "IA" en el nombre reduce intención de compra en categoría alto-riesgo (Cicek et al 2024, WSU), amplifica temor de reemplazo (38% LATAM según AMI), y envejece rápido como marca (HBS 2025, Yoodli sin "AI" en nombre triplicó valuación 2025). "Solca Interview" hereda equity de marca madre, sigue patrón Solca X (Solca Ciencia, Solca Insight), y "interview" pesa en autocomplete es-MX según research keyword propio.
+- **Descriptor formal completo:** Solca Interview Simulator. Se usa en contextos que piden claridad total (landing page principal, primera meta description, primera mención en cada blog).
+- **Tagline y H1:** "Simulador de entrevistas pharma" — **SIN "IA"**. Corrección 13 jul 2026: Oscar decidió no incluir "IA" en H1 tampoco. Razón operativa: coherencia con el research de percepción (categoría alto-riesgo, temor de reemplazo LATAM) y con el patrón Yoodli que triplicó valuación sin "AI" ni en nombre ni en tagline visible.
+- **Dónde vive "IA" en el copy:** solo en meta description (para SEO de queries "simulador entrevista IA") y como mención secundaria en el body del artículo o de la landing cuando se explica cómo funciona la herramienta. Nunca en H1, H2 ni en tagline visible en hero.
+- **Modelo de acceso al lanzamiento público:** freemium + premium. Freemium con acceso limitado (sesiones o funcionalidades base) para reducir fricción de entrada; premium para funcionalidades avanzadas. Nunca preguntar "qué modelo será" — está decidido.
+- **"Bata & Corbata"** queda como marca de campaña/serie editorial (hashtag, título de newsletter, cluster de contenido), no como nombre de producto.
+- **Regla operativa naming:** para futuros productos del portafolio Solca, evitar "IA/AI" en el nombre. Poner "IA" en tagline y meta description si aporta SEO. Evitar también palabras semánticamente ambiguas (ensayo, prueba, práctica, review) sin descriptor específico que las desambigüe.
 
 ---
 
