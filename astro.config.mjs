@@ -16,8 +16,14 @@ export default defineConfig({
   integrations: [
     sitemap({
       filter: (page) =>
-        // Exclude API routes and internal pages from sitemap
-        !page.includes('/api/') && !page.includes('/_'),
+        // Exclude API routes, internal pages, /blog/* (handled by dynamic
+        // sitemap-blog.xml), the simulator beta (private until launch), and
+        // /ddm (QR redirect for the Solca Publishing book — not part of the site).
+        !page.includes('/api/') &&
+        !page.includes('/_') &&
+        !page.includes('/blog') &&
+        !page.includes('/simulador-entrevistas-beta') &&
+        !page.includes('/ddm'),
     }),
   ],
   vite: {

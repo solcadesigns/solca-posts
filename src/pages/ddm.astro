@@ -1,0 +1,19 @@
+---
+// Redirect del QR impreso en "Día de Muertos Activity Book" (Solca Publishing).
+//
+// El libro es permanente; el destino puede cambiar. Si Brevo cambia la URL del
+// formulario, sube de precio o desaparece, se edita SOLO esta constante y todos
+// los libros ya impresos siguen funcionando.
+//
+// 302 (temporal) a propósito: un 301 lo cachea el navegador para siempre y nos
+// quitaría la capacidad de cambiar el destino después.
+//
+// Excluida del sitemap (ver astro.config.mjs) y sin enlaces internos: esta ruta
+// solo existe para el QR, no forma parte de Solca Ciencia.
+
+export const prerender = false;
+
+const DESTINO = "https://eaa87c0a.sibforms.com/serve/MUIFAKyDHmv4eFp_xz7mCskguMxuf8NOw4a4MV6hvNOEMG0rQqo1TBA0NRNni9dX9NUKOs6OMlEkS2IJ2RX9eO3LAuCLR6_BbFdyvdqiHEfkkJ2RUUEVyfqzH4euIdujZ6Bx0uka5WB1tvVrvsCGZwQFb5wrz3aOhHgM2nT8jMWIzxxC1YFqbz1tyrajIa_zD0n5BLaAy7xF2brI_w==";
+
+return Astro.redirect(DESTINO, 302);
+---
