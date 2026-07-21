@@ -98,4 +98,4 @@ Un CV pharma LATAM que rinde tiene título profesional en la línea uno, perfil 
 
 ---
 
-**¿Tu CV pharma pasa los cuatro chequeos?** La herramienta gratuita de Solca revisa tu CV en menos de un minuto, sin guardar el archivo, y te devuelve diagnóstico específico por sección. [Pruébala en solcaciencia.com/revisar-cv](https://solcaciencia.com/revisar-cv).
+**¿Tu CV pharma pasa los cuatro chequeos?** La herramienta de Solca revisa tu CV en menos de un minuto, sin guardar el archivo, y te devuelve diagnóstico específico por sección. [Pruébala en solcaciencia.com/revisar-cv](https://solcaciencia.com/revisar-cv).

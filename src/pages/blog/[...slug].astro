@@ -1,20 +1,22 @@
 ---
 // Individual blog post route: /blog/<slug>
 // Loads the post from the "blog" content collection, renders MD via BlogPostLayout.
+// SSR so we can honor pubDate scheduling — if a post's pubDate is still in the
+// future, the route returns 404 even if someone guesses the URL.
 import { getCollection, render } from 'astro:content';
 import BlogPostLayout from '../../layouts/BlogPostLayout.astro';
 
-export const prerender = true;
+export const prerender = false;
 
-export async function getStaticPaths() {
-  const posts = await getCollection('blog', ({ data }) => !data.draft);
-  return posts.map((post) => ({
-    params: { slug: post.id },
-    props: { post },
-  }));
+const { slug } = Astro.params;
+const posts = await getCollection('blog', ({ data }) => !data.draft);
+const post = posts.find((p) => p.id === slug);
+
+const now = new Date();
+if (!post || post.data.pubDate.getTime() > now.getTime()) {
+  return new Response('Not found', { status: 404 });
 }
 
-const { post } = Astro.props;
 const { Content } = await render(post);
 ---
 <BlogPostLayout post={post}>

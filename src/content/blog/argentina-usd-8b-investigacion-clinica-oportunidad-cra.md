@@ -85,4 +85,4 @@ El anuncio de CAEME de mayo 2026 de USD 8 mil millones en investigación clínic
 
 ---
 
-**¿CRA o Clinical Research es el rol pharma que se ajusta a tu perfil?** Nuestro Quiz Match gratuito mapea tu formación, experiencia y preferencias contra los ocho roles principales de pharma industrial LATAM en cinco minutos. [Pruébalo en solcaciencia.com/quiz](https://solcaciencia.com/quiz).
+**¿CRA o Clinical Research es el rol pharma que se ajusta a tu perfil?** Nuestro Quiz Match mapea tu formación, experiencia y preferencias contra los ocho roles principales de pharma industrial LATAM en cinco minutos. [Pruébalo en solcaciencia.com/quiz](https://solcaciencia.com/quiz).

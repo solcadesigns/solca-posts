@@ -1,15 +1,17 @@
 import type { APIRoute } from 'astro';
-import { upsertSubscriber, getSubscriber, MailerLiteError } from '../../lib/mailerlite';
+import { sendEmailWithTemplate, PostmarkError } from '../../lib/postmark';
+// Postmark reemplaza a Brevo (jul 2026). Ver _docs/que-rompimos-brevo-mailerlite.md.
+// El opt-in vive en KV EMAILS. La segmentación por rol (PM/MSL/CR) vive en el record
+// del KV — Postmark no maneja listas.
 
 export const prerender = false;
 
-// Group IDs en MailerLite
-const ML_GROUP_NEWSLETTER = '187298307658220675';
-const ML_GROUP_MATCH = {
-  PM: '187300443631650371',
-  MSL: '187300457000994034',
-  CR: '187300467766723597',
-} as const;
+// Etiquetas humanas para el rol que resulta del quiz. Usadas en el template welcome.
+const ROLE_LABELS: Record<'PM' | 'MSL' | 'CR', string> = {
+  PM: 'Product Manager',
+  MSL: 'Medical Science Liaison',
+  CR: 'Clinical Research',
+};
 
 interface QuizSubscribeRequest {
   email: string;
@@ -51,6 +53,47 @@ async function storeQuizLead(
 }
 
 /**
+ * Envía el welcome de Solca Insight vía Postmark, template welcome-solca-insight.
+ * Fire-and-forget. Solo se llama en stage='complete' con un rol válido.
+ * Si POSTMARK_SERVER_TOKEN no está configurado, salta silenciosamente.
+ */
+async function sendWelcomeQuiz(
+  runtime: { env?: Record<string, unknown> } | undefined,
+  email: string,
+  firstName: string | undefined,
+  role: 'PM' | 'MSL' | 'CR',
+): Promise<void> {
+  const token = runtime?.env?.POSTMARK_SERVER_TOKEN as string | undefined;
+  if (!token) {
+    console.log('quiz-subscribe:postmark-skipped (no POSTMARK_SERVER_TOKEN)');
+    return;
+  }
+
+  try {
+    const result = await sendEmailWithTemplate(token, {
+      from: 'Oscar Solís <hola@solcaciencia.com>',
+      to: email,
+      templateAlias: 'welcome-solca-insight',
+      templateModel: {
+        first_name: firstName ?? '',
+        is_cv: false,
+        is_quiz: true,
+        role_label: ROLE_LABELS[role],
+      },
+      tag: 'welcome-quiz',
+      metadata: { source: 'quiz-subscribe', role },
+    });
+    console.log('quiz-subscribe:postmark-sent', result.messageId, result.to, 'role:', role);
+  } catch (err) {
+    if (err instanceof PostmarkError) {
+      console.error('Postmark send failed:', err.status, JSON.stringify(err.body));
+    } else {
+      console.error('Postmark unexpected error:', err);
+    }
+  }
+}
+
+/**
  * Escribe un registro anónimo de métricas (sin PII) a la KV QUIZ_METRICS.
  * No incluye email, name, ni IP. Solo datos agregables: rol, self-match, scores, country, ts.
  * Se llama solo en stage='complete'.
@@ -71,84 +114,6 @@ async function storeQuizMetric(
     await kv.put(key, JSON.stringify(anonRecord));
   } catch (err) {
     console.error('KV put (metric) failed:', err);
-  }
-}
-
-async function addToMailerLite(
-  runtime: { env?: Record<string, unknown> } | undefined,
-  email: string,
-  name: string | undefined,
-  role: 'PM' | 'MSL' | 'CR' | undefined,
-  country: string | undefined,
-  ip: string | null,
-  stage: 'gate' | 'complete',
-): Promise<void> {
-  const apiKey = runtime?.env?.MAILERLITE_API_KEY as string | undefined;
-  if (!apiKey) {
-    console.log('quiz-subscribe:mailerlite-skipped (no API key configured)');
-    return;
-  }
-
-  // Determinar grupos según stage
-  let groups: string[];
-  if (stage === 'gate') {
-    // Inicial: solo newsletter general · capturamos el lead aunque abandonen el quiz
-    groups = [ML_GROUP_NEWSLETTER];
-  } else {
-    // Complete: añadir al grupo del rol específico para disparar la welcome sequence
-    if (!role) {
-      console.error('addToMailerLite stage=complete sin role');
-      return;
-    }
-
-    // ============ Retake guard ============
-    // Si el subscriber ya está en CUALQUIER grupo Quiz·Match·* (porque ya tomó el quiz antes),
-    // NO lo metemos al nuevo grupo de rol. Esto evita que un retake con resultado distinto
-    // dispare una segunda welcome sequence encima de la que ya está corriendo o ya completó.
-    // Solo aseguramos que sigan en Newsletter.
-    const allMatchGroups = new Set<string>(Object.values(ML_GROUP_MATCH));
-    let alreadyInMatchGroup = false;
-    try {
-      const existing = await getSubscriber(apiKey, email);
-      if (existing?.groups?.length) {
-        alreadyInMatchGroup = existing.groups.some((g) => allMatchGroups.has(g.id));
-      }
-    } catch (err) {
-      // Si el lookup falla, NO bloqueamos — proceder con el insert normal.
-      console.warn('quiz-subscribe:getSubscriber-failed (proceeding without guard)', err);
-    }
-
-    if (alreadyInMatchGroup) {
-      console.log(
-        `quiz-subscribe:retake-skipped email=${email} role=${role} (ya está en otro grupo Quiz·Match)`,
-      );
-      // Solo aseguramos Newsletter, no agregamos rol nuevo
-      groups = [ML_GROUP_NEWSLETTER];
-    } else {
-      groups = [ML_GROUP_MATCH[role], ML_GROUP_NEWSLETTER];
-    }
-  }
-
-  const fields: Record<string, string> = {};
-  if (name) fields.name = name;
-  if (country) fields.country = country;
-
-  try {
-    const sub = await upsertSubscriber(apiKey, {
-      email,
-      groups,
-      fields: Object.keys(fields).length > 0 ? fields : undefined,
-      ip_address: ip ?? undefined,
-      subscribed_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
-      status: 'active',
-    });
-    console.log(`quiz-subscribe:mailerlite-upserted stage=${stage}`, sub.id, sub.email, 'role:', role ?? 'n/a');
-  } catch (err) {
-    if (err instanceof MailerLiteError) {
-      console.error('MailerLite upsert failed:', err.status, JSON.stringify(err.body));
-    } else {
-      console.error('MailerLite unexpected error:', err);
-    }
   }
 }
 
@@ -226,7 +191,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     ),
   );
 
-  // Métricas anónimas — solo en stage='complete' (cuando ya hay rol)
+  // Métricas anónimas + welcome — solo en stage='complete' (cuando ya hay rol)
   if (stage === 'complete' && role) {
     const anonMetric: Record<string, unknown> = {
       ts: record.ts,
@@ -240,19 +205,16 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
         console.error('storeQuizMetric failed', err),
       ),
     );
+    waitUntil(
+      sendWelcomeQuiz(
+        runtime as { env?: Record<string, unknown> },
+        email,
+        // Postmark solo usa el primer nombre; name puede venir con nombre completo.
+        name?.trim().split(/\s+/)[0],
+        role,
+      ).catch((err) => console.error('sendWelcomeQuiz failed', err)),
+    );
   }
-
-  waitUntil(
-    addToMailerLite(
-      runtime as { env?: Record<string, unknown> },
-      email,
-      name,
-      role,
-      country,
-      ip,
-      stage,
-    ).catch((err) => console.error('addToMailerLite (quiz) failed', err)),
-  );
 
   return jsonResponse(
     {

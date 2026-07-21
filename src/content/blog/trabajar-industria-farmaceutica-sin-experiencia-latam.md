@@ -90,4 +90,4 @@ Cinco puertas reales de entrada a industria farmacéutica LATAM sin experiencia 
 
 ---
 
-**¿Tu CV está preparado para las puertas específicas que escogiste?** La herramienta gratuita de Solca revisa tu CV en menos de un minuto y te dice qué tan bien mapea a los roles pharma LATAM. [Pruébala en solcaciencia.com/revisar-cv](https://solcaciencia.com/revisar-cv).
+**¿Tu CV está preparado para las puertas específicas que escogiste?** La herramienta de Solca revisa tu CV en menos de un minuto y te dice qué tan bien mapea a los roles pharma LATAM. [Pruébala en solcaciencia.com/revisar-cv](https://solcaciencia.com/revisar-cv).

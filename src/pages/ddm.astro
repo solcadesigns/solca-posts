@@ -10,10 +10,16 @@
 //
 // Excluida del sitemap (ver astro.config.mjs) y sin enlaces internos: esta ruta
 // solo existe para el QR, no forma parte de Solca Ciencia.
+//
+// HISTORIAL DE DESTINOS:
+//   jul 2026 — formulario de Brevo (captura de email antes de entregar el PDF)
+//   jul 2026 — cuenta de Brevo cancelada: ahora va DIRECTO al PDF.
+//              Los libros ya impresos siguen funcionando sin reimprimir nada:
+//              esta es justamente la razón de haber usado dominio propio.
 
 export const prerender = false;
 
-const DESTINO = "https://eaa87c0a.sibforms.com/serve/MUIFAKyDHmv4eFp_xz7mCskguMxuf8NOw4a4MV6hvNOEMG0rQqo1TBA0NRNni9dX9NUKOs6OMlEkS2IJ2RX9eO3LAuCLR6_BbFdyvdqiHEfkkJ2RUUEVyfqzH4euIdujZ6Bx0uka5WB1tvVrvsCGZwQFb5wrz3aOhHgM2nT8jMWIzxxC1YFqbz1tyrajIa_zD0n5BLaAy7xF2brI_w==";
+const DESTINO = "https://solcaciencia.com/Solca-Publishing-Dia-de-Muertos-Mini-Guia.pdf";
 
 return Astro.redirect(DESTINO, 302);
 ---

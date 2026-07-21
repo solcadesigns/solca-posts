@@ -1,12 +1,18 @@
 // RSS feed for the Solca blog at /rss.xml
+// SSR so the pubDate filter runs per request — future-dated posts stay out of the
+// feed until their day arrives.
 import rss from '@astrojs/rss';
 import { getCollection } from 'astro:content';
 import type { APIContext } from 'astro';
 
-export const prerender = true;
+export const prerender = false;
 
 export async function GET(context: APIContext) {
-  const posts = await getCollection('blog', ({ data }) => !data.draft);
+  const now = new Date();
+  const posts = await getCollection(
+    'blog',
+    ({ data }) => !data.draft && data.pubDate.getTime() <= now.getTime(),
+  );
   const sorted = posts.sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
 
   return rss({

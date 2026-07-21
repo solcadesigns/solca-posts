@@ -34,11 +34,11 @@ Lo que aparece consistentemente en el gap entre academia e industria pharma es q
 
 Un doctor en biomedicina llega a industria y descubre que hay al menos ocho roles distintos donde su perfil podría encajar: Medical Science Liaison (MSL), Clinical Research Associate (CRA), Product Manager, Medical Affairs, Regulatory Affairs, Market Access, Health Economics Outcomes Research (HEOR), Clinical Research Manager. Cada uno con requisitos, salarios y trayectorias distintas.
 
-La respuesta natural es "aplico a todos y veo cuál me responde". Ese enfoque tiene el peor rendimiento posible. En la muestra de submissions al survey de nuestra herramienta gratuita de revisión de CV, uno de cada cinco candidatos declaró expresamente "no tengo claridad de qué rol atacar". Ese es el arquetipo que aplica a diez posiciones distintas con el mismo CV y no le contestan de ninguna.
+La respuesta natural es "aplico a todos y veo cuál me responde". Ese enfoque tiene el peor rendimiento posible. En la muestra de submissions al survey de nuestra herramienta de revisión de CV, uno de cada cinco candidatos declaró expresamente "no tengo claridad de qué rol atacar". Ese es el arquetipo que aplica a diez posiciones distintas con el mismo CV y no le contestan de ninguna.
 
 Antes de aplicar, dedica una tarde a mapear los ocho roles principales según cinco dimensiones: qué formación piden, qué experiencia previa aceptan, cuánto viajan, cuánto ganan en tu país, y qué crecimiento tienen. Con ese mapa, dos o tres roles emergen como candidatos reales. A esos tres aplicas con CV adaptado a cada uno. A los otros cinco los descartas explícitamente.
 
-Si esa tarde no la haces solo, hay recursos que la aceleran. Nuestra herramienta gratuita Quiz Match hace ese mapeo en cinco minutos según tu perfil declarado; sirve para tener una primera lectura sin invertir tiempo.
+Si esa tarde no la haces solo, hay recursos que la aceleran. Nuestra herramienta Quiz Match hace ese mapeo en cinco minutos según tu perfil declarado; sirve para tener una primera lectura sin invertir tiempo.
 
 ## Brecha 4 · Expectativa realista sobre inglés
 
@@ -70,4 +70,4 @@ Cruzar de academia a industria pharma requiere resolver cuatro brechas antes de 
 
 ---
 
-**¿Sabes qué rol pharma se ajusta a tu perfil?** Antes de reescribir el CV, dedica cinco minutos a nuestro Quiz Match, la herramienta gratuita que mapea tu perfil contra los ocho roles principales de pharma industrial. [Pruébalo en solcaciencia.com/quiz](https://solcaciencia.com/quiz).
+**¿Sabes qué rol pharma se ajusta a tu perfil?** Antes de reescribir el CV, dedica cinco minutos a nuestro Quiz Match, la herramienta abierta que mapea tu perfil contra los ocho roles principales de pharma industrial. [Pruébalo en solcaciencia.com/quiz](https://solcaciencia.com/quiz).

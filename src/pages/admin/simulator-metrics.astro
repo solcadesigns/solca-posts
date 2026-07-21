@@ -1,0 +1,413 @@
+---
+// Dashboard interno de métricas del Simulador de Entrevistas (Fase 1.4.D · 19 jun 2026).
+// Auth por query param ?key=STATS_KEY. Si la key falta o no coincide, muestra acceso denegado.
+// Datos vienen de /api/simulator-stats (mismo endpoint que usará el cron semanal).
+// Render con Chart.js cargado desde CDN. Sin Tailwind ni libs adicionales.
+//
+// URL típica: https://solcaciencia.com/admin/simulator-metrics?key=<STATS_KEY>
+
+export const prerender = false;
+---
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Solca · Métricas del Simulador</title>
+  <style>
+    :root {
+      --navy: #1B3A6B;
+      --navy-deep: #0F2748;
+      --orange: #E8743A;
+      --off-white: #F7F5EE;
+      --text: #1B2540;
+      --text-mute: #5A6480;
+      --rule: #DCDAD2;
+      --green: #5A8A3A;
+      --red: #C44A3A;
+      --bg: #FAFAF7;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, 'Segoe UI', Roboto, 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .container { max-width: 1200px; margin: 0 auto; padding: 24px 28px 80px; }
+    header.page-head {
+      display: flex; align-items: baseline; justify-content: space-between;
+      flex-wrap: wrap; gap: 16px;
+      padding-bottom: 18px; border-bottom: 1px solid var(--rule);
+      margin-bottom: 28px;
+    }
+    .page-title { font-size: 26px; font-weight: 800; color: var(--navy); margin: 0; letter-spacing: -0.01em; }
+    .page-meta { font-size: 13px; color: var(--text-mute); }
+    .auth-error, .empty-state, .loading-msg {
+      padding: 28px; background: white; border: 1px solid var(--rule);
+      border-radius: 8px; max-width: 560px; margin: 60px auto;
+    }
+    .auth-error h2 { color: var(--red); margin-top: 0; }
+    .auth-error code, .empty-state code { background: var(--off-white); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+    h2.group-title {
+      font-size: 16px; font-weight: 700; color: var(--navy);
+      margin: 32px 0 12px;
+      padding-bottom: 6px; border-bottom: 2px solid var(--orange);
+      letter-spacing: 0.02em; text-transform: uppercase;
+    }
+    .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .kpi-card {
+      background: white; border: 1px solid var(--rule); border-radius: 8px;
+      padding: 14px 16px;
+    }
+    .kpi-label { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-mute); font-weight: 600; }
+    .kpi-value { font-size: 26px; font-weight: 800; color: var(--navy); margin-top: 4px; line-height: 1.1; }
+    .kpi-sub { font-size: 12px; color: var(--text-mute); margin-top: 2px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    @media (max-width: 800px) { .grid-2 { grid-template-columns: 1fr; } }
+    .chart-card {
+      background: white; border: 1px solid var(--rule); border-radius: 8px;
+      padding: 14px 16px;
+    }
+    .chart-card h3 { margin: 0 0 8px; font-size: 14px; color: var(--navy); font-weight: 700; }
+    .chart-card .chart-wrap { position: relative; height: 240px; }
+    .chart-card.tall .chart-wrap { height: 320px; }
+    table.tag-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table.tag-table th, table.tag-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--rule); }
+    table.tag-table th { background: var(--off-white); color: var(--text-mute); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+    table.tag-table td.num { text-align: right; font-variant-numeric: tabular-nums; color: var(--navy); font-weight: 600; }
+    .reload-btn {
+      background: var(--orange); color: white; border: none; padding: 8px 14px;
+      border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px;
+    }
+    .reload-btn:hover { background: #d96632; }
+    .footnote { font-size: 12px; color: var(--text-mute); margin-top: 24px; font-style: italic; }
+    .empty-hint { color: var(--text-mute); font-size: 13px; padding: 18px 0; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="page-head">
+      <div>
+        <h1 class="page-title">Métricas del Simulador</h1>
+        <p class="page-meta" id="page-meta">Cargando…</p>
+      </div>
+      <button class="reload-btn" id="reload-btn">Recargar</button>
+    </header>
+
+    <div id="content"></div>
+    <p class="footnote">Datos en vivo desde Cloudflare D1 · binding SIMULATOR_METRICS_DB · todas las métricas son anónimas y agregables (ver /privacidad §6).</p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script>
+    const NAVY = '#1B3A6B';
+    const NAVY_LIGHT = '#3A5A88';
+    const ORANGE = '#E8743A';
+    const ORANGE_SOFT = 'rgba(232, 116, 58, 0.55)';
+    const NAVY_SOFT = 'rgba(27, 58, 107, 0.55)';
+    const GREEN = '#5A8A3A';
+    const RED = '#C44A3A';
+    const PALETTE = [NAVY, ORANGE, GREEN, '#7A5A8A', '#3A8A8A', '#8A5A3A', '#5A3A8A', '#8A7A3A'];
+
+    const contentEl = document.getElementById('content');
+    const metaEl = document.getElementById('page-meta');
+    const reloadBtn = document.getElementById('reload-btn');
+
+    function showError(html) {
+      contentEl.innerHTML = `<div class="auth-error">${html}</div>`;
+      metaEl.textContent = 'No se cargaron datos.';
+    }
+
+    function escapeHtml(s) {
+      return String(s || '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function fmtPct(n) {
+      if (n === null || n === undefined) return '—';
+      return `${n.toFixed(1)}%`;
+    }
+    function fmtNum(n, digits) {
+      digits = digits === undefined ? 1 : digits;
+      if (n === null || n === undefined) return '—';
+      return Number(n).toFixed(digits);
+    }
+    function fmtSeg(seg) {
+      if (!seg) return '—';
+      const m = Math.floor(seg / 60);
+      const s = Math.round(seg % 60);
+      return `${m}m ${s}s`;
+    }
+
+    function buildKpiCard(label, value, sub) {
+      return `
+        <div class="kpi-card">
+          <div class="kpi-label">${escapeHtml(label)}</div>
+          <div class="kpi-value">${value}</div>
+          ${sub ? `<div class="kpi-sub">${escapeHtml(sub)}</div>` : ''}
+        </div>
+      `;
+    }
+
+    function buildTagTable(title, rows, colName) {
+      if (!rows || !rows.length) {
+        return `<div class="chart-card"><h3>${escapeHtml(title)}</h3><div class="empty-hint">Sin datos todavía.</div></div>`;
+      }
+      const body = rows
+        .map((r) => `<tr><td>${escapeHtml(r.tag)}</td><td class="num">${r.n}</td></tr>`)
+        .join('');
+      return `
+        <div class="chart-card">
+          <h3>${escapeHtml(title)}</h3>
+          <table class="tag-table">
+            <thead><tr><th>${escapeHtml(colName)}</th><th style="text-align:right">N</th></tr></thead>
+            <tbody>${body}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function buildChartCard(id, title, tall) {
+      return `<div class="chart-card${tall ? ' tall' : ''}"><h3>${escapeHtml(title)}</h3><div class="chart-wrap"><canvas id="${id}"></canvas></div></div>`;
+    }
+
+    function objToBars(canvasId, dist, opts) {
+      opts = opts || {};
+      const labels = Object.keys(dist);
+      const data = Object.values(dist);
+      const ctx = document.getElementById(canvasId);
+      if (!ctx || !labels.length) return;
+      new Chart(ctx, {
+        type: opts.horizontal ? 'bar' : 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: opts.label || 'N',
+            data,
+            backgroundColor: opts.color || ORANGE_SOFT,
+            borderColor: opts.borderColor || ORANGE,
+            borderWidth: 1,
+          }],
+        },
+        options: {
+          indexAxis: opts.horizontal ? 'y' : 'x',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { autoSkip: false, maxRotation: 60, minRotation: opts.horizontal ? 0 : 30 } },
+            y: { beginAtZero: true, ticks: { precision: 0 } },
+          },
+        },
+      });
+    }
+
+    function objToDoughnut(canvasId, dist, title) {
+      const labels = Object.keys(dist);
+      const data = Object.values(dist);
+      const ctx = document.getElementById(canvasId);
+      if (!ctx || !labels.length) return;
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: { labels, datasets: [{ data, backgroundColor: PALETTE.slice(0, labels.length) }] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'right', labels: { font: { size: 11 } } } },
+        },
+      });
+    }
+
+    function seriesLine(canvasId, points, label) {
+      const ctx = document.getElementById(canvasId);
+      if (!ctx || !points.length) return;
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: points.map((p) => p.semana),
+          datasets: [{
+            label: label || 'Sesiones',
+            data: points.map((p) => p.n),
+            borderColor: NAVY,
+            backgroundColor: NAVY_SOFT,
+            fill: true,
+            tension: 0.3,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+        },
+      });
+    }
+
+    function scoreBarsMulti(canvasId, byEtapa) {
+      const ctx = document.getElementById(canvasId);
+      if (!ctx) return;
+      const etapas = Object.keys(byEtapa);
+      if (!etapas.length) return;
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: etapas,
+          datasets: [
+            { label: 'Técnico', data: etapas.map((e) => byEtapa[e].tecnico), backgroundColor: NAVY },
+            { label: 'Estructura', data: etapas.map((e) => byEtapa[e].estructura), backgroundColor: ORANGE },
+            { label: 'Especificidad', data: etapas.map((e) => byEtapa[e].especificidad), backgroundColor: GREEN },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'top', labels: { font: { size: 11 } } } },
+          scales: { y: { beginAtZero: true, max: 5 } },
+        },
+      });
+    }
+
+    function render(stats) {
+      const earliest = stats.range.earliest_ts ? new Date(stats.range.earliest_ts).toLocaleDateString('es-MX') : '—';
+      const latest = stats.range.latest_ts ? new Date(stats.range.latest_ts).toLocaleDateString('es-MX') : '—';
+      metaEl.textContent = `${stats.total_sessions} sesiones · rango ${earliest} → ${latest} · generado ${new Date(stats.generated_at).toLocaleTimeString('es-MX')}`;
+
+      if (stats.total_sessions === 0) {
+        contentEl.innerHTML = `
+          <div class="empty-state">
+            <h2>Aún no hay sesiones</h2>
+            <p>El simulador está en producción pero todavía no hay datos en D1. Corre una sesión real en <code>/simulador-entrevistas-beta</code> y recarga este dashboard.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const u = stats.uso, c = stats.calidad, e = stats.editoriales, n = stats.negocio, d = stats.demograficos;
+
+      contentEl.innerHTML = `
+        <h2 class="group-title">1 · Uso del producto</h2>
+        <div class="kpi-row">
+          ${buildKpiCard('Sesiones iniciadas', u.iniciadas)}
+          ${buildKpiCard('Sesiones completadas', u.completadas, `${fmtPct(u.completitud_pct)} de completitud`)}
+          ${buildKpiCard('Duración promedio', fmtSeg(u.duracion_promedio_seg))}
+          ${buildKpiCard('Respuesta promedio', fmtSeg(u.respuesta_promedio_seg))}
+        </div>
+        <div class="grid-2">
+          ${buildChartCard('chart-semanas', 'Sesiones por semana ISO (últimas 12)', false)}
+          ${buildChartCard('chart-etapa', 'Distribución por etapa de entrevista', false)}
+        </div>
+
+        <h2 class="group-title">2 · Calidad del simulador</h2>
+        <div class="kpi-row">
+          ${buildKpiCard('Score técnico', fmtNum(c.score_tecnico.avg), `n=${c.score_tecnico.count}`)}
+          ${buildKpiCard('Score estructura', fmtNum(c.score_estructura.avg), `n=${c.score_estructura.count}`)}
+          ${buildKpiCard('Score especificidad', fmtNum(c.score_especificidad.avg), `n=${c.score_especificidad.count}`)}
+          ${buildKpiCard('Alertas promedio', fmtNum(c.alertas_promedio))}
+        </div>
+        <div class="grid-2">
+          ${buildChartCard('chart-match', 'Match rol-perfil', false)}
+          ${buildTagTable('Top 10 vocab pharma ausente', c.top_vocab_ausente, 'Término')}
+        </div>
+        <div class="grid-2">
+          ${buildTagTable('Top 10 preguntas reprobadas', c.top_preguntas_reprobadas, 'Categoría')}
+          ${buildTagTable('Top 10 gaps detectados', c.top_gaps_detectados, 'Gap')}
+        </div>
+
+        <h2 class="group-title">3 · Editoriales (insights newsletter)</h2>
+        <div class="kpi-row">
+          ${buildKpiCard('% sin ICH-GCP', fmtPct(e.pct_sin_ich_gcp), 'lo tienen como vocab ausente')}
+          ${buildKpiCard('% con gap STAR', fmtPct(e.pct_sin_star), 'gap detectado en respuestas')}
+        </div>
+        <div class="grid-2">
+          ${buildChartCard('chart-area', 'Distribución por área de formación', true)}
+          ${buildChartCard('chart-exp', 'Distribución por años de experiencia', false)}
+        </div>
+        <div class="grid-2">
+          ${buildChartCard('chart-pais', 'Distribución por país inferido', false)}
+          <div></div>
+        </div>
+
+        <h2 class="group-title">4 · Conversión y negocio</h2>
+        <div class="kpi-row">
+          ${buildKpiCard('% con CV personalizado', fmtPct(n.pct_con_cv_personalizado))}
+        </div>
+        <div class="grid-2">
+          ${buildChartCard('chart-scores-etapa', 'Scores promedio por etapa (1-5)', true)}
+          ${buildChartCard('chart-focus', 'Distribución por focus', false)}
+        </div>
+        <div class="grid-2">
+          ${buildChartCard('chart-idioma', 'Distribución por idioma', false)}
+          ${buildChartCard('chart-npreg', 'Distribución por número de preguntas', false)}
+        </div>
+
+        <h2 class="group-title">5 · Demográficos (opt-in post-sesión)</h2>
+        <div class="kpi-row">
+          ${buildKpiCard('Submitted', d.submitted_count, `${fmtPct(d.submitted_pct)} del total`)}
+        </div>
+        <div class="grid-2">
+          ${buildChartCard('chart-edad', 'Distribución por rango de edad', false)}
+          ${buildChartCard('chart-genero', 'Distribución por género', false)}
+        </div>
+      `;
+
+      // Build charts after DOM is in place
+      seriesLine('chart-semanas', u.sesiones_por_semana, 'Sesiones');
+      objToBars('chart-etapa', u.por_etapa, { color: NAVY_SOFT, borderColor: NAVY });
+      objToDoughnut('chart-match', c.rol_y_match);
+      objToBars('chart-area', e.distribucion_area_formacion, { horizontal: true });
+      objToBars('chart-exp', e.distribucion_anios_experiencia, { color: NAVY_SOFT, borderColor: NAVY });
+      objToBars('chart-pais', e.distribucion_pais);
+      scoreBarsMulti('chart-scores-etapa', n.scores_por_etapa);
+      objToDoughnut('chart-focus', n.distribucion_focus);
+      objToDoughnut('chart-idioma', n.distribucion_idioma);
+      objToBars('chart-npreg', n.distribucion_numero_preguntas, { color: NAVY_SOFT, borderColor: NAVY });
+      objToDoughnut('chart-edad', d.distribucion_edad);
+      objToDoughnut('chart-genero', d.distribucion_genero);
+    }
+
+    async function load() {
+      const params = new URLSearchParams(window.location.search);
+      const key = params.get('key');
+      if (!key) {
+        showError(`
+          <h2>Acceso restringido</h2>
+          <p>Esta página es interna. Necesita el parámetro <code>?key=&lt;STATS_KEY&gt;</code> en la URL.</p>
+          <p>El valor de <code>STATS_KEY</code> se configura como secret de Cloudflare Worker con <code>npx wrangler secret put STATS_KEY</code>.</p>
+        `);
+        return;
+      }
+
+      metaEl.textContent = 'Cargando datos…';
+      contentEl.innerHTML = '<div class="loading-msg">Consultando D1…</div>';
+
+      try {
+        const resp = await fetch(`/api/simulator-stats?key=${encodeURIComponent(key)}`);
+        if (resp.status === 401) {
+          showError(`<h2>Clave incorrecta</h2><p>El valor de <code>?key=</code> no coincide con <code>STATS_KEY</code>.</p>`);
+          return;
+        }
+        if (resp.status === 503) {
+          const errBody = await resp.json().catch(() => ({}));
+          showError(`<h2>Servicio no disponible</h2><p>${escapeHtml(errBody.message || errBody.error || 'Configuración incompleta del worker.')}</p>`);
+          return;
+        }
+        if (!resp.ok) {
+          const errBody = await resp.json().catch(() => ({}));
+          showError(`<h2>Error ${resp.status}</h2><pre>${escapeHtml(JSON.stringify(errBody, null, 2))}</pre>`);
+          return;
+        }
+        const stats = await resp.json();
+        render(stats);
+      } catch (err) {
+        showError(`<h2>Error de red</h2><p>${escapeHtml(err && err.message ? err.message : String(err))}</p>`);
+      }
+    }
+
+    reloadBtn.addEventListener('click', load);
+    load();
+  </script>
+</body>
+</html>

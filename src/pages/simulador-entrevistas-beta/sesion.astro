@@ -1,0 +1,2827 @@
+---
+// UI de sesión interactiva del Simulador de Entrevistas.
+// Fase 1.2 · v0.7 del system prompt · 16 jun 2026.
+//
+// Flow: intake (cuestionario inicial) → session (turn-by-turn) → report (final).
+// Vanilla JS state-driven · sin React · llama a /api/simulator-session.
+//
+// Reusable defaults vienen embebidos del cliente porque el endpoint los aplica
+// también. El frontend muestra los defaults para que el usuario los vea y pueda cambiar.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const noIndex = true;
+---
+<BaseLayout
+  title="Sesión · Simulador de Entrevistas · Solca"
+  description="Sesión interactiva del simulador de entrevistas pharma · beta cerrada."
+>
+  <head slot="head">
+    {noIndex && <meta name="robots" content="noindex, nofollow" />}
+  </head>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-brand">
+        <span class="dot"></span>
+        <span>Solca</span>
+      </a>
+      <div class="nav-links">
+        <a href="/simulador-entrevistas-beta">← Salir</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="sim-main">
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- VISTA 1 · INTAKE (cuestionario inicial)                          -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <section id="view-intake" class="view view-intake">
+      <div class="container">
+        <h1>Antes de empezar</h1>
+        <p class="intro">
+          Te voy a hacer unas preguntas rápidas para calibrar tu sesión. Verás
+          algunas opciones preseleccionadas como recomendación basada en lo que
+          contestes — puedes cambiar cualquier cosa libremente.
+        </p>
+
+        <form id="intake-form" class="intake-form">
+          <!-- Modo: A o B -->
+          <fieldset class="field-group">
+            <legend>¿Tienes una vacante específica?</legend>
+            <label class="radio">
+              <input type="radio" name="mode" value="A" />
+              <span>Sí, tengo una vacante</span>
+            </label>
+            <label class="radio">
+              <input type="radio" name="mode" value="B" checked />
+              <span>No, solo quiero practicar</span>
+            </label>
+          </fieldset>
+
+          <!-- Campos de vacante (visibles solo en Modo A) -->
+          <div id="vacancy-fields" class="hidden">
+            <label class="field">
+              <span class="field-label">Nombre del puesto</span>
+              <input type="text" name="roleTitle" placeholder="Ej. Clinical Research Associate" />
+            </label>
+
+            <label class="field">
+              <span class="field-label">Empresa <span class="optional">(opcional)</span></span>
+              <input type="text" name="company" placeholder="Ej. IQVIA" />
+            </label>
+
+            <label class="field">
+              <span class="field-label">Descripción de la vacante <span class="optional">(opcional)</span></span>
+              <textarea name="vacancyText" rows="4" placeholder="Pega aquí la descripción si la tienes a mano. Me ayuda a calibrar mejor."></textarea>
+            </label>
+          </div>
+
+          <!-- Selector de rol genérico (visible solo en Modo B) -->
+          <div id="role-picker-fields">
+            <label class="field">
+              <span class="field-label">¿Hacia qué tipo de rol te quieres dirigir?</span>
+              <select name="roleGeneric">
+                <option value="">Aún no decido / cualquier rol pharma</option>
+                <option value="Visitador medico · Pharma Sales Representative">Ventas · visitador médico</option>
+                <option value="Clinical Research Associate">CRA · Clinical Research Associate</option>
+                <option value="Medical Science Liaison">MSL · Medical Science Liaison</option>
+                <option value="Clinical Project Manager">Clinical Project Manager</option>
+                <option value="Healthcare Consultant · Strategy Consulting">Consulting / Strategy</option>
+                <option value="Laboratory Scientist · R&D">Laboratorio · R&D</option>
+                <option value="Regulatory Affairs Specialist">Regulatory Affairs</option>
+                <option value="Pharmacovigilance Associate">Farmacovigilancia</option>
+                <option value="Healthcare Analyst · HEOR">HEOR / Analytics</option>
+                <option value="Medical Affairs">Medical Affairs</option>
+                <option value="Otro">Otro (general · pharma)</option>
+              </select>
+              <span class="hint-line">Esto me ayuda a hacerte preguntas útiles. Si elegiste "aún no decido", trabajamos un perfil general.</span>
+            </label>
+          </div>
+
+          <!-- Generales -->
+          <label class="field">
+            <span class="field-label">Área de formación</span>
+            <select name="formationArea" required>
+              <option value="">Elige una opción</option>
+              <optgroup label="Ciencias biomédicas y biológicas">
+                <option value="PhD_biomedicina">PhD en biomedicina / biología molecular / farmacología</option>
+                <option value="Biologo">Biólogo / Bióloga</option>
+                <option value="Biotecnologo">Biotecnólogo / Biotecnóloga</option>
+                <option value="Postdoc">Posdoctorado activo</option>
+              </optgroup>
+              <optgroup label="Ciencias químico-farmacéuticas">
+                <option value="QFB">QFB · Químico Farmacobiólogo</option>
+                <option value="QFI">QFI · Químico Farmacéutico Industrial</option>
+                <option value="Farmaceutico_clinico">Farmacéutico clínico</option>
+              </optgroup>
+              <optgroup label="Ciencias clínicas y de la salud">
+                <option value="Medico">Médico / Médica</option>
+                <option value="Enfermero">Enfermero / Enfermera</option>
+                <option value="Nutriologo">Nutriólogo / Nutrióloga</option>
+                <option value="Veterinario">Veterinario / Veterinaria</option>
+              </optgroup>
+              <optgroup label="Ciencias matemáticas, computacionales y de datos">
+                <option value="Estadistica_bioestadistica">Estadística / Bioestadística</option>
+                <option value="Matematicas_aplicadas">Matemáticas aplicadas</option>
+                <option value="Ciencias_computacion_data">Ciencias de la computación / Data science</option>
+                <option value="Actuaria">Actuaría</option>
+              </optgroup>
+              <optgroup label="Ciencias administrativas, económicas y de gestión">
+                <option value="Administracion_MBA">Administración / MBA</option>
+                <option value="Economia">Economía</option>
+                <option value="Mercadotecnia">Mercadotecnia / Marketing</option>
+                <option value="Salud_publica_health_mgmt">Salud pública / Health management</option>
+              </optgroup>
+              <option value="Otro">Otro · escribir</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span class="field-label">Años de experiencia</span>
+            <select name="experienceYears" required>
+              <option value="">Elige una opción</option>
+              <option value="sin_experiencia">Sin experiencia profesional</option>
+              <option value="1-3">1-3 años</option>
+              <option value="4-10">4-10 años</option>
+              <option value="+10">Más de 10 años</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span class="field-label">Especialidad o área temática <span class="optional">(opcional)</span></span>
+            <input type="text" name="specialty" placeholder="Ej. oncología, neurociencia, regulatorio, etc." />
+          </label>
+
+          <!-- CV upload real (Fase 1.3) -->
+          <div class="cv-upload">
+            <span class="field-label">Subir CV <span class="optional">(opcional · personaliza algunas preguntas)</span></span>
+            <p class="cv-upload-help">
+              Si subes tu CV en PDF, el simulador lo lee y ancla algunas preguntas
+              a tu experiencia específica (técnicas, gaps, transición). Tu archivo
+              no se guarda en nuestros servidores: solo el resumen estructurado
+              se usa durante la sesión.
+            </p>
+            <div class="cv-upload-row">
+              <input
+                type="file"
+                id="cv-file-input"
+                accept="application/pdf,.pdf"
+                aria-label="Sube tu CV en PDF"
+              />
+              <span id="cv-upload-status" class="cv-upload-status"></span>
+            </div>
+            <p id="cv-summary-preview" class="cv-summary-preview" hidden></p>
+          </div>
+
+          <!-- Etapa de entrevista (v0.6+) -->
+          <fieldset class="field-group">
+            <legend>¿Para qué etapa de tu proceso te preparas?</legend>
+            <label class="radio">
+              <input type="radio" name="interviewStage" value="phone_screen" checked />
+              <span>
+                <strong>Llamada inicial con reclutador</strong>
+                <em>5 preguntas · 15-30 min · phone screen</em>
+              </span>
+            </label>
+            <label class="radio">
+              <input type="radio" name="interviewStage" value="technical_round" />
+              <span>
+                <strong>Ronda técnica con hiring manager</strong>
+                <em>10 preguntas · 45-60 min · entrevista técnica</em>
+              </span>
+            </label>
+            <label class="radio">
+              <input type="radio" name="interviewStage" value="panel_round" />
+              <span>
+                <strong>Panel completo o final round</strong>
+                <em>15 preguntas · 60-90 min · final round</em>
+              </span>
+            </label>
+            <label class="radio">
+              <input type="radio" name="interviewStage" value="general_practice" />
+              <span>
+                <strong>Práctica general</strong>
+                <em>10 preguntas · sin etapa específica</em>
+              </span>
+            </label>
+          </fieldset>
+
+          <!-- Enfoque: siempre "mezcla equilibrada" (decisión de producto · 16 jun 2026). -->
+          <input type="hidden" name="focus" value="mezcla" />
+
+          <!-- Idioma -->
+          <fieldset class="field-group" id="language-group">
+            <legend>Idioma <span class="hint" id="language-hint"></span></legend>
+            <label class="radio">
+              <input type="radio" name="language" value="bilingue" checked />
+              <span>
+                <strong>Bilingüe (recomendado)</strong>
+                <em>Primera mitad español, segunda inglés · simula multistage real</em>
+              </span>
+            </label>
+            <label class="radio">
+              <input type="radio" name="language" value="ingles" />
+              <span>
+                <strong>Inglés</strong>
+                <em>Toda la sesión en inglés profesional</em>
+              </span>
+            </label>
+            <label class="radio">
+              <input type="radio" name="language" value="espanol" />
+              <span>
+                <strong>Español</strong>
+                <em>Toda en español; acrónimos pharma quedan en inglés</em>
+              </span>
+            </label>
+          </fieldset>
+
+          <!-- Dificultad: invisible al usuario · default inteligente aplicado internamente -->
+          <input type="hidden" name="difficulty" id="difficulty-hidden" value="moderado" />
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="start-btn">Empezar sesión</button>
+          </div>
+          <p id="intake-error" class="error-message" hidden></p>
+        </form>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- VISTA 2 · SESSION (turn-by-turn)                                 -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <section id="view-session" class="view view-session hidden">
+      <!-- Sticky header: progress + timer siempre visibles al hacer scroll -->
+      <div class="session-sticky-header">
+        <div class="container">
+          <div class="session-header">
+            <div class="progress">
+              <span id="progress-text">Pregunta 1 de 5</span>
+              <div class="progress-bar">
+                <div id="progress-fill" class="progress-fill" style="width: 20%"></div>
+              </div>
+            </div>
+            <div class="timer">
+              <span class="timer-label">Tiempo</span>
+              <span id="timer-display" class="timer-display">0:00</span>
+              <span id="timer-hint" class="timer-hint"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="container session-body">
+        <article id="question-display" class="question-display">
+          <h2 id="question-title" class="question-title">Cargando…</h2>
+          <div id="question-text" class="question-text"></div>
+        </article>
+
+        <div class="answer-block">
+          <div class="answer-label-row">
+            <label for="answer-input" class="answer-label">Tu respuesta</label>
+            <button
+              id="voice-toggle"
+              type="button"
+              class="btn-voice"
+              hidden
+              aria-pressed="false"
+              title="Grabar respuesta por voz (la transcripción aparece en el textarea y la puedes editar antes de enviar)"
+            >
+              <span class="voice-icon" aria-hidden="true">●</span>
+              <span class="voice-label">Grabar</span>
+            </button>
+          </div>
+          <textarea
+            id="answer-input"
+            class="answer-input"
+            rows="8"
+            placeholder="Escribe tu respuesta aquí. Toma el tiempo que necesites. El timer es informativo, no corta la respuesta."
+          ></textarea>
+          <p class="answer-editable-note">
+            Este texto es editable · si grabaste por voz, lee y corrige antes de enviar. La transcripción en español puede traer errores.
+          </p>
+          <p id="voice-status" class="voice-status" hidden></p>
+          <div id="short-answer-warning" class="short-answer-warning" hidden>
+            <p class="short-answer-text">
+              Tu respuesta es corta. El feedback será mucho más útil si la amplías con un ejemplo concreto (situación, acción, resultado).
+            </p>
+            <div class="short-answer-actions">
+              <button id="short-answer-amplify" type="button" class="btn btn-secondary">Ampliar</button>
+              <button id="short-answer-send" type="button" class="btn btn-primary">Enviar igual</button>
+            </div>
+          </div>
+          <div class="answer-actions">
+            <span id="answer-hint" class="answer-hint"></span>
+            <button id="submit-answer" type="button" class="btn btn-primary">Enviar respuesta</button>
+          </div>
+        </div>
+
+        <p id="session-error" class="error-message" hidden></p>
+        <div id="session-loading" class="loading" hidden>
+          <span class="loading-spinner" aria-hidden="true"></span>
+          <span class="loading-message">Procesando tu respuesta…</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- VISTA 3 · REPORT (reporte final)                                 -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <section id="view-report" class="view view-report hidden">
+      <div class="container">
+        <h1>Reporte final de tu sesión</h1>
+        <p class="intro">
+          Tu sesión está completa. Abajo tienes el resumen ejecutivo + el desglose
+          por pregunta (expandible) + el siguiente paso recomendado.
+        </p>
+
+        <article class="report-summary">
+          <h2>Resumen</h2>
+          <div id="report-summary-text" class="summary-text">Cargando…</div>
+        </article>
+
+        <details class="report-breakdown">
+          <summary>Ver feedback por pregunta</summary>
+          <div id="report-breakdown-text" class="breakdown-text"></div>
+        </details>
+
+        <div class="report-actions">
+          <button id="download-pdf" type="button" class="btn btn-primary" disabled>
+            Descargar PDF
+          </button>
+          <a href="/simulador-entrevistas-beta" class="btn btn-secondary">Nueva sesión</a>
+        </div>
+
+        <!-- Encuesta beta · solo visible para usuarios con código beta (Fase 1.5.H) -->
+        <section id="beta-survey" class="beta-survey" hidden>
+          <details open class="survey-details">
+            <summary>Ayúdanos a mejorar el simulador (opcional, 2 minutos)</summary>
+
+            <form id="survey-form" class="survey-form" novalidate>
+              <p class="survey-intro">
+                Cinco secciones cortas. Todas son opcionales · puedes responder solo
+                las que te interesen. Lo que respondas se guarda anónimo (sin nombre,
+                email, ni contenido de tus respuestas a las preguntas del simulador).
+              </p>
+
+              <fieldset class="survey-field">
+                <legend>1 · ¿Qué tan realista te pareció esta simulación comparada con lo que esperarías de una entrevista pharma real?</legend>
+                <div class="rating-row" role="radiogroup" aria-label="Realismo">
+                  <label class="rating"><input type="radio" name="realismo" value="1" /><span>1<small>poco</small></span></label>
+                  <label class="rating"><input type="radio" name="realismo" value="2" /><span>2</span></label>
+                  <label class="rating"><input type="radio" name="realismo" value="3" /><span>3</span></label>
+                  <label class="rating"><input type="radio" name="realismo" value="4" /><span>4</span></label>
+                  <label class="rating"><input type="radio" name="realismo" value="5" /><span>5<small>mucho</small></span></label>
+                </div>
+              </fieldset>
+
+              <fieldset class="survey-field">
+                <legend>2 · El feedback que recibiste hoy, ¿qué tan útil fue para preparar tu próxima entrevista real?</legend>
+                <div class="rating-row" role="radiogroup" aria-label="Utilidad">
+                  <label class="rating"><input type="radio" name="utilidad" value="1" /><span>1<small>nada</small></span></label>
+                  <label class="rating"><input type="radio" name="utilidad" value="2" /><span>2</span></label>
+                  <label class="rating"><input type="radio" name="utilidad" value="3" /><span>3</span></label>
+                  <label class="rating"><input type="radio" name="utilidad" value="4" /><span>4</span></label>
+                  <label class="rating"><input type="radio" name="utilidad" value="5" /><span>5<small>mucho</small></span></label>
+                </div>
+              </fieldset>
+
+              <fieldset class="survey-field">
+                <legend>3 · ¿Qué tan fácil fue usar la herramienta (intake, escribir respuestas, ver el reporte)?</legend>
+                <div class="rating-row" role="radiogroup" aria-label="Facilidad">
+                  <label class="rating"><input type="radio" name="facilidad" value="1" /><span>1<small>confusa</small></span></label>
+                  <label class="rating"><input type="radio" name="facilidad" value="2" /><span>2</span></label>
+                  <label class="rating"><input type="radio" name="facilidad" value="3" /><span>3</span></label>
+                  <label class="rating"><input type="radio" name="facilidad" value="4" /><span>4</span></label>
+                  <label class="rating"><input type="radio" name="facilidad" value="5" /><span>5<small>intuitiva</small></span></label>
+                </div>
+              </fieldset>
+
+              <label class="survey-field">
+                <span class="survey-label">4 · ¿Qué te sorprendió de esta sesión? <small class="survey-hint">(opcional, máximo 280 caracteres)</small></span>
+                <textarea name="sorpresa" maxlength="280" rows="3" placeholder="Lo bueno o lo raro · lo primero que se te venga."></textarea>
+              </label>
+
+              <label class="survey-field">
+                <span class="survey-label">5 · ¿Qué te faltó o qué cambiarías? <small class="survey-hint">(opcional, máximo 280 caracteres)</small></span>
+                <textarea name="mejora" maxlength="280" rows="3" placeholder="Lo que se sintió incompleto, frustrante, o que harías distinto."></textarea>
+              </label>
+
+              <fieldset class="survey-field">
+                <legend>6 · Si esto siguiera disponible después de la beta, ¿pagarías por más sesiones?</legend>
+                <label class="choice"><input type="radio" name="pago" value="intensivo_349" /><span>Sí, hasta $349 por 10 sesiones (Intensivo)</span></label>
+                <label class="choice"><input type="radio" name="pago" value="basico_149" /><span>Sí, hasta $149 por 3 sesiones (Básico)</span></label>
+                <label class="choice"><input type="radio" name="pago" value="menos_de_99" /><span>Solo si fuera $99 o menos</span></label>
+                <label class="choice"><input type="radio" name="pago" value="solo_gratis" /><span>No, prefiero el formato gratuito que viste hoy</span></label>
+                <label class="choice"><input type="radio" name="pago" value="no_pagaria" /><span>No, no me interesa pagar</span></label>
+              </fieldset>
+
+              <fieldset class="survey-field">
+                <legend>7 · Demográficos opcionales</legend>
+                <p class="survey-hint">Para entender mejor a quién atiende el simulador. Siempre puedes "prefiero no decir".</p>
+                <label class="inline-field">
+                  <span>Rango de edad</span>
+                  <select name="edad">
+                    <option value="">—</option>
+                    <option value="18-24">18-24</option>
+                    <option value="25-34">25-34</option>
+                    <option value="35-44">35-44</option>
+                    <option value="45-54">45-54</option>
+                    <option value="55+">55+</option>
+                    <option value="prefer_not_to_say">Prefiero no decir</option>
+                  </select>
+                </label>
+                <label class="inline-field">
+                  <span>Género</span>
+                  <select name="genero">
+                    <option value="">—</option>
+                    <option value="mujer">Mujer</option>
+                    <option value="hombre">Hombre</option>
+                    <option value="no_binario_otro">No binario u otro</option>
+                    <option value="prefer_not_to_say">Prefiero no decir</option>
+                  </select>
+                </label>
+              </fieldset>
+
+              <div class="survey-actions">
+                <button type="button" id="survey-skip" class="btn btn-secondary">Saltar</button>
+                <button type="submit" id="survey-submit" class="btn btn-primary">Enviar feedback</button>
+              </div>
+
+              <p id="survey-message" class="survey-message" hidden></p>
+            </form>
+
+            <div id="survey-thanks" class="survey-thanks" hidden>
+              <p><strong>Gracias.</strong> Tu feedback queda guardado anónimo y nos sirve para iterar el simulador.</p>
+              <p>Si quieres compartir algo más extenso, escríbenos a <a href="mailto:hello@solcaciencia.com">hello@solcaciencia.com</a>.</p>
+            </div>
+          </details>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // ──────────────────────────────────────────────────────────────────
+    // Tipos compartidos (subset de simulator-types.ts; sin importar para mantener vanilla)
+    // ──────────────────────────────────────────────────────────────────
+
+    type Mode = 'A' | 'B';
+    type Language = 'ingles' | 'bilingue' | 'espanol';
+    type Difficulty = 'moderado' | 'exigente' | 'muy_exigente';
+    type InterviewStage =
+      | 'phone_screen'
+      | 'technical_round'
+      | 'panel_round'
+      | 'general_practice';
+
+    interface Profile {
+      mode: Mode;
+      roleTitle?: string;
+      company?: string;
+      vacancyText?: string;
+      formationArea: string;
+      experienceYears: 'sin_experiencia' | '1-3' | '4-10' | '+10';
+      specialty?: string;
+      focus: 'tecnico' | 'conductual' | 'mezcla';
+      language: Language;
+      difficulty: Difficulty;
+      interviewStage: InterviewStage;
+      questionCount: 5 | 10 | 15;
+    }
+
+    interface SessionState {
+      sessionId: string;
+      startedAt: string;
+      profile: Profile;
+      plan: string;
+      sessionNumberInPackage: number;
+      turns: Array<{
+        questionNumber: number;
+        type: string;
+        language: 'es' | 'en';
+        questionText: string;
+        suggestedPrepSeconds: number;
+        suggestedAnswerSeconds: number;
+        userAnswer?: string;
+        userAnswerSeconds?: number;
+      }>;
+      finished: boolean;
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // FinalReport (subset de simulator-types.ts · ver _docs/SIMULADOR_ENTREVISTAS_ADDENDUM.md §7.14.2)
+    // ──────────────────────────────────────────────────────────────────
+    type PedagogicalAngle = 'A' | 'C' | 'D' | 'E';
+
+    interface FinalReportSummary {
+      scores: {
+        tecnico: number;
+        estructura: number;
+        especificidad: number;
+        alertasCount: number;
+      };
+      fortalezas: string[];
+      areasDeMejora: string[];
+      vocabularioAIncorporar: string[];
+      recomendacionFinal: string;
+    }
+
+    interface QuestionBreakdown {
+      questionNumber: number;
+      questionText: string;
+      userAnswer: string;
+      scores: {
+        tecnico: number;
+        estructura: number;
+        especificidad: number;
+        alertas: string;
+      };
+      angleUsed: PedagogicalAngle;
+      whatWorked: string;
+      whatToImprove: string;
+      modelPhrase: string;
+    }
+
+    interface FinalReportCTA {
+      type: 'libro' | 'recurso_gratuito';
+      title: string;
+      description: string;
+      url: string;
+    }
+
+    interface FinalReport {
+      sessionId: string;
+      rol: string;
+      nQuestions: number;
+      summary: FinalReportSummary;
+      questionsBreakdown: QuestionBreakdown[];
+      cta: FinalReportCTA;
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // Multinacionales reconocidas para inferir default "Exigente"
+    // ──────────────────────────────────────────────────────────────────
+    const MULTINATIONALS = [
+      'iqvia','pfizer','sanofi','bms','bristol','roche','genentech','novartis',
+      'astrazeneca','msd','merck','abbott','abbvie','johnson','janssen','lilly',
+      'bayer','boehringer','takeda','icon','parexel','syneos','fortrea','ppd',
+      'thermo fisher','labcorp','covance','medpace','j&j'
+    ];
+    const ENGLISH_REQUIRED = [
+      'c1 minimum','c1 english','fluent english','fluent in english',
+      'fluency in english','advanced english','advanced proficiency in english',
+      'native english','business english required'
+    ];
+
+    function isMultinational(company: string, vacancyText: string): boolean {
+      const h = (company + ' ' + vacancyText).toLowerCase();
+      return MULTINATIONALS.some(m => h.includes(m));
+    }
+    function requiresFluentEnglish(vacancyText: string): boolean {
+      const t = vacancyText.toLowerCase();
+      return ENGLISH_REQUIRED.some(v => t.includes(v));
+    }
+    function isSeniorRole(roleTitle: string, vacancyText: string): boolean {
+      const h = (roleTitle + ' ' + vacancyText).toLowerCase();
+      return /(senior|sr\.|manager|director|lead\b|principal|head of)/i.test(h);
+    }
+
+    interface DefaultsResult {
+      difficulty: Difficulty;
+      language: Language;
+      reason: string;
+    }
+
+    function computeDefaults(p: Partial<Profile>): DefaultsResult {
+      const exp = p.experienceYears;
+      const mode = p.mode;
+      const roleTitle = p.roleTitle || '';
+      const company = p.company || '';
+      const vacancyText = p.vacancyText || '';
+
+      if (isSeniorRole(roleTitle, vacancyText) || exp === '+10') {
+        return {
+          difficulty: 'muy_exigente',
+          language: requiresFluentEnglish(vacancyText) ? 'ingles' : 'bilingue',
+          reason: 'Rol senior detectado (título o +10 años de experiencia).',
+        };
+      }
+      if (mode === 'A' && isMultinational(company, vacancyText)) {
+        return {
+          difficulty: 'exigente',
+          language: requiresFluentEnglish(vacancyText) ? 'ingles' : 'bilingue',
+          reason: 'Empresa multinacional pharma. Estas filtran fuerte incluso a entry-level.',
+        };
+      }
+      if (exp === '4-10') {
+        return {
+          difficulty: 'exigente',
+          language: 'bilingue',
+          reason: '4-10 años de experiencia. Match a mid-level estándar.',
+        };
+      }
+      if (mode === 'B' && (exp === 'sin_experiencia' || exp === '1-3')) {
+        return {
+          difficulty: 'moderado',
+          language: 'bilingue',
+          reason: 'Entry-level sin vacante. Recomendamos Moderado para construir confianza.',
+        };
+      }
+      if (mode === 'A' && (exp === 'sin_experiencia' || exp === '1-3')) {
+        return {
+          difficulty: 'moderado',
+          language: 'bilingue',
+          reason: 'Entry-level con vacante. Si es multinacional, considera subir a Exigente.',
+        };
+      }
+      return {
+        difficulty: 'moderado',
+        language: 'bilingue',
+        reason: 'Default conservador. Cambiable según contexto.',
+      };
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // Tiempos sugeridos por tipo
+    // ──────────────────────────────────────────────────────────────────
+    function getTimingHint(type: string) {
+      switch (type) {
+        case 'conductual':
+          return { prep: 30, min: 90, max: 120 };
+        case 'tecnica':
+          return { prep: 45, min: 120, max: 180 };
+        case 'situacional':
+          return { prep: 60, min: 150, max: 180 };
+        case 'general':
+        default:
+          return { prep: 30, min: 60, max: 90 };
+      }
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // Mapeo de etapa a número de preguntas
+    // ──────────────────────────────────────────────────────────────────
+    function questionCountForStage(stage: InterviewStage): 5 | 10 | 15 {
+      switch (stage) {
+        case 'phone_screen': return 5;
+        case 'technical_round': return 10;
+        case 'panel_round': return 15;
+        case 'general_practice': return 10;
+      }
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // State global del frontend
+    // ──────────────────────────────────────────────────────────────────
+    interface AppState {
+      view: 'intake' | 'session' | 'report' | 'error';
+      sessionState: SessionState | null;
+      currentQuestionStartedAt: number | null;
+      timerInterval: number | null;
+      finalReport: FinalReport | null;
+    }
+
+    const appState: AppState = {
+      view: 'intake',
+      sessionState: null,
+      currentQuestionStartedAt: null,
+      timerInterval: null,
+      finalReport: null,
+    };
+
+    function showView(view: AppState['view']) {
+      appState.view = view;
+      document.getElementById('view-intake')!.classList.toggle('hidden', view !== 'intake');
+      document.getElementById('view-session')!.classList.toggle('hidden', view !== 'session');
+      document.getElementById('view-report')!.classList.toggle('hidden', view !== 'report');
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // Intake · captura de cambios para reflejar defaults inteligentes
+    // ──────────────────────────────────────────────────────────────────
+    const intakeForm = document.getElementById('intake-form') as HTMLFormElement;
+    const vacancyFields = document.getElementById('vacancy-fields') as HTMLDivElement;
+    const rolePickerFields = document.getElementById('role-picker-fields') as HTMLDivElement;
+    const languageHint = document.getElementById('language-hint') as HTMLSpanElement;
+    const difficultyHidden = document.getElementById('difficulty-hidden') as HTMLInputElement;
+
+    // Tracking: si el usuario ya tocó manualmente el idioma, no sobrescribimos.
+    let userTouchedLanguage = false;
+    intakeForm.querySelectorAll<HTMLInputElement>('input[name="language"]').forEach((r) => {
+      r.addEventListener('change', () => {
+        userTouchedLanguage = true;
+      });
+    });
+
+    function updateDefaultsFromIntake() {
+      const formData = new FormData(intakeForm);
+      const partial: Partial<Profile> = {
+        mode: (formData.get('mode') as Mode) || 'B',
+        roleTitle:
+          (formData.get('roleTitle') as string) ||
+          (formData.get('roleGeneric') as string) ||
+          '',
+        company: (formData.get('company') as string) || '',
+        vacancyText: (formData.get('vacancyText') as string) || '',
+        experienceYears: (formData.get('experienceYears') as Profile['experienceYears']) || undefined,
+      };
+
+      // Toggle vacancy fields (Modo A) vs role picker (Modo B)
+      vacancyFields.classList.toggle('hidden', partial.mode !== 'A');
+      rolePickerFields.classList.toggle('hidden', partial.mode === 'A');
+
+      // Si todavía no hay años de experiencia, no calculamos defaults aún.
+      if (!partial.experienceYears) {
+        languageHint.textContent = '';
+        return;
+      }
+
+      const defaults = computeDefaults(partial);
+
+      // Dificultad · siempre se aplica internamente (sin UI)
+      difficultyHidden.value = defaults.difficulty;
+
+      // Idioma · solo preseleccionamos si el usuario NO ha tocado manualmente.
+      if (!userTouchedLanguage) {
+        const langRadio = intakeForm.querySelector<HTMLInputElement>(
+          `input[name="language"][value="${defaults.language}"]`,
+        );
+        if (langRadio && !langRadio.checked) {
+          langRadio.checked = true;
+        }
+      }
+      languageHint.textContent = `· sugerido: ${defaults.language} · puedes cambiarlo`;
+    }
+
+    intakeForm.addEventListener('change', updateDefaultsFromIntake);
+    intakeForm.addEventListener('input', updateDefaultsFromIntake);
+
+    // ──────────────────────────────────────────────────────────────────
+    // Intake · submit
+    // ──────────────────────────────────────────────────────────────────
+    intakeForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const errorEl = document.getElementById('intake-error') as HTMLParagraphElement;
+      errorEl.hidden = true;
+
+      const formData = new FormData(intakeForm);
+      const mode = formData.get('mode') as Mode;
+      const formationArea = formData.get('formationArea') as string;
+      const experienceYears = formData.get('experienceYears') as Profile['experienceYears'];
+
+      if (!formationArea || !experienceYears) {
+        errorEl.textContent = 'Por favor llena área de formación y años de experiencia.';
+        errorEl.hidden = false;
+        return;
+      }
+
+      const interviewStage = (formData.get('interviewStage') as InterviewStage) || 'general_practice';
+
+      // Modo A usa roleTitle del input visible. Modo B usa roleGeneric del selector.
+      const resolvedRoleTitle =
+        mode === 'A'
+          ? (formData.get('roleTitle') as string) || undefined
+          : (formData.get('roleGeneric') as string) || undefined;
+
+      const profile: Profile = {
+        mode,
+        roleTitle: resolvedRoleTitle,
+        company: mode === 'A' ? (formData.get('company') as string) || undefined : undefined,
+        vacancyText: mode === 'A' ? (formData.get('vacancyText') as string) || undefined : undefined,
+        formationArea,
+        experienceYears,
+        specialty: (formData.get('specialty') as string) || undefined,
+        focus: (formData.get('focus') as Profile['focus']) || 'mezcla',
+        language: (formData.get('language') as Language) || 'bilingue',
+        difficulty: (formData.get('difficulty') as Difficulty) || 'moderado',
+        interviewStage,
+        questionCount: questionCountForStage(interviewStage),
+      };
+
+      const startBtn = document.getElementById('start-btn') as HTMLButtonElement;
+      startBtn.disabled = true;
+      startBtn.textContent = 'Iniciando sesión…';
+
+      try {
+        const betaCode = sessionStorage.getItem('solca_beta_code') || undefined;
+        const resp = await fetch('/api/simulator-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'init',
+            // En beta todos arrancan en 'gratis' por defecto; durante la beta cerrada
+            // tratamos a todos como 'basico' para habilitar CV-personalizado.
+            plan: parsedCvSummary ? 'basico' : 'gratis',
+            sessionNumberInPackage: 1,
+            profile,
+            cvSummary: parsedCvSummary || undefined,
+            betaCode,
+          }),
+        });
+
+        const data = await resp.json();
+        if (!data.ok) {
+          throw new Error(data.error || 'Error iniciando sesión');
+        }
+
+        appState.sessionState = data.sessionState;
+        // Fase 1.5.L · persistir sessionId en localStorage para recovery cross-tab/refresh
+        if (data.sessionState && data.sessionState.sessionId) {
+          try { localStorage.setItem('solca_session_id', data.sessionState.sessionId); } catch {}
+        }
+        showView('session');
+        renderCurrentQuestion();
+      } catch (err) {
+        errorEl.textContent =
+          err instanceof Error ? err.message : 'Error inesperado iniciando sesión.';
+        errorEl.hidden = false;
+        startBtn.disabled = false;
+        startBtn.textContent = 'Empezar sesión';
+      }
+    });
+
+    // ──────────────────────────────────────────────────────────────────
+    // Session · render de pregunta actual + timer
+    // ──────────────────────────────────────────────────────────────────
+    function renderCurrentQuestion() {
+      if (!appState.sessionState) return;
+      const turns = appState.sessionState.turns;
+      const currentTurn = turns[turns.length - 1];
+      if (!currentTurn) return;
+
+      // Detener cualquier grabación activa de la pregunta anterior
+      stopVoiceIfActive();
+
+      const total = appState.sessionState.profile.questionCount;
+      const current = currentTurn.questionNumber;
+
+      // Progreso
+      const progressText = document.getElementById('progress-text') as HTMLSpanElement;
+      const progressFill = document.getElementById('progress-fill') as HTMLDivElement;
+      progressText.textContent = `Pregunta ${current} de ${total}`;
+      progressFill.style.width = `${(current / total) * 100}%`;
+
+      // Pregunta
+      const titleEl = document.getElementById('question-title') as HTMLHeadingElement;
+      const textEl = document.getElementById('question-text') as HTMLDivElement;
+      titleEl.textContent = `Pregunta ${current}`;
+      textEl.textContent = currentTurn.questionText;
+
+      // Limpiar respuesta anterior y errores
+      const answerInput = document.getElementById('answer-input') as HTMLTextAreaElement;
+      answerInput.value = '';
+      const errorEl = document.getElementById('session-error') as HTMLParagraphElement;
+      errorEl.hidden = true;
+      // Ocultar el warning de respuesta corta si quedó visible del turno anterior
+      const shortWarn = document.getElementById('short-answer-warning') as HTMLDivElement | null;
+      if (shortWarn) shortWarn.hidden = true;
+
+      // Timer hint
+      const hint = getTimingHint(currentTurn.type);
+      const answerHintEl = document.getElementById('answer-hint') as HTMLSpanElement;
+      answerHintEl.textContent = `Tiempo sugerido: ${Math.round(hint.min / 60 * 10) / 10}-${Math.round(hint.max / 60 * 10) / 10} min`;
+
+      // Resetear timer al estado "esperando" (no arranca hasta que el usuario empieza a responder)
+      resetTimerToWaiting();
+
+      // Scroll up al inicio de la pregunta
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function resetTimerToWaiting() {
+      stopTimer();
+      appState.currentQuestionStartedAt = null;
+      const display = document.getElementById('timer-display') as HTMLSpanElement;
+      const hintEl = document.getElementById('timer-hint') as HTMLSpanElement;
+      display.textContent = '0:00';
+      display.classList.remove('timer-warning', 'timer-over');
+      display.classList.add('timer-waiting');
+      hintEl.textContent = '· empieza cuando comiences a responder';
+    }
+
+    /** Inicia el timer solo si no está corriendo aún. Idempotente. */
+    function maybeStartTimer() {
+      if (appState.currentQuestionStartedAt !== null) return; // ya está corriendo
+      startTimer();
+    }
+
+    function startTimer() {
+      stopTimer();
+      appState.currentQuestionStartedAt = Date.now();
+      const display = document.getElementById('timer-display') as HTMLSpanElement;
+      const hintEl = document.getElementById('timer-hint') as HTMLSpanElement;
+      display.classList.remove('timer-waiting');
+
+      const updateTimer = () => {
+        const elapsed = Math.floor(
+          (Date.now() - (appState.currentQuestionStartedAt || Date.now())) / 1000,
+        );
+        const mins = Math.floor(elapsed / 60);
+        const secs = elapsed % 60;
+        display.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+        // Cambio de color cuando excede rango sugerido
+        const turn = appState.sessionState?.turns[appState.sessionState.turns.length - 1];
+        if (turn) {
+          const hint = getTimingHint(turn.type);
+          display.classList.toggle('timer-warning', elapsed > hint.max);
+          display.classList.toggle('timer-over', elapsed > hint.max * 1.5);
+          if (elapsed > hint.max * 1.5) {
+            hintEl.textContent = '· extiéndete con propósito; reclutadores pierden foco';
+          } else if (elapsed > hint.max) {
+            hintEl.textContent = '· acercándote al máximo sugerido';
+          } else {
+            hintEl.textContent = '';
+          }
+        }
+      };
+
+      updateTimer();
+      appState.timerInterval = window.setInterval(updateTimer, 1000);
+    }
+
+    function stopTimer() {
+      if (appState.timerInterval !== null) {
+        window.clearInterval(appState.timerInterval);
+        appState.timerInterval = null;
+      }
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // Disparadores del timer · primer caracter del textarea o inicio de voz
+    // ──────────────────────────────────────────────────────────────────
+    const answerInputForTimer = document.getElementById('answer-input') as HTMLTextAreaElement;
+    answerInputForTimer.addEventListener('input', () => {
+      // Solo arranca si el textarea pasó de vacío a tener contenido
+      if (answerInputForTimer.value.length > 0) {
+        maybeStartTimer();
+      }
+    });
+
+    // ──────────────────────────────────────────────────────────────────
+    // Session · submit respuesta
+    // ──────────────────────────────────────────────────────────────────
+    const submitBtn = document.getElementById('submit-answer') as HTMLButtonElement;
+    const shortWarningEl = document.getElementById('short-answer-warning') as HTMLDivElement;
+    const shortAmplifyBtn = document.getElementById('short-answer-amplify') as HTMLButtonElement;
+    const shortSendBtn = document.getElementById('short-answer-send') as HTMLButtonElement;
+
+    // Umbrales para el soft-warn pre-envío (Fase 1.5.B · §7.4 del addendum)
+    // - Hard block: respuesta vacía
+    // - Soft warn: <10 palabras o <40 caracteres (no hay material para evaluar STAR)
+    // - El usuario puede ampliar (vuelve al textarea) o enviar igual (bypassea el warn)
+    const MIN_WORDS_FOR_NO_WARN = 10;
+    const MIN_CHARS_FOR_NO_WARN = 40;
+
+    function answerIsTooShort(text: string): boolean {
+      if (!text) return true;
+      const words = text.split(/\s+/).filter(Boolean).length;
+      return text.length < MIN_CHARS_FOR_NO_WARN || words < MIN_WORDS_FOR_NO_WARN;
+    }
+
+    async function runSubmit() {
+      if (!appState.sessionState) return;
+      const answerInput = document.getElementById('answer-input') as HTMLTextAreaElement;
+      const userAnswer = answerInput.value.trim();
+
+      if (!userAnswer) {
+        const errorEl = document.getElementById('session-error') as HTMLParagraphElement;
+        errorEl.textContent = 'Necesitas escribir o grabar una respuesta antes de enviar.';
+        errorEl.hidden = false;
+        return;
+      }
+
+      const elapsedSeconds = appState.currentQuestionStartedAt
+        ? Math.floor((Date.now() - appState.currentQuestionStartedAt) / 1000)
+        : undefined;
+
+      stopTimer();
+      stopVoiceIfActive();
+      submitBtn.disabled = true;
+      const loadingEl = document.getElementById('session-loading') as HTMLDivElement;
+      const loadingMessageEl = loadingEl.querySelector('.loading-message') as HTMLSpanElement;
+      loadingEl.hidden = false;
+      const errorEl = document.getElementById('session-error') as HTMLParagraphElement;
+      errorEl.hidden = true;
+
+      // ¿Es la última pregunta? Si sí, el endpoint genera el reporte final
+      // que tarda más (20-60 segundos) porque sintetiza toda la sesión.
+      const isLastQuestion =
+        appState.sessionState.turns.length >= appState.sessionState.profile.questionCount;
+
+      if (isLastQuestion) {
+        loadingMessageEl.textContent =
+          'Generando tu reporte final · esto toma 30 a 60 segundos porque analizo toda la sesión, sintetizo fortalezas y áreas de mejora, y preparo el feedback por pregunta. No cierres la ventana.';
+        loadingEl.classList.add('loading-extended');
+      } else {
+        loadingMessageEl.textContent = 'Procesando tu respuesta…';
+        loadingEl.classList.remove('loading-extended');
+      }
+
+      try {
+        const resp = await fetch('/api/simulator-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'next',
+            sessionState: appState.sessionState,
+            userAnswer,
+            userAnswerSeconds: elapsedSeconds,
+          }),
+        });
+
+        const data = await resp.json();
+        if (!data.ok) {
+          throw new Error(data.error || 'Error procesando respuesta');
+        }
+
+        appState.sessionState = data.sessionState;
+        loadingEl.hidden = true;
+        submitBtn.disabled = false;
+
+        if (data.finished) {
+          showView('report');
+          renderFinalReport(data.finalReport);
+        } else {
+          renderCurrentQuestion();
+        }
+      } catch (err) {
+        loadingEl.hidden = true;
+        submitBtn.disabled = false;
+        const baseMessage = err instanceof Error ? err.message : 'Error inesperado al enviar respuesta.';
+        if (isLastQuestion) {
+          // Mensaje específico para fallo en la generación del reporte final
+          const sessionId = appState.sessionState?.sessionId ?? localStorage.getItem('solca_session_id') ?? 'desconocido';
+          errorEl.innerHTML =
+            `<strong>Algo falló al generar tu reporte final.</strong><br>` +
+            `Tus respuestas están guardadas (sessionId: <code>${escapeHtml(sessionId)}</code>). ` +
+            `Espera 30 segundos y haz click en <a href="#" id="retry-report-link" style="color:var(--orange);text-decoration:underline;font-weight:600">Reintentar generación</a>. ` +
+            `Si vuelve a fallar, escríbenos a <a href="mailto:hello@solcaciencia.com?subject=Simulador%20-%20Error%20de%20reporte&body=sessionId%3A%20${encodeURIComponent(sessionId)}">hello@solcaciencia.com</a> con el sessionId de arriba.<br>` +
+            `<small style="color:var(--text-mute)">Detalle técnico: ${escapeHtml(baseMessage)}</small>`;
+          errorEl.hidden = false;
+          // Wire up del link de reintento
+          const retryLink = document.getElementById('retry-report-link');
+          if (retryLink) {
+            retryLink.addEventListener('click', async (ev) => {
+              ev.preventDefault();
+              await retryReportGeneration();
+            });
+          }
+        } else {
+          errorEl.textContent = baseMessage;
+          errorEl.hidden = false;
+        }
+      }
+    }
+
+    // Fase 1.5.L · reintentar la generación del reporte sin re-hacer preguntas
+    async function retryReportGeneration() {
+      const sessionId = appState.sessionState?.sessionId ?? localStorage.getItem('solca_session_id');
+      if (!sessionId) {
+        const errorEl = document.getElementById('session-error') as HTMLParagraphElement;
+        errorEl.textContent = 'No hay sessionId guardado · no se puede reintentar. Inicia una sesión nueva.';
+        errorEl.hidden = false;
+        return;
+      }
+      const errorEl = document.getElementById('session-error') as HTMLParagraphElement;
+      const loadingEl = document.getElementById('session-loading') as HTMLDivElement;
+      const loadingMessageEl = loadingEl.querySelector('.loading-message') as HTMLSpanElement;
+      errorEl.hidden = true;
+      loadingMessageEl.textContent = 'Reintentando generación del reporte... esto toma 30-60 segundos.';
+      loadingEl.classList.add('loading-extended');
+      loadingEl.hidden = false;
+
+      try {
+        const resp = await fetch('/api/simulator-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'retry_report', sessionId }),
+        });
+        const data = await resp.json();
+        if (!data.ok) throw new Error(data.error || 'Error al reintentar el reporte');
+        appState.sessionState = data.sessionState;
+        loadingEl.hidden = true;
+        showView('report');
+        renderFinalReport(data.finalReport);
+      } catch (err) {
+        loadingEl.hidden = true;
+        errorEl.innerHTML =
+          `<strong>El reintento también falló.</strong> ` +
+          `Tus respuestas siguen guardadas. Escríbenos a ` +
+          `<a href="mailto:hello@solcaciencia.com?subject=Simulador%20-%20Reintento%20fallido&body=sessionId%3A%20${encodeURIComponent(sessionId)}">hello@solcaciencia.com</a> ` +
+          `con el sessionId <code>${escapeHtml(sessionId)}</code> y nos ponemos en contacto.<br>` +
+          `<small style="color:var(--text-mute)">Detalle: ${escapeHtml(err instanceof Error ? err.message : String(err))}</small>`;
+        errorEl.hidden = false;
+      }
+    }
+
+    // Submit click · si la respuesta es corta, muestra el warn y deja al usuario
+    // decidir entre ampliar o enviar igual. Si no es corta, envía directo.
+    submitBtn.addEventListener('click', async () => {
+      const answerInput = document.getElementById('answer-input') as HTMLTextAreaElement;
+      const userAnswer = answerInput.value.trim();
+      const errorEl = document.getElementById('session-error') as HTMLParagraphElement;
+      errorEl.hidden = true;
+
+      if (!userAnswer) {
+        errorEl.textContent = 'Necesitas escribir o grabar una respuesta antes de enviar.';
+        errorEl.hidden = false;
+        return;
+      }
+
+      if (answerIsTooShort(userAnswer)) {
+        shortWarningEl.hidden = false;
+        shortAmplifyBtn.focus();
+        return;
+      }
+
+      shortWarningEl.hidden = true;
+      await runSubmit();
+    });
+
+    // Ampliar · vuelve al textarea con foco al final del texto
+    shortAmplifyBtn.addEventListener('click', () => {
+      shortWarningEl.hidden = true;
+      const answerInput = document.getElementById('answer-input') as HTMLTextAreaElement;
+      answerInput.focus();
+      const len = answerInput.value.length;
+      answerInput.setSelectionRange(len, len);
+    });
+
+    // Enviar igual · bypassea el warn y envía la respuesta corta tal cual
+    shortSendBtn.addEventListener('click', async () => {
+      shortWarningEl.hidden = true;
+      await runSubmit();
+    });
+
+    // ──────────────────────────────────────────────────────────────────
+    // Report · render final
+    // ──────────────────────────────────────────────────────────────────
+    function renderFinalReport(finalReport: FinalReport | null | undefined) {
+      stopTimer();
+      const summaryEl = document.getElementById('report-summary-text') as HTMLDivElement;
+      const breakdownEl = document.getElementById('report-breakdown-text') as HTMLDivElement;
+      const downloadBtn = document.getElementById('download-pdf') as HTMLButtonElement | null;
+
+      // Validación defensiva · si el reporte vino mal estructurado, mostramos fallback
+      if (!finalReport || !finalReport.summary || !Array.isArray(finalReport.questionsBreakdown)) {
+        summaryEl.innerHTML =
+          '<p>Tu sesión se completó, pero el reporte estructurado no llegó como esperábamos. Escríbenos a <a href="mailto:hello@solcaciencia.com">hello@solcaciencia.com</a> y te ayudamos.</p>';
+        breakdownEl.innerHTML = '';
+        return;
+      }
+
+      appState.finalReport = finalReport;
+      if (downloadBtn) downloadBtn.disabled = false;
+      // Fase 1.5.L · sesión cerrada exitosamente, limpiar marker de recovery
+      try { localStorage.removeItem('solca_session_id'); } catch {}
+
+      const s = finalReport.summary;
+      const fmt = (n: number) => (typeof n === 'number' ? n.toFixed(1) : '—');
+
+      // ---- Resumen ----
+      const scoresHtml = `
+        <div class="score-grid">
+          <div class="score-cell"><span class="score-label">Técnico</span><span class="score-value">${fmt(s.scores.tecnico)}</span></div>
+          <div class="score-cell"><span class="score-label">Estructura</span><span class="score-value">${fmt(s.scores.estructura)}</span></div>
+          <div class="score-cell"><span class="score-label">Especificidad</span><span class="score-value">${fmt(s.scores.especificidad)}</span></div>
+          <div class="score-cell"><span class="score-label">Alertas</span><span class="score-value">${s.scores.alertasCount ?? 0}</span></div>
+        </div>
+      `;
+
+      const listHtml = (items: string[]) =>
+        items && items.length
+          ? `<ol class="report-list">${items.map((x) => `<li>${escapeHtml(x)}</li>`).join('')}</ol>`
+          : '<p class="report-empty">—</p>';
+
+      const vocabHtml =
+        s.vocabularioAIncorporar && s.vocabularioAIncorporar.length
+          ? `<div class="vocab-chips">${s.vocabularioAIncorporar
+              .map((v) => `<span class="vocab-chip">${escapeHtml(v)}</span>`)
+              .join('')}</div>`
+          : '<p class="report-empty">Nada crítico ausente.</p>';
+
+      summaryEl.innerHTML = `
+        <p class="report-meta">Rol practicado: <strong>${escapeHtml(finalReport.rol)}</strong> · ${finalReport.nQuestions} preguntas</p>
+        ${scoresHtml}
+        <h3>Tus fortalezas</h3>
+        ${listHtml(s.fortalezas)}
+        <h3>Áreas de mejora</h3>
+        ${listHtml(s.areasDeMejora)}
+        <h3>Vocabulario a incorporar</h3>
+        ${vocabHtml}
+        <h3>Recomendación final</h3>
+        <p class="report-recomendacion">${escapeHtml(s.recomendacionFinal || '')}</p>
+        ${finalReport.cta ? `
+          <div class="report-cta">
+            <h3>${escapeHtml(finalReport.cta.title || 'Siguiente paso')}</h3>
+            <p>${escapeHtml(finalReport.cta.description || '')}</p>
+            ${finalReport.cta.url ? `<p><a href="${escapeHtml(finalReport.cta.url)}" target="_blank" rel="noopener" class="btn btn-secondary report-cta-link">Abrir recurso</a></p>` : ''}
+          </div>
+        ` : ''}
+      `;
+
+      // ---- Desglose por pregunta ----
+      breakdownEl.innerHTML = finalReport.questionsBreakdown
+        .map((q) => `
+          <article class="qb-card">
+            <header class="qb-head">
+              <span class="qb-num">Pregunta ${q.questionNumber}</span>
+              <span class="qb-scores">T ${fmt(q.scores.tecnico)} · E ${fmt(q.scores.estructura)} · Esp ${fmt(q.scores.especificidad)}</span>
+            </header>
+            <p class="qb-question"><em>${escapeHtml(q.questionText)}</em></p>
+            <p class="qb-label">Tu respuesta</p>
+            <blockquote class="qb-answer">${escapeHtml(q.userAnswer)}</blockquote>
+            <p class="qb-label">Qué funcionó</p>
+            <p class="qb-text">${escapeHtml(q.whatWorked)}</p>
+            <p class="qb-label">Qué mejorar</p>
+            <p class="qb-text">${escapeHtml(q.whatToImprove)}</p>
+            <p class="qb-label">Frase modelo</p>
+            <p class="qb-model">${escapeHtml(q.modelPhrase)}</p>
+            <p class="qb-alertas"><strong>Alertas:</strong> ${escapeHtml(q.scores.alertas || 'sin alertas')}</p>
+          </article>
+        `).join('');
+    }
+
+    function escapeHtml(s: string): string {
+      return s
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // Web Speech API (voice input) · progressive enhancement
+    // ──────────────────────────────────────────────────────────────────
+    // Solo Chrome/Edge desktop y Chrome Android lo soportan bien.
+    // Safari macOS requiere permiso por sesión, iOS Safari es limitado.
+    // Firefox no lo soporta nativamente.
+    //
+    // Si no hay soporte, el botón "Grabar" queda oculto y el usuario solo escribe.
+
+    interface SpeechRecognitionResult {
+      isFinal: boolean;
+      [index: number]: { transcript: string };
+    }
+    interface SpeechRecognitionEvent {
+      resultIndex: number;
+      results: { length: number; [index: number]: SpeechRecognitionResult };
+    }
+    interface SpeechRecognitionInstance {
+      lang: string;
+      continuous: boolean;
+      interimResults: boolean;
+      onstart: (() => void) | null;
+      onend: (() => void) | null;
+      onerror: ((e: { error: string }) => void) | null;
+      onresult: ((e: SpeechRecognitionEvent) => void) | null;
+      start: () => void;
+      stop: () => void;
+    }
+
+    type SpeechRecognitionCtor = new () => SpeechRecognitionInstance;
+
+    function getSpeechRecognitionConstructor(): SpeechRecognitionCtor | null {
+      const w = window as unknown as {
+        SpeechRecognition?: SpeechRecognitionCtor;
+        webkitSpeechRecognition?: SpeechRecognitionCtor;
+      };
+      return w.SpeechRecognition || w.webkitSpeechRecognition || null;
+    }
+
+    let recognition: SpeechRecognitionInstance | null = null;
+    let recognizing = false;
+    let userRequestedStop = false;
+    let baseTextWhenRecordingStarted = '';
+    let finalTextAccumulated = '';
+
+    const voiceToggle = document.getElementById('voice-toggle') as HTMLButtonElement | null;
+    const voiceStatus = document.getElementById('voice-status') as HTMLParagraphElement | null;
+
+    function setVoiceButtonState(recording: boolean) {
+      if (!voiceToggle) return;
+      voiceToggle.classList.toggle('recording', recording);
+      voiceToggle.setAttribute('aria-pressed', recording ? 'true' : 'false');
+      voiceToggle.querySelector('.voice-label')!.textContent = recording ? 'Detener' : 'Grabar';
+    }
+
+    /** Detiene la grabación si está activa. Se llama al cambiar pregunta o enviar. */
+    function stopVoiceIfActive() {
+      if (recognizing && recognition) {
+        userRequestedStop = true;
+        try { recognition.stop(); } catch {}
+      }
+      recognizing = false;
+      setVoiceButtonState(false);
+      if (voiceStatus) voiceStatus.hidden = true;
+    }
+
+    /** Crea una nueva instancia de SpeechRecognition con sus handlers. */
+    function createRecognition(Ctor: SpeechRecognitionCtor): SpeechRecognitionInstance {
+      const r = new Ctor();
+      const currentTurn = appState.sessionState?.turns[appState.sessionState.turns.length - 1];
+      r.lang = currentTurn?.language === 'en' ? 'en-US' : 'es-MX';
+      r.continuous = true;
+      r.interimResults = true;
+      const answerInput = document.getElementById('answer-input') as HTMLTextAreaElement;
+
+      r.onstart = () => {
+        recognizing = true;
+        setVoiceButtonState(true);
+        if (voiceStatus) {
+          voiceStatus.textContent =
+            'Grabando · habla con naturalidad, las pausas están bien. Puedes editar el texto al terminar.';
+          voiceStatus.hidden = false;
+        }
+      };
+
+      r.onend = () => {
+        recognizing = false;
+        // Si el usuario NO pidió detener (timeout por silencio), reinicia automático.
+        if (!userRequestedStop) {
+          // Acumular el texto que ya quedó como "final" en este chunk
+          baseTextWhenRecordingStarted = answerInput.value.trim();
+          finalTextAccumulated = '';
+          try {
+            r.start();
+            return;
+          } catch {
+            // Si falla el restart, mostrar mensaje y dejar al usuario reactivar.
+          }
+        }
+        setVoiceButtonState(false);
+        if (voiceStatus) {
+          voiceStatus.textContent =
+            'Grabación detenida. Revisa el texto y edítalo si quieres antes de enviar.';
+        }
+        userRequestedStop = false;
+      };
+
+      r.onerror = (e) => {
+        const code = e.error;
+        if (code === 'no-speech' || code === 'aborted') {
+          // Silencio prolongado · onend va a reiniciar si !userRequestedStop
+          return;
+        }
+        if (voiceStatus) {
+          voiceStatus.textContent = `Error de grabación (${code}). Puedes seguir escribiendo a mano.`;
+          voiceStatus.hidden = false;
+        }
+      };
+
+      r.onresult = (event) => {
+        let interim = '';
+        let final = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i];
+          const transcript = result[0].transcript;
+          if (result.isFinal) final += transcript;
+          else interim += transcript;
+        }
+        if (final) finalTextAccumulated += final;
+        const parts = [baseTextWhenRecordingStarted, finalTextAccumulated].filter(Boolean);
+        const combined = (parts.join(' ') + ' ' + interim).trim();
+        answerInput.value = combined;
+      };
+
+      return r;
+    }
+
+    function initVoice() {
+      const Ctor = getSpeechRecognitionConstructor();
+      if (!Ctor || !voiceToggle) return;
+      voiceToggle.hidden = false;
+
+      voiceToggle.addEventListener('click', () => {
+        if (recognizing) {
+          userRequestedStop = true;
+          recognition?.stop();
+          return;
+        }
+        const answerInput = document.getElementById('answer-input') as HTMLTextAreaElement;
+        baseTextWhenRecordingStarted = answerInput.value.trim();
+        finalTextAccumulated = '';
+        userRequestedStop = false;
+
+        // El timer arranca cuando inicia la grabación (igual que al escribir)
+        maybeStartTimer();
+
+        recognition = createRecognition(Ctor);
+        try {
+          recognition.start();
+        } catch {
+          if (voiceStatus) {
+            voiceStatus.textContent =
+              'No se pudo iniciar la grabación. Verifica permisos de micrófono.';
+            voiceStatus.hidden = false;
+          }
+        }
+      });
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // CV upload + parsing (Fase 1.3)
+    // ──────────────────────────────────────────────────────────────────
+    // Usa pdf.js desde CDN para extraer texto del PDF en el cliente.
+    // Después llama a /api/simulator-cv-parse para obtener el CvSummary estructurado.
+    // El CV completo nunca sale del navegador como archivo binario; solo el texto.
+
+    interface CvSummary {
+      formacion: string;
+      experiencia: string[];
+      tecnicas: string[];
+      areasTematicas: string[];
+      publicacionesCount: number | null;
+      idiomasDeclarados: string[];
+      gapsVisibles: string[];
+      fortalezasPharmaEvidentes: string[];
+    }
+
+    let parsedCvSummary: CvSummary | null = null;
+
+    const cvFileInput = document.getElementById('cv-file-input') as HTMLInputElement;
+    const cvUploadStatus = document.getElementById('cv-upload-status') as HTMLSpanElement;
+    const cvSummaryPreview = document.getElementById('cv-summary-preview') as HTMLParagraphElement;
+
+    const PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.7.76/pdf.min.mjs';
+    const PDFJS_WORKER_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.7.76/pdf.worker.min.mjs';
+
+    let pdfjsLib: any = null;
+    async function loadPdfJs() {
+      if (pdfjsLib) return pdfjsLib;
+      pdfjsLib = await import(/* @vite-ignore */ PDFJS_URL);
+      pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
+      return pdfjsLib;
+    }
+
+    async function extractTextFromPdf(file: File): Promise<string> {
+      const lib = await loadPdfJs();
+      const arrayBuf = await file.arrayBuffer();
+      const pdf = await lib.getDocument({ data: arrayBuf }).promise;
+      const texts: string[] = [];
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const pageText = content.items
+          .map((item: any) => (typeof item.str === 'string' ? item.str : ''))
+          .join(' ');
+        texts.push(pageText);
+      }
+      return texts.join('\n\n');
+    }
+
+    cvFileInput.addEventListener('change', async () => {
+      const file = cvFileInput.files?.[0];
+      if (!file) return;
+
+      if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+        cvUploadStatus.textContent = 'Por favor sube un archivo PDF.';
+        cvUploadStatus.className = 'cv-upload-status cv-upload-error';
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        cvUploadStatus.textContent = 'El archivo excede 5 MB. Súbelo más comprimido.';
+        cvUploadStatus.className = 'cv-upload-status cv-upload-error';
+        return;
+      }
+
+      cvUploadStatus.textContent = 'Leyendo PDF…';
+      cvUploadStatus.className = 'cv-upload-status cv-upload-working';
+      cvSummaryPreview.hidden = true;
+
+      let cvText: string;
+      try {
+        cvText = await extractTextFromPdf(file);
+      } catch (err) {
+        cvUploadStatus.textContent =
+          'No pude leer el PDF. Asegúrate de que sea texto seleccionable (no una imagen escaneada).';
+        cvUploadStatus.className = 'cv-upload-status cv-upload-error';
+        return;
+      }
+      if (cvText.trim().length < 50) {
+        cvUploadStatus.textContent =
+          'El PDF parece estar vacío o solo contiene imágenes. Sube uno con texto seleccionable.';
+        cvUploadStatus.className = 'cv-upload-status cv-upload-error';
+        return;
+      }
+
+      cvUploadStatus.textContent = 'Analizando contenido del CV…';
+
+      try {
+        const resp = await fetch('/api/simulator-cv-parse', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cvText }),
+        });
+        const data = await resp.json();
+        if (!data.ok || !data.cvSummary) {
+          throw new Error(data.error || 'Error parseando CV');
+        }
+        parsedCvSummary = data.cvSummary;
+        cvUploadStatus.textContent = '✓ CV procesado correctamente';
+        cvUploadStatus.className = 'cv-upload-status cv-upload-ok';
+
+        // Mostrar preview del resumen al usuario para validar
+        const s = parsedCvSummary as CvSummary;
+        const previewLines: string[] = [];
+        if (s.formacion) previewLines.push(`• Formación: ${s.formacion}`);
+        if (s.experiencia.length) previewLines.push(`• Experiencia: ${s.experiencia.join(' · ')}`);
+        if (s.tecnicas.length)
+          previewLines.push(`• Técnicas: ${s.tecnicas.slice(0, 8).join(', ')}${s.tecnicas.length > 8 ? '…' : ''}`);
+        if (s.idiomasDeclarados.length)
+          previewLines.push(`• Idiomas: ${s.idiomasDeclarados.join(', ')}`);
+        if (s.publicacionesCount !== null)
+          previewLines.push(`• Publicaciones: ${s.publicacionesCount}`);
+        if (s.gapsVisibles.length)
+          previewLines.push(`• Gaps detectados: ${s.gapsVisibles.join('; ')}`);
+        cvSummaryPreview.textContent = previewLines.join('\n');
+        cvSummaryPreview.hidden = false;
+      } catch (err) {
+        cvUploadStatus.textContent =
+          err instanceof Error ? err.message : 'Error inesperado procesando el CV.';
+        cvUploadStatus.className = 'cv-upload-status cv-upload-error';
+        parsedCvSummary = null;
+      }
+    });
+
+    // ──────────────────────────────────────────────────────────────────
+    // PDF descargable · Fase 1.4.C
+    // ──────────────────────────────────────────────────────────────────
+    // jsPDF cargado dinámico desde CDN para no inflar el bundle. Mismo
+    // patrón que /revisar-cv. Texto nativo (no canvas-image) para que el
+    // PDF se pueda buscar y copiar.
+
+    let simulatorJsPdfPromise: Promise<any> | null = null;
+    function loadJsPdfForSimulator(): Promise<any> {
+      if (!simulatorJsPdfPromise) {
+        simulatorJsPdfPromise = new Promise((resolve, reject) => {
+          const w = window as any;
+          if (w.jspdf?.jsPDF) { resolve(w.jspdf.jsPDF); return; }
+          const script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js';
+          script.async = true;
+          script.onload = () => {
+            if (w.jspdf?.jsPDF) resolve(w.jspdf.jsPDF);
+            else reject(new Error('jsPDF no se cargó correctamente'));
+          };
+          script.onerror = () => reject(new Error('No pudimos cargar la librería de PDF'));
+          document.head.appendChild(script);
+        });
+      }
+      return simulatorJsPdfPromise;
+    }
+
+    // Sanitiza caracteres no soportados por Helvetica (WinAnsi). Sin esto
+    // splitTextToSize calcula mal el ancho y el render se va off-page.
+    function sanitizePdfText(text: string): string {
+      if (!text) return '';
+      return text
+        .replace(/→/g, '>').replace(/←/g, '<').replace(/↑/g, '^').replace(/↓/g, 'v')
+        .replace(/—/g, ' - ').replace(/–/g, '-')
+        .replace(/[‘’‚‛]/g, "'").replace(/[“”„‟]/g, '"')
+        .replace(/…/g, '...').replace(/•/g, '*')
+        .replace(/✓/g, 'OK').replace(/✗/g, 'X')
+        .replace(/[‐-―]/g, '-')
+        .replace(/[  ]/g, ' ')
+        .replace(/[​‌‍﻿]/g, '');
+    }
+
+    function slugForFilename(text: string): string {
+      return (text || 'simulador')
+        .toLowerCase()
+        .normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 40) || 'simulador';
+    }
+
+    function generateSimulatorPdf(JsPDF: any, fr: FinalReport): any {
+      const doc = new JsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+
+      // Geometría
+      const PAGE_W = 210, PAGE_H = 297;
+      const M_X = 18, M_TOP = 18, M_BOTTOM = 22;
+      const C_W = PAGE_W - 2 * M_X;
+
+      // Paleta (igual que /revisar-cv para coherencia de marca)
+      const NAVY: [number, number, number] = [27, 58, 107];
+      const NAVY_DEEP: [number, number, number] = [15, 39, 72];
+      const ORANGE: [number, number, number] = [232, 116, 58];
+      const OFFW: [number, number, number] = [247, 245, 238];
+      const TEXT: [number, number, number] = [27, 37, 64];
+      const TEXTMUTE: [number, number, number] = [90, 100, 128];
+      const RULE: [number, number, number] = [220, 218, 210];
+
+      let y = M_TOP;
+      const setColor = (k: 'fill' | 'stroke' | 'text', c: [number, number, number]) => {
+        if (k === 'fill') doc.setFillColor(c[0], c[1], c[2]);
+        else if (k === 'stroke') doc.setDrawColor(c[0], c[1], c[2]);
+        else doc.setTextColor(c[0], c[1], c[2]);
+      };
+      const needBreak = (h: number) => {
+        if (y + h > PAGE_H - M_BOTTOM) { doc.addPage(); y = M_TOP; }
+      };
+
+      // ===== Header (página 1) =====
+      setColor('fill', NAVY_DEEP);
+      doc.roundedRect(M_X, y, 10, 10, 1.8, 1.8, 'F');
+      setColor('fill', ORANGE);
+      doc.circle(M_X + 5, y + 5, 1.5, 'F');
+      setColor('stroke', ORANGE);
+      doc.setLineWidth(0.35);
+      doc.circle(M_X + 5, y + 5, 3, 'S');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(14); setColor('text', NAVY);
+      doc.text('Solca', M_X + 13.5, y + 4.5);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); setColor('text', ORANGE);
+      doc.text('CIENCIA Y CONSULTORÍA', M_X + 13.5, y + 9);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); setColor('text', TEXTMUTE);
+      doc.text('hello@solcaciencia.com', PAGE_W - M_X, y + 7, { align: 'right' });
+      y += 13;
+      setColor('stroke', RULE); doc.setLineWidth(0.4);
+      doc.line(M_X, y, PAGE_W - M_X, y);
+      y += 11;
+
+      // ===== Title =====
+      setColor('fill', ORANGE);
+      doc.circle(M_X + 1.5, y - 1.5, 1, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(8); setColor('text', ORANGE);
+      doc.text('SIMULADOR DE ENTREVISTAS · REPORTE', M_X + 5, y);
+      y += 8;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(22); setColor('text', NAVY);
+      const titleText = sanitizePdfText(`Reporte de tu sesión · ${fr.rol}`);
+      const titleLines = doc.splitTextToSize(titleText, C_W);
+      titleLines.forEach((line: string, i: number) => doc.text(line, M_X, y + i * 9));
+      y += titleLines.length * 9 + 3;
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(10); setColor('text', TEXTMUTE);
+      const fechaStr = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
+      doc.text(`${fr.nQuestions} preguntas · ${fechaStr}`, M_X, y);
+      y += 9;
+
+      // ===== Scores agregados =====
+      const s = fr.summary;
+      const cellW = (C_W - 9) / 4;
+      const cellH = 18;
+      const drawScoreCell = (i: number, label: string, value: string) => {
+        const x = M_X + i * (cellW + 3);
+        setColor('fill', OFFW);
+        doc.roundedRect(x, y, cellW, cellH, 2, 2, 'F');
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8); setColor('text', TEXTMUTE);
+        doc.text(label.toUpperCase(), x + 4, y + 5);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(18); setColor('text', NAVY);
+        doc.text(value, x + 4, y + 14);
+      };
+      const fmt = (n: number) => (typeof n === 'number' ? n.toFixed(1) : '—');
+      needBreak(cellH + 6);
+      drawScoreCell(0, 'Técnico', fmt(s.scores.tecnico));
+      drawScoreCell(1, 'Estructura', fmt(s.scores.estructura));
+      drawScoreCell(2, 'Especificidad', fmt(s.scores.especificidad));
+      drawScoreCell(3, 'Alertas', String(s.scores.alertasCount ?? 0));
+      y += cellH + 8;
+
+      // ===== Helper de sección =====
+      const drawSectionHeader = (label: string) => {
+        needBreak(12);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(13); setColor('text', NAVY);
+        doc.text(label, M_X, y);
+        setColor('stroke', ORANGE); doc.setLineWidth(0.7);
+        const tw = doc.getTextWidth(label);
+        doc.line(M_X, y + 1.5, M_X + tw, y + 1.5);
+        y += 7;
+      };
+      const drawList = (items: string[]) => {
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(10); setColor('text', TEXT);
+        if (!items || !items.length) {
+          doc.text('—', M_X, y); y += 5; return;
+        }
+        items.forEach((it, idx) => {
+          const lines = doc.splitTextToSize(sanitizePdfText(`${idx + 1}. ${it}`), C_W - 4);
+          needBreak(lines.length * 5 + 2);
+          lines.forEach((l: string) => { doc.text(l, M_X, y); y += 5; });
+          y += 1;
+        });
+        y += 2;
+      };
+
+      // ===== Fortalezas / Áreas / Vocab / Recomendación =====
+      drawSectionHeader('Tus fortalezas');
+      drawList(s.fortalezas || []);
+
+      drawSectionHeader('Áreas de mejora');
+      drawList(s.areasDeMejora || []);
+
+      drawSectionHeader('Vocabulario a incorporar');
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(10); setColor('text', TEXT);
+      const vocabText = (s.vocabularioAIncorporar && s.vocabularioAIncorporar.length)
+        ? s.vocabularioAIncorporar.join(' · ')
+        : 'Nada crítico ausente.';
+      const vocabLines = doc.splitTextToSize(sanitizePdfText(vocabText), C_W);
+      vocabLines.forEach((l: string) => { needBreak(5); doc.text(l, M_X, y); y += 5; });
+      y += 3;
+
+      drawSectionHeader('Recomendación final');
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5); setColor('text', TEXT);
+      const recLines = doc.splitTextToSize(sanitizePdfText(s.recomendacionFinal || ''), C_W);
+      recLines.forEach((l: string) => { needBreak(5); doc.text(l, M_X, y); y += 5; });
+      y += 6;
+
+      // ===== Desglose por pregunta =====
+      drawSectionHeader('Desglose por pregunta');
+      (fr.questionsBreakdown || []).forEach((qb, idx) => {
+        // header pregunta
+        needBreak(20);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(11); setColor('text', NAVY);
+        doc.text(`Pregunta ${qb.questionNumber}`, M_X, y);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(9); setColor('text', TEXTMUTE);
+        doc.text(
+          `T ${fmt(qb.scores.tecnico)} · E ${fmt(qb.scores.estructura)} · Esp ${fmt(qb.scores.especificidad)}`,
+          PAGE_W - M_X, y, { align: 'right' },
+        );
+        y += 5;
+
+        const writeBlock = (label: string, text: string, opts?: { italic?: boolean; bar?: boolean }) => {
+          if (!text) return;
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(9); setColor('text', TEXTMUTE);
+          needBreak(4);
+          doc.text(label.toUpperCase(), M_X + (opts?.bar ? 5 : 0), y);
+          y += 4;
+          doc.setFont('helvetica', opts?.italic ? 'italic' : 'normal'); doc.setFontSize(10); setColor('text', TEXT);
+          const lines = doc.splitTextToSize(sanitizePdfText(text), C_W - (opts?.bar ? 5 : 0));
+          const blockStart = y;
+          lines.forEach((l: string) => {
+            needBreak(5);
+            doc.text(l, M_X + (opts?.bar ? 5 : 0), y);
+            y += 4.8;
+          });
+          if (opts?.bar) {
+            setColor('stroke', ORANGE); doc.setLineWidth(0.7);
+            doc.line(M_X + 2, blockStart - 3, M_X + 2, y - 1);
+          }
+          y += 2;
+        };
+
+        writeBlock('Pregunta', qb.questionText, { italic: true });
+        writeBlock('Tu respuesta', qb.userAnswer);
+        writeBlock('Qué funcionó', qb.whatWorked);
+        writeBlock('Qué mejorar', qb.whatToImprove);
+        writeBlock('Frase modelo', qb.modelPhrase, { bar: true });
+
+        if (qb.scores.alertas && qb.scores.alertas !== 'sin alertas') {
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(9); setColor('text', ORANGE);
+          needBreak(5);
+          doc.text(sanitizePdfText(`Alertas: ${qb.scores.alertas}`), M_X, y);
+          y += 5;
+        }
+
+        // Divider
+        if (idx < (fr.questionsBreakdown.length - 1)) {
+          y += 2;
+          setColor('stroke', RULE); doc.setLineWidth(0.2);
+          doc.line(M_X, y, PAGE_W - M_X, y);
+          y += 5;
+        } else {
+          y += 5;
+        }
+      });
+
+      // ===== CTA box =====
+      if (fr.cta && (fr.cta.title || fr.cta.description)) {
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+        const descLines = doc.splitTextToSize(sanitizePdfText(fr.cta.description || ''), C_W - 12);
+        const boxPad = 6;
+        const boxH = boxPad * 2 + 9 + descLines.length * 5 + 3 + 8;
+        needBreak(boxH + 4);
+        const boxY = y;
+        setColor('fill', NAVY_DEEP);
+        doc.roundedRect(M_X, boxY, C_W, boxH, 2.5, 2.5, 'F');
+
+        let cy = boxY + boxPad;
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(13); setColor('text', OFFW);
+        doc.text(sanitizePdfText(fr.cta.title || 'Siguiente paso'), M_X + boxPad, cy + 2);
+        setColor('stroke', ORANGE); doc.setLineWidth(0.7);
+        const ctaTw = doc.getTextWidth(sanitizePdfText(fr.cta.title || 'Siguiente paso'));
+        doc.line(M_X + boxPad, cy + 3.5, M_X + boxPad + ctaTw, cy + 3.5);
+        cy += 9;
+
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(10); setColor('text', OFFW);
+        descLines.forEach((l: string) => { doc.text(l, M_X + boxPad, cy); cy += 5; });
+        cy += 2;
+
+        if (fr.cta.url) {
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(10); setColor('text', ORANGE);
+          doc.textWithLink('>> Abrir recurso', M_X + boxPad, cy + 1, { url: fr.cta.url });
+        }
+        y = boxY + boxH + 4;
+      }
+
+      // ===== Línea servicio gratuito siempre presente =====
+      needBreak(8);
+      doc.setFont('helvetica', 'italic'); doc.setFontSize(9); setColor('text', TEXTMUTE);
+      doc.text(
+        'Si quieres revisión gratuita de tu CV antes de aplicar: solcaciencia.com/revisar-cv',
+        M_X, y,
+      );
+
+      // ===== Footers (página por página, al final) =====
+      const total = doc.getNumberOfPages();
+      for (let p = 1; p <= total; p++) {
+        doc.setPage(p);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8); setColor('text', TEXTMUTE);
+        doc.text('Solca · Ciencia y Consultoría · hello@solcaciencia.com', M_X, PAGE_H - 10);
+        doc.text(`Página ${p} / ${total}`, PAGE_W - M_X, PAGE_H - 10, { align: 'right' });
+      }
+
+      return doc;
+    }
+
+    // ---- Click handler del botón ----
+    const downloadPdfBtn = document.getElementById('download-pdf') as HTMLButtonElement | null;
+    if (downloadPdfBtn) {
+      downloadPdfBtn.addEventListener('click', async () => {
+        const fr = appState.finalReport;
+        if (!fr) return;
+        const originalLabel = downloadPdfBtn.textContent;
+        downloadPdfBtn.disabled = true;
+        downloadPdfBtn.textContent = 'Generando PDF...';
+        try {
+          const JsPDF = await loadJsPdfForSimulator();
+          const doc = generateSimulatorPdf(JsPDF, fr);
+          const dateSlug = new Date().toISOString().slice(0, 10);
+          const filename = `solca-simulador-${slugForFilename(fr.rol)}-${dateSlug}.pdf`;
+          doc.save(filename);
+          downloadPdfBtn.textContent = originalLabel || 'Descargar PDF';
+        } catch (err) {
+          console.error('PDF generation failed:', err);
+          downloadPdfBtn.textContent = 'Error al generar PDF';
+          setTimeout(() => {
+            downloadPdfBtn.textContent = originalLabel || 'Descargar PDF';
+          }, 3000);
+        } finally {
+          downloadPdfBtn.disabled = false;
+        }
+      });
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // Encuesta beta post-reporte (Fase 1.5.H)
+    // ──────────────────────────────────────────────────────────────────
+    // Solo aparece a usuarios que entraron con código beta (lo dejó la página
+    // del gate en sessionStorage). Se muestra al pasar a la vista report.
+    // Todas las preguntas son opcionales individualmente · botón Saltar oculta
+    // el panel sin enviar.
+
+    function maybeShowBetaSurvey() {
+      const betaCode = sessionStorage.getItem('solca_beta_code');
+      if (!betaCode) return; // No es beta · no se muestra
+      const surveyEl = document.getElementById('beta-survey') as HTMLElement | null;
+      if (surveyEl) surveyEl.hidden = false;
+    }
+
+    // Hookear al cambio de view: cuando se muestra report, evaluamos si mostrar la encuesta
+    (function wireBetaSurveyVisibility() {
+      const reportView = document.getElementById('view-report');
+      if (!reportView) return;
+      const observer = new MutationObserver(() => {
+        if (!reportView.classList.contains('hidden')) {
+          maybeShowBetaSurvey();
+        }
+      });
+      observer.observe(reportView, { attributes: true, attributeFilter: ['class'] });
+    })();
+
+    const surveyForm = document.getElementById('survey-form') as HTMLFormElement | null;
+    const surveySkipBtn = document.getElementById('survey-skip') as HTMLButtonElement | null;
+    const surveySubmitBtn = document.getElementById('survey-submit') as HTMLButtonElement | null;
+    const surveyMessageEl = document.getElementById('survey-message') as HTMLParagraphElement | null;
+    const surveyThanksEl = document.getElementById('survey-thanks') as HTMLDivElement | null;
+    const betaSurveyEl = document.getElementById('beta-survey') as HTMLElement | null;
+
+    function getRadioValue(name: string): string | null {
+      const checked = document.querySelector(`input[name="${name}"]:checked`) as HTMLInputElement | null;
+      return checked ? checked.value : null;
+    }
+
+    if (surveySkipBtn && betaSurveyEl) {
+      surveySkipBtn.addEventListener('click', () => {
+        betaSurveyEl.hidden = true;
+      });
+    }
+
+    if (surveyForm && surveySubmitBtn && surveyMessageEl && surveyThanksEl) {
+      surveyForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!appState.sessionState) return;
+
+        const realismo = getRadioValue('realismo');
+        const utilidad = getRadioValue('utilidad');
+        const facilidad = getRadioValue('facilidad');
+        const pagoVal = getRadioValue('pago');
+        const sorpresaEl = surveyForm.elements.namedItem('sorpresa') as HTMLTextAreaElement | null;
+        const mejoraEl = surveyForm.elements.namedItem('mejora') as HTMLTextAreaElement | null;
+        const edadEl = surveyForm.elements.namedItem('edad') as HTMLSelectElement | null;
+        const generoEl = surveyForm.elements.namedItem('genero') as HTMLSelectElement | null;
+
+        const payload = {
+          sessionId: appState.sessionState.sessionId,
+          realismo: realismo ? parseInt(realismo, 10) : null,
+          utilidad: utilidad ? parseInt(utilidad, 10) : null,
+          facilidad: facilidad ? parseInt(facilidad, 10) : null,
+          sorpresa: sorpresaEl?.value || null,
+          mejora: mejoraEl?.value || null,
+          pagoDisposicion: pagoVal,
+          edadRango: edadEl?.value || null,
+          genero: generoEl?.value || null,
+        };
+
+        surveySubmitBtn.disabled = true;
+        surveyMessageEl.hidden = true;
+
+        try {
+          const resp = await fetch('/api/simulator-beta-feedback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const data = await resp.json();
+          if (!resp.ok || !data.ok) {
+            throw new Error(data.error || `Error ${resp.status}`);
+          }
+          // Éxito · ocultar form y mostrar gracias
+          surveyForm.hidden = true;
+          surveyThanksEl.hidden = false;
+        } catch (err) {
+          surveyMessageEl.textContent =
+            err instanceof Error ? err.message : 'Error inesperado al enviar feedback.';
+          surveyMessageEl.hidden = false;
+          surveySubmitBtn.disabled = false;
+        }
+      });
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // Fase 1.5.L · recovery automático si hay sessionId guardado y la última
+    // generación del reporte falló (action=retry_report). NO auto-resumimos
+    // sesiones en progreso para no confundir al usuario que quiere arrancar
+    // una sesión nueva · solo recuperamos el caso del "reporte roto".
+    // ──────────────────────────────────────────────────────────────────
+    async function maybeResumeBrokenSession() {
+      let savedSessionId: string | null = null;
+      try { savedSessionId = localStorage.getItem('solca_session_id'); } catch {}
+      if (!savedSessionId) return;
+
+      try {
+        const resp = await fetch('/api/simulator-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'resume', sessionId: savedSessionId }),
+        });
+        const data = await resp.json();
+        if (!data.ok || !data.sessionState) {
+          // Sesión no encontrada o expirada · limpiar y seguir con intake normal
+          try { localStorage.removeItem('solca_session_id'); } catch {}
+          return;
+        }
+        const st = data.sessionState;
+        // Si la sesión terminó con reporte exitoso → mostrar reporte directo
+        if (st.finished && st.finalReport) {
+          appState.sessionState = st;
+          showView('report');
+          renderFinalReport(st.finalReport);
+          return;
+        }
+        // Si la sesión terminó con error de reporte → ofrecer reintento
+        if (st.finalReportError) {
+          appState.sessionState = st;
+          showView('report');
+          const summaryEl = document.getElementById('report-summary-text') as HTMLDivElement;
+          const breakdownEl = document.getElementById('report-breakdown-text') as HTMLDivElement;
+          summaryEl.innerHTML = `
+            <p><strong>Tu sesión anterior terminó pero el reporte no llegó a generarse.</strong></p>
+            <p>Tus ${st.turns.length} respuestas siguen guardadas. Puedes reintentar la generación · normalmente toma 30-60 segundos.</p>
+            <p><button id="recovery-retry-btn" class="btn btn-primary" style="margin-top:8px">Reintentar generación del reporte</button></p>
+            <p><small style="color:var(--text-mute)">Si vuelve a fallar, escríbenos a <a href="mailto:hello@solcaciencia.com?subject=Simulador%20-%20Recovery%20fallido&body=sessionId%3A%20${encodeURIComponent(st.sessionId)}">hello@solcaciencia.com</a> con sessionId <code>${escapeHtml(st.sessionId)}</code>.</small></p>
+          `;
+          breakdownEl.innerHTML = '';
+          const downloadBtn = document.getElementById('download-pdf') as HTMLButtonElement | null;
+          if (downloadBtn) downloadBtn.disabled = true;
+          const recoveryBtn = document.getElementById('recovery-retry-btn');
+          if (recoveryBtn) recoveryBtn.addEventListener('click', () => retryReportGeneration());
+          return;
+        }
+        // Si está en progreso · limpiamos para no confundir, dejamos arrancar nueva
+        try { localStorage.removeItem('solca_session_id'); } catch {}
+      } catch (err) {
+        console.error('[maybe-resume] failed:', err);
+        // No bloquear el flujo normal · si resume falla, dejar pasar al intake
+      }
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // Init
+    // ──────────────────────────────────────────────────────────────────
+    updateDefaultsFromIntake();
+    initVoice();
+    maybeResumeBrokenSession();
+  </script>
+
+  <style>
+    :root {
+      --max-w: 720px;
+    }
+    .nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(250, 249, 244, 0.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--rule);
+    }
+    .nav-inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      padding: 14px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-brand {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--text);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .nav-links a {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-mute);
+    }
+    .nav-links a:hover { color: var(--navy); opacity: 1; }
+
+    .sim-main { padding: 48px 0 80px; }
+    .container { max-width: var(--max-w); margin: 0 auto; padding: 0 24px; }
+
+    .view h1 {
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(28px, 4vw, 40px);
+      line-height: 1.1;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      margin-bottom: 16px;
+    }
+    .intro {
+      font-size: 17px;
+      line-height: 1.55;
+      color: var(--text-mute);
+      margin-bottom: 32px;
+    }
+
+    .hidden { display: none !important; }
+
+    /* ============ Intake form ============ */
+    .intake-form { display: flex; flex-direction: column; gap: 28px; }
+    .field-group {
+      border: 0;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .field-group legend {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .field-group legend .hint {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--orange);
+      margin-left: 8px;
+    }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field-label {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .field-label .optional {
+      font-weight: 400;
+      color: var(--text-mute);
+      font-size: 13px;
+    }
+    .field input[type="text"],
+    .field textarea,
+    .field select {
+      padding: 12px 14px;
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      background: white;
+    }
+    .field input[type="text"]:focus,
+    .field textarea:focus,
+    .field select:focus {
+      outline: 2px solid var(--orange);
+      border-color: var(--orange);
+    }
+    .radio {
+      display: flex;
+      gap: 12px;
+      padding: 12px 16px;
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .radio:hover { background: var(--bg); }
+    .radio input { margin-top: 4px; flex-shrink: 0; }
+    .radio span { display: flex; flex-direction: column; gap: 4px; }
+    .radio strong { font-size: 15px; color: var(--text); }
+    .radio em {
+      font-size: 13px;
+      color: var(--text-mute);
+      font-style: normal;
+    }
+    .radio input:checked + span strong { color: var(--navy); }
+    .radio:has(input:checked) {
+      border-color: var(--orange);
+      background: var(--orange-light);
+    }
+
+    .form-actions { margin-top: 16px; }
+    .error-message {
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: rgba(220, 80, 60, 0.08);
+      border-left: 3px solid #DC503C;
+      border-radius: 6px;
+      color: #8B2E1F;
+      font-size: 14px;
+    }
+
+    /* ============ Session view · sticky header ============ */
+    .session-sticky-header {
+      position: sticky;
+      top: 52px; /* debajo del nav principal */
+      z-index: 40;
+      background: rgba(250, 249, 244, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--rule);
+      padding: 16px 0 12px;
+      margin-bottom: 24px;
+    }
+    .session-body { padding-top: 8px; }
+    .session-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 24px;
+    }
+    .progress { flex: 1; }
+    .progress span {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-mute);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .progress-bar {
+      margin-top: 8px;
+      height: 6px;
+      background: var(--rule);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--orange);
+      transition: width 0.3s;
+    }
+    .timer {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+    .timer-label {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-mute);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .timer-display {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+    .timer-display.timer-waiting { color: var(--text-mute); opacity: 0.5; }
+    .timer-display.timer-warning { color: var(--orange); }
+    .timer-display.timer-over { color: #DC503C; }
+    .timer-hint {
+      font-size: 12px;
+      color: var(--text-mute);
+      font-style: italic;
+    }
+
+    .question-display { margin-bottom: 24px; }
+    .question-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--orange);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .question-text {
+      font-size: 18px;
+      line-height: 1.55;
+      color: var(--text);
+      white-space: pre-wrap;
+    }
+
+    .answer-block { margin-bottom: 16px; }
+    .answer-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      gap: 12px;
+    }
+    .answer-label {
+      display: block;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .btn-voice {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      background: white;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+    .btn-voice:hover { border-color: var(--orange); color: var(--orange); }
+    .btn-voice .voice-icon {
+      color: var(--text-mute);
+      font-size: 14px;
+      transition: color 0.15s;
+    }
+    .btn-voice.recording {
+      border-color: #DC503C;
+      background: rgba(220, 80, 60, 0.06);
+      color: #DC503C;
+    }
+    .btn-voice.recording .voice-icon {
+      color: #DC503C;
+      animation: pulse 1s infinite;
+    }
+    .voice-status {
+      margin-top: 6px;
+      font-size: 13px;
+      color: var(--text-mute);
+      font-style: italic;
+    }
+
+    /* ============ CV upload ============ */
+    .cv-upload {
+      padding: 18px 20px;
+      background: var(--blue-soft);
+      border: 1px solid rgba(42, 107, 172, 0.25);
+      border-radius: 8px;
+    }
+    .cv-upload .field-label {
+      display: block;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 6px;
+    }
+    .cv-upload-help {
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--text-mute);
+      margin: 0 0 14px 0;
+    }
+    .cv-upload-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .cv-upload input[type="file"] {
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      color: var(--text);
+      padding: 6px;
+      background: white;
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      max-width: 100%;
+    }
+    .cv-upload-status {
+      font-size: 13px;
+      color: var(--text-mute);
+    }
+    .cv-upload-status.cv-upload-working { color: var(--orange); }
+    .cv-upload-status.cv-upload-ok { color: #2b8a3e; font-weight: 600; }
+    .cv-upload-status.cv-upload-error { color: #DC503C; }
+    .cv-summary-preview {
+      margin-top: 14px;
+      padding: 14px 16px;
+      background: white;
+      border-radius: 6px;
+      border-left: 3px solid var(--orange);
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--text);
+      white-space: pre-line;
+    }
+    .answer-input {
+      width: 100%;
+      padding: 16px;
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+      background: white;
+      resize: vertical;
+      min-height: 200px;
+    }
+    .answer-input:focus {
+      outline: 2px solid var(--orange);
+      border-color: var(--orange);
+    }
+    .answer-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-top: 12px;
+    }
+    .answer-hint {
+      font-size: 13px;
+      color: var(--text-mute);
+    }
+    .answer-editable-note {
+      margin: 8px 0 0;
+      padding: 8px 12px;
+      background: rgba(232, 116, 58, 0.08);
+      border-left: 3px solid var(--orange);
+      border-radius: 6px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text-mute);
+    }
+    .short-answer-warning {
+      margin: 12px 0 0;
+      padding: 14px 16px;
+      background: rgba(232, 116, 58, 0.12);
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+    }
+    .short-answer-text {
+      margin: 0 0 12px;
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--text);
+    }
+    .short-answer-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .loading {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 18px 20px;
+      background: var(--orange-light);
+      border-left: 3px solid var(--orange);
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--text);
+      margin-top: 16px;
+    }
+    .loading.loading-extended {
+      padding: 24px;
+      font-size: 15px;
+      background: rgba(232, 116, 58, 0.12);
+    }
+    .loading-spinner {
+      width: 22px;
+      height: 22px;
+      border: 3px solid rgba(232, 116, 58, 0.25);
+      border-top-color: var(--orange);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .loading.loading-extended .loading-spinner {
+      width: 32px;
+      height: 32px;
+      border-width: 4px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* ============ Hint line ============ */
+    .hint-line {
+      font-size: 13px;
+      color: var(--text-mute);
+      font-style: italic;
+      margin-top: 4px;
+    }
+
+    /* ============ Report view ============ */
+    .report-summary, .report-breakdown {
+      margin-bottom: 24px;
+      padding: 24px;
+      border: 1px solid var(--rule);
+      border-radius: 10px;
+      background: white;
+    }
+    .report-summary h2 {
+      font-family: 'Inter', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+    .report-breakdown summary {
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--navy);
+    }
+    .report-breakdown summary:hover { color: var(--orange); }
+    .breakdown-text { margin-top: 16px; }
+    .report-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 32px;
+      flex-wrap: wrap;
+    }
+
+    /* ============ Report · summary structured ============ */
+    .summary-text h3 {
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--navy);
+      margin: 22px 0 8px;
+    }
+    .report-meta {
+      font-size: 14px;
+      color: var(--text-mute);
+      margin-bottom: 16px;
+    }
+    .score-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin: 12px 0 8px;
+    }
+    .score-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      padding: 12px 14px;
+      background: var(--off-white, #F7F5EE);
+      border-radius: 8px;
+    }
+    .score-label {
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-mute);
+      font-weight: 600;
+    }
+    .score-value {
+      font-family: 'Inter', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--navy);
+    }
+    .report-list {
+      margin: 8px 0 8px 22px;
+      padding: 0;
+    }
+    .report-list li {
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .report-empty {
+      font-size: 14px;
+      color: var(--text-mute);
+      font-style: italic;
+    }
+    .vocab-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .vocab-chip {
+      display: inline-block;
+      padding: 4px 10px;
+      background: rgba(232, 116, 58, 0.12);
+      color: #B0501F;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .report-recomendacion {
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--text);
+      margin-top: 6px;
+    }
+    .report-cta {
+      margin-top: 22px;
+      padding: 18px 20px;
+      background: var(--navy-deep, #0F2748);
+      color: var(--off-white, #F7F5EE);
+      border-radius: 10px;
+    }
+    .report-cta h3 {
+      color: var(--off-white, #F7F5EE);
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+    .report-cta p {
+      font-size: 14px;
+      line-height: 1.55;
+      margin: 0 0 12px;
+    }
+    .report-cta-link {
+      display: inline-block;
+      font-weight: 700;
+    }
+
+    /* ============ Report · breakdown por pregunta ============ */
+    .qb-card {
+      padding: 16px 18px;
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      margin-bottom: 14px;
+      background: var(--off-white, #F7F5EE);
+    }
+    .qb-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+      gap: 12px;
+    }
+    .qb-num {
+      font-weight: 700;
+      color: var(--navy);
+      font-size: 15px;
+    }
+    .qb-scores {
+      font-size: 12px;
+      color: var(--text-mute);
+      letter-spacing: 0.04em;
+    }
+    .qb-question {
+      font-size: 14px;
+      color: var(--text);
+      margin: 0 0 10px;
+    }
+    .qb-label {
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-mute);
+      font-weight: 700;
+      margin: 10px 0 4px;
+    }
+    .qb-answer {
+      margin: 0 0 6px;
+      padding: 8px 12px;
+      border-left: 3px solid var(--rule);
+      background: white;
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .qb-text {
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--text);
+      margin: 0;
+    }
+    .qb-model {
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--text);
+      padding: 8px 12px;
+      border-left: 3px solid var(--orange);
+      background: white;
+      margin: 0;
+    }
+    .qb-alertas {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--text-mute);
+    }
+    @media (max-width: 640px) {
+      .score-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* ============ Encuesta beta post-reporte (Fase 1.5.H) ============ */
+    .beta-survey {
+      margin-top: 32px;
+      padding: 0;
+      border: 2px solid var(--orange);
+      border-radius: 10px;
+      background: white;
+    }
+    .survey-details summary {
+      cursor: pointer;
+      padding: 16px 20px;
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--navy);
+      background: rgba(232, 116, 58, 0.08);
+      border-radius: 8px 8px 0 0;
+    }
+    .survey-details[open] summary {
+      border-bottom: 1px solid var(--rule);
+    }
+    .survey-form, .survey-thanks {
+      padding: 20px 24px 24px;
+    }
+    .survey-intro {
+      font-size: 13px;
+      color: var(--text-mute);
+      margin: 0 0 20px;
+      line-height: 1.55;
+    }
+    .survey-field {
+      margin: 0 0 22px;
+      padding: 0;
+      border: none;
+    }
+    .survey-field legend, .survey-label {
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 10px;
+      display: block;
+      line-height: 1.4;
+    }
+    .survey-hint {
+      font-size: 12px;
+      color: var(--text-mute);
+      font-weight: 400;
+    }
+    .survey-field textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      resize: vertical;
+    }
+    .survey-field textarea:focus {
+      outline: 2px solid var(--orange);
+      border-color: var(--orange);
+    }
+    .rating-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .rating {
+      flex: 1;
+      min-width: 64px;
+      cursor: pointer;
+    }
+    .rating input { display: none; }
+    .rating span {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 12px 8px;
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      background: var(--off-white);
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--navy);
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .rating span small {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-mute);
+    }
+    .rating input:checked + span {
+      background: var(--orange);
+      border-color: var(--orange);
+      color: white;
+    }
+    .rating input:checked + span small {
+      color: rgba(255, 255, 255, 0.85);
+    }
+    .rating:hover span { border-color: var(--orange); }
+    .choice {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      margin-bottom: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.15s;
+    }
+    .choice:hover { background: var(--off-white); }
+    .choice input:checked ~ span {
+      color: var(--navy);
+      font-weight: 600;
+    }
+    .inline-field {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .inline-field > span {
+      font-size: 13px;
+      color: var(--text);
+      min-width: 110px;
+    }
+    .inline-field select {
+      flex: 1;
+      padding: 6px 10px;
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      background: white;
+    }
+    .survey-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid var(--rule);
+    }
+    .survey-message {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: rgba(196, 74, 58, 0.1);
+      border-left: 3px solid #C44A3A;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #C44A3A;
+    }
+    .survey-thanks p {
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--text);
+      margin: 0 0 10px;
+    }
+    .survey-thanks a {
+      color: var(--orange);
+      font-weight: 600;
+    }
+  </style>
+</BaseLayout>

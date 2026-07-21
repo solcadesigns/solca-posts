@@ -90,6 +90,63 @@ export async function chatCompletion(
   return (await response.json()) as AnthropicResponse;
 }
 
+/**
+ * Retry helper para chatCompletion (Fase 1.5.I · 19 jun 2026).
+ *
+ * Reintenta automáticamente errores transitorios de Anthropic (5xx, overloaded)
+ * con backoff exponencial. NO reintenta errores de cliente (4xx invalid_request,
+ * 401 auth) porque esos requieren intervención manual.
+ *
+ * Backoff: 1s, 3s, 7s (acumulado ~11s en peor caso, dentro de límites de CF Workers).
+ * Max 3 intentos totales (1 inicial + 2 retries).
+ *
+ * Logs cada intento a console.warn para diagnóstico via wrangler tail.
+ */
+const RETRY_DELAYS_MS = [1000, 3000, 7000];
+const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504, 529]);
+// 529 = Anthropic's "overloaded_error" status
+// 429 = rate limit (con backoff suele resolver; si no, falla en el último intento)
+
+export async function retryableChatCompletion(
+  options: ChatCompletionOptions,
+  context = 'unknown',
+): Promise<AnthropicResponse> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < RETRY_DELAYS_MS.length; attempt++) {
+    try {
+      const result = await chatCompletion(options);
+      if (attempt > 0) {
+        console.warn(
+          `[anthropic-retry] ${context} succeeded on attempt ${attempt + 1}/${RETRY_DELAYS_MS.length}`,
+        );
+      }
+      return result;
+    } catch (err) {
+      lastError = err;
+      const isRetryable = err instanceof AnthropicError && RETRYABLE_STATUS.has(err.status);
+      const willRetry = isRetryable && attempt < RETRY_DELAYS_MS.length - 1;
+
+      console.warn(
+        `[anthropic-retry] ${context} attempt ${attempt + 1}/${RETRY_DELAYS_MS.length} failed`,
+        JSON.stringify({
+          status: err instanceof AnthropicError ? err.status : 'unknown',
+          message: err instanceof Error ? err.message : String(err),
+          retryable: isRetryable,
+          willRetry,
+        }),
+      );
+
+      if (!willRetry) {
+        throw err;
+      }
+
+      const delayMs = RETRY_DELAYS_MS[attempt];
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('All retry attempts failed');
+}
+
 /** Helper: extract text from Anthropic response content blocks */
 export function extractText(response: AnthropicResponse): string {
   return response.content

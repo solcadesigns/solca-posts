@@ -68,7 +68,7 @@ Este proceso rinde mucho más que aplicar a treinta vacantes en dos semanas con 
 
 ## Un dato honesto sobre timing
 
-De la muestra que revisamos de submissions al survey de la herramienta gratuita CV Review, cero candidatos declararon inglés avanzado (C1). Los que respondieron declararon básico o intermedio. Esa señal es consistente con la brecha entre autopercepción académica y calibración operativa.
+De la muestra que revisamos de submissions al survey de la herramienta CV Review, cero candidatos declararon inglés avanzado (C1). Los que respondieron declararon básico o intermedio. Esa señal es consistente con la brecha entre autopercepción académica y calibración operativa.
 
 De la misma muestra, uno declaró "20+ aplicaciones sin respuesta" y varios reportaron urgencia inmediata (0-3 meses). Esa combinación (muchas aplicaciones, sin respuesta, urgencia alta) es la más frecuente en posdocs que aplicaron sin preparación previa. La solución no es aplicar más rápido; es aplicar mejor a menos vacantes.
 
@@ -78,4 +78,4 @@ Cruzar de posdoc a industria farmacéutica LATAM requiere convertir dos ventajas
 
 ---
 
-**¿Tu CV posdoc está listo para pharma industrial?** La herramienta gratuita de Solca revisa tu CV en menos de un minuto y te devuelve diagnóstico específico por sección. [Pruébala en solcaciencia.com/revisar-cv](https://solcaciencia.com/revisar-cv).
+**¿Tu CV posdoc está listo para pharma industrial?** La herramienta de Solca revisa tu CV en menos de un minuto y te devuelve diagnóstico específico por sección. [Pruébala en solcaciencia.com/revisar-cv](https://solcaciencia.com/revisar-cv).

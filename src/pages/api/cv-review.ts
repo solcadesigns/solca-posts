@@ -2,13 +2,10 @@ import type { APIRoute } from 'astro';
 import { CV_REVIEW_SYSTEM_PROMPT } from '../../lib/cv-review-prompt';
 import { chatCompletion, extractText, AnthropicError } from '../../lib/anthropic';
 import { checkCvSubmitLimit, incrementCvSubmitCount } from '../../lib/rate-limit';
-import { upsertSubscriber, MailerLiteError } from '../../lib/mailerlite';
+import { sendEmailWithTemplate, PostmarkError } from '../../lib/postmark';
+// Postmark reemplaza a Brevo (jul 2026). Ver _docs/que-rompimos-brevo-mailerlite.md.
 
 export const prerender = false;
-
-// Group IDs en MailerLite (creados vía MCP el 12 may 2026)
-const ML_GROUP_CV_REVIEW_LEADS = '187298296022173202';
-const ML_GROUP_NEWSLETTER = '187298307658220675';
 
 interface CVReviewRequest {
   cv: string;
@@ -40,6 +37,46 @@ function jsonResponse(data: unknown, status = 200) {
   });
 }
 
+/**
+ * Envía el welcome de Solca Insight vía Postmark, template welcome-solca-insight.
+ * Fire-and-forget. Si POSTMARK_SERVER_TOKEN no está configurado, salta silenciosamente.
+ * El template soporta la rama is_cv (this endpoint) y is_quiz (quiz-subscribe.ts).
+ */
+async function sendWelcomeCv(
+  runtime: { env?: Record<string, unknown> } | undefined,
+  email: string,
+  firstName: string | undefined,
+): Promise<void> {
+  const token = runtime?.env?.POSTMARK_SERVER_TOKEN as string | undefined;
+  if (!token) {
+    console.log('cv-review:postmark-skipped (no POSTMARK_SERVER_TOKEN)');
+    return;
+  }
+
+  try {
+    const result = await sendEmailWithTemplate(token, {
+      from: 'Oscar Solís <hola@solcaciencia.com>',
+      to: email,
+      templateAlias: 'welcome-solca-insight',
+      templateModel: {
+        first_name: firstName ?? '',
+        is_cv: true,
+        is_quiz: false,
+        role_label: '',
+      },
+      tag: 'welcome-cv',
+      metadata: { source: 'cv-review' },
+    });
+    console.log('cv-review:postmark-sent', result.messageId, result.to);
+  } catch (err) {
+    if (err instanceof PostmarkError) {
+      console.error('Postmark send failed:', err.status, JSON.stringify(err.body));
+    } else {
+      console.error('Postmark unexpected error:', err);
+    }
+  }
+}
+
 async function storeEmail(
   runtime: { env?: Record<string, unknown> } | undefined,
   email: string,
@@ -63,41 +100,6 @@ async function storeEmail(
     }
   } else {
     console.log('cv-review:email-captured', JSON.stringify(record));
-  }
-}
-
-/**
- * Añade el lead a MailerLite (grupo CV Review · Leads + Newsletter Solca Insight).
- * Fire-and-forget. Si MAILERLITE_API_KEY no está configurada, salta silenciosamente.
- */
-async function addToMailerLite(
-  runtime: { env?: Record<string, unknown> } | undefined,
-  email: string,
-  country: string | undefined,
-  ip: string | null,
-): Promise<void> {
-  const apiKey = runtime?.env?.MAILERLITE_API_KEY as string | undefined;
-  if (!apiKey) {
-    console.log('cv-review:mailerlite-skipped (no API key configured)');
-    return;
-  }
-
-  try {
-    const sub = await upsertSubscriber(apiKey, {
-      email,
-      groups: [ML_GROUP_CV_REVIEW_LEADS, ML_GROUP_NEWSLETTER],
-      fields: country ? { country } : undefined,
-      ip_address: ip ?? undefined,
-      subscribed_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
-      status: 'active',
-    });
-    console.log('cv-review:mailerlite-upserted', sub.id, sub.email);
-  } catch (err) {
-    if (err instanceof MailerLiteError) {
-      console.error('MailerLite upsert failed:', err.status, JSON.stringify(err.body));
-    } else {
-      console.error('MailerLite unexpected error:', err);
-    }
   }
 }
 
@@ -260,12 +262,12 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     ).catch((err) => console.error('storeEmail failed', err)),
   );
   waitUntil(
-    addToMailerLite(
+    sendWelcomeCv(
       runtime as { env?: Record<string, unknown> },
       email,
-      country,
-      ip,
-    ).catch((err) => console.error('addToMailerLite failed', err)),
+      // Postmark solo usa el primer nombre; parsed.candidateName puede venir con nombre completo.
+      parsed.candidateName?.trim().split(/\s+/)[0],
+    ).catch((err) => console.error('sendWelcomeCv failed', err)),
   );
   waitUntil(
     incrementCvSubmitCount(limitsKV, email).catch((err) =>

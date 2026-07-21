@@ -1,0 +1,328 @@
+---
+// Landing del Simulador de Entrevistas (versión beta cerrada).
+// Fase 1.1 · 16 jun 2026.
+//
+// La sesión interactiva vive en /simulador-entrevistas-beta/sesion (Fase 1.2).
+// Por ahora esta landing solo presenta el producto y permite registrar interés
+// o validar código de invitación.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+// La página no debe indexarse hasta que termine la beta.
+const noIndex = true;
+---
+<BaseLayout
+  title="Simulador de Entrevistas Pharma · Beta · Solca"
+  description="Práctica entrevistas pharma LATAM con feedback IA personalizado por CV. Versión beta cerrada con acceso por invitación."
+>
+  <head slot="head">
+    {noIndex && <meta name="robots" content="noindex, nofollow" />}
+  </head>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-brand">
+        <span class="dot"></span>
+        <span>Solca</span>
+      </a>
+      <div class="nav-links">
+        <a href="/blog">Blog</a>
+        <a href="/quiz-rol">Quiz</a>
+        <a href="/revisar-cv">Revisar CV</a>
+        <a href="/contacto">Contacto</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="container">
+      <div class="eyebrow">
+        <span class="dot"></span>
+        <span>Beta cerrada · acceso por invitación</span>
+      </div>
+      <h1>Practica entrevistas pharma con feedback honesto, no plantillas.</h1>
+      <p class="lead">
+        Simulador de entrevistas para profesionales en ciencias biológicas y afines que
+        están aplicando a roles pharma en LATAM. Construido con las reglas de marca
+        Solca: feedback diagnóstico basado en evidencia, sin frases motivacionales
+        infladas, sin comparaciones inventadas.
+      </p>
+      <div class="cta-row">
+        <a href="#acceso" class="btn btn-primary">Tengo código de acceso</a>
+        <a href="/simulador-entrevistas-beta/sesion" class="btn btn-secondary">Empezar sin código (preview)</a>
+      </div>
+    </div>
+  </header>
+
+  <section class="features">
+    <div class="container">
+      <h2>Qué hace distinto este simulador</h2>
+      <div class="feature-grid">
+        <div class="feature">
+          <h3>Personalización real por CV</h3>
+          <p>
+            En planes pagos, el simulador lee tu CV y ancla preguntas a lo que ahí
+            mencionas. Si tu CV dice "citometría de flujo", la pregunta es sobre
+            cómo conectar esa técnica con el rol. Si hay un gap temporal, lo aborda
+            con tono profesional.
+          </p>
+        </div>
+        <div class="feature">
+          <h3>Modo multistage bilingüe</h3>
+          <p>
+            Simula la realidad de pharma multinacional LATAM: primera mitad en
+            español como screening con reclutador local, segunda mitad en inglés
+            como ronda técnica con hiring manager regional. Patrón documentado por
+            <a href="https://www.hirewithnear.com/blog/9-lessons-learned-from-hiring-in-latin-america" target="_blank" rel="noopener">hirewithnear.com</a>.
+          </p>
+        </div>
+        <div class="feature">
+          <h3>Frameworks específicos por rol</h3>
+          <p>
+            ICH-GCP + SDV para CRA. Scientific Engagement para MSL. RACI + critical
+            path para Clinical PM. PICO + RWE para Healthcare Analyst. La evaluación
+            cambia según el rol que practiques.
+          </p>
+        </div>
+        <div class="feature">
+          <h3>Feedback honesto basado en evidencia</h3>
+          <p>
+            Cero frases tipo "estás en el top 25%" o "pocas personas llegan a este
+            nivel". El simulador evalúa lo que ESTÁ en tu respuesta, no compara con
+            promedios inventados. Reglas documentadas y públicas.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="acceso" class="access-section">
+    <div class="container">
+      <h2>Tengo código de invitación</h2>
+      <p>
+        Si recibiste un correo de Solca con un código de acceso a la beta, pégalo
+        aquí para empezar tu primera sesión.
+      </p>
+      <form id="beta-access-form" class="access-form">
+        <label for="beta-code">Código de acceso</label>
+        <input
+          type="text"
+          id="beta-code"
+          name="beta-code"
+          placeholder="Ejemplo: XYZ12345"
+          autocomplete="off"
+          required
+        />
+        <button type="submit" class="btn btn-primary">Validar y empezar</button>
+      </form>
+      <p id="access-message" class="access-message" hidden></p>
+    </div>
+  </section>
+
+  <section id="interes" class="interest-section">
+    <div class="container">
+      <h2>Avísame cuando abra al público</h2>
+      <p>
+        La beta cerrada termina con ~30 invitados. Después de iterar con su
+        feedback, abre al público con planes pagos. Si quieres ser de los primeros
+        en saber, déjame tu email aquí.
+      </p>
+      <a href="/contacto" class="btn btn-secondary">Suscribirme al aviso</a>
+    </div>
+  </section>
+
+  <footer class="page-footer">
+    <div class="container">
+      <p>
+        Esta es una versión <strong>beta cerrada</strong> del simulador. El feedback que
+        nos das ahora forma el producto final. Gracias por probarlo con paciencia
+        y honestidad.
+      </p>
+      <p>
+        ¿Dudas? Escribe a <a href="mailto:hello@solcaciencia.com">hello@solcaciencia.com</a>.
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    // Validación cliente del código beta. La validación real ocurre en el endpoint
+    // /api/simulator-session con action: 'init'. Aquí guardamos el código en
+    // sessionStorage y redirigimos a /simulador-entrevistas-beta/sesion.
+    //
+    // Fase 1.5.D · 19 jun 2026: prefill desde ?codigo=XYZ del URL para que los
+    // emails de invitación incluyan un link de un clic. Si el código pre-armado
+    // pasa la validación de longitud, hace auto-submit. Si no, queda en el input
+    // para que el usuario corrija manualmente.
+    const form = document.getElementById('beta-access-form') as HTMLFormElement | null;
+    const message = document.getElementById('access-message') as HTMLParagraphElement | null;
+    const input = document.getElementById('beta-code') as HTMLInputElement | null;
+
+    function submitCode(code: string): boolean {
+      if (!message) return false;
+      if (!code || code.length < 6) {
+        message.textContent = 'El código debe tener al menos 6 caracteres.';
+        message.hidden = false;
+        return false;
+      }
+      sessionStorage.setItem('solca_beta_code', code);
+      window.location.href = '/simulador-entrevistas-beta/sesion';
+      return true;
+    }
+
+    if (form && message && input) {
+      // Prefill desde ?codigo= del URL
+      const params = new URLSearchParams(window.location.search);
+      const codeFromUrl = (params.get('codigo') ?? params.get('code') ?? '').trim();
+      if (codeFromUrl) {
+        input.value = codeFromUrl;
+        // Auto-submit si pasa la validación mínima. Si falla, el usuario ve el
+        // input prellenado y puede corregirlo. Damos un tick para que el DOM
+        // termine de renderizar antes del redirect.
+        if (codeFromUrl.length >= 6) {
+          setTimeout(() => submitCode(codeFromUrl), 100);
+        }
+      }
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        submitCode(input.value.trim());
+      });
+    }
+  </script>
+
+  <style>
+    .nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(250, 249, 244, 0.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--rule);
+    }
+    .nav-inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      padding: 14px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-brand {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--text);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .nav-links { display: flex; gap: 28px; }
+    .nav-links a {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-mute);
+    }
+    .nav-links a:hover { color: var(--navy); opacity: 1; }
+
+    .hero { padding: 80px 0 60px; background: var(--bg); }
+    .hero h1 {
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(36px, 5vw, 60px);
+      line-height: 1.05;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      margin: 20px 0 24px;
+      max-width: 880px;
+    }
+    .hero .lead {
+      font-size: 20px;
+      line-height: 1.55;
+      color: var(--text-mute);
+      max-width: 760px;
+      margin-bottom: 32px;
+    }
+    .cta-row { display: flex; gap: 16px; flex-wrap: wrap; }
+
+    .features { padding: 64px 0; border-top: 1px solid var(--rule); }
+    .features h2 {
+      font-family: 'Inter', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 32px;
+    }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 28px;
+    }
+    .feature {
+      background: white;
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      padding: 28px;
+    }
+    .feature h3 {
+      font-family: 'Inter', sans-serif;
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+    .feature p {
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--text-mute);
+    }
+    .feature p a { color: var(--navy); text-decoration: underline; }
+
+    .access-section, .interest-section {
+      padding: 64px 0;
+      border-top: 1px solid var(--rule);
+    }
+    .access-section h2, .interest-section h2 {
+      font-family: 'Inter', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+    .access-form {
+      max-width: 480px;
+      display: flex; flex-direction: column; gap: 12px;
+      margin-top: 24px;
+    }
+    .access-form label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .access-form input {
+      padding: 14px 16px;
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+    }
+    .access-form input:focus {
+      outline: 2px solid var(--orange);
+      border-color: var(--orange);
+    }
+    .access-message {
+      margin-top: 16px;
+      font-size: 14px;
+      color: var(--text-mute);
+      padding: 12px 16px;
+      background: var(--orange-light);
+      border-radius: 6px;
+      border-left: 3px solid var(--orange);
+    }
+
+    .page-footer {
+      padding: 48px 0;
+      border-top: 1px solid var(--rule);
+      background: var(--bg);
+    }
+    .page-footer p {
+      font-size: 14px;
+      color: var(--text-mute);
+      max-width: 760px;
+      margin-bottom: 8px;
+    }
+    .page-footer a { color: var(--navy); }
+  </style>
+</BaseLayout>

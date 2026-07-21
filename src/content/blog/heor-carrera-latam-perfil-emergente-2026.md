@@ -105,4 +105,4 @@ HEOR es el perfil emergente pharma LATAM con mayor escasez estructural documenta
 
 ---
 
-**¿HEOR es el siguiente paso en tu carrera pharma?** Nuestro Quiz Match gratuito mapea tu formación, experiencia y preferencias contra los ocho roles principales de pharma industrial LATAM en cinco minutos. [Pruébalo en solcaciencia.com/quiz](https://solcaciencia.com/quiz).
+**¿HEOR es el siguiente paso en tu carrera pharma?** Nuestro Quiz Match mapea tu formación, experiencia y preferencias contra los ocho roles principales de pharma industrial LATAM en cinco minutos. [Pruébalo en solcaciencia.com/quiz](https://solcaciencia.com/quiz).

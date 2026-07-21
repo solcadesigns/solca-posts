@@ -104,4 +104,4 @@ Los cuatro roles principales de pharma industrial LATAM son MSL (contacto médic
 
 ---
 
-**¿No sabes cuál de los cuatro roles se ajusta a tu perfil?** Nuestra herramienta gratuita Quiz Match mapea tu formación, experiencia y preferencias contra los ocho roles principales de industria pharma en cinco minutos. [Pruébalo en solcaciencia.com/quiz](https://solcaciencia.com/quiz).
+**¿No sabes cuál de los cuatro roles se ajusta a tu perfil?** Nuestra herramienta Quiz Match mapea tu formación, experiencia y preferencias contra los ocho roles principales de industria pharma en cinco minutos. [Pruébalo en solcaciencia.com/quiz](https://solcaciencia.com/quiz).

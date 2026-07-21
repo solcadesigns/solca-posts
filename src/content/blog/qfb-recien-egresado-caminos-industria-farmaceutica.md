@@ -106,4 +106,4 @@ Un QFB recién egresado en LATAM tiene cinco puertas reales de entrada a industr
 
 ---
 
-**¿Tu CV QFB está listo para las puertas específicas que escogiste?** La herramienta gratuita de Solca revisa tu CV en menos de un minuto y te dice qué tan bien mapea a los roles pharma LATAM. [Pruébala en solcaciencia.com/revisar-cv](https://solcaciencia.com/revisar-cv).
+**¿Tu CV QFB está listo para las puertas específicas que escogiste?** La herramienta de Solca revisa tu CV en menos de un minuto y te dice qué tan bien mapea a los roles pharma LATAM. [Pruébala en solcaciencia.com/revisar-cv](https://solcaciencia.com/revisar-cv).

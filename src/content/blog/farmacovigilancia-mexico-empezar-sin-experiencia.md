@@ -80,4 +80,4 @@ Farmacovigilancia en México es la puerta de entrada más consistente a industri
 
 ---
 
-**¿No sabes si farmacovigilancia se ajusta a tu perfil?** Nuestro Quiz Match gratuito mapea tu formación, experiencia y preferencias contra los ocho roles principales de pharma industrial LATAM en cinco minutos. [Pruébalo en solcaciencia.com/quiz](https://solcaciencia.com/quiz).
+**¿No sabes si farmacovigilancia se ajusta a tu perfil?** Nuestro Quiz Match mapea tu formación, experiencia y preferencias contra los ocho roles principales de pharma industrial LATAM en cinco minutos. [Pruébalo en solcaciencia.com/quiz](https://solcaciencia.com/quiz).

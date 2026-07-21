@@ -1,14 +1,18 @@
 ---
 // Blog index page: /blog
 // Lists posts grouped by category, newest first.
+// Posts with pubDate in the future are hidden until their date arrives (SSR per request).
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 
-export const prerender = true;
+// SSR so the pubDate filter runs on every request against the current time.
+// This lets us pre-deploy a month's worth of posts and have each one go live on its own date.
+export const prerender = false;
 
-const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
-  (a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime()
-);
+const now = new Date();
+const posts = (
+  await getCollection('blog', ({ data }) => !data.draft && data.pubDate.getTime() <= now.getTime())
+).sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
 
 const formatDate = (d: Date) =>
   d.toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric' });

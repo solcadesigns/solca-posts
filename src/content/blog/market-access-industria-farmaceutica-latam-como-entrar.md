@@ -82,4 +82,4 @@ Market Access en industria farmacéutica LATAM requiere formación en ciencias d
 
 ---
 
-**¿Market Access es el siguiente paso natural en tu carrera pharma?** Nuestro Quiz Match gratuito mapea tu formación, experiencia y preferencias contra los ocho roles principales de pharma industrial LATAM en cinco minutos. [Pruébalo en solcaciencia.com/quiz](https://solcaciencia.com/quiz).
+**¿Market Access es el siguiente paso natural en tu carrera pharma?** Nuestro Quiz Match mapea tu formación, experiencia y preferencias contra los ocho roles principales de pharma industrial LATAM en cinco minutos. [Pruébalo en solcaciencia.com/quiz](https://solcaciencia.com/quiz).

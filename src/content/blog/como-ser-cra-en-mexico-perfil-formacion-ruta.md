@@ -110,4 +110,4 @@ Ser CRA en México requiere título profesional con cédula en ciencia de la sal
 
 ---
 
-**¿CRA es el rol pharma que se ajusta a tu perfil?** Nuestro Quiz Match gratuito mapea tu formación, experiencia y preferencias contra los ocho roles principales de pharma industrial LATAM en cinco minutos. [Pruébalo en solcaciencia.com/quiz](https://solcaciencia.com/quiz).
+**¿CRA es el rol pharma que se ajusta a tu perfil?** Nuestro Quiz Match mapea tu formación, experiencia y preferencias contra los ocho roles principales de pharma industrial LATAM en cinco minutos. [Pruébalo en solcaciencia.com/quiz](https://solcaciencia.com/quiz).

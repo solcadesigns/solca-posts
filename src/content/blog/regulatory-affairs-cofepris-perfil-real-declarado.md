@@ -114,4 +114,4 @@ Regulatory Affairs en México con COFEPRIS combina rigor documental, comprensió
 
 ---
 
-**¿Tu CV comunica bien tu perfil regulatorio a COFEPRIS?** La herramienta gratuita de Solca revisa tu CV en menos de un minuto y te dice qué tan bien mapea a roles de Regulatory Affairs en LATAM. [Pruébala en solcaciencia.com/revisar-cv](https://solcaciencia.com/revisar-cv).
+**¿Tu CV comunica bien tu perfil regulatorio a COFEPRIS?** La herramienta de Solca revisa tu CV en menos de un minuto y te dice qué tan bien mapea a roles de Regulatory Affairs en LATAM. [Pruébala en solcaciencia.com/revisar-cv](https://solcaciencia.com/revisar-cv).

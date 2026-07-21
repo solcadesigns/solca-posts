@@ -18,7 +18,7 @@ En LATAM, un profesional biomédico o farmacéutico lee papers en inglés todos 
 
 En pharma industrial serio, la entrevista de segunda ronda con manager regional o global se hace en inglés. Se prueba producción hablada, no lectura. Y ahí la distancia entre lo declarado y lo real se hace evidente en menos de quince minutos.
 
-En la muestra de submissions al survey de nuestra herramienta gratuita de revisión de CV, cero candidatos declararon nivel C1 avanzado. Los que respondieron declararon básico o intermedio. Esa consistencia sugiere que quienes sí completan el survey están siendo honestos con su calibración. El problema mayor está en los CVs de la mayoría silenciosa que declara "avanzado" sin sustento operativo.
+En la muestra de submissions al survey de nuestra herramienta de revisión de CV, cero candidatos declararon nivel C1 avanzado. Los que respondieron declararon básico o intermedio. Esa consistencia sugiere que quienes sí completan el survey están siendo honestos con su calibración. El problema mayor está en los CVs de la mayoría silenciosa que declara "avanzado" sin sustento operativo.
 
 ## Qué nivel piden realmente por rol
 
@@ -84,4 +84,4 @@ El nivel de inglés real que piden las farmacéuticas LATAM por rol es específi
 
 ---
 
-**¿Tu CV pharma comunica tu nivel real de inglés con precisión?** La herramienta gratuita de Solca revisa tu CV en menos de un minuto y te devuelve diagnóstico específico por sección, incluyendo cómo tu declaración de inglés se percibirá. [Pruébala en solcaciencia.com/revisar-cv](https://solcaciencia.com/revisar-cv).
+**¿Tu CV pharma comunica tu nivel real de inglés con precisión?** La herramienta de Solca revisa tu CV en menos de un minuto y te devuelve diagnóstico específico por sección, incluyendo cómo tu declaración de inglés se percibirá. [Pruébala en solcaciencia.com/revisar-cv](https://solcaciencia.com/revisar-cv).
