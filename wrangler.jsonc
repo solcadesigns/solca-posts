@@ -20,6 +20,11 @@
 	"compatibility_flags": [
 		"nodejs_compat"
 	],
+	// Variables públicas (no secretas). Los secrets van con `wrangler secret put`.
+	// SOLCACIENCIA_ZONE_ID se usa por /api/weekly-report para consultar Cloudflare Analytics API.
+	"vars": {
+		"SOLCACIENCIA_ZONE_ID": "80c71a476167b48983cfbb78e789400e"
+	},
 	"assets": {
 		"binding": "ASSETS",
 		"directory": "./dist"

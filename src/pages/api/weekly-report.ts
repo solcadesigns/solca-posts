@@ -97,6 +97,20 @@ interface WeeklyReport {
     disponible: boolean;
     nota?: string;
   };
+  // Cloudflare Web Analytics · trafficos del edge del dominio.
+  // Requiere CLOUDFLARE_ANALYTICS_TOKEN (secret) + SOLCACIENCIA_ZONE_ID (var pública).
+  traffic: {
+    disponible: boolean;
+    ventana_dias: number;
+    page_views_esta_semana: number;
+    page_views_semana_anterior: number;
+    unique_visitors_esta_semana: number;
+    unique_visitors_semana_anterior: number;
+    top_paginas: Array<{ path: string; views: number }>;
+    top_referrers: Array<{ referrer: string; views: number }>;
+    top_paises: Array<{ pais: string; views: number }>;
+    nota?: string;
+  };
 }
 
 interface EmailTagStats {
@@ -205,6 +219,141 @@ async function fetchPostmarkStats(
     };
   } catch (err) {
     console.warn('postmark-stats fetch failed', tag, err);
+    return null;
+  }
+}
+
+/**
+ * Consulta Cloudflare GraphQL Analytics API para el zone dado.
+ * Retorna traffic stats de últimos 14 días (esta semana + anterior).
+ * Ver: https://developers.cloudflare.com/analytics/graphql-api/
+ */
+interface CloudflareTrafficStats {
+  pv_current: number;
+  pv_previous: number;
+  uv_current: number;
+  uv_previous: number;
+  top_pages: Array<{ path: string; views: number }>;
+  top_referrers: Array<{ referrer: string; views: number }>;
+  top_countries: Array<{ pais: string; views: number }>;
+}
+
+async function fetchCloudflareTraffic(
+  token: string,
+  zoneId: string,
+): Promise<CloudflareTrafficStats | null> {
+  const now = new Date();
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+  const fmt = (d: Date) => d.toISOString();
+
+  const query = `
+    query($zoneTag: String!, $curFrom: Time!, $curTo: Time!, $prevFrom: Time!, $prevTo: Time!) {
+      viewer {
+        zones(filter: { zoneTag: $zoneTag }) {
+          cur: httpRequestsAdaptiveGroups(
+            limit: 1,
+            filter: { datetime_geq: $curFrom, datetime_leq: $curTo }
+          ) {
+            sum { visits }
+            uniq { uniques }
+          }
+          prev: httpRequestsAdaptiveGroups(
+            limit: 1,
+            filter: { datetime_geq: $prevFrom, datetime_leq: $prevTo }
+          ) {
+            sum { visits }
+            uniq { uniques }
+          }
+          topPages: httpRequestsAdaptiveGroups(
+            limit: 10,
+            filter: { datetime_geq: $curFrom, datetime_leq: $curTo },
+            orderBy: [sum_visits_DESC]
+          ) {
+            sum { visits }
+            dimensions { clientRequestPath }
+          }
+          topRefs: httpRequestsAdaptiveGroups(
+            limit: 10,
+            filter: { datetime_geq: $curFrom, datetime_leq: $curTo, clientRequestReferer_neq: "" },
+            orderBy: [sum_visits_DESC]
+          ) {
+            sum { visits }
+            dimensions { clientRequestReferer }
+          }
+          topCountries: httpRequestsAdaptiveGroups(
+            limit: 10,
+            filter: { datetime_geq: $curFrom, datetime_leq: $curTo },
+            orderBy: [sum_visits_DESC]
+          ) {
+            sum { visits }
+            dimensions { clientCountryName }
+          }
+        }
+      }
+    }
+  `;
+
+  try {
+    const res = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query,
+        variables: {
+          zoneTag: zoneId,
+          curFrom: fmt(weekAgo),
+          curTo: fmt(now),
+          prevFrom: fmt(twoWeeksAgo),
+          prevTo: fmt(weekAgo),
+        },
+      }),
+    });
+    if (!res.ok) {
+      console.warn('cloudflare-analytics HTTP fail', res.status);
+      return null;
+    }
+    const body = (await res.json()) as {
+      data?: {
+        viewer?: {
+          zones?: Array<{
+            cur?: Array<{ sum?: { visits?: number }; uniq?: { uniques?: number } }>;
+            prev?: Array<{ sum?: { visits?: number }; uniq?: { uniques?: number } }>;
+            topPages?: Array<{ sum?: { visits?: number }; dimensions?: { clientRequestPath?: string } }>;
+            topRefs?: Array<{ sum?: { visits?: number }; dimensions?: { clientRequestReferer?: string } }>;
+            topCountries?: Array<{ sum?: { visits?: number }; dimensions?: { clientCountryName?: string } }>;
+          }>;
+        };
+      };
+      errors?: Array<{ message?: string }>;
+    };
+    if (body.errors?.length) {
+      console.warn('cloudflare-analytics GraphQL errors', body.errors[0]?.message);
+      return null;
+    }
+    const zone = body.data?.viewer?.zones?.[0];
+    if (!zone) return null;
+
+    return {
+      pv_current: zone.cur?.[0]?.sum?.visits ?? 0,
+      pv_previous: zone.prev?.[0]?.sum?.visits ?? 0,
+      uv_current: zone.cur?.[0]?.uniq?.uniques ?? 0,
+      uv_previous: zone.prev?.[0]?.uniq?.uniques ?? 0,
+      top_pages: (zone.topPages ?? [])
+        .map((r) => ({ path: r.dimensions?.clientRequestPath ?? '', views: r.sum?.visits ?? 0 }))
+        .filter((r) => r.path),
+      top_referrers: (zone.topRefs ?? [])
+        .map((r) => ({ referrer: r.dimensions?.clientRequestReferer ?? '', views: r.sum?.visits ?? 0 }))
+        .filter((r) => r.referrer),
+      top_countries: (zone.topCountries ?? [])
+        .map((r) => ({ pais: r.dimensions?.clientCountryName ?? '', views: r.sum?.visits ?? 0 }))
+        .filter((r) => r.pais),
+    };
+  } catch (err) {
+    console.warn('cloudflare-analytics fetch failed', err);
     return null;
   }
 }
@@ -475,6 +624,40 @@ export const GET: APIRoute = async ({ url, locals }) => {
       email_health.nota = 'POSTMARK_SERVER_TOKEN no configurado en env; email_health no disponible.';
     }
 
+    // ── 6. Cloudflare Web Analytics (traffic del edge) ───────────
+    const cfToken = env.CLOUDFLARE_ANALYTICS_TOKEN as string | undefined;
+    const zoneId = env.SOLCACIENCIA_ZONE_ID as string | undefined;
+    const traffic = {
+      disponible: false,
+      ventana_dias: 7,
+      page_views_esta_semana: 0,
+      page_views_semana_anterior: 0,
+      unique_visitors_esta_semana: 0,
+      unique_visitors_semana_anterior: 0,
+      top_paginas: [] as Array<{ path: string; views: number }>,
+      top_referrers: [] as Array<{ referrer: string; views: number }>,
+      top_paises: [] as Array<{ pais: string; views: number }>,
+      nota: undefined as string | undefined,
+    };
+
+    if (cfToken && zoneId) {
+      const cf = await fetchCloudflareTraffic(cfToken, zoneId);
+      if (cf) {
+        traffic.disponible = true;
+        traffic.page_views_esta_semana = cf.pv_current;
+        traffic.page_views_semana_anterior = cf.pv_previous;
+        traffic.unique_visitors_esta_semana = cf.uv_current;
+        traffic.unique_visitors_semana_anterior = cf.uv_previous;
+        traffic.top_paginas = cf.top_pages;
+        traffic.top_referrers = cf.top_referrers;
+        traffic.top_paises = cf.top_countries;
+      } else {
+        traffic.nota = 'Cloudflare Analytics no devolvió data (token o permisos).';
+      }
+    } else {
+      traffic.nota = 'Falta CLOUDFLARE_ANALYTICS_TOKEN o SOLCACIENCIA_ZONE_ID.';
+    }
+
     // ── Armar respuesta ──────────────────────────────────────────
     const topDelta = computeDelta(subs.cur.n, subs.prev.n);
 
@@ -522,6 +705,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
         avg_facilidad: sim.avg_facilidad,
       },
       email_health,
+      traffic,
     };
 
     return jsonResponse(report, 200);
