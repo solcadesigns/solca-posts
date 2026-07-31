@@ -88,6 +88,26 @@ interface WeeklyReport {
     avg_utilidad: number | null;
     avg_facilidad: number | null;
   };
+  // Postmark Analytics — se llena si POSTMARK_SERVER_TOKEN está presente.
+  // Datos de últimos 30 días por tag. Requiere Open + Link tracking activo
+  // en Server Settings (activado el 30 jul 2026); data acumula desde esa fecha.
+  email_health: {
+    ventana_dias: number;
+    por_tag: Record<string, EmailTagStats>;
+    disponible: boolean;
+    nota?: string;
+  };
+}
+
+interface EmailTagStats {
+  sent: number;
+  bounced: number;
+  bounce_rate_pct: number;
+  spam_complaints: number;
+  opens_unique: number;
+  open_rate_pct: number | null;    // null si tracking está OFF o sent=0
+  clicks_unique: number;
+  click_rate_pct: number | null;   // idem
 }
 
 function jsonResponse(data: unknown, status = 200) {
@@ -117,6 +137,76 @@ interface QuizRec {
   ts: string;
   role?: 'PM' | 'MSL' | 'CR';
   selfMatch?: 'PM' | 'MSL' | 'CR' | 'NS';
+}
+
+/**
+ * Consulta Postmark Analytics para un tag específico en los últimos N días.
+ * Retorna null si la llamada falla o si el token no está.
+ *
+ * Postmark endpoints:
+ *   - GET /stats/outbound?tag=X&fromdate=&todate=
+ *     → Sent, Bounced, SpamComplaints, BounceRate
+ *   - GET /stats/outbound/opens?tag=X&fromdate=&todate=
+ *     → Opens, Unique
+ *   - GET /stats/outbound/clicks?tag=X&fromdate=&todate=
+ *     → Clicks, Unique
+ */
+async function fetchPostmarkStats(
+  token: string,
+  tag: string,
+  daysBack: number,
+): Promise<EmailTagStats | null> {
+  const toDate = new Date();
+  const fromDate = new Date(toDate.getTime() - daysBack * 24 * 60 * 60 * 1000);
+  const fmt = (d: Date) => d.toISOString().slice(0, 10);
+
+  const qs = `tag=${encodeURIComponent(tag)}&fromdate=${fmt(fromDate)}&todate=${fmt(toDate)}`;
+  const headers = {
+    'X-Postmark-Server-Token': token,
+    Accept: 'application/json',
+  };
+
+  try {
+    const [statsRes, opensRes, clicksRes] = await Promise.all([
+      fetch(`https://api.postmarkapp.com/stats/outbound?${qs}`, { headers }),
+      fetch(`https://api.postmarkapp.com/stats/outbound/opens?${qs}`, { headers }),
+      fetch(`https://api.postmarkapp.com/stats/outbound/clicks?${qs}`, { headers }),
+    ]);
+
+    if (!statsRes.ok) return null;
+
+    const stats = (await statsRes.json()) as {
+      Sent?: number;
+      Bounced?: number;
+      SpamComplaints?: number;
+      BounceRate?: number;
+    };
+    const opens = opensRes.ok
+      ? ((await opensRes.json()) as { Opens?: number; Unique?: number })
+      : { Opens: 0, Unique: 0 };
+    const clicks = clicksRes.ok
+      ? ((await clicksRes.json()) as { Clicks?: number; Unique?: number })
+      : { Clicks: 0, Unique: 0 };
+
+    const sent = stats.Sent ?? 0;
+    const bounced = stats.Bounced ?? 0;
+    const opens_unique = opens.Unique ?? 0;
+    const clicks_unique = clicks.Unique ?? 0;
+
+    return {
+      sent,
+      bounced,
+      bounce_rate_pct: sent > 0 ? +((bounced / sent) * 100).toFixed(1) : 0,
+      spam_complaints: stats.SpamComplaints ?? 0,
+      opens_unique,
+      open_rate_pct: sent > 0 ? +((opens_unique / sent) * 100).toFixed(1) : null,
+      clicks_unique,
+      click_rate_pct: sent > 0 ? +((clicks_unique / sent) * 100).toFixed(1) : null,
+    };
+  } catch (err) {
+    console.warn('postmark-stats fetch failed', tag, err);
+    return null;
+  }
 }
 
 /**
@@ -350,6 +440,41 @@ export const GET: APIRoute = async ({ url, locals }) => {
       sim.avg_facilidad = fbRow?.f ? +fbRow.f.toFixed(2) : null;
     }
 
+    // ── 5. Email health (Postmark Analytics API) ─────────────────
+    // Consulta por tag los últimos 30 días. Data útil solo si Open+Link
+    // tracking están ON en Server Settings (activados 30 jul 2026).
+    const postmarkToken = env.POSTMARK_SERVER_TOKEN as string | undefined;
+    const email_health = {
+      ventana_dias: 30,
+      por_tag: {} as Record<string, EmailTagStats>,
+      disponible: !!postmarkToken,
+      nota: undefined as string | undefined,
+    };
+
+    if (postmarkToken) {
+      const tags = ['welcome-cv', 'welcome-quiz', 'blog-broadcast'];
+      const results = await Promise.all(
+        tags.map((t) => fetchPostmarkStats(postmarkToken, t, 30)),
+      );
+      tags.forEach((t, i) => {
+        if (results[i]) {
+          email_health.por_tag[t] = results[i]!;
+        }
+      });
+      // Nota: si todos los open_rate_pct son 0 o null, es señal de que
+      // tracking aún no acumuló data (< 24h desde activación o cero envíos post-activación).
+      const totalOpens = Object.values(email_health.por_tag).reduce(
+        (acc, s) => acc + (s.opens_unique ?? 0),
+        0,
+      );
+      if (totalOpens === 0) {
+        email_health.nota =
+          'Open/Link tracking activados 30 jul 2026; los envíos previos no tienen data. Espera ~2 semanas para métricas confiables.';
+      }
+    } else {
+      email_health.nota = 'POSTMARK_SERVER_TOKEN no configurado en env; email_health no disponible.';
+    }
+
     // ── Armar respuesta ──────────────────────────────────────────
     const topDelta = computeDelta(subs.cur.n, subs.prev.n);
 
@@ -396,6 +521,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
         avg_utilidad: sim.avg_utilidad,
         avg_facilidad: sim.avg_facilidad,
       },
+      email_health,
     };
 
     return jsonResponse(report, 200);
