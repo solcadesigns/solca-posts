@@ -63,7 +63,13 @@ interface WeeklyReport {
     semana_anterior: number;
     distribucion_rol_acumulado: Record<string, number>;
     agreement_rate: number | null;
+    // Funnel gate→complete con definiciones estrictas:
+    // gates_unique_acumulado = emails únicos que enviaron gate del quiz
+    // drop_off_pct = 1 - (completions / gates_unique)
+    // repeat_gates = emails que enviaron gate 2+ veces (intentos con abandono)
+    gates_unique_acumulado: number;
     drop_off_gate_to_complete_pct: number | null;
+    repeat_gates: number;
   };
   cv_review: {
     analisis_acumulados: number;
@@ -104,6 +110,7 @@ interface EmailRec {
   email?: string;
   ts?: string;
   country?: string;
+  stage?: 'gate' | 'complete';
 }
 
 interface QuizRec {
@@ -168,18 +175,30 @@ export const GET: APIRoute = async ({ url, locals }) => {
       prev: { n: 0, por_fuente: {} as Record<string, number> },
       paises: new Map<string, number>(),
       seen_emails: new Set<string>(),
+      // Métricas específicas del quiz funnel — separadas de CV Review
+      quiz_gate_emails_unique: new Set<string>(),   // gates únicos (dedupe por email)
+      quiz_gate_records_total: 0,                    // total records `quiz:` en EMAILS (con dupes por reintento)
+      cv_review_emails_unique: new Set<string>(),   // suscripciones CV Review únicas
     };
 
     if (emailsKv) {
       await walkKv<EmailRec>(emailsKv, '', (rec, key) => {
-        // Filtrar solo registros de suscripción (excluir broadcast-report, quiz-stage-gate duplicates)
-        const isEmail = key.startsWith('email:');
-        const isQuiz = key.startsWith('quiz:');
+        // Filtrar solo registros de suscripción
+        const isEmail = key.startsWith('email:');   // CV Review lead
+        const isQuiz = key.startsWith('quiz:');     // Quiz gate/complete
         if (!isEmail && !isQuiz) return;
 
         const email = (rec.email ?? '').toLowerCase().trim();
         const tsMs = rec.ts ? Date.parse(rec.ts) : NaN;
         if (!email || isNaN(tsMs)) return;
+
+        // Trackeo separado para métricas del quiz funnel
+        if (isQuiz) {
+          subs.quiz_gate_records_total++;
+          subs.quiz_gate_emails_unique.add(email);
+        } else if (isEmail) {
+          subs.cv_review_emails_unique.add(email);
+        }
 
         // Dedup por email (una vez cada uno para totales/países)
         if (!subs.seen_emails.has(email)) {
@@ -233,16 +252,20 @@ export const GET: APIRoute = async ({ url, locals }) => {
       });
     }
 
-    // Drop-off gate→complete: comparar quiz records en EMAILS (gate + complete)
-    // vs completions únicos en QUIZ_METRICS. Aproximado por diferencia.
-    // gate_count: cuántas keys `quiz:*` hay en EMAILS
-    // complete_count: quiz.total (que solo cuenta 'complete')
-    // drop_off = 1 - (complete / gate_email_records_unique)
-    // Simplificación: usamos ratio en función de emails únicos que llegaron por quiz
-    const quiz_email_unique = Array.from(subs.seen_emails).length; // aproximación
-    const drop_off_pct = quiz_email_unique > 0
-      ? +((1 - quiz.total / Math.max(quiz.total, quiz_email_unique)) * 100).toFixed(1)
+    // Drop-off gate→complete usando definiciones estrictas:
+    //   - "empezar" = envió gate (record `quiz:` en EMAILS, deduplicado por email)
+    //   - "terminar" = vio resultado (record en QUIZ_METRICS)
+    // drop_off_pct = 1 - (completions / gates_únicos)
+    //
+    // Nota: quiz.total puede exceder gates_únicos si un email completó 2 veces
+    // (edge case raro). Se cap a min(1, ratio) para evitar drop_off negativo.
+    const gates_unique = subs.quiz_gate_emails_unique.size;
+    const drop_off_pct = gates_unique > 0
+      ? +((1 - Math.min(1, quiz.total / gates_unique)) * 100).toFixed(1)
       : null;
+
+    // Repeat gates: emails que enviaron gate 2+ veces (intentaron abandonar y regresar)
+    const repeat_gates = subs.quiz_gate_records_total - gates_unique;
 
     // ── 3. CV Review (KV CV_LIMITS, un key por email con contador) ──
     // Estructura típica: key `email` → JSON { count, first_ts, last_ts }
@@ -352,7 +375,9 @@ export const GET: APIRoute = async ({ url, locals }) => {
         semana_anterior: quiz.prev,
         distribucion_rol_acumulado: quiz.rol,
         agreement_rate: quiz.agree_total > 0 ? +(quiz.agree_hits / quiz.agree_total).toFixed(3) : null,
+        gates_unique_acumulado: gates_unique,
         drop_off_gate_to_complete_pct: drop_off_pct,
+        repeat_gates,
       },
       cv_review: {
         analisis_acumulados: cv.total_analisis,
