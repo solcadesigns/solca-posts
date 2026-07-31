@@ -3,6 +3,20 @@
 	"name": "solca",
 	"main": "./dist/_worker.js/index.js",
 	"compatibility_date": "2025-01-01",
+	// Cron Triggers
+	// Lunes 14:00 UTC = 8:00 AM CDMX (UTC-6, sin DST desde 2022).
+	// Viernes 14:00 UTC = 8:00 AM CDMX. Blog broadcast semanal.
+	// El handler scheduled lo inyecta scripts/patch-cron-handler.mjs
+	// al final del build (post astro build, antes de wrangler deploy).
+	// El handler debe rutear por controller.cron:
+	//   "0 14 * * 1" → /api/simulator-weekly-cron  (digest simulador)
+	//   "0 14 * * 5" → /api/blog-broadcast         (broadcast blog Vie)
+	"triggers": {
+		"crons": [
+			"0 14 * * 1",
+			"0 14 * * 5"
+		]
+	},
 	"compatibility_flags": [
 		"nodejs_compat"
 	],
@@ -38,6 +52,38 @@
 			"binding": "CV_METRICS",
 			"id": "18d5db1a26ad41d296fc67ff4ebb9c66",
 			"remote": true
+		},
+		// Simulador de Entrevistas (Fase 1+)
+		{
+			"binding": "SIMULATOR_CREDITS",
+			"id": "e1e4e97dd1974c95b1613e49ae7762b8",
+			"remote": true
+		},
+		{
+			"binding": "SIMULATOR_SESSIONS",
+			"id": "ddb54cee43d74747b36c9e45e3b42107",
+			"remote": true
+		},
+		{
+			"binding": "SIMULATOR_METRICS",
+			"id": "4f83d58215b24e0792957ff005fb2295",
+			"remote": true
+		},
+		{
+			"binding": "SIMULATOR_BETA_CODES",
+			"id": "577a2b9a2247465ab88bbf6b63e3eb4a",
+			"remote": true
+		}
+	],
+	"d1_databases": [
+		// Simulador · métricas estructuradas para análisis SQL
+		// Crear con: npx wrangler d1 create simulator-metrics
+		// Aplicar migrations: npx wrangler d1 migrations apply SIMULATOR_METRICS_DB --remote
+		{
+			"binding": "SIMULATOR_METRICS_DB",
+			"database_name": "simulator-metrics",
+			"database_id": "a72d6780-de9c-4cc0-b8da-368fdc0bc932",
+			"migrations_dir": "migrations"
 		}
 	]
 	// KV namespaces — crear con:

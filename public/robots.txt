@@ -1,0 +1,16 @@
+# Solca · Ciencia y Consultoría
+# robots.txt para solcaciencia.com
+
+User-agent: *
+Allow: /
+
+# Privado · beta cerrada del Simulador de Entrevistas hasta lanzamiento público
+Disallow: /simulador-entrevistas-beta
+Disallow: /simulador-entrevistas-beta/
+
+# API endpoints (no son páginas indexables)
+Disallow: /api/
+
+# Sitemaps
+Sitemap: https://solcaciencia.com/sitemap-index.xml
+Sitemap: https://solcaciencia.com/sitemap-blog.xml

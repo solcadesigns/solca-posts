@@ -83,6 +83,8 @@ Sitio en Astro 5 + Cloudflare Workers. Código en `/Users/oscar/Downloads/solca/
   1. **Blog primero.** Newsletter/miércoles se escribe primero como post de blog (largo, SEO-optimizado).
   2. **LinkedIn después.** Versión corta adaptada para feed, con link al post completo.
   3. Esto asegura que Google ve TU URL como original.
+- **Publicación programada por pubDate (a partir de 12 jun 2026):** las rutas `/blog`, `/blog/<slug>`, `/rss.xml` y `/sitemap-blog.xml` son SSR (no prerenderizadas). En cada request filtran posts con `pubDate <= now()`. Esto permite preparar y deployar todo el contenido del mes de una sola vez; cada post aparece automáticamente en su fecha sin intervención manual. Posts con fecha futura devuelven 404 si alguien adivina el URL.
+- **Cadencia operativa real:** una sesión de redacción al mes (4 miércoles + 4 viernes en MDs con frontmatter `pubDate` correcto) → 1 deploy → publicación automática semanal hasta agotar el lote.
 - **Cómo crear un post nuevo:**
   1. Crear `src/content/blog/<slug>.md` con frontmatter del schema.
   2. Subir hero image a `public/blog/<slug>.png` (1280×720 estándar Solca).
@@ -93,8 +95,32 @@ Sitio en Astro 5 + Cloudflare Workers. Código en `/Users/oscar/Downloads/solca/
   - sitemap-index.xml + sitemap-0.xml con 8 URLs.
   - rss.xml con los 3 posts ordenados.
 - **Horizonte SEO esperado:** Google tarda 3-6 meses en indexar bien dominios nuevos para blog. Tráfico orgánico relevante esperado a partir del mes 4-6 si se mantiene cadencia de 1-2 posts/semana con keywords investigadas.
+- **Google Search Console (configurado 25 may 2026):**
+  - Propiedad: `sc-domain:solcaciencia.com` (Domain property, cubre apex + www + http + https).
+  - Verificación: vía OAuth one-time con Cloudflare (no permiso persistente; Cloudflare agregó TXT `_google-site-verification` y se mantiene mientras esté el registro).
+  - Sitemap submitted: `https://solcaciencia.com/sitemap-index.xml`. Status inicial "Couldn't fetch" es transitorio — Google reintenta automáticamente. Verificar status en 24h.
+  - URL Inspection · priority crawl queue solicitada para los 4 URLs (25 may 2026):
+    - `/blog`, `/blog/despues-del-cv`, `/blog/clinical-ops-40-pharma-latam`, `/blog/msl-vs-visitador-vs-medical-director`.
+  - Bing Webmaster Tools: pendiente (mismo sitemap a submit).
 
-### 1.5 · `/privacidad`
+### 1.5 · `/simulador-entrevistas` · Simulador de entrevistas pharma (EN DESARROLLO · Fase 0.1 completa)
+
+- **Estado a 12 jun 2026:** Fase 0.1 (design + prompt + banco) completada. Pendiente Fase 0.2 (validación) → Fase 1 (MVP código) → beta cerrada → producción.
+- **Documentación canónica:** `_docs/SIMULADOR_ENTREVISTAS_ADDENDUM.md`, `_docs/SIMULADOR_PROMPT_V0.md` (v0.1), `_docs/SIMULADOR_BANCO_SEMILLA.md` (v0.1).
+- **Concepto:** simulador híbrido de entrevistas con preguntas escritas + respuesta por voz o texto. Modo A (con vacante específica) o Modo B (perfil general). Análisis personalizado por CV en planes pagos.
+- **Decisiones cerradas (12 jun 2026):**
+  - **Procesador de pagos:** Conekta (no Hotmart, no Mercado Pago). ~3.6% + $3 MXN. OXXO + SPEI + tarjetas internacionales.
+  - **CV-personalizado:** solo en planes pagos. Plan gratuito es Modo B con preguntas genéricas.
+  - **Carta de presentación:** skip en v0.1, evaluar en v1.
+  - **Privacidad:** CV no se guarda completo. Solo métricas anónimas extraídas (área, técnicas, vocabulario, gaps) sin nombres/email/instituciones específicas.
+  - **Beta cerrada:** 20-30 personas con código de invitación único validado contra KV `SIMULATOR_BETA_CODES`.
+  - **Frameworks de evaluación por rol:** ICH-GCP + SDV para CRA; Scientific Engagement para MSL; RACI + critical path para CPM; PICO + RWE para Healthcare Analyst.
+- **Banco semilla v0.1:** 32 preguntas fijas Junior + 12 templates CV-anclados.
+- **System prompt v0.1:** reglas Solca completas (sin emoji, regla de traducción, anti-fabricación reforzada, feedback honesto). Extracción de métricas anónimas al cierre.
+- **KV bindings nuevos requeridos:** `SIMULATOR_CREDITS` (sesiones por usuario pagado), `SIMULATOR_SESSIONS` (historial 90 días), `SIMULATOR_METRICS` (agregados anónimos), `SIMULATOR_BETA_CODES` (códigos de invitación), `SIMULATOR_USER_HISTORY` (resumen estructurado por user_hash para permitir comparación entre sesiones — solo se activa en v1.0 cuando implementemos Mecanismo 5 de variabilidad de feedback).
+- **Endpoint nuevo:** `src/pages/api/simulator-session.ts` (no construido todavía).
+
+### 1.6 · `/privacidad`
 
 - **Página:** `src/pages/privacidad.astro`
 - **Contiene:** aviso completo LFPDPPP/GDPR. Designa a `hello@solcaciencia.com` como buzón para ejercer derechos ARCO. Plazo de respuesta declarado: 20 días hábiles.
@@ -235,7 +261,18 @@ GRAY_BAR  = (210, 210, 215)  # datos suaves
 
 - **Dimensión:** 1280×720 (estándar LinkedIn newsletter cover).
 - **Layout:** wordmark/título a la izquierda, layout de 3 cards a la derecha con números o conceptos clave del newsletter.
-- **Nombre:** `newsletter_YYYY_MM_DD.png` en `_docs/`.
+- **Nombre:** `newsletter_YYYY_MM_DD.png` en `_docs/covers/`.
+- **Script canónico (commitido 23 jun 2026):** `scripts/generate-newsletter-cover.py`. Genera la portada con CLI. Ejemplo:
+  ```bash
+  python3 scripts/generate-newsletter-cover.py \
+    --numero 8 \
+    --titulo "IA en clinical research: deployment vs hype" \
+    --keyword "IA" \
+    --subtitulo "Lo que las vacantes de esta semana muestran..." \
+    --card1 Deployed --card2 Hype --card3 Vacantes \
+    --output _docs/covers/newsletter_2026_06_26.png
+  ```
+  El argumento `--keyword` se renderiza en naranja dentro del título (ancla visual). Antes de 23 jun se generaban ad-hoc en chat sin commitear el script — se perdía el código entre sesiones. **No volver a generar covers sin pasar por este script** (o por una evolución commitida del mismo).
 
 ### 5.3 · Portadas miércoles (Lo que dicen las vacantes)
 
@@ -331,6 +368,10 @@ Si en un draft hay cifras inventadas o asumidas, Claude las marca antes de cerra
 - Cifras específicas (números, %): verificar antes o no usar.
 - Claims directional ("la mayoría", "frecuentemente"): aceptables si la dirección es clara.
 - Detalles específicos de productos propios (ej. "12 preguntas del libro 3"): verificar contra los archivos del libro, no asumir.
+
+### 7.6.1 · Fuentes externas obligatorias (12 jun 2026)
+
+Toda afirmación sobre realidad del mercado, prácticas de reclutamiento, datos de industria, dinámica de entrevistas o comportamiento de usuarios que termine en un entregable de producto (system prompt, copy de UI, post de blog, newsletter, ad copy) **debe llevar fuente externa verificable** antes de quedar fijada. Si no hay fuente: reformular conservadoramente o eliminar el claim. Aplica retroactivamente. El caso que detonó la regla: afirmar que *"las entrevistas pharma LATAM son híbridas"* sin cita en una conversación sobre el simulador — Oscar lo cazó. Detalles completos en `OSCAR_PROFILE.md` y `SIMULADOR_ENTREVISTAS_ADDENDUM.md` sección 7.10.
 
 ### 7.7 · CTA rotación
 

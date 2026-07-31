@@ -67,6 +67,8 @@ Aplican a TODO contenido público que sale bajo la marca Solca.
 | 4 | **Sin emoji** | Política de marca. |
 | 5 | **Referencias citadas** | Cifras numéricas con fuente identificable o softening. |
 | 6 | **Sin fabricación** | Nunca inventar números específicos. Softening con "la mayoría / frecuentemente" sí; "27 de 30" sin verificar, no. |
+| 6b | **Checklist pre-publicación obligatorio (establecida 21 jul 2026)** | Antes de entregar cualquier draft de LinkedIn, blog o newsletter, revisar cada afirmación con número, porcentaje, tendencia declarada, estudio citado, o "en promedio X". Cada una debe: (a) tener URL verificable, o (b) reformularse como observación acotada al material propio ("en la selección compartida este mes…"), o (c) eliminarse. Prohibido apelar a muestras internas que no existen (ejemplo del error: "revisión sistemática de más de 200 CVs" cuando no había tal muestra; "en las respuestas al survey del CV Review cero declararon C1" cuando esa pregunta ni siquiera existe en el formulario). Detonante: sesión 21 jul 2026, Sprint LinkedIn Ago v1 tenía múltiples inventos (mito 6-8 seg del reclutador, cifras SHRM 30-45% incorrectas, muestra CV Review inexistente). La voz Solca ("sentenciar o silencio") se interpretó mal como licencia para afirmar en absoluto; su lectura correcta es: sentenciar cuando hay fuente, acotar u optar por silencio cuando no. |
+| 6c | **Mito del "6-8 segundos" del reclutador leyendo CV — prohibido usar (establecida 21 jul 2026)** | El estudio Ladders 2012/2018 (origen del mito) tenía muestras pequeñas (30 recruiters) sin especificar posiciones ni longitudes de CV. Datos reales de estudios posteriores muestran varianza de 12 segundos a 2m27s. Fuentes que desacreditan: ere.net, distinctrecruitment.com. Cualquier post que se construya sobre este marco debe reescribirse. |
 | 7 | **CTA rotación** | Newsletter vacantes → `revisar-cv`; CRA → libro 3; MSL → libro 2; PM → libro 1. Documentado en `NEWSLETTER_TOPICS_REGISTRY.md`. |
 | 7b | **Link al blog ≠ CTA (establecida 25 jun 2026)** | En newsletters LinkedIn que tengan blog correspondiente en `solcaciencia.com/blog/[slug]`, el link va **dentro del cuerpo** como "versión completa en…" o "más fuentes en…" o "lectura larga en…". Es referencia/cita, no acción que se pide al lector. El CTA final sigue siendo **único** (revisar-cv o libro según rotación). Esto sostiene la regla "una sola CTA" sin perder el bridge LinkedIn → sitio. Aplicación: cada newsletter o post LinkedIn que tenga blog publicado en el sitio inserta el link del blog a media-altura del cuerpo, no al cierre. Detonante: pregunta de Oscar 25 jun 2026 sobre si tener dos enlaces (blog + revisar-cv) rompe la regla "una CTA". Sí la rompía. La solución es presentar el blog como fuente, no como acción. |
 | 7c | **Excepción 7b · ediciones con vacantes NO llevan link al blog (establecida 25 jun 2026)** | Las ediciones del Newsletter Solca Insight con sección de vacantes (cadencia cada 4 viernes: #1 = 22 may, #2 = 26 jun, #3 = 24 jul, #4 = 21 ago) **NO insertan link a un blog editorial dentro del cuerpo**. Razón: la promesa de valor de esa edición es la curación de vacantes de la semana, no el insight editorial. El listado de vacantes ES el contenido principal, y un link al blog del insight diluye la atención que debe ir a las vacantes y al CTA único de revisar-cv. Las vacantes además caducan en semanas, lo que impide replicarlas en un blog SEO duradero. Aplica solo a newsletter con vacantes; los newsletter regulares y los posts feed sí mantienen sub-regla 7b. Detonante: corrección de Oscar 25 jun 2026 sobre N#8 Vie 26 jun. |
@@ -185,6 +187,63 @@ Registro operativo, 13 jul 2026.
 - **Modelo de acceso al lanzamiento público:** freemium + premium. Freemium con acceso limitado (sesiones o funcionalidades base) para reducir fricción de entrada; premium para funcionalidades avanzadas. Nunca preguntar "qué modelo será" — está decidido.
 - **"Bata & Corbata"** queda como marca de campaña/serie editorial (hashtag, título de newsletter, cluster de contenido), no como nombre de producto.
 - **Regla operativa naming:** para futuros productos del portafolio Solca, evitar "IA/AI" en el nombre. Poner "IA" en tagline y meta description si aporta SEO. Evitar también palabras semánticamente ambiguas (ensayo, prueba, práctica, review) sin descriptor específico que las desambigüe.
+
+### Regla editorial · sin "gratis" en emails y subject lines
+
+Registro operativo, 13 jul 2026.
+
+- **Emails y subject lines de Brevo no llevan la palabra "gratis" ni "gratuito/a".** Regla explícita de Oscar. Aplica también a CTAs de blogs que mencionan herramientas propias (blog puede mencionar herramientas del sector como "gratuitas" cuando es dato informativo sobre certificaciones NIH/CITI/Global Health Training Centre, pero nunca sobre las herramientas de Solca).
+- **Sustitución preferida:** para CTAs de Solca decir simplemente "nuestra herramienta X" o "herramienta X abierta" en lugar de "herramienta gratuita X". El propósito es tono profesional sostenido, no salesy.
+- **Excepción única:** menciones informativas sobre certificaciones/cursos gratuitos del sector (NIH ICH-GCP, CITI Program, Global Health Training Centre, cursos de inglés online) mantienen la palabra porque es información objetiva del ecosistema pharma, no promoción de Solca.
+
+### Regla editorial · anatomía del texto descriptivo de posts LinkedIn
+
+Registro operativo, 30 jul 2026 (piloto sprint ago 2026 · infografías/carruseles jueves).
+
+Los textos que acompañan cada publicación LinkedIn (post description, arriba del carrusel o infografía) siguen esta anatomía de 3 a 5 líneas:
+
+1. **Hook con pregunta directa o afirmación provocativa** (1 línea): abre con `¿...?` cuando sea posible; el propósito es pausar el scroll. El corte de "ver más" en LinkedIn ocurre ~210 caracteres; el hook debe entregarse antes.
+2. **Nota breve de contexto o experiencia** (1-2 líneas): puede incluir vivencia personal si es relevante ("yo tuve la fortuna de encontrar un trabajo remoto"), acotada, sin exponer operación privada de Solca ni compromisos editoriales futuros.
+3. **CTA a herramienta o al newsletter** (1-2 líneas): forma pregunta suave + acción concreta. Ubicación estándar del enlace: "en los comentarios", "en el primer comentario", "en el enlace del perfil". El CTA no repite lo que el visual ya muestra.
+4. **Hashtags al final en CamelCase**: 2-3 relevantes, sin exceso. Formato `#EntrevistasPharma`, no `#entrevistaspharma` — mejor accesibilidad para lectores de pantalla y mejor lectura visual.
+
+**Palabras prohibidas en post description (heredado de la regla anti-gratis):** "gratis", "gratuito/a". Sustituciones: "abierta", "disponible", o simplemente omitir la referencia al costo.
+
+**Ejemplos aprobados** (30 jul 2026):
+
+> ¿Estás aplicando a trabajos con estrategia? A veces la estrategia es no aplicar.
+>
+> Tu tiempo es valioso, identifica red flags de vacantes que podrían no valer la pena.
+>
+> Si estás aplicando a trabajos, te comparto una herramienta muy útil para revisar tu CV antes de enviarlo. Encuéntrala en el primer comentario.
+
+> Las entrevistas de trabajo no se improvisan, se preparan.
+>
+> Sigo validando mi herramienta de simulador de entrevistas. Si quieres probarla antes que nadie, escríbeme en los comentarios.
+>
+> #EntrevistasPharma #SimuladorDeEntrevistas #JobHuntingLATAM
+
+> ¿Sueñas con un trabajo remoto?
+>
+> Yo tuve la fortuna de encontrar un trabajo remoto, pero ¿cuál es la realidad actual según los datos?
+>
+> ¿Estás aplicando a vacantes? Revisa tu CV antes de enviarlo con nuestra herramienta abierta. Te comparto el enlace en los comentarios.
+>
+> #TrabajoRemoto #VacantesLATAM #HomeOffice
+
+### Regla operativa · cadencia visual jueves LinkedIn
+
+Registro operativo, 30 jul 2026.
+
+- **Cada sprint mensual incluye ~3-4 piezas visuales de jueves** además de las 13 publicaciones estándar (Lun/Mié/Vie).
+- **Alternancia infografía ↔ carrusel PDF** para aprender qué formato rinde mejor en la audiencia Solca antes de comprometerse a uno solo.
+- **Contenido standalone:** las piezas jueves NO son teaser del Insight del viernes. Son tema tangente al cluster editorial de la semana, autocontenido, con CTA neutro al blog o al comentario.
+- **Kicker de jueves:** `SOLCA CIENCIA · JUE N MES` (no `SOLCA INSIGHT` que se reserva para las publicaciones del viernes).
+- **Herramienta principal:**
+  - Carruseles PDF → `scripts/generate-linkedin-carousel.py` (Pillow puro, dimensión 1080×1080 cuadrado, iconos programáticos consistentes, sin dependencia de IA generativa para el arte).
+  - Infografías densas de texto → **prompt detallado a ChatGPT/GPT Image 1** (mejor rendering de tipografía que Flow/Nano Banana; Oscar genera y me manda el PNG para versionar).
+  - Ilustraciones abstractas de tipo hero → **Google Flow** (Nano Banana 2 Lite, aspect 3:4 o 1:1).
+- **Métrica de éxito piloto:** nuevos suscriptores KV EMAILS por semana antes vs después de la introducción de jueves visuales (baseline: semanas prev sprint jul; comparativa: semanas del sprint ago). Rollout permanente si sube ≥25% consistente.
 
 ---
 

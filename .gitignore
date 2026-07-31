@@ -30,3 +30,17 @@ pnpm-debug.log*
 # Office/LibreOffice lock files
 .~lock.*
 *~lock.*#
+
+# Python bytecode cache
+__pycache__/
+*.pyc
+
+# Datos privados de usuarios y códigos de acceso
+# (nombres, emails, códigos beta — nunca deben subirse a git)
+_docs/beta-candidates*.json
+_docs/beta-candidates*.csv
+_docs/beta-codes*.csv
+_docs/beta-outreach*.csv
+_docs/private-*.json
+_docs/*-privado*.json
+_docs/*-privado*.csv

@@ -15,6 +15,7 @@
 | `CONTENT_CALENDAR_12_WEEKS.md` | Plan operativo de 12 semanas con fuente exacta de cada pieza |
 | `LINKEDIN_POST_TEMPLATES.md` | 6 arquetipos de post LinkedIn |
 | `NEWSLETTER_TEMPLATE.md` | Estructura del newsletter LinkedIn + email derivado |
+| `OSCAR_PROFILE.md` | **LÉELO PRIMERO en cualquier sesión nueva con Claude.** Quién es Oscar, cómo trabaja, reglas editoriales transversales, gotchas operativos acumulados, snapshot vivo de proyectos. |
 | `NEWSLETTER_TOPICS_REGISTRY.md` | Memoria compartida del ciclo editorial · temas usados, pool pendiente, reglas refinadas |
 | `NEWSLETTER_RESCHEDULE_PLAN.md` | Plan maestro Lun-teaser → Vie-newsletter |
 | `TOOLS_REGISTRY.md` | **Inventario completo de herramientas operativas** · ábrelo al iniciar cualquier sesión nueva |
