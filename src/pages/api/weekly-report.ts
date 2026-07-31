@@ -241,53 +241,32 @@ interface CloudflareTrafficStats {
 async function fetchCloudflareTraffic(
   token: string,
   zoneId: string,
-): Promise<CloudflareTrafficStats | null> {
+): Promise<CloudflareTrafficStats | { error: string }> {
   const now = new Date();
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-  const fmt = (d: Date) => d.toISOString();
+  // Cloudflare Analytics GraphQL usa date (YYYY-MM-DD), no datetime completo.
+  const fmtDate = (d: Date) => d.toISOString().slice(0, 10);
 
+  // Query mínima para validar conectividad y usar el dataset httpRequests1dGroups
+  // que está disponible en plan Free y da métricas diarias del edge.
   const query = `
-    query($zoneTag: String!, $curFrom: Time!, $curTo: Time!, $prevFrom: Time!, $prevTo: Time!) {
+    query($zoneTag: String!, $curFrom: Date!, $curTo: Date!, $prevFrom: Date!, $prevTo: Date!) {
       viewer {
         zones(filter: { zoneTag: $zoneTag }) {
-          cur: httpRequestsAdaptiveGroups(
-            limit: 1,
-            filter: { datetime_geq: $curFrom, datetime_leq: $curTo }
+          cur: httpRequests1dGroups(
+            limit: 100,
+            filter: { date_geq: $curFrom, date_leq: $curTo }
           ) {
-            sum { visits }
+            sum { pageViews requests }
             uniq { uniques }
           }
-          prev: httpRequestsAdaptiveGroups(
-            limit: 1,
-            filter: { datetime_geq: $prevFrom, datetime_leq: $prevTo }
+          prev: httpRequests1dGroups(
+            limit: 100,
+            filter: { date_geq: $prevFrom, date_leq: $prevTo }
           ) {
-            sum { visits }
+            sum { pageViews requests }
             uniq { uniques }
-          }
-          topPages: httpRequestsAdaptiveGroups(
-            limit: 10,
-            filter: { datetime_geq: $curFrom, datetime_leq: $curTo },
-            orderBy: [sum_visits_DESC]
-          ) {
-            sum { visits }
-            dimensions { clientRequestPath }
-          }
-          topRefs: httpRequestsAdaptiveGroups(
-            limit: 10,
-            filter: { datetime_geq: $curFrom, datetime_leq: $curTo, clientRequestReferer_neq: "" },
-            orderBy: [sum_visits_DESC]
-          ) {
-            sum { visits }
-            dimensions { clientRequestReferer }
-          }
-          topCountries: httpRequestsAdaptiveGroups(
-            limit: 10,
-            filter: { datetime_geq: $curFrom, datetime_leq: $curTo },
-            orderBy: [sum_visits_DESC]
-          ) {
-            sum { visits }
-            dimensions { clientCountryName }
           }
         }
       }
@@ -305,56 +284,61 @@ async function fetchCloudflareTraffic(
         query,
         variables: {
           zoneTag: zoneId,
-          curFrom: fmt(weekAgo),
-          curTo: fmt(now),
-          prevFrom: fmt(twoWeeksAgo),
-          prevTo: fmt(weekAgo),
+          curFrom: fmtDate(weekAgo),
+          curTo: fmtDate(now),
+          prevFrom: fmtDate(twoWeeksAgo),
+          prevTo: fmtDate(weekAgo),
         },
       }),
     });
     if (!res.ok) {
-      console.warn('cloudflare-analytics HTTP fail', res.status);
-      return null;
+      const txt = await res.text();
+      console.warn('cloudflare-analytics HTTP', res.status, txt.slice(0, 200));
+      return { error: `HTTP ${res.status}: ${txt.slice(0, 120)}` };
     }
     const body = (await res.json()) as {
       data?: {
         viewer?: {
           zones?: Array<{
-            cur?: Array<{ sum?: { visits?: number }; uniq?: { uniques?: number } }>;
-            prev?: Array<{ sum?: { visits?: number }; uniq?: { uniques?: number } }>;
-            topPages?: Array<{ sum?: { visits?: number }; dimensions?: { clientRequestPath?: string } }>;
-            topRefs?: Array<{ sum?: { visits?: number }; dimensions?: { clientRequestReferer?: string } }>;
-            topCountries?: Array<{ sum?: { visits?: number }; dimensions?: { clientCountryName?: string } }>;
+            cur?: Array<{
+              sum?: { pageViews?: number; requests?: number };
+              uniq?: { uniques?: number };
+            }>;
+            prev?: Array<{
+              sum?: { pageViews?: number; requests?: number };
+              uniq?: { uniques?: number };
+            }>;
           }>;
         };
       };
       errors?: Array<{ message?: string }>;
     };
     if (body.errors?.length) {
-      console.warn('cloudflare-analytics GraphQL errors', body.errors[0]?.message);
-      return null;
+      const msg = body.errors.map((e) => e.message).join('; ');
+      console.warn('cloudflare-analytics GraphQL', msg);
+      return { error: `GraphQL: ${msg.slice(0, 200)}` };
     }
     const zone = body.data?.viewer?.zones?.[0];
-    if (!zone) return null;
+    if (!zone) return { error: 'No zones returned (zone_id incorrecto o sin permisos)' };
+
+    // Sum daily buckets
+    const sumField = (rows: Array<{ sum?: { pageViews?: number; requests?: number } }> | undefined, field: 'pageViews' | 'requests') =>
+      (rows ?? []).reduce((acc, r) => acc + (r.sum?.[field] ?? 0), 0);
+    const sumUniq = (rows: Array<{ uniq?: { uniques?: number } }> | undefined) =>
+      (rows ?? []).reduce((acc, r) => acc + (r.uniq?.uniques ?? 0), 0);
 
     return {
-      pv_current: zone.cur?.[0]?.sum?.visits ?? 0,
-      pv_previous: zone.prev?.[0]?.sum?.visits ?? 0,
-      uv_current: zone.cur?.[0]?.uniq?.uniques ?? 0,
-      uv_previous: zone.prev?.[0]?.uniq?.uniques ?? 0,
-      top_pages: (zone.topPages ?? [])
-        .map((r) => ({ path: r.dimensions?.clientRequestPath ?? '', views: r.sum?.visits ?? 0 }))
-        .filter((r) => r.path),
-      top_referrers: (zone.topRefs ?? [])
-        .map((r) => ({ referrer: r.dimensions?.clientRequestReferer ?? '', views: r.sum?.visits ?? 0 }))
-        .filter((r) => r.referrer),
-      top_countries: (zone.topCountries ?? [])
-        .map((r) => ({ pais: r.dimensions?.clientCountryName ?? '', views: r.sum?.visits ?? 0 }))
-        .filter((r) => r.pais),
+      pv_current: sumField(zone.cur, 'pageViews'),
+      pv_previous: sumField(zone.prev, 'pageViews'),
+      uv_current: sumUniq(zone.cur),
+      uv_previous: sumUniq(zone.prev),
+      top_pages: [],       // en Free/Pro no vienen — requiere Enterprise
+      top_referrers: [],   // idem
+      top_countries: [],   // idem
     };
   } catch (err) {
     console.warn('cloudflare-analytics fetch failed', err);
-    return null;
+    return { error: `Exception: ${(err as Error)?.message}` };
   }
 }
 
@@ -642,7 +626,9 @@ export const GET: APIRoute = async ({ url, locals }) => {
 
     if (cfToken && zoneId) {
       const cf = await fetchCloudflareTraffic(cfToken, zoneId);
-      if (cf) {
+      if ('error' in cf) {
+        traffic.nota = cf.error;
+      } else {
         traffic.disponible = true;
         traffic.page_views_esta_semana = cf.pv_current;
         traffic.page_views_semana_anterior = cf.pv_previous;
@@ -651,11 +637,14 @@ export const GET: APIRoute = async ({ url, locals }) => {
         traffic.top_paginas = cf.top_pages;
         traffic.top_referrers = cf.top_referrers;
         traffic.top_paises = cf.top_countries;
-      } else {
-        traffic.nota = 'Cloudflare Analytics no devolvió data (token o permisos).';
+        if (cf.top_pages.length === 0) {
+          traffic.nota = 'Top pages/refs/paises requieren plan Cloudflare Enterprise; solo agregados disponibles en Free/Pro.';
+        }
       }
     } else {
-      traffic.nota = 'Falta CLOUDFLARE_ANALYTICS_TOKEN o SOLCACIENCIA_ZONE_ID.';
+      traffic.nota = !cfToken
+        ? 'Falta CLOUDFLARE_ANALYTICS_TOKEN (wrangler secret put).'
+        : 'Falta SOLCACIENCIA_ZONE_ID (wrangler.jsonc vars).';
     }
 
     // ── Armar respuesta ──────────────────────────────────────────
