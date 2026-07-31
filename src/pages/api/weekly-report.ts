@@ -240,33 +240,58 @@ interface CloudflareTrafficStats {
 
 async function fetchCloudflareTraffic(
   token: string,
-  zoneId: string,
+  accountTag: string,
+  siteTag: string,
 ): Promise<CloudflareTrafficStats | { error: string }> {
   const now = new Date();
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-  // Cloudflare Analytics GraphQL usa date (YYYY-MM-DD), no datetime completo.
-  const fmtDate = (d: Date) => d.toISOString().slice(0, 10);
+  const fmt = (d: Date) => d.toISOString();
 
-  // Query mínima para validar conectividad y usar el dataset httpRequests1dGroups
-  // que está disponible en plan Free y da métricas diarias del edge.
+  // Dataset RUM (Real User Monitoring): usa el beacon JS de Web Analytics.
+  // Solo cuenta humanos con JS habilitado. Bots están filtrados con bot: false.
+  // Disponible en plan Free e incluye top pages/refs/países.
   const query = `
-    query($zoneTag: String!, $curFrom: Date!, $curTo: Date!, $prevFrom: Date!, $prevTo: Date!) {
+    query($accountTag: String!, $siteTag: String!, $curFrom: Time!, $curTo: Time!, $prevFrom: Time!, $prevTo: Time!) {
       viewer {
-        zones(filter: { zoneTag: $zoneTag }) {
-          cur: httpRequests1dGroups(
-            limit: 100,
-            filter: { date_geq: $curFrom, date_leq: $curTo }
+        accounts(filter: { accountTag: $accountTag }) {
+          cur: rumPageloadEventsAdaptiveGroups(
+            limit: 1,
+            filter: { siteTag: $siteTag, datetime_geq: $curFrom, datetime_leq: $curTo, bot: 0 }
           ) {
-            sum { pageViews requests }
-            uniq { uniques }
+            count
+            sum { visits }
           }
-          prev: httpRequests1dGroups(
-            limit: 100,
-            filter: { date_geq: $prevFrom, date_leq: $prevTo }
+          prev: rumPageloadEventsAdaptiveGroups(
+            limit: 1,
+            filter: { siteTag: $siteTag, datetime_geq: $prevFrom, datetime_leq: $prevTo, bot: 0 }
           ) {
-            sum { pageViews requests }
-            uniq { uniques }
+            count
+            sum { visits }
+          }
+          topPages: rumPageloadEventsAdaptiveGroups(
+            limit: 10,
+            filter: { siteTag: $siteTag, datetime_geq: $curFrom, datetime_leq: $curTo, bot: 0 },
+            orderBy: [count_DESC]
+          ) {
+            count
+            dimensions { requestPath }
+          }
+          topRefs: rumPageloadEventsAdaptiveGroups(
+            limit: 10,
+            filter: { siteTag: $siteTag, datetime_geq: $curFrom, datetime_leq: $curTo, bot: 0, refererHost_neq: "" },
+            orderBy: [count_DESC]
+          ) {
+            count
+            dimensions { refererHost }
+          }
+          topCountries: rumPageloadEventsAdaptiveGroups(
+            limit: 10,
+            filter: { siteTag: $siteTag, datetime_geq: $curFrom, datetime_leq: $curTo, bot: 0 },
+            orderBy: [count_DESC]
+          ) {
+            count
+            dimensions { countryName }
           }
         }
       }
@@ -283,31 +308,29 @@ async function fetchCloudflareTraffic(
       body: JSON.stringify({
         query,
         variables: {
-          zoneTag: zoneId,
-          curFrom: fmtDate(weekAgo),
-          curTo: fmtDate(now),
-          prevFrom: fmtDate(twoWeeksAgo),
-          prevTo: fmtDate(weekAgo),
+          accountTag,
+          siteTag,
+          curFrom: fmt(weekAgo),
+          curTo: fmt(now),
+          prevFrom: fmt(twoWeeksAgo),
+          prevTo: fmt(weekAgo),
         },
       }),
     });
     if (!res.ok) {
       const txt = await res.text();
-      console.warn('cloudflare-analytics HTTP', res.status, txt.slice(0, 200));
+      console.warn('cloudflare-rum HTTP', res.status, txt.slice(0, 200));
       return { error: `HTTP ${res.status}: ${txt.slice(0, 120)}` };
     }
     const body = (await res.json()) as {
       data?: {
         viewer?: {
-          zones?: Array<{
-            cur?: Array<{
-              sum?: { pageViews?: number; requests?: number };
-              uniq?: { uniques?: number };
-            }>;
-            prev?: Array<{
-              sum?: { pageViews?: number; requests?: number };
-              uniq?: { uniques?: number };
-            }>;
+          accounts?: Array<{
+            cur?: Array<{ count?: number; sum?: { visits?: number } }>;
+            prev?: Array<{ count?: number; sum?: { visits?: number } }>;
+            topPages?: Array<{ count?: number; dimensions?: { requestPath?: string } }>;
+            topRefs?: Array<{ count?: number; dimensions?: { refererHost?: string } }>;
+            topCountries?: Array<{ count?: number; dimensions?: { countryName?: string } }>;
           }>;
         };
       };
@@ -315,29 +338,29 @@ async function fetchCloudflareTraffic(
     };
     if (body.errors?.length) {
       const msg = body.errors.map((e) => e.message).join('; ');
-      console.warn('cloudflare-analytics GraphQL', msg);
+      console.warn('cloudflare-rum GraphQL', msg);
       return { error: `GraphQL: ${msg.slice(0, 200)}` };
     }
-    const zone = body.data?.viewer?.zones?.[0];
-    if (!zone) return { error: 'No zones returned (zone_id incorrecto o sin permisos)' };
-
-    // Sum daily buckets
-    const sumField = (rows: Array<{ sum?: { pageViews?: number; requests?: number } }> | undefined, field: 'pageViews' | 'requests') =>
-      (rows ?? []).reduce((acc, r) => acc + (r.sum?.[field] ?? 0), 0);
-    const sumUniq = (rows: Array<{ uniq?: { uniques?: number } }> | undefined) =>
-      (rows ?? []).reduce((acc, r) => acc + (r.uniq?.uniques ?? 0), 0);
+    const acc = body.data?.viewer?.accounts?.[0];
+    if (!acc) return { error: 'No accounts returned (accountTag incorrecto o sin permisos)' };
 
     return {
-      pv_current: sumField(zone.cur, 'pageViews'),
-      pv_previous: sumField(zone.prev, 'pageViews'),
-      uv_current: sumUniq(zone.cur),
-      uv_previous: sumUniq(zone.prev),
-      top_pages: [],       // en Free/Pro no vienen — requiere Enterprise
-      top_referrers: [],   // idem
-      top_countries: [],   // idem
+      pv_current: acc.cur?.[0]?.count ?? 0,          // count = pageloads (page views)
+      pv_previous: acc.prev?.[0]?.count ?? 0,
+      uv_current: acc.cur?.[0]?.sum?.visits ?? 0,    // sum.visits = sessions únicas
+      uv_previous: acc.prev?.[0]?.sum?.visits ?? 0,
+      top_pages: (acc.topPages ?? [])
+        .map((r) => ({ path: r.dimensions?.requestPath ?? '', views: r.count ?? 0 }))
+        .filter((r) => r.path),
+      top_referrers: (acc.topRefs ?? [])
+        .map((r) => ({ referrer: r.dimensions?.refererHost ?? '', views: r.count ?? 0 }))
+        .filter((r) => r.referrer),
+      top_countries: (acc.topCountries ?? [])
+        .map((r) => ({ pais: r.dimensions?.countryName ?? '', views: r.count ?? 0 }))
+        .filter((r) => r.pais),
     };
   } catch (err) {
-    console.warn('cloudflare-analytics fetch failed', err);
+    console.warn('cloudflare-rum fetch failed', err);
     return { error: `Exception: ${(err as Error)?.message}` };
   }
 }
@@ -608,9 +631,10 @@ export const GET: APIRoute = async ({ url, locals }) => {
       email_health.nota = 'POSTMARK_SERVER_TOKEN no configurado en env; email_health no disponible.';
     }
 
-    // ── 6. Cloudflare Web Analytics (traffic del edge) ───────────
+    // ── 6. Cloudflare Web Analytics (RUM · solo humanos) ─────────
     const cfToken = env.CLOUDFLARE_ANALYTICS_TOKEN as string | undefined;
-    const zoneId = env.SOLCACIENCIA_ZONE_ID as string | undefined;
+    const accountTag = env.CLOUDFLARE_ACCOUNT_TAG as string | undefined;
+    const siteTag = env.SOLCACIENCIA_RUM_SITE_TAG as string | undefined;
     const traffic = {
       disponible: false,
       ventana_dias: 7,
@@ -624,8 +648,8 @@ export const GET: APIRoute = async ({ url, locals }) => {
       nota: undefined as string | undefined,
     };
 
-    if (cfToken && zoneId) {
-      const cf = await fetchCloudflareTraffic(cfToken, zoneId);
+    if (cfToken && accountTag && siteTag) {
+      const cf = await fetchCloudflareTraffic(cfToken, accountTag, siteTag);
       if ('error' in cf) {
         traffic.nota = cf.error;
       } else {
@@ -637,14 +661,13 @@ export const GET: APIRoute = async ({ url, locals }) => {
         traffic.top_paginas = cf.top_pages;
         traffic.top_referrers = cf.top_referrers;
         traffic.top_paises = cf.top_countries;
-        if (cf.top_pages.length === 0) {
-          traffic.nota = 'Top pages/refs/paises requieren plan Cloudflare Enterprise; solo agregados disponibles en Free/Pro.';
-        }
       }
     } else {
       traffic.nota = !cfToken
-        ? 'Falta CLOUDFLARE_ANALYTICS_TOKEN (wrangler secret put).'
-        : 'Falta SOLCACIENCIA_ZONE_ID (wrangler.jsonc vars).';
+        ? 'Falta CLOUDFLARE_ANALYTICS_TOKEN.'
+        : !accountTag
+          ? 'Falta CLOUDFLARE_ACCOUNT_TAG.'
+          : 'Falta SOLCACIENCIA_RUM_SITE_TAG.';
     }
 
     // ── Armar respuesta ──────────────────────────────────────────

@@ -21,9 +21,14 @@
 		"nodejs_compat"
 	],
 	// Variables públicas (no secretas). Los secrets van con `wrangler secret put`.
-	// SOLCACIENCIA_ZONE_ID se usa por /api/weekly-report para consultar Cloudflare Analytics API.
+	// Usadas por /api/weekly-report para consultar Cloudflare Analytics GraphQL API.
+	//   ZONE_ID: para dataset Zone Analytics (edge, incluye bots).
+	//   RUM_SITE_TAG: para dataset RUM (solo humanos con JS, incluye top pages).
+	//   CLOUDFLARE_ACCOUNT_TAG: contenedor de sitios RUM.
 	"vars": {
-		"SOLCACIENCIA_ZONE_ID": "80c71a476167b48983cfbb78e789400e"
+		"SOLCACIENCIA_ZONE_ID": "80c71a476167b48983cfbb78e789400e",
+		"SOLCACIENCIA_RUM_SITE_TAG": "c3ed59e5d60b44bc9aaaac0c95911c1f",
+		"CLOUDFLARE_ACCOUNT_TAG": "187219480b04d6f4afea8aa7e6231852"
 	},
 	"assets": {
 		"binding": "ASSETS",
