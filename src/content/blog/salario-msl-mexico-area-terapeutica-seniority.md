@@ -24,11 +24,11 @@ Las guías salariales de Michael Page México, Hays LATAM y Adecco Argentina 202
 
 **MSL Trainee o Junior (0-2 años).** Salario de entrada. En multinacional top con área terapéutica competitiva (oncología, hemato), el compensation total es más alto que en laboratorio nacional con área madura (cardiovascular, respiratorio básico).
 
-**MSL Senior (2-5 años).** Incremento significativo sobre el Junior, típicamente 30-45% en compañías top. Componente variable (bonus por objetivos) empieza a pesar más que en Junior.
+**MSL Senior (2-5 años).** Incremento significativo sobre el Junior. El componente variable (bonus por objetivos) empieza a pesar más que en Junior.
 
-**MSL Manager (5+ años).** Incremento del 30-50% sobre Senior. Bono variable puede ser 15-25% del salario base. Frecuentemente incluye responsabilidad de equipo (2-5 MSL a cargo).
+**MSL Manager (5+ años).** El mayor salto de la escalera. Frecuentemente incluye responsabilidad de equipo (2-5 MSL a cargo), y el bono variable pesa más que en Senior.
 
-**Medical Advisor / Medical Affairs (Senior).** Rol siguiente en la trayectoria. Salario ejecutivo, típicamente 30-50% arriba de MSL Manager. Bono variable 20-30%.
+**Medical Advisor / Medical Affairs (Senior).** Rol siguiente en la trayectoria, ya con salario ejecutivo.
 
 Los rangos exactos dependen fuertemente de la compañía, el área terapéutica y la ciudad (CDMX paga por encima de Guadalajara y Monterrey, aunque el diferencial se ha reducido en los últimos años). Solicitar rango específico en la conversación con recruiter interno es más útil que estimar a ciegas.
 
@@ -36,7 +36,7 @@ Los rangos exactos dependen fuertemente de la compañía, el área terapéutica 
 
 Las áreas se agrupan en tres rangos.
 
-**Rango alto: Oncología, hemato-oncología, enfermedades raras, terapias avanzadas (celular, génica).** Escasez estructural del perfil, alto peso del portafolio en la venta de la compañía, complejidad científica que justifica remuneración premium. Un MSL Senior en oncología puede ganar 20-30% arriba de un MSL Senior en área terapéutica madura.
+**Rango alto: Oncología, hemato-oncología, enfermedades raras, terapias avanzadas (celular, génica).** Escasez estructural del perfil, alto peso del portafolio en la venta de la compañía, complejidad científica que justifica remuneración premium. Un MSL Senior en oncología gana por encima de un MSL Senior en área terapéutica madura.
 
 **Rango medio: Inmunología, neurología, cardiología especializada, respiratorio biológico, endocrinología.** Portafolio activo, competencia por talento pero no crítica. Es el rango de referencia estándar del mercado.
 
@@ -50,9 +50,9 @@ Un candidato MSL evaluando ofertas debe comparar compensation total, no solo sal
 
 **Salario base mensual.** El más visible y el que suele dominar la negociación. En multinacionales top pagados en 13 o 14 pagos anuales.
 
-**Bono variable.** En MSL Junior típicamente 8-12% del salario base anual, sujeto a cumplimiento de objetivos individuales y de equipo. En MSL Senior 12-18%. En MSL Manager 15-25%.
+**Bono variable.** Sujeto a cumplimiento de objetivos individuales y de equipo. Su peso sobre el base crece con el nivel. Las cifras reportadas por Glassdoor, SalaryExpert y WorldSalaries para México, con sus discrepancias entre sí, están desglosadas en [Salario MSL LATAM por país y nivel](/blog/salario-msl-latam-por-pais-nivel).
 
-**Beneficios en especie.** Auto de la compañía (para MSL de campo con territorio), gasolina, gastos de representación, laptop, celular, seguro de gastos médicos mayores familiar, vales de despensa, previsión social. La suma puede añadir 25-40% al valor total del paquete.
+**Beneficios en especie.** Auto de la compañía (para MSL de campo con territorio), gasolina, gastos de representación, laptop, celular, seguro de gastos médicos mayores familiar, vales de despensa, previsión social. La suma mueve el valor total del paquete de forma no trivial, y es lo que más se pasa por alto al comparar dos ofertas.
 
 **Componentes de crecimiento.** Bono anual de desempeño, stock options (poco frecuente en LATAM excepto para roles ejecutivos), capacitaciones pagadas, congresos internacionales, MBA co-financiado en algunos casos.
 
@@ -68,7 +68,7 @@ Cuatro fuerzas están presionando salarios pharma LATAM al alza en 2026.
 
 **Tres · Inversión productiva en México.** Anuncio de MXN 21 mil millones bajo Plan México para siete proyectos farmacéuticos ([Milenio](https://www.milenio.com/negocios/industria-farmaceutica-invertira-miles-millones-pesos-mexico)) que reactivan pipelines de contratación en el mediano plazo.
 
-**Cuatro · Habilidades emergentes que valen premium.** Data science aplicado a datos clínicos, real-world evidence, IA en pharma. MSL con estas capacidades declaradas ganan primas de 10-15% sobre el promedio del mismo seniority.
+**Cuatro · Habilidades emergentes que valen premium.** Data science aplicado a datos clínicos, real-world evidence, IA en pharma. Son capacidades que hoy diferencian a un candidato dentro del mismo nivel de seniority, y que conviene declarar explícitamente en el CV.
 
 ## Cómo negociar con datos, no con estimaciones vagas
 
@@ -92,4 +92,4 @@ El salario MSL en México varía por seniority (Trainee/Junior/Senior/Manager/Me
 
 ---
 
-**¿MSL es el rol pharma que se ajusta a tu perfil?** Nuestro Quiz Match mapea tu formación, experiencia y preferencias contra los ocho roles principales de pharma industrial LATAM en cinco minutos. [Pruébalo en solcaciencia.com/quiz](https://solcaciencia.com/quiz).
+**¿MSL es el rol pharma que se ajusta a tu perfil?** Nuestro Quiz Match son ocho preguntas que en dos minutos te ubican entre las tres rutas que cubrimos: Project Manager, Medical Science Liaison y Clinical Research. [Pruébalo en solcaciencia.com/quiz-rol](https://solcaciencia.com/quiz-rol).

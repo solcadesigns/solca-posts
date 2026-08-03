@@ -9,7 +9,7 @@ series: "guia-seo"
 readingMinutes: 7
 ---
 
-El método STAR es el framework de respuesta más común en entrevistas pharma, y también el más mal usado. En CROs grandes y en sponsor directo, las preguntas behavioral copan el 60-70% del tiempo de entrevista para roles de Clinical Research Associate, Medical Science Liaison y Clinical Operations. El candidato que llega sabiendo qué significa STAR pero no cómo recortarlo termina perdiendo la entrevista por una razón sencilla: respuesta larga, resultado ausente. Este blog desarma el framework, muestra qué evalúa realmente cada letra, da un ejemplo por rol y nombra los tres errores que descalifican.
+El método STAR es el framework de respuesta más común en entrevistas pharma, y también el más mal usado. En CROs grandes y en sponsor directo, las preguntas behavioral copan buena parte del tiempo de entrevista para roles de Clinical Research Associate, Medical Science Liaison y Clinical Operations. El candidato que llega sabiendo qué significa STAR pero no cómo recortarlo termina perdiendo la entrevista por una razón sencilla: respuesta larga, resultado ausente. Este blog desarma el framework, muestra qué evalúa realmente cada letra, da un ejemplo por rol y nombra los tres errores que descalifican.
 
 ## Qué es STAR y qué evalúa cada letra
 

@@ -8,6 +8,18 @@ export default defineConfig({
   site: 'https://solcaciencia.com',
   trailingSlash: 'ignore',
   output: 'server',
+  // Redirects permanentes.
+  // /quiz → /quiz-rol (3 ago 2026): 13 posts del blog publicados entre may y
+  // jul 2026 cerraban su CTA apuntando a /quiz, ruta que nunca existió (la
+  // página siempre fue quiz-rol.astro). Los .md ya están corregidos; este 301
+  // recupera el tráfico de los enlaces ya indexados por Google y de los
+  // compartidos en LinkedIn, que no podemos reescribir.
+  redirects: {
+    '/quiz': {
+      status: 301,
+      destination: '/quiz-rol',
+    },
+  },
   adapter: cloudflare({
     platformProxy: {
       enabled: true,

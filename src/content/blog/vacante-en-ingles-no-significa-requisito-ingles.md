@@ -54,7 +54,7 @@ Si la vacante dice "reports to Project Manager in Argentina/Mexico/Colombia", el
 
 ## Resumen operativo
 
-En la muestra revisada de 59 vacantes pharma LATAM, **dos de cada tres se publican en inglés**. Esa proporción refleja la dominancia de CROs y big pharma global en el flujo, no el porcentaje de roles que exigen inglés nativo. Hay vacantes publicadas en inglés cuyo día a día es 80% español, y hay vacantes publicadas en español cuyo cuerpo pide inglés C1. La única forma de saber es leer el bloque de requisitos completo y mapear el alcance del rol.
+En la muestra revisada de 59 vacantes pharma LATAM, **dos de cada tres se publican en inglés**. Esa proporción refleja la dominancia de CROs y big pharma global en el flujo, no el porcentaje de roles que exigen inglés nativo. Hay vacantes publicadas en inglés cuyo día a día transcurre casi entero en español, y hay vacantes publicadas en español cuyo cuerpo pide inglés C1. La única forma de saber es leer el bloque de requisitos completo y mapear el alcance del rol.
 
 El error caro: descartarte automáticamente porque la vacante esté en inglés sin haber leído los requisitos. La oportunidad: aplicar a vacantes en inglés con confianza calibrada cuando el cuerpo confirma que el nivel pedido coincide con el tuyo.
 

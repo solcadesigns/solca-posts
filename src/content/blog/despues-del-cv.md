@@ -45,7 +45,7 @@ Esa señal le confirma al reclutador que ya estás pensando en industria, no obs
 
 ## El dato
 
-LinkedIn (Talent Trends Report) reporta consistentemente que cerca del 70% de los profesionales globales son passive candidates: no aplican activamente pero son receptivos cuando los contactan primero.
+Buena parte de los profesionales no está aplicando activamente, pero sí es receptiva cuando alguien los contacta primero. Ese es el candidato pasivo, y es a quien el reclutador busca cuando abre LinkedIn en lugar de revisar el buzón de aplicaciones.
 
 Lectura para ti: tu LinkedIn no es un CV digital. Es la puerta principal por donde la mayoría del contacto inicial llega, sin que apliques a nada.
 

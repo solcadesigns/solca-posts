@@ -14,7 +14,7 @@ Un investigador biomédico con doctorado o posdoc que decide cruzar a industria 
 
 ## Por qué la transición investigación → MSL es común y por qué falla
 
-Investigación científica y MSL comparten el vocabulario técnico del área terapéutica. Un doctor en biología del cáncer puede leer un paper de Lancet Oncology y discutirlo con un oncólogo clínico usando el mismo registro. Esa capacidad es el 40-50% del valor de un MSL. Sin ella, no hay conversación posible con el KOL.
+Investigación científica y MSL comparten el vocabulario técnico del área terapéutica. Un doctor en biología del cáncer puede leer un paper de Lancet Oncology y discutirlo con un oncólogo clínico usando el mismo registro. Esa capacidad es el cimiento del rol. Sin ella, no hay conversación posible con el KOL.
 
 Pero MSL también requiere habilidades que rara vez se ejercitan en investigación: presentación pública repetitiva ante audiencias variadas, gestión de relaciones profesionales sostenidas en el tiempo, tolerancia a viajes constantes dentro del territorio, capacidad de traducir evidencia científica compleja a formato ejecutivo de dos minutos para un médico ocupado, y calibración política para leer al KOL sin adoptar su agenda.
 
@@ -46,7 +46,7 @@ Cinco gaps operativos.
 
 **Gap cuatro · Traducción ejecutiva.** El médico especialista ocupado te dedica 15 minutos entre paciente y paciente. En esos 15 minutos tienes que comunicar el mensaje principal en 2-3 minutos y responder preguntas. La habilidad de comprimir una discusión científica compleja en formato ejecutivo se ejercita poco en investigación donde el registro dominante es narrativo largo.
 
-**Gap cinco · Tolerancia a viaje.** MSL de campo viaja 40-60% del tiempo dentro del territorio asignado. Buenos Aires-Rosario-Córdoba-Mendoza, o CDMX-Guadalajara-Monterrey-Bajío. Si viajar te desgasta o hay razones familiares que lo dificultan, el rol no es realista.
+**Gap cinco · Tolerancia a viaje.** El MSL de campo vive viajando dentro del territorio asignado. Buenos Aires-Rosario-Córdoba-Mendoza, o CDMX-Guadalajara-Monterrey-Bajío. Si viajar te desgasta o hay razones familiares que lo dificultan, el rol no es realista.
 
 ## Ruta operativa para transición investigación → MSL
 
@@ -60,18 +60,14 @@ Ocho a doce semanas de preparación antes de la primera aplicación real.
 
 **Semanas 7-8 · Preparación de entrevista con método STAR.** Cinco historias en formato STAR (60-90 segundos cada una) que cubran resolución de problemas técnicos, trabajo con personas difíciles, decisión bajo presión, liderazgo sin autoridad, aprendizaje de error propio. Practicadas en voz alta con cronómetro.
 
-**Semana 9 · Networking dirigido.** Contacta 5-10 MSL activos en tu área terapéutica vía LinkedIn con mensajes personalizados pidiendo 15 minutos de conversación informativa. La conversión suele ser 30-40%. En esas conversaciones aprendes lo que ningún blog ni curso enseña: el día a día real, la política interna de la compañía, y frecuentemente el nombre del recruiter que abre las vacantes.
+**Semana 9 · Networking dirigido.** Contacta 5-10 MSL activos en tu área terapéutica vía LinkedIn con mensajes personalizados pidiendo 15 minutos de conversación informativa. Varios no van a responder; los que sí, suelen dar más de lo que pediste. En esas conversaciones aprendes lo que ningún blog ni curso enseña: el día a día real, la política interna de la compañía, y frecuentemente el nombre del recruiter que abre las vacantes.
 
-**Semanas 10-12 · Primera aplicación cuidada.** Al rol candidato número uno con CV adaptado. Espera 14 días antes de considerar el número dos. La tasa de respuesta para candidatos con perfil bien preparado ronda 30-40%; sin preparación cae bajo 10%.
-
-## Un dato de contexto
-
-Datos de nuestra muestra de la herramienta Quiz Match y del feedback del simulador de entrevistas (comprometidamente n bajo, todo cualitativo): entre candidatos que declararon transición desde academia, el segmento con mejor tasa de conversión a proceso avanzado es el que combinaba doctorado en área terapéutica competitiva (oncología, hemato, raras) con al menos una publicación en revista de impacto y con dos a tres meses de preparación específica en vocabulario comercial. El segmento con peor tasa era el que aplicaba sin preparación específica al día siguiente de decidir el pivote.
+**Semanas 10-12 · Primera aplicación cuidada.** Al rol candidato número uno con CV adaptado. Espera 14 días antes de considerar el número dos.
 
 ## Resumen operativo
 
-La transición de investigación científica a MSL es común porque el vocabulario técnico se transfiere, pero rinde poco cuando el candidato subestima los cinco gaps operativos (interacción social sostenida, vocabulario comercial-regulatorio, gestión política de KOL, traducción ejecutiva, tolerancia a viaje). La ruta operativa es 8-12 semanas de preparación en cinco pasos: autoevaluación de gaps, estudio de vocabulario comercial, reescritura de CV, preparación de entrevista STAR, networking dirigido, aplicación cuidada. La tasa de respuesta para candidatos preparados ronda 30-40% frente a menos del 10% para aplicaciones sin preparación específica.
+La transición de investigación científica a MSL es común porque el vocabulario técnico se transfiere, pero rinde poco cuando el candidato subestima los cinco gaps operativos (interacción social sostenida, vocabulario comercial-regulatorio, gestión política de KOL, traducción ejecutiva, tolerancia a viaje). La ruta operativa es 8-12 semanas de preparación en cinco pasos: autoevaluación de gaps, estudio de vocabulario comercial, reescritura de CV, preparación de entrevista STAR, networking dirigido, aplicación cuidada.
 
 ---
 
-**¿MSL es el rol pharma que se ajusta a tu perfil de investigador?** Nuestro Quiz Match mapea tu formación, experiencia y preferencias contra los ocho roles principales de pharma industrial LATAM en cinco minutos. También te suscribe al newsletter donde avisamos del lanzamiento de Solca Interview Simulator. [Pruébalo en solcaciencia.com/quiz](https://solcaciencia.com/quiz).
+**¿MSL es el rol pharma que se ajusta a tu perfil de investigador?** Nuestro Quiz Match son ocho preguntas que en dos minutos te ubican entre las tres rutas que cubrimos: Project Manager, Medical Science Liaison y Clinical Research. También te suscribe al newsletter donde avisamos del lanzamiento de Solca Interview Simulator. [Pruébalo en solcaciencia.com/quiz-rol](https://solcaciencia.com/quiz-rol).

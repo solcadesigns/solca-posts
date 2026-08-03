@@ -64,7 +64,7 @@ Ocho semanas antes de la primera aplicación real.
 
 **Semana 8 · Primera aplicación.** Al rol candidato número uno, con CV adaptado. Registrar fecha de aplicación. Espera 14 días antes de considerar la siguiente ronda.
 
-Este proceso rinde mucho más que aplicar a treinta vacantes en dos semanas con CV genérico. La tasa de respuesta real en industria pharma para candidatos con perfil cuidado ronda 30-40%; para aplicaciones en masa cae bajo 5%.
+Este proceso rinde mucho más que aplicar a treinta vacantes en dos semanas con CV genérico. El CV adaptado al posting entra a la conversación; el genérico se descarta antes de llegar al humano.
 
 ## Un dato honesto sobre timing
 
@@ -74,7 +74,7 @@ De la misma muestra, uno declaró "20+ aplicaciones sin respuesta" y varios repo
 
 ## Resumen operativo
 
-Cruzar de posdoc a industria farmacéutica LATAM requiere convertir dos ventajas (conducir proyecto autónomo, formación científica profunda) en material CV con vocabulario industria, mientras se corrigen tres desventajas (vocabulario académico, expectativa desalineada del proceso, autoevaluación imprecisa del inglés). La ruta operativa es ocho semanas de preparación: mapeo de rol, extracción de vocabulario, reescritura de CV, calibración de inglés, primera aplicación cuidada. Esta ruta rinde varios múltiplos más que aplicar en masa con CV académico. La tasa de respuesta industria pharma para perfiles cuidados ronda 30-40%.
+Cruzar de posdoc a industria farmacéutica LATAM requiere convertir dos ventajas (conducir proyecto autónomo, formación científica profunda) en material CV con vocabulario industria, mientras se corrigen tres desventajas (vocabulario académico, expectativa desalineada del proceso, autoevaluación imprecisa del inglés). La ruta operativa es ocho semanas de preparación: mapeo de rol, extracción de vocabulario, reescritura de CV, calibración de inglés, primera aplicación cuidada. Esta ruta rinde más que aplicar en masa con CV académico.
 
 ---
 

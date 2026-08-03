@@ -1,6 +1,6 @@
 ---
 title: "Referidos pharma LATAM: por qué el \"80% mercado oculto\" es mito"
-description: "El 80% del mercado oculto es un mito de 1980. Lo que sí mueven los referidos hoy en pharma LATAM, con datos SHRM, Jobvite y Ashby 2024."
+description: "El 80% del mercado oculto es un mito sin estudio detrás. Lo que sí mueven los referidos hoy en pharma LATAM, con datos SHRM, Jobvite y Ashby."
 pubDate: 2026-06-24
 heroImage: "/blog/referidos-mito-80-oculto-pharma-latam.png"
 category: "carreras-pharma"
@@ -10,11 +10,11 @@ seriesIndex: 11
 readingMinutes: 7
 ---
 
-Probablemente has escuchado la frase: "el 80% de los empleos están ocultos, no se publican". Aparece en LinkedIn, en talleres de transición de carrera, en libros de búsqueda de empleo. Es una de las afirmaciones más repetidas en orientación profesional. Y es un mito de 1980 que sigue circulando sin sustento empírico. Este blog rastrea el origen del 80%, presenta los datos reales sobre referidos en contratación pharma, y describe tres movimientos verificables para activar tu red siendo PhD en transición a industria farmacéutica en LATAM.
+Probablemente has escuchado la frase: "el 80% de los empleos están ocultos, no se publican". Aparece en LinkedIn, en talleres de transición de carrera, en libros de búsqueda de empleo. Es una de las afirmaciones más repetidas en orientación profesional. Y es una cifra que sigue circulando sin un estudio detrás. Este blog rastrea el origen del 80%, presenta los datos reales sobre referidos en contratación pharma, y describe tres movimientos verificables para activar tu red siendo PhD en transición a industria farmacéutica en LATAM.
 
-## El mito del 80%: origen rastreable a 1980
+## El mito del 80%: una cifra sin estudio detrás
 
-La cifra del 70-80% de empleos ocultos no proviene de un estudio. Su origen rastreable es una entrevista publicada en el *New York Times* en 1980 a Richard Bolles, autor de *What Color Is Your Parachute?*. Bolles habló en términos coloquiales sobre el "hidden job market" y la cifra se desprendió de ahí, replicándose por décadas en blogs y artículos de orientación de carrera sin sustento metodológico nuevo.
+La cifra del 70-80% de empleos ocultos no proviene de un estudio. Se popularizó en la literatura de orientación de carrera de los años ochenta, alrededor del concepto de "hidden job market" que difundió Richard Bolles en *What Color Is Your Parachute?*, y desde ahí se replicó durante décadas en blogs y talleres sin que nadie agregara metodología nueva. College Recruiter, que intentó rastrear el origen, concluye que la cifra es difícil de atribuir a una sola fuente y que probablemente salió de evidencia anecdótica y encuestas informales, no de investigación revisada por pares ([College Recruiter, 2024](https://www.collegerecruiter.com/blog/2024/07/09/is-it-true-that-80-of-job-openings-are-not-advertised)).
 
 Tratemos esa frase como hipótesis sin evidencia y construyamos sobre lo medido.
 
@@ -26,7 +26,7 @@ Tres encuestas recientes con metodología defendible reportan el peso real de lo
 
 - **Jobvite Recruiter Nation Report 2024** sitúa los referidos en aproximadamente **35% de contrataciones** ([Jobvite 2024](https://pages.jobvite.com/rs/659-JST-226/images/2024-Employ-Recruiter-Nation-Report-Empowering-People-First-Recruiting.pdf)).
 
-- **Ashby Talent Trends 2024** añade el dato más relevante para tu decisión operativa: los referidos representan **menos del 1% de las aplicaciones totales** pero aproximadamente **30% de las contrataciones**, mientras otros canales contratan a tasas cercanas al 7%. Es una diferencia de aproximadamente 4 veces en probabilidad de ser contratado por aplicación ([Ashby 2024](https://www.ashbyhq.com/talent-trends-report/reports/referrals)).
+- **Ashby** aporta el dato más relevante para tu decisión operativa, sobre 38 millones de aplicaciones en 93 mil vacantes entre 2021 y 2024: los referidos son **cerca del 1% de las aplicaciones totales**, pero **40% de los candidatos referidos pasa de aplicación a entrevista**, frente a **3% de los que aplican en frío**. Ya en entrevista, **16% de los referidos llega a oferta** contra 6% de los inbound ([Ashby Talent Trends](https://www.ashbyhq.com/talent-trends-report/reports/referrals)).
 
 ## Por qué esto cambia tu estrategia de búsqueda
 
@@ -44,7 +44,7 @@ El error común: pedir el contacto frío sin contexto previo. Pedirle a un conta
 
 ### 2 · Activar lazos débiles, no fuertes
 
-El estudio original de Mark Granovetter de 1974 *Getting a Job* (n=282 profesionales en Massachusetts) encontró que **56% de quienes consiguieron empleo lo hicieron vía contactos informales**, y la mayoría de esos contactos eran lazos débiles: no familiares ni colegas cercanos, sino conocidos de proyectos previos, ex compañeros de posgrado, contactos de conferencia.
+El estudio original de Mark Granovetter, *Getting a Job* (Harvard University Press, 1974), trabajó sobre 282 respuestas de profesionales en Newton, Massachusetts ([ficha metodológica en ERIC](https://eric.ed.gov/?id=ed394056)) y encontró que **la mayoría de quienes consiguieron empleo lo hicieron vía contactos personales**, no por canales formales. Y la mayoría de esos contactos eran lazos débiles: no familiares ni colegas cercanos, sino conocidos de proyectos previos, ex compañeros de posgrado, contactos de conferencia.
 
 El hallazgo se replicó en *Science* en 2022 con un experimento sobre 20 millones de usuarios de LinkedIn: las conexiones de lazo débil generaron más oportunidades laborales por persona que las de lazo fuerte ([MIT News sobre Science 2022](https://news.mit.edu/2022/weak-ties-linkedin-employment-0915)).
 
@@ -64,7 +64,7 @@ En México y Argentina, IQVIA, Syneos, ICON y Parexel mantienen oficinas con hir
 
 ## Resumen operativo
 
-El "80% mercado oculto" no se sostiene como cifra. Los referidos sí pesan, pero su peso real es del 30-45% de contrataciones, no del 80%. La ventaja del referido no está en ser la única puerta, sino en multiplicar por aproximadamente 4 la probabilidad de hire por aplicación.
+El "80% mercado oculto" no se sostiene como cifra. Los referidos sí pesan: SHRM los ubica en más del 30% de las contrataciones. La ventaja del referido no está en ser la única puerta, sino en el embudo — pasa a entrevista 40% de las veces contra 3% de quien aplica en frío.
 
 Tres pasos verificables: mapear segundo grado con criterio, activar lazos débiles antes que fuertes, pedir información antes que rol. La activación bien hecha de 10 conexiones rinde más que el envío frío de 80 CVs.
 

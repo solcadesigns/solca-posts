@@ -16,7 +16,7 @@ En mayo de 2026, la Cámara Argentina de Especialidades Medicinales (CAEME) anun
 
 El anuncio de CAEME es real, formalizado y verificable. La Cámara Argentina de Especialidades Medicinales publicó el compromiso junto con las farmacéuticas top que integran su membresía en mayo 2026 ([El Cronista](https://www.cronista.com/economia-politica/milei-anuncia-una-de-las-mayores-inversiones-del-sector-farmaceutico-en-argentina-que-se-sabe/)). El compromiso es de USD 8 mil millones en investigación clínica en el país entre 2026 y 2032.
 
-Contexto operativo: en 2025 Argentina aprobó 290 nuevos estudios clínicos (+8% interanual) con aproximadamente 50.000 pacientes en cerca de 1.000 estudios activos. El anuncio proyecta expandir ese volumen significativamente en los próximos seis años.
+Contexto operativo: en 2025 Argentina aprobó 290 nuevos estudios clínicos, y hay más de 1.100 ensayos en curso con más de 84 mil participantes ([CAEME, sobre base ANMAT](https://www.caeme.org.ar/investigacion-clinica/)). El anuncio proyecta expandir ese volumen significativamente en los próximos seis años.
 
 Qué implica para el mercado laboral pharma en Buenos Aires y LATAM:
 
@@ -85,4 +85,4 @@ El anuncio de CAEME de mayo 2026 de USD 8 mil millones en investigación clínic
 
 ---
 
-**¿CRA o Clinical Research es el rol pharma que se ajusta a tu perfil?** Nuestro Quiz Match mapea tu formación, experiencia y preferencias contra los ocho roles principales de pharma industrial LATAM en cinco minutos. [Pruébalo en solcaciencia.com/quiz](https://solcaciencia.com/quiz).
+**¿CRA o Clinical Research es el rol pharma que se ajusta a tu perfil?** Nuestro Quiz Match son ocho preguntas que en dos minutos te ubican entre las tres rutas que cubrimos: Project Manager, Medical Science Liaison y Clinical Research. [Pruébalo en solcaciencia.com/quiz-rol](https://solcaciencia.com/quiz-rol).

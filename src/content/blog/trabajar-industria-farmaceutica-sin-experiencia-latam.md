@@ -28,7 +28,7 @@ Busca "analista de farmacovigilancia", "PV specialist junior", "pharmacovigilanc
 
 Las CROs multinacionales (IQVIA, Parexel, ICON, PPD/Thermo Fisher, Labcorp) tienen programas de entrada CRA I diseñados específicamente para candidatos sin experiencia previa en industria. La razón: el volumen de estudios clínicos que manejan requiere pipeline constante de CRAs junior, y la formación interna está estandarizada.
 
-**Qué te piden.** QFB, medicina, biología, psicología clínica u otra ciencia de la salud. Certificación ICH-GCP (obtenible en cursos online gratuitos como el de National Institutes of Health). Inglés B2 mínimo. Disposición a viajar 30-50% del tiempo. Perfil meticuloso.
+**Qué te piden.** QFB, medicina, biología, psicología clínica u otra ciencia de la salud. Certificación ICH-GCP (obtenible en cursos online gratuitos como el de National Institutes of Health). Inglés B2 mínimo. Disposición a viajar con frecuencia. Perfil meticuloso.
 
 **Qué te dan.** Formación estructurada como monitor clínico durante los primeros 6-12 meses, con tutoría de CRAs senior. La CRO se hace cargo del cost de tu curva de aprendizaje. Es la puerta más común de entrada industria en LATAM para perfiles de ciencias de la salud sin experiencia previa.
 

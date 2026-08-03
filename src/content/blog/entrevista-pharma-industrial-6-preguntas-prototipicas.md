@@ -1,6 +1,6 @@
 ---
 title: "Entrevista pharma industrial: 6 preguntas prototípicas y cómo responderlas"
-description: "Las 6 preguntas que aparecen en 80% de las entrevistas de industria farmacéutica LATAM. Ejemplos operativos de respuestas STAR y errores a evitar."
+description: "Las 6 preguntas que se repiten en las entrevistas de industria farmacéutica LATAM. Ejemplos operativos de respuestas STAR y errores a evitar."
 pubDate: 2026-07-13
 heroImage: "/blog/entrevista-pharma-industrial-6-preguntas-prototipicas.png"
 category: "carreras-pharma"
@@ -10,7 +10,7 @@ seriesIndex: 3
 readingMinutes: 9
 ---
 
-Las entrevistas de industria farmacéutica LATAM en multinacionales top (Roche, Novartis, MSD, Pfizer, GSK, Sanofi, Bayer, J&J, AstraZeneca) y sus CROs (IQVIA, Parexel, ICON, PPD) rotan sobre un pool relativamente pequeño de preguntas prototípicas. Seis de esas preguntas cubren aproximadamente el 80% de las entrevistas conductuales que reciben candidatos MSL, CRA, Regulatory, Medical Affairs y roles adyacentes. Esta guía las lista con ejemplos concretos de respuesta en formato STAR y con los errores frecuentes que descalifican aunque el contenido sea correcto.
+Las entrevistas de industria farmacéutica LATAM en multinacionales top (Roche, Novartis, MSD, Pfizer, GSK, Sanofi, Bayer, J&J, AstraZeneca) y sus CROs (IQVIA, Parexel, ICON, PPD) rotan sobre un pool relativamente pequeño de preguntas prototípicas. Seis de esas preguntas se repiten en las entrevistas conductuales que reciben candidatos MSL, CRA, Regulatory, Medical Affairs y roles adyacentes. Esta guía las lista con ejemplos concretos de respuesta en formato STAR y con los errores frecuentes que descalifican aunque el contenido sea correcto.
 
 ## Pregunta 1 · "Cuéntame de una vez que tuviste que resolver un problema técnico bajo presión"
 
@@ -62,7 +62,7 @@ Precisión operativa suficiente. Vocabulario técnico natural. Resultado con imp
 
 ## Pregunta 5 · "Cuéntame de una vez que tomaste una decisión con información incompleta"
 
-**Qué evalúa el reclutador.** Capacidad de decidir bajo incertidumbre (habilidad crítica en industria pharma donde el 90% de decisiones se toman así) y honestidad sobre resultado y aprendizaje.
+**Qué evalúa el reclutador.** Capacidad de decidir bajo incertidumbre, que es la condición habitual del trabajo en industria, y honestidad sobre resultado y aprendizaje.
 
 **Error frecuente que descalifica.** Contestar que en ciencia siempre se busca más data antes de decidir. Correcto epistemológicamente, mala señal profesional. El evaluador quiere ver que sabes actuar con incertidumbre, no que sabes buscar más papers.
 
@@ -106,8 +106,8 @@ Estas seis preguntas son las más frecuentes pero no las únicas. Entrevistas pa
 
 ## Resumen operativo
 
-Seis preguntas prototípicas cubren aproximadamente el 80% de entrevistas conductuales pharma industrial LATAM en multinacionales top y CROs. Las respuestas rinden cuando siguen formato STAR (60-90 segundos, cuatro componentes) con vocabulario industria y verbos activos. Errores frecuentes que descalifican incluyen respuestas demasiado generales, motivación negativa hacia academia, drama emocional en preguntas interpersonales, y preguntas finales genéricas. La preparación operativa es cinco historias en formato STAR practicadas en voz alta con cronómetro, una respuesta afirmativa a la pregunta de motivación, y tres preguntas prospectivas adaptadas al rol y compañía.
+Seis preguntas prototípicas se repiten en las entrevistas conductuales de pharma industrial LATAM, en multinacionales top y en CROs. Las respuestas rinden cuando siguen formato STAR (60-90 segundos, cuatro componentes) con vocabulario industria y verbos activos. Errores frecuentes que descalifican incluyen respuestas demasiado generales, motivación negativa hacia academia, drama emocional en preguntas interpersonales, y preguntas finales genéricas. La preparación operativa es cinco historias en formato STAR practicadas en voz alta con cronómetro, una respuesta afirmativa a la pregunta de motivación, y tres preguntas prospectivas adaptadas al rol y compañía.
 
 ---
 
-**Estamos preparando el lanzamiento de Solca Interview Simulator**, la herramienta abierta que te da retroalimentación puntual sobre cada respuesta STAR en tiempo real. Suscríbete al newsletter de Solca Ciencia respondiendo al Quiz Match y te avisamos cuando abra al público. [Pruébalo en solcaciencia.com/quiz](https://solcaciencia.com/quiz).
+**Estamos preparando el lanzamiento de Solca Interview Simulator**, la herramienta abierta que te da retroalimentación puntual sobre cada respuesta STAR en tiempo real. Suscríbete al newsletter de Solca Ciencia respondiendo al Quiz Match y te avisamos cuando abra al público. [Pruébalo en solcaciencia.com/quiz-rol](https://solcaciencia.com/quiz-rol).

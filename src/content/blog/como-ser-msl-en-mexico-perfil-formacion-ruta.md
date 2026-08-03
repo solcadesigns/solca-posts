@@ -84,12 +84,12 @@ Tres, **inglés B2 real conversacional**. Prueba: puedes discutir un paper recie
 
 Cuatro, **capacidad de presentar en público**. El MSL presenta constantemente ante KOL, en advisory boards, en congresos. Sin comodidad ante audiencia, el rol desgasta. Introversión no es problema en sí; falta de práctica presentando sí lo es.
 
-Cinco, **disposición a viajar 40-60% del tiempo dentro del territorio asignado**. Si no puedes por razones familiares o de salud, el rol de MSL de campo no es realista y hay que apuntar a MSL de gabinete o Medical Advisor interno.
+Cinco, **disposición a viajar por el territorio asignado, y a hacerlo seguido**. Si no puedes por razones familiares o de salud, el rol de MSL de campo no es realista y hay que apuntar a MSL de gabinete o Medical Advisor interno.
 
 ## Resumen operativo
 
-Ser MSL en México requiere formación titulada con cédula (médica, farmacéutica o biomédica con PhD), inglés B2 real, dominio de un área terapéutica específica, y disposición a viajar 40-60% del tiempo. La ruta de entrada más común es vía programa trainee de multinacional top o via investigación clínica hospitalaria. Salario referencia sigue siendo la encuesta MSL Society México 2022 sin actualización pública verificable 2025-2026. Cinco chequeos operativos deciden si tu perfil alcanza para aplicar hoy o si necesitas dos a tres años de preparación adicional antes de mandar la primera aplicación.
+Ser MSL en México requiere formación titulada con cédula (médica, farmacéutica o biomédica con PhD), inglés B2 real, dominio de un área terapéutica específica, y disposición a viajar seguido. La ruta de entrada más común es vía programa trainee de multinacional top o via investigación clínica hospitalaria. Salario referencia sigue siendo la encuesta MSL Society México 2022 sin actualización pública verificable 2025-2026. Cinco chequeos operativos deciden si tu perfil alcanza para aplicar hoy o si necesitas dos a tres años de preparación adicional antes de mandar la primera aplicación.
 
 ---
 
-**¿MSL es el rol pharma que se ajusta a tu perfil?** Nuestro Quiz Match mapea tu formación, experiencia y preferencias contra los ocho roles principales de pharma industrial LATAM en cinco minutos. [Pruébalo en solcaciencia.com/quiz](https://solcaciencia.com/quiz).
+**¿MSL es el rol pharma que se ajusta a tu perfil?** Nuestro Quiz Match son ocho preguntas que en dos minutos te ubican entre las tres rutas que cubrimos: Project Manager, Medical Science Liaison y Clinical Research. [Pruébalo en solcaciencia.com/quiz-rol](https://solcaciencia.com/quiz-rol).

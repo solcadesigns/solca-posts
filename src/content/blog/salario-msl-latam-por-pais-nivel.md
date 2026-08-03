@@ -53,7 +53,7 @@ La discrepancia entre Glassdoor (rango 45-78K) y WorldSalaries (mediana 49K) ref
 - **Eli Lilly México:** mediana **MX$72,000/mes** (rango MX$69,000–MX$75,000).
 - **GSK México:** mediana **MX$64,000/mes** (rango MX$62,000–MX$67,000).
 
-Fuente: Glassdoor MX MSL. La diferencia entre AstraZeneca (mediana MX$101K) y GSK (MX$64K) es de aproximadamente 58% sobre el mismo país y el mismo rol nominal. Esa varianza por empleador es la mayor del set pharma analizado.
+Fuente: Glassdoor MX MSL. La diferencia entre AstraZeneca (promedio mensual ~MX$100K, [Glassdoor](https://www.glassdoor.com.mx/Sueldo/AstraZeneca-Medical-Science-Liaison-Sueldos-E9214_D_KO12,35.htm)) y GSK (mediana mensual MX$64K) es de aproximadamente 58% sobre el mismo país y el mismo rol nominal. Esa varianza por empleador es la mayor del set pharma analizado. **Advertencia de muestra:** la cifra de AstraZeneca se construye sobre siete sueldos reportados, uno solo de CDMX. Sirve como señal de dispersión entre empleadores, no como banda de negociación.
 
 ## Argentina · data pública distorsionada
 

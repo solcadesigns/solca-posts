@@ -42,7 +42,7 @@ Cuatro roles concentran la mayoría de las vacantes de entrada y crecimiento en 
 
 **Trayectoria natural.** CRA I → CRA II → Senior CRA → Lead CRA → Clinical Trial Manager (CTM) → Clinical Research Manager.
 
-**A quién le conviene.** Alguien meticuloso, con tolerancia al detalle documental repetitivo, disposición a viajar dentro del país o región, y comodidad con trabajo estructurado con checklists. La atención al detalle es la habilidad crítica; sin ella, no se sobrevive. Rol frecuentemente home-based, con viajes de 30-50% del tiempo según la CRO y el estudio.
+**A quién le conviene.** Alguien meticuloso, con tolerancia al detalle documental repetitivo, disposición a viajar dentro del país o región, y comodidad con trabajo estructurado con checklists. La atención al detalle es la habilidad crítica; sin ella, no se sobrevive. Rol frecuentemente home-based, con viajes cuya carga depende de la CRO y del estudio.
 
 ## Product Manager · pharma
 
@@ -81,7 +81,7 @@ Cuatro roles concentran la mayoría de las vacantes de entrada y crecimiento en 
 | Contacto médico directo | Alto | Medio | Bajo | Bajo |
 | Foco técnico-científico | Alto | Medio | Bajo | Muy alto |
 | Foco comercial | Bajo | Bajo | Alto | Bajo |
-| Viajes esperados | 40-60% | 30-50% | 20-30% | 10-20% |
+| Viajes esperados | Muy alto | Alto | Medio | Bajo |
 | Inglés mínimo | B2/C1 | B2 | B2 | C1 |
 | Entrada desde doctorado | Directa | Directa vía CRO | Vía MBA | Vía posgrado cuantitativo |
 | Escasez del perfil LATAM | Media | Media-alta | Baja | Muy alta |
@@ -94,7 +94,7 @@ Primero, **¿cuánto contacto humano diario quieres?** Si es alto, MSL o PM. Si 
 
 Segundo, **¿qué peso quieres para lo técnico-científico versus lo comercial?** Científico dominante, HEOR o MSL. Comercial dominante, PM. Balanceado con foco operativo, CRA.
 
-Tercero, **¿cuál es tu tolerancia real a viajar?** Si viajar 40-60% del tiempo te desgasta, descarta MSL. Si viajar 30-50% del tiempo es aceptable, CRA sigue en la lista. Si prefieres oficina o home stable, PM o HEOR.
+Tercero, **¿cuál es tu tolerancia real a viajar?** Si viajar seguido te desgasta, descarta MSL. Si lo toleras, CRA sigue en la lista. Si prefieres oficina o home stable, PM o HEOR.
 
 Con esas tres preguntas, dos roles suelen sobrar como candidatos reales para cualquier perfil. A esos dos aplicas con preparación específica. Los otros dos los descartas explícitamente.
 
@@ -104,4 +104,4 @@ Los cuatro roles principales de pharma industrial LATAM son MSL (contacto médic
 
 ---
 
-**¿No sabes cuál de los cuatro roles se ajusta a tu perfil?** Nuestra herramienta Quiz Match mapea tu formación, experiencia y preferencias contra los ocho roles principales de industria pharma en cinco minutos. [Pruébalo en solcaciencia.com/quiz](https://solcaciencia.com/quiz).
+**¿No sabes cuál de los cuatro roles se ajusta a tu perfil?** Nuestra herramienta Quiz Match son ocho preguntas que en dos minutos te ubican entre las tres rutas que cubrimos: Project Manager, Medical Science Liaison y Clinical Research. [Pruébalo en solcaciencia.com/quiz-rol](https://solcaciencia.com/quiz-rol).

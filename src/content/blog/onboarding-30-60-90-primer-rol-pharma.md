@@ -1,6 +1,6 @@
 ---
 title: "Onboarding 30/60/90 en pharma: los primeros 90 días, sin caer"
-description: "Adaptación del framework de Watkins a clinical operations. Tres acciones por mes y la trampa más común de cada bloque. Datos SHRM y Pharm Tech 2025."
+description: "Adaptación del framework de Watkins a clinical operations. Tres acciones por mes y la trampa más común de cada bloque. Con datos SHRM y BDO."
 pubDate: 2026-06-24
 heroImage: "/blog/onboarding-30-60-90-primer-rol-pharma.png"
 category: "carreras-pharma"
@@ -22,7 +22,7 @@ En clinical operations, lo más común para un primer rol es **Sustaining**: una
 
 Tres datos públicos que enmarcan la ventana:
 
-- SHRM reporta que aproximadamente **50% del turnover en cualquier organización ocurre en los primeros 18 meses**, y que un onboarding estructurado mejora retención hasta **82%** ([SHRM Onboarding Measurement](https://www.shrm.org/topics-tools/topics/onboarding/measuring-success)).
+- SHRM reporta que cerca de **la mitad de las nuevas contrataciones renuncia o es desvinculada dentro de los primeros 18 meses** ([SHRM · How to Measure Onboarding Success](https://www.shrm.org/topics-tools/topics/onboarding/measuring-success)).
 - En pharma específicamente, el *Pharmaceutical Technology State of Bio/Pharma Workforce 2025* documenta turnover voluntario subiendo de **13.71% en 2024 a 15.91% en 2025-26** ([Pharm Tech 2025](https://www.pharmtech.com/view/state-of-the-bio-pharma-workforce-a-comparative-analysis-of-employment-trends-and-industry-sentiment)).
 - Talenbrium estima attrition pharma/biotech México en torno a **20% anual** ([Talenbrium MX 2025](https://www.talenbrium.com/report/mexico-pharma-and-biotech-salary-benchmarking-and-pay-premium-index-2025)).
 - BDO 2024 reporta que los CRAs son el rol con menor tenure dentro de los CROs ([BDO 2024 CRO Survey](https://www.bdo.com/insights/tax/key-findings-from-bdos-2024-clinical-research-organization-global-compensation-turnover-survey)).
@@ -73,7 +73,7 @@ La meta no es promoción; es continuidad. Y validar que tu lectura del rol coinc
 
 ## El dato que cierra los tres meses
 
-Combinando las fuentes: SHRM reporta que un onboarding estructurado mejora retención **82%**. En pharma, el rol con menor tenure en CROs es el CRA (BDO 2024). La ventana de 90 días donde el equipo decide cuánto invertirte coincide con la ventana donde tú decides si te quedas. Las tres trampas descritas — proponer antes de entender, documentar como en academia, esperar feedback espontáneo — son las que más rompen ese contrato implícito.
+Combinando las fuentes: SHRM reporta que cerca de la mitad de las nuevas contrataciones sale dentro de los primeros 18 meses. En pharma, el rol con menor tenure en CROs es el CRA (BDO 2024). La ventana de 90 días donde el equipo decide cuánto invertirte coincide con la ventana donde tú decides si te quedas. Las tres trampas descritas — proponer antes de entender, documentar como en academia, esperar feedback espontáneo — son las que más rompen ese contrato implícito.
 
 El onboarding bien hecho no garantiza promoción rápida. Garantiza algo más útil: que tu segundo año sea decisión tuya, no decisión por ausencia.
 

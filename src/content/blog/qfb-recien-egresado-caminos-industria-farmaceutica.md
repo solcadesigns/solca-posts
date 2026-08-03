@@ -38,7 +38,7 @@ Es probablemente la puerta con mejor rendimiento para QFB junior sin experiencia
 
 Segunda puerta con mejor rendimiento. Las CROs multinacionales (IQVIA, Parexel, ICON, PPD, Labcorp) tienen programas específicos de entrada para candidatos sin experiencia previa en industria.
 
-**Qué te piden.** QFB titulado con cédula. Certificación ICH-GCP vigente (obtenible en 4-6 semanas). Inglés B2 real conversacional. Disposición a viajar 30-50% del tiempo. Perfil meticuloso.
+**Qué te piden.** QFB titulado con cédula. Certificación ICH-GCP vigente (obtenible en 4-6 semanas). Inglés B2 real conversacional. Disposición a viajar con frecuencia. Perfil meticuloso.
 
 **Qué te dan.** Formación estructurada como monitor clínico durante los primeros 6-12 meses. La CRO se hace cargo del cost de tu curva de aprendizaje. Trayectoria natural: CRA I → CRA II → Senior CRA → Clinical Trial Manager.
 

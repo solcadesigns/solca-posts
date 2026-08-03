@@ -1,6 +1,6 @@
 ---
 title: "El error más común en un CV PhD que busca pasar a pharma"
-description: "Hay un solo error que descalifica el 90% de los CVs PhD que aplican a pharma. Cuál es, por qué pasa, y cómo arreglarlo en 15 minutos."
+description: "Hay un solo error que descalifica la mayoría de los CVs PhD que aplican a pharma. Cuál es, por qué pasa, y cómo arreglarlo en 15 minutos."
 pubDate: 2026-06-24
 heroImage: "/blog/el-error-mas-comun-cv-phd-pharma.png"
 category: "carreras-pharma"

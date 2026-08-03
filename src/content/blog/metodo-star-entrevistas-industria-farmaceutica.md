@@ -90,7 +90,7 @@ Cinco historias en formato STAR listas para usar. Ni más, ni menos.
 
 **Historia 5 · Aprender de un error propio.** Un error real tuyo, qué hiciste después, qué cambiaste.
 
-Escribe las cinco en formato STAR completo con cronómetro corriendo. Practica cada una en voz alta hasta que fluyan sin tropiezos. Con cinco historias interiorizadas cubres el 80-90% de preguntas de comportamiento que van a hacerte.
+Escribe las cinco en formato STAR completo con cronómetro corriendo. Practica cada una en voz alta hasta que fluyan sin tropiezos. Con cinco historias interiorizadas llegas cubierto a la mayor parte de lo que van a preguntarte.
 
 ## Un error frecuente al practicar
 
@@ -98,8 +98,8 @@ Practicar mentalmente no rinde. STAR requiere práctica hablada con voz alta. La
 
 ## Resumen operativo
 
-STAR (Situación, Tarea, Acción, Resultado) es el marco estandarizado que usa HR corporativo pharma LATAM para evaluar respuestas de comportamiento en entrevistas. A candidatos de academia les descoloca porque el registro comunicativo es opuesto al académico, la longitud esperada (60-90 segundos) es menor a la académica, faltan historias narradas previamente en formato estructurado, y el método no se enseña en formación biomédica. La preparación operativa es cinco historias en formato STAR practicadas en voz alta con cronómetro. Estas cinco historias cubren el 80-90% de preguntas de comportamiento típicas.
+STAR (Situación, Tarea, Acción, Resultado) es el marco estandarizado que usa HR corporativo pharma LATAM para evaluar respuestas de comportamiento en entrevistas. A candidatos de academia les descoloca porque el registro comunicativo es opuesto al académico, la longitud esperada (60-90 segundos) es menor a la académica, faltan historias narradas previamente en formato estructurado, y el método no se enseña en formación biomédica. La preparación operativa es cinco historias en formato STAR practicadas en voz alta con cronómetro. Esas cinco historias cubren el grueso de las preguntas de comportamiento típicas.
 
 ---
 
-**Estamos preparando el lanzamiento de Solca Interview Simulator**, la herramienta abierta que te da retroalimentación puntual sobre tus respuestas de entrevista pharma en formato STAR. Suscríbete al newsletter de Solca Ciencia respondiendo al Quiz Match y te avisamos cuando abra al público. [Pruébalo en solcaciencia.com/quiz](https://solcaciencia.com/quiz).
+**Estamos preparando el lanzamiento de Solca Interview Simulator**, la herramienta abierta que te da retroalimentación puntual sobre tus respuestas de entrevista pharma en formato STAR. Suscríbete al newsletter de Solca Ciencia respondiendo al Quiz Match y te avisamos cuando abra al público. [Pruébalo en solcaciencia.com/quiz-rol](https://solcaciencia.com/quiz-rol).

@@ -27,13 +27,13 @@ IQVIA, Syneos Health, ICON, PSI, Thermo Fisher Scientific, Parexel. Son las empr
 - Inglés técnico funcional (B2 mínimo, C1 para roles regionales).
 
 **Pros:**
-- Volumen alto de hiring. Es el 47% del flujo de vacantes pharma LATAM.
+- Volumen alto de hiring. Es el bloque más grande de la muestra revisada.
 - Curva de aprendizaje técnico rápida: en 2 años pasas por 2-3 estudios completos.
 - Ruta de promoción estructurada: CRA I → CRA II → Senior → Lead → PM.
 - La marca CRO en el CV abre puertas en sponsors después.
 
 **Contras:**
-- Salario inicial menor que big pharma (delta típico 20-30% por debajo).
+- Salario inicial menor que big pharma.
 - Carga operacional alta, especialmente en CRA con visitas a sitios.
 - Tu día a día está dictado por el sponsor que contrata el estudio, no por tu CRO.
 
@@ -50,7 +50,7 @@ Pfizer, Novartis, Johnson & Johnson, Boehringer Ingelheim, MSD, Roche, Sanofi, A
 - Tolerancia a procesos largos de hiring (3-5 rondas no es raro).
 
 **Pros:**
-- Salarios sustancialmente mayores que CRO en mediana (20-50% arriba según rol y país).
+- Salarios sustancialmente mayores que CRO en mediana.
 - Marca corporativa en el CV abre internacional.
 - Acceso a producto y estrategia, no solo a operación.
 

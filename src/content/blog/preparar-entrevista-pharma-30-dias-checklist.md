@@ -10,7 +10,7 @@ seriesIndex: 4
 readingMinutes: 8
 ---
 
-Tienes 30 días entre la primera aplicación y la posible entrevista para un rol en industria farmacéutica LATAM. En esos 30 días puedes cerrar el 80% del gap de preparación entre "candidato que aplicó porque vio la vacante" y "candidato que llegó calibrado al proceso". La mayoría de candidatos no usa ese tiempo con estructura y llega a la entrevista con la misma preparación que tenía el día en que aplicó. Esta guía es el checklist operativo de esos 30 días — repartido en cuatro semanas con foco distinto cada una.
+Tienes 30 días entre la primera aplicación y la posible entrevista para un rol en industria farmacéutica LATAM. En esos 30 días puedes cerrar el gap de preparación entre "candidato que aplicó porque vio la vacante" y "candidato que llegó calibrado al proceso". La mayoría de candidatos no usa ese tiempo con estructura y llega a la entrevista con la misma preparación que tenía el día en que aplicó. Esta guía es el checklist operativo de esos 30 días — repartido en cuatro semanas con foco distinto cada una.
 
 ## Semana 1 · Vocabulario y contexto del rol
 
@@ -66,7 +66,7 @@ Objetivo: cerrar el paquete conversacional completo, incluyendo la respuesta a "
 
 Objetivo: completar el trabajo de posicionamiento externo y llegar al día de la entrevista con paquete completo, sin sorpresas logísticas.
 
-**Día 22-23 · Networking dirigido.** Contacta 3-5 personas que actualmente trabajan en el rol o compañía a la que aplicas vía LinkedIn con mensaje personalizado pidiendo 15 minutos de conversación informativa. La conversión suele ser 30-40%. En esas conversaciones aprendes lo que no aparece en ningún blog: cómo es realmente el rol en esa compañía específica, quién es el hiring manager, qué estilo tiene la entrevista.
+**Día 22-23 · Networking dirigido.** Contacta 3-5 personas que actualmente trabajan en el rol o compañía a la que aplicas vía LinkedIn con mensaje personalizado pidiendo 15 minutos de conversación informativa. Varios no van a responder; los que sí, suelen dar más de lo que pediste. En esas conversaciones aprendes lo que no aparece en ningún blog: cómo es realmente el rol en esa compañía específica, quién es el hiring manager, qué estilo tiene la entrevista.
 
 **Día 24-25 · Simulación completa cronometrada.** Sesión de una hora con un colega, mentor o herramienta. Cinco preguntas STAR más la pregunta de motivación más las preguntas finales. Feedback específico sobre estructura, timing, vocabulario y presencia. Ajusta lo que no rinda.
 
@@ -76,7 +76,7 @@ Objetivo: completar el trabajo de posicionamiento externo y llegar al día de la
 
 **Día 29 · Descanso deliberado.** No estudies el día antes. El cerebro necesita consolidar. Descansa, duerme temprano, come normal.
 
-**Día 30 · Día de la entrevista.** Llega o conéctate 10 minutos antes. Bebe agua. Respira profundo tres veces antes de arrancar. Ejecuta el paquete que preparaste. Escucha al entrevistador — 40% del éxito es responder a lo que realmente están preguntando, no a lo que anticipaste.
+**Día 30 · Día de la entrevista.** Llega o conéctate 10 minutos antes. Bebe agua. Respira profundo tres veces antes de arrancar. Ejecuta el paquete que preparaste. Escucha al entrevistador. Responde lo que realmente están preguntando, no lo que anticipaste.
 
 ## Errores frecuentes en los 30 días
 
@@ -88,7 +88,7 @@ Objetivo: completar el trabajo de posicionamiento externo y llegar al día de la
 
 **Error cuatro · No hacer networking dirigido.** Cinco conversaciones informativas con personas del rol te dan más data específica que 20 horas de investigación en blogs y podcasts. Es el ejercicio con mejor retorno de tiempo invertido.
 
-**Error cinco · Sobrestudiar el día antes.** Cerebro saturado el día antes rinde menos que cerebro descansado con 90% de preparación. Descansa deliberadamente el día 29.
+**Error cinco · Sobrestudiar el día antes.** Cerebro saturado el día antes rinde menos que cerebro descansado. Descansa deliberadamente el día 29.
 
 ## Un caveat honesto
 
@@ -100,4 +100,4 @@ Preparación de entrevista pharma industrial en 30 días se estructura en cuatro
 
 ---
 
-**Estamos preparando el lanzamiento de Solca Interview Simulator**, la herramienta abierta que te da retroalimentación puntual sobre cada respuesta STAR en tiempo real. Suscríbete al newsletter de Solca Ciencia respondiendo al Quiz Match y te avisamos cuando abra al público. [Pruébalo en solcaciencia.com/quiz](https://solcaciencia.com/quiz).
+**Estamos preparando el lanzamiento de Solca Interview Simulator**, la herramienta abierta que te da retroalimentación puntual sobre cada respuesta STAR en tiempo real. Suscríbete al newsletter de Solca Ciencia respondiendo al Quiz Match y te avisamos cuando abra al público. [Pruébalo en solcaciencia.com/quiz-rol](https://solcaciencia.com/quiz-rol).

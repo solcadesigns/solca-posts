@@ -16,7 +16,7 @@ Cruzar de academia a industria farmacéutica no es un cambio de tema, es un camb
 
 En academia una persona describe su trabajo con vocabulario específico de su técnica: purificación por afinidad, transfección estable, secuenciación de tercera generación, cortes finos de microscopía electrónica. En industria pharma esa misma persona necesita traducir a vocabulario del sector: manejo de datos experimentales de cohortes, validación de ensayos, adherencia a SOP, documentación de desviaciones.
 
-No es que el vocabulario académico sea incorrecto. Es que el reclutador que revisa la vacante no fue formado en ese lenguaje y su ATS ni siquiera lo indexa. Cuando el CV llega con vocabulario 100% académico, el sistema devuelve match bajo y el humano confirma la impresión.
+No es que el vocabulario académico sea incorrecto. Es que el reclutador que revisa la vacante no fue formado en ese lenguaje y su ATS ni siquiera lo indexa. Cuando el CV llega escrito enteramente en vocabulario académico, el sistema devuelve match bajo y el humano confirma la impresión.
 
 Ejercicio operativo antes de aplicar: **abre tres vacantes reales del rol que buscas** (LinkedIn Jobs, OCC, Bumeran) y anota las 20 palabras técnicas que aparecen en las tres. Ese es el vocabulario mínimo que tiene que estar en tu CV y en tu perfil de LinkedIn. Si de esas 20 palabras hay menos de la mitad que puedes usar honestamente basado en tu experiencia, el rol que estás buscando no es el que corresponde a tu perfil actual.
 
@@ -34,11 +34,11 @@ Lo que aparece consistentemente en el gap entre academia e industria pharma es q
 
 Un doctor en biomedicina llega a industria y descubre que hay al menos ocho roles distintos donde su perfil podría encajar: Medical Science Liaison (MSL), Clinical Research Associate (CRA), Product Manager, Medical Affairs, Regulatory Affairs, Market Access, Health Economics Outcomes Research (HEOR), Clinical Research Manager. Cada uno con requisitos, salarios y trayectorias distintas.
 
-La respuesta natural es "aplico a todos y veo cuál me responde". Ese enfoque tiene el peor rendimiento posible. En la muestra de submissions al survey de nuestra herramienta de revisión de CV, uno de cada cinco candidatos declaró expresamente "no tengo claridad de qué rol atacar". Ese es el arquetipo que aplica a diez posiciones distintas con el mismo CV y no le contestan de ninguna.
+La respuesta natural es "aplico a todos y veo cuál me responde". Ese enfoque tiene el peor rendimiento posible. Es el arquetipo que aplica a diez posiciones distintas con el mismo CV y no recibe respuesta de ninguna.
 
 Antes de aplicar, dedica una tarde a mapear los ocho roles principales según cinco dimensiones: qué formación piden, qué experiencia previa aceptan, cuánto viajan, cuánto ganan en tu país, y qué crecimiento tienen. Con ese mapa, dos o tres roles emergen como candidatos reales. A esos tres aplicas con CV adaptado a cada uno. A los otros cinco los descartas explícitamente.
 
-Si esa tarde no la haces solo, hay recursos que la aceleran. Nuestra herramienta Quiz Match hace ese mapeo en cinco minutos según tu perfil declarado; sirve para tener una primera lectura sin invertir tiempo.
+Ese mapeo completo lo haces tú, con las vacantes de tu país abiertas al lado. Si quieres una primera lectura antes de sentarte a hacerlo, nuestra herramienta Quiz Match son ocho preguntas que en dos minutos te ubican entre tres de esas rutas: Project Manager, Medical Science Liaison y Clinical Research.
 
 ## Brecha 4 · Expectativa realista sobre inglés
 
@@ -62,7 +62,7 @@ Cuatro, calibración de inglés. Diez minutos de conversación simulada. Decisi�
 
 Cinco, primera aplicación. Manda la aplicación al rol candidato número uno. Registra fecha y espera 14 días. Si no hay respuesta, revisa qué falló antes de mandar la número dos.
 
-Este proceso rinde más que aplicar a 40 vacantes simultáneas con CV genérico. La razón es simple: la industria pharma tiene tiempos largos de decisión y volumen bajo de contratación mensual. Una aplicación cuidada tiene 30-40% de posibilidad de respuesta. Una aplicación en masa tiene menos del 5%.
+Este proceso rinde más que aplicar a cuarenta vacantes simultáneas con CV genérico. La razón es simple: la industria pharma tiene tiempos largos de decisión y volumen bajo de contratación mensual. En ese contexto, la aplicación adaptada al posting compite y la aplicación en masa se pierde.
 
 ## Resumen operativo
 
@@ -70,4 +70,4 @@ Cruzar de academia a industria pharma requiere resolver cuatro brechas antes de 
 
 ---
 
-**¿Sabes qué rol pharma se ajusta a tu perfil?** Antes de reescribir el CV, dedica cinco minutos a nuestro Quiz Match, la herramienta abierta que mapea tu perfil contra los ocho roles principales de pharma industrial. [Pruébalo en solcaciencia.com/quiz](https://solcaciencia.com/quiz).
+**¿Sabes qué rol pharma se ajusta a tu perfil?** Antes de reescribir el CV, dedica dos minutos a nuestro Quiz Match, la herramienta abierta que te ubica entre las tres rutas que cubrimos: Project Manager, MSL y Clinical Research. [Pruébalo en solcaciencia.com/quiz-rol](https://solcaciencia.com/quiz-rol).

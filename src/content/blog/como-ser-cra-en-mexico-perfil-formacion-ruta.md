@@ -62,13 +62,13 @@ Un B1 declarado como "avanzado" es la falla más frecuente en aplicaciones CRA. 
 
 ## Viajes esperados
 
-**CRA I y CRA II en México.** 30-50% del tiempo en viaje, dependiendo de la CRO y de si el estudio es nacional o regional. Sitios clínicos concentrados en CDMX, Guadalajara y Monterrey. Estudios oncológicos frecuentemente concentrados en centros específicos (Instituto Nacional de Cancerología, Instituto de Enfermedades Oncohematológicas). Estudios cardiovascular más distribuidos.
+**CRA I y CRA II en México.** Viaje frecuente, con la carga variando según la CRO y según si el estudio es nacional o regional. Sitios clínicos concentrados en CDMX, Guadalajara y Monterrey. Estudios oncológicos frecuentemente concentrados en centros específicos (Instituto Nacional de Cancerología, Instituto de Enfermedades Oncohematológicas). Estudios cardiovascular más distribuidos.
 
-**Senior CRA y Lead CRA.** Los viajes pueden reducirse si el rol involucra más gestión de equipo que monitoreo directo, pero muchos senior CRA siguen viajando 20-30% del tiempo por preferencia del cliente farmacéutico.
+**Senior CRA y Lead CRA.** Los viajes pueden reducirse si el rol involucra más gestión de equipo que monitoreo directo, pero muchos senior CRA siguen viajando por preferencia del cliente farmacéutico.
 
 **CRA remoto (home-based).** El modelo home-based es dominante en LATAM. La CRO tiene oficina base pero el CRA trabaja desde casa entre visitas. Los viajes siguen siendo el mismo porcentaje; lo que cambia es que no hay oficina diaria de reporte.
 
-Si viajar 30-50% del tiempo es fricción real por razones familiares, geográficas o de salud, el rol de CRA de campo no es realista. Alternativas: In-House CRA (menos frecuente en LATAM pero existe), Clinical Trial Assistant (rol de apoyo desde oficina), Data Management, o Site Coordinator hospitalario.
+Si viajar con frecuencia es fricción real por razones familiares, geográficas o de salud, el rol de CRA de campo no es realista. Alternativas: In-House CRA (menos frecuente en LATAM pero existe), Clinical Trial Assistant (rol de apoyo desde oficina), Data Management, o Site Coordinator hospitalario.
 
 ## Salario referencia México
 
@@ -100,14 +100,14 @@ Dos, **certificación ICH-GCP vigente**. Es tramitable en dos a cuatro semanas. 
 
 Tres, **inglés B2 conversacional real**. Prueba: puedes describir un estudio clínico hipotético en inglés durante quince minutos sin trabarte. Si no, entrenar dos meses o postergar.
 
-Cuatro, **disposición real a viajar 30-50% del tiempo**. Si es fricción, pivotar a rol adyacente.
+Cuatro, **disposición real a viajar con frecuencia**. Si es fricción, pivotar a rol adyacente.
 
 Cinco, **perfil meticuloso y comodidad con checklists**. El CRA que no tolera detalle documental repetitivo abandona el rol en el primer año. Autoevaluación honesta previene una decisión de carrera desalineada.
 
 ## Resumen operativo
 
-Ser CRA en México requiere título profesional con cédula en ciencia de la salud, certificación ICH-GCP vigente, inglés B2 conversacional real, disposición a viajar 30-50% del tiempo, y perfil meticuloso. La ruta de entrada más común es vía programa CRA I en CRO multinacional; la segunda es vía coordinador de estudios clínicos hospitalarios. Cinco chequeos operativos deciden si el perfil alcanza hoy o si necesita preparación adicional. El salario público verificable con desglose 2025-2026 no está disponible sin descarga con formulario, pero el contexto regional pharma se está expandiendo, especialmente con la inversión anunciada por CAEME Argentina en mayo 2026.
+Ser CRA en México requiere título profesional con cédula en ciencia de la salud, certificación ICH-GCP vigente, inglés B2 conversacional real, disposición a viajar con frecuencia, y perfil meticuloso. La ruta de entrada más común es vía programa CRA I en CRO multinacional; la segunda es vía coordinador de estudios clínicos hospitalarios. Cinco chequeos operativos deciden si el perfil alcanza hoy o si necesita preparación adicional. El salario público verificable con desglose 2025-2026 no está disponible sin descarga con formulario, pero el contexto regional pharma se está expandiendo, especialmente con la inversión anunciada por CAEME Argentina en mayo 2026.
 
 ---
 
-**¿CRA es el rol pharma que se ajusta a tu perfil?** Nuestro Quiz Match mapea tu formación, experiencia y preferencias contra los ocho roles principales de pharma industrial LATAM en cinco minutos. [Pruébalo en solcaciencia.com/quiz](https://solcaciencia.com/quiz).
+**¿CRA es el rol pharma que se ajusta a tu perfil?** Nuestro Quiz Match son ocho preguntas que en dos minutos te ubican entre las tres rutas que cubrimos: Project Manager, Medical Science Liaison y Clinical Research. [Pruébalo en solcaciencia.com/quiz-rol](https://solcaciencia.com/quiz-rol).
