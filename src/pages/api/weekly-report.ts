@@ -522,8 +522,17 @@ export const GET: APIRoute = async ({ url, locals }) => {
     const repeat_gates = subs.quiz_gate_records_total - gates_unique;
 
     // ── 3. CV Review (KV CV_LIMITS, un key por email con contador) ──
-    // Estructura típica: key `email` → JSON { count, first_ts, last_ts }
-    // Para simplificar, contamos keys totales (emails únicos) y sumamos count.
+    // Estructura real (ver src/lib/rate-limit.ts:87-101):
+    //   key: `cv-submit:${sha256(email).slice(0,24)}`
+    //   value JSON: { count, firstAt, lastAt }    ← camelCase, no snake_case
+    // Bug histórico (fix 3 ago 2026): se leía `last_ts`/`first_ts` (snake) y
+    // como no existían esos campos, tsMs era NaN → cv.cur y cv.prev quedaban
+    // siempre en 0. Ahora leemos `lastAt`/`firstAt` que sí existen.
+    //
+    // Limitación conocida: CV_LIMITS tiene TTL de 30 días (rate-limit.ts:7).
+    // Records de análisis > 30 días desaparecen. Por eso emails_unicos y
+    // total_analisis representan últimos 30 días, no histórico total.
+    // Para acumulado histórico real usar KV EMAILS con prefix `email:`.
     const cv = { total_analisis: 0, emails_unicos: 0, cur: 0, prev: 0 };
 
     if (limitsKv) {
@@ -533,10 +542,10 @@ export const GET: APIRoute = async ({ url, locals }) => {
         try {
           const raw = await limitsKv.get(key.name);
           if (!raw) continue;
-          const rec = JSON.parse(raw) as { count?: number; last_ts?: string; first_ts?: string };
+          const rec = JSON.parse(raw) as { count?: number; lastAt?: string; firstAt?: string };
           cv.total_analisis += rec.count ?? 1;
-          // Para deltas, usar last_ts como proxy
-          const tsMs = rec.last_ts ? Date.parse(rec.last_ts) : NaN;
+          // Para deltas, usar lastAt como proxy del análisis más reciente del email
+          const tsMs = rec.lastAt ? Date.parse(rec.lastAt) : NaN;
           if (!isNaN(tsMs)) {
             if (tsMs >= weekAgo && tsMs <= now) cv.cur++;
             else if (tsMs >= twoWeeksAgo && tsMs < weekAgo) cv.prev++;
