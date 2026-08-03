@@ -10,7 +10,6 @@
 
 | Semana | Fecha objetivo | Fuente LinkedIn | Keyword primary tentativa | Slug propuesto |
 |---|---|---|---|---|
-| 2 | Vie 15 ago 2026 | Mié 6 ago · Serie #2 "Farmacovigilancia puerta silenciosa" | como entrar farmacovigilancia sin experiencia | farmacovigilancia-mexico-como-entrar-sin-experiencia |
 | 3 | Vie 22 ago 2026 | Mié 13 ago · Serie #3 "CROs entry-level" | trabajar cro latam sin experiencia | cro-latam-entry-level-icon-iqvia-que-piden-en-realidad |
 | 4 | Vie 29 ago 2026 | Mié 20 ago · Serie #4 "Regulatorio, calidad, prácticas" | asuntos regulatorios pharma sin experiencia | asuntos-regulatorios-calidad-practicas-entrada-pharma-latam |
 
@@ -33,6 +32,9 @@
 | Slug | Título final | Draft | pubDate | Fuente |
 |---|---|---|---|---|
 | entrevista-pharma-ingles-b2-c1-como-prepararla | "Entrevista pharma en inglés: cómo prepararla de B2 a C1" | Lun 27 jul 2026 | Vie 7 ago 2026 | Vie 31 jul · Insight #13 |
+| farmacovigilancia-entry-level-trainee-cro-latam | "Farmacovigilancia entry-level: qué dicen los postings trainee" | Lun 3 ago 2026 | Vie 14 ago 2026 | Mié 6 ago · Serie #2 |
+
+Nota (3 ago 2026): el slug propuesto en backlog ("farmacovigilancia-mexico-como-entrar-sin-experiencia") colisionaba con el blog ya publicado el 13 jul 2026 (`farmacovigilancia-mexico-empezar-sin-experiencia`, keyword "farmacovigilancia méxico sin experiencia"). Para evitar canibalización SEO, el draft cambió el ángulo al de la fuente LinkedIn (programas trainee/graduate en CROs), keyword primary "farmacovigilancia entry-level / programas trainee de farmacovigilancia", y linkea inline al blog existente como guía México.
 
 Nota (27 jul 2026): la fecha objetivo del backlog decía "Vie 8 ago 2026", pero el 8 de agosto de 2026 es sábado. El viernes real es 7 ago — pubDate ajustado a 2026-08-07. Las fechas objetivo de los items restantes (15, 22, 29 ago) también caen sábado; corresponden a los viernes 14, 21 y 28 ago.
 
