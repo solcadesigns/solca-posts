@@ -192,7 +192,7 @@ Registro operativo, 13 jul 2026.
 
 Registro operativo, 13 jul 2026.
 
-- **Emails y subject lines de Brevo no llevan la palabra "gratis" ni "gratuito/a".** Regla explícita de Oscar. Aplica también a CTAs de blogs que mencionan herramientas propias (blog puede mencionar herramientas del sector como "gratuitas" cuando es dato informativo sobre certificaciones NIH/CITI/Global Health Training Centre, pero nunca sobre las herramientas de Solca).
+- **Emails y subject lines no llevan la palabra "gratis" ni "gratuito/a".** Regla explícita de Oscar. **Alcance corregido (3 ago 2026):** la restricción aplica **solo** a subject lines y al cuerpo del email. En LinkedIn y en blogs del sitio **sí se puede usar**, incluso para herramientas propias, porque ahí el lector llega directo a la página y la palabra no opera como gancho de bandeja de entrada. La versión previa de esta regla extendía la prohibición a los CTAs de blog; era incorrecta y provocó que en una sesión se marcara como error un uso legítimo.
 - **Sustitución preferida:** para CTAs de Solca decir simplemente "nuestra herramienta X" o "herramienta X abierta" en lugar de "herramienta gratuita X". El propósito es tono profesional sostenido, no salesy.
 - **Excepción única:** menciones informativas sobre certificaciones/cursos gratuitos del sector (NIH ICH-GCP, CITI Program, Global Health Training Centre, cursos de inglés online) mantienen la palabra porque es información objetiva del ecosistema pharma, no promoción de Solca.
 
@@ -230,6 +230,17 @@ Los textos que acompañan cada publicación LinkedIn (post description, arriba d
 > ¿Estás aplicando a vacantes? Revisa tu CV antes de enviarlo con nuestra herramienta abierta. Te comparto el enlace en los comentarios.
 >
 > #TrabajoRemoto #VacantesLATAM #HomeOffice
+
+### Regla operativa · cadencia de reportes de métricas
+
+Registro operativo, 30 jul 2026.
+
+- **Reporte semanal automático:** cada lunes 8am hora local Oscar, un scheduled task de Cowork (`solca-weekly-report`) llama al endpoint `/api/weekly-report` y presenta análisis narrativo. Requiere que Oscar pegue el STATS_KEY al arrancar (vive en 1Password).
+- **Fuente única de la data:** `/api/weekly-report` agrega KV (EMAILS, QUIZ_METRICS, CV_LIMITS), D1 (SIMULATOR_METRICS_DB, beta_feedback), Postmark Analytics API por tag, y Cloudflare RUM (traffic humano sin bots). Excluye `/tdah-*` del traffic.
+- **Reporte mensual on-demand:** Oscar lo pide cuando quiera identificar patrones o tomar acciones estratégicas. Se genera comparando snapshots semanales guardados en `/Users/oscar/Documents/Claude/Scheduled/solca-weekly-report/snapshots/`.
+- **Estructura del reporte:** top metric → traffic → salud de funnels → email health → lecturas y palancas → comparativa histórica → pregunta abierta.
+- **Regla de honestidad numérica:** cada afirmación numérica viene del JSON del endpoint. Nunca fabricar cifras "ilustrativas" (aprendizaje del bug del 30 jul: el drop-off 86.6% del Quiz era artefacto de cálculo, no realidad; y la muestra CV Review inventada de junio).
+- **Regla de acotación:** distinguir señal fuerte de ruido con n chico. Feedback con n=2-3, agreement con n=9, etc., son watch signals, no acciones inmediatas.
 
 ### Regla operativa · cadencia visual jueves LinkedIn
 
