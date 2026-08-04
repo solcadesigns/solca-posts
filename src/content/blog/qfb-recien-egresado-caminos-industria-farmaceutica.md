@@ -40,6 +40,8 @@ Segunda puerta con mejor rendimiento. Las CROs multinacionales (IQVIA, Parexel, 
 
 **Qué te piden.** QFB titulado con cédula. Certificación ICH-GCP vigente (obtenible en 4-6 semanas). Inglés B2 real conversacional. Disposición a viajar con frecuencia. Perfil meticuloso.
 
+**Orden de magnitud del viaje.** Como referencia concreta: un posting de ICON para Senior CRA en México City (JR150438, [careers.iconplc.com](https://careers.iconplc.com/job/senior-clinical-research-associate-in-mexico-mexico-city-jid-50315), vacante expirada, descripción publicada) declaraba disposición al viaje de "aproximadamente 60%". El número exacto varía por CRO y por estudio, pero cuando la empresa lo pone por escrito, ronda ese rango.
+
 **Qué te dan.** Formación estructurada como monitor clínico durante los primeros 6-12 meses. La CRO se hace cargo del cost de tu curva de aprendizaje. Trayectoria natural: CRA I → CRA II → Senior CRA → Clinical Trial Manager.
 
 **Salario referencia.** Banda pública no verificable con desglose 2025-2026 sin descarga con formulario. Contexto de mercado: Argentina anunció USD 8 mil millones en investigación clínica 2026-2032 según CAEME mayo 2026, lo que presiona salarios CRA regionales al alza ([El Cronista](https://www.cronista.com/economia-politica/milei-anuncia-una-de-las-mayores-inversiones-del-sector-farmaceutico-en-argentina-que-se-sabe/)).

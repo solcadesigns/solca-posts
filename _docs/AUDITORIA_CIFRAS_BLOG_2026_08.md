@@ -71,6 +71,8 @@ Números que suenan a medición pero solo dan énfasis. Son los más fáciles de
 
 **Nota metodológica importante:** el survey de `/revisar-cv` **sí** tiene esa pregunta (`obstacle` → `no_role_clarity`, "No sé qué rol específico me queda"). Pero el formulario muestra la pregunta central más **dos preguntas tomadas al azar de un pool**. Eso significa que solo una fracción de los respondentes ve la pregunta de obstáculo, y calcular "uno de cada cinco" sobre el total de submissions da un número incorrecto por diseño. Si quieres conservar el dato, hay que calcularlo sobre quienes efectivamente vieron la pregunta, y decirlo así.
 
+**Cierre 4 ago 2026.** Cálculo corrido con `wrangler kv key list --binding=CV_METRICS --remote --prefix="s:"`. Total submissions: 13. Expuestos a `obstacle` (probabilidad 2/9 = 22%): 2. Eligieron `no_role_clarity`: 1. n=2 exposiciones es ruido puro; cualquier proporción sobre esa base no es defendible. La frase permanece eliminada del post. Reabrir cuando `EXPOSED ≥ 20`, lo que requiere ~90 submissions al survey. Sugerencia operativa: sumar al `/api/weekly-report` un desglose del survey por pregunta (exposición y respuestas) para detectar cuándo la muestra madura.
+
 22. `de-investigacion-cientifica-a-msl-transicion-pharma.md` — **ya eliminado el 3 ago 2026.** Sección "Un dato de contexto" que atribuía al Quiz Match y al simulador una comparación de tasas de conversión a proceso avanzado por área terapéutica, publicaciones y meses de preparación. El quiz guarda nombre, email, país, consentimiento y respuestas; no hay seguimiento del candidato. El dato no podía existir. Texto original recuperable en el historial de git.
 
 ---
@@ -93,6 +95,8 @@ Aparecen como dato duro repetido en seis posts. Vienen de lo que declaran los po
 8. `trabajar-industria-farmaceutica-sin-experiencia-latam.md` — "Disposición a viajar 30-50% del tiempo."
 
 **Sustitución posible:** "los postings de CRA declaran viaje frecuente, típicamente en el orden de la mitad del tiempo" o directamente citar una vacante que lo declare. Alternativa más limpia: dejar el rango pero atribuirlo — "según declaran las vacantes de CRO que reviso".
+
+**Cierre 4 ago 2026.** Aplicada la sustitución con citas verificables de postings ICON en cuatro posts (los que tocan CRA y PM directamente): `como-ser-cra-en-mexico`, `qfb-recien-egresado`, `trabajar-industria-farmaceutica-sin-experiencia-latam` y `msl-cra-pm-heor-diferencia-rol` reciben inserción con referencia a ICON Senior CRA México City JR150438 (60% viaje, [careers.iconplc.com](https://careers.iconplc.com/job/senior-clinical-research-associate-in-mexico-mexico-city-jid-50315), vacante expirada, descripción publicada) y ICON CPM México City JR148851 (híbrido con presencia semanal, [careers.iconplc.com](https://careers.iconplc.com/job/clinical-project-manager-in-mexico-mexico-city-jid-50056), también expirada). Para MSL (`como-ser-msl-en-mexico`, `de-investigacion-cientifica-a-msl`) se mantiene el texto cualitativo actual: en la validación con Chrome MCP no se encontraron postings MSL México con porcentaje de viaje declarado en portal oficial vigente (Lilly no tenía MSL México activo, Workday de Biogen en mantenimiento, Indeed MX bloqueado por Cloudflare); los snippets de búsqueda inicial no eran reproducibles y por eso quedan fuera. Cuando aparezca un posting MSL México con % explícito, insertar cita análoga.
 
 ### Incrementos salariales por seniority
 

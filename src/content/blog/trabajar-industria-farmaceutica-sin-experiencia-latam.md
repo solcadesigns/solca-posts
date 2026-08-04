@@ -30,6 +30,8 @@ Las CROs multinacionales (IQVIA, Parexel, ICON, PPD/Thermo Fisher, Labcorp) tien
 
 **Qué te piden.** QFB, medicina, biología, psicología clínica u otra ciencia de la salud. Certificación ICH-GCP (obtenible en cursos online gratuitos como el de National Institutes of Health). Inglés B2 mínimo. Disposición a viajar con frecuencia. Perfil meticuloso.
 
+**Referencia concreta de carga de viaje.** Un posting de ICON para Senior CRA en México City (JR150438, [careers.iconplc.com](https://careers.iconplc.com/job/senior-clinical-research-associate-in-mexico-mexico-city-jid-50315), vacante expirada al momento de esta actualización, descripción todavía publicada) declaraba textualmente "Willingness to travel as required (approximately 60%)". Sirve como orden de magnitud cuando estás decidiendo si el rol te cabe en la vida; el número exacto varía por CRO y por estudio.
+
 **Qué te dan.** Formación estructurada como monitor clínico durante los primeros 6-12 meses, con tutoría de CRAs senior. La CRO se hace cargo del cost de tu curva de aprendizaje. Es la puerta más común de entrada industria en LATAM para perfiles de ciencias de la salud sin experiencia previa.
 
 **Volumen de vacantes.** Alto en México (CDMX y Guadalajara), Argentina (Buenos Aires), Colombia (Bogotá), Brasil (São Paulo). Argentina tiene un hook fuerte: la industria pharma comprometió USD 8 mil millones en investigación clínica entre 2026 y 2032 según anuncio de CAEME de mayo 2026 ([El Cronista](https://www.cronista.com/economia-politica/milei-anuncia-una-de-las-mayores-inversiones-del-sector-farmaceutico-en-argentina-que-se-sabe/)); ese volumen crea presión sobre el pipeline CRA.

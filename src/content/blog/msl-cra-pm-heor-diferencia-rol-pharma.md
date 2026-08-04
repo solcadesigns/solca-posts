@@ -86,6 +86,8 @@ Cuatro roles concentran la mayoría de las vacantes de entrada y crecimiento en 
 | Entrada desde doctorado | Directa | Directa vía CRO | Vía MBA | Vía posgrado cuantitativo |
 | Escasez del perfil LATAM | Media | Media-alta | Baja | Muy alta |
 
+**Referencias concretas de viajes esperados.** Postings públicos rara vez cuantifican el viaje en porcentaje, pero cuando lo hacen, ayudan a calibrar. Para CRA de campo: ICON Senior CRA México City (JR150438, [careers.iconplc.com](https://careers.iconplc.com/job/senior-clinical-research-associate-in-mexico-mexico-city-jid-50315), vacante expirada al momento de esta actualización) pedía "Willingness to travel as required (approximately 60%)". Para PM: ICON Clinical Project Manager México City (JR148851, [careers.iconplc.com](https://careers.iconplc.com/job/clinical-project-manager-in-mexico-mexico-city-jid-50056), también expirada, descripción publicada) se declara híbrido con "on-site presence required once per week" — el patrón típico del rol de coordinación, sin viaje sustancial. Para MSL y HEOR no encontré postings de México con porcentaje declarado en la revisión que hicimos; el texto cualitativo de la tabla es lo mejor que tenemos hoy.
+
 ## Cómo elegir el que te conviene
 
 Tres preguntas ordenadas en orden.

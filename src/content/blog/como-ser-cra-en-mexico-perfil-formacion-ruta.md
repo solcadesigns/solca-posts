@@ -68,6 +68,8 @@ Un B1 declarado como "avanzado" es la falla más frecuente en aplicaciones CRA. 
 
 **CRA remoto (home-based).** El modelo home-based es dominante en LATAM. La CRO tiene oficina base pero el CRA trabaja desde casa entre visitas. Los viajes siguen siendo el mismo porcentaje; lo que cambia es que no hay oficina diaria de reporte.
 
+**Referencia de calibración.** Un posting de ICON Strategic Solutions para Senior CRA en México City (JR150438, [careers.iconplc.com](https://careers.iconplc.com/job/senior-clinical-research-associate-in-mexico-mexico-city-jid-50315), vacante ya expirada al momento de esta actualización, descripción todavía publicada) declaraba textualmente "Willingness to travel as required (approximately 60%)", con modalidad remote. No es promedio de industria, es una vacante específica; sirve como orden de magnitud cuando la CRO explicita la carga por escrito.
+
 Si viajar con frecuencia es fricción real por razones familiares, geográficas o de salud, el rol de CRA de campo no es realista. Alternativas: In-House CRA (menos frecuente en LATAM pero existe), Clinical Trial Assistant (rol de apoyo desde oficina), Data Management, o Site Coordinator hospitalario.
 
 ## Salario referencia México
