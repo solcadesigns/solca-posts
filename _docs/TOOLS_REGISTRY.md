@@ -43,7 +43,7 @@ Sitio en Astro 5 + Cloudflare Workers. Código en `/Users/oscar/Downloads/solca/
 - **Página:** `src/pages/quiz-rol.astro`
 - **Función:** quiz interactivo que sugiere qué rol pharma se ajusta más al perfil del usuario (MSL, CRA, Medical Affairs, HEOR, Regulatory, etc.).
 - **API endpoints:**
-  - `POST /api/quiz-subscribe` — suscribe el email a MailerLite con grupo según resultado del quiz.
+  - `POST /api/quiz-subscribe` — guarda el email en KV EMAILS (record `quiz:{ts}:{email}` con `role` según resultado) y dispara welcome vía Postmark (tag `welcome-quiz`).
   - `GET  /api/quiz-stats?key=…` — métricas agregadas.
   - `GET  /api/quiz-export?key=…` — dataset crudo.
 - **KV binding:** `QUIZ_METRICS`.
@@ -52,7 +52,7 @@ Sitio en Astro 5 + Cloudflare Workers. Código en `/Users/oscar/Downloads/solca/
 ### 1.3 · `/contacto`
 
 - **Página:** `src/pages/contacto.astro`
-- **API:** `POST /api/contact` — envía el mensaje vía MailerLite o reenvío a `hello@solcaciencia.com`.
+- **API:** `POST /api/contact` — guarda el mensaje en KV CONTACTS (`contact:{ts}:{email}`). El buzón `hello@solcaciencia.com` recibe por Cloudflare Email Routing catch-all cuando el usuario escribe directo.
 - **Fallback declarado en pantalla:** si el formulario falla, instruye al usuario a escribir directo a `hello@solcaciencia.com`.
 
 ### 1.4 · `/blog` · Blog SEO (NUEVO · 25 may 2026)
@@ -131,9 +131,9 @@ Sitio en Astro 5 + Cloudflare Workers. Código en `/Users/oscar/Downloads/solca/
 - Dirección oficial publicada: `hello@solcaciencia.com` (única dirección publicada en privacidad + contacto + footer de PDFs de `/revisar-cv`).
 - **Catch-all activo** (habilitado 25 may 2026): cualquier dirección `*@solcaciencia.com` → `solcadesigns@gmail.com`. Si en el futuro se publica una nueva dirección de marketing/operativa, basta con que llegue como catch-all; no requiere crear regla específica salvo que quieras routing diferente por dirección.
 - Forwarding destination: `solcadesigns@gmail.com` (pre-aprobado por ser owner de la cuenta Cloudflare).
-- SPF: `v=spf1 include:_spf.mlsend.com include:_spf.mx.cloudflare.net ~all` (no duplicar — ya mergeado con MailerLite).
+- SPF: `v=spf1 include:_spf.mx.cloudflare.net ~all`. Postmark maneja Return-Path por su propio dominio (`pm.mtasv.net` como CNAME de `pm-bounces.solcaciencia.com`), no requiere include en el SPF del cliente. El `_spf.mlsend.com` de MailerLite se quitó al migrar a Postmark.
 - DMARC: **publicado 25 may 2026 en modo monitoreo.** `v=DMARC1; p=none; rua=mailto:hello@solcaciencia.com; aspf=r; adkim=r; pct=100`. No bloquea ni cuarentena — solo recibe reportes agregados diarios en XML de Gmail/Yahoo/Microsoft. Plan: revisar reportes en 2-4 semanas y considerar endurecer a `p=quarantine` si el flujo está limpio (ningún sender legítimo failing alignment).
-- MailerLite verificación: `mailerlite-domain-verification=7735f213cc916f7a0e83fea5449301bca894c6b3`.
+- Postmark DKIM + Return-Path publicados en Cloudflare DNS bajo el zone `solcaciencia.com`. Los valores exactos (selector + hash) viven en el dashboard Postmark → Sender Signatures → Domains.
 - **Gotcha conocido:** ocasionalmente Cloudflare reporta "Delivery Failed" con error de TLS contra `gmail-smtp-in.l.google.com`. Suele ser transitorio (path Cloudflare → Google). Reintentar antes de escalar; Cloudflare reintenta automáticamente.
 - **Automatización bloqueada:** Claude in Chrome **no puede interactuar** con `dash.cloudflare.com` por política de seguridad de la extensión (host bloqueado, igual que AWS/Stripe). Cualquier cambio en Email Routing requiere ejecución manual de Oscar.
 - **MTA-STS · pospuesto deliberadamente (25 may 2026).** Cloudflare no surfacea MTA-STS como toggle automático en este cluster/cuenta; el setup manual requiere un Cloudflare Worker chico + 3 registros DNS (CNAME `mta-sts.solcaciencia.com` + TXT `_mta-sts` + TXT `_smtp._tls` para reportes TLS-RPT). Decisión consciente de saltarlo por marginal costo/beneficio dado el volumen actual de Solca. **Detonantes para retomar:** (a) un cliente o partner enterprise audita y lo exige; (b) el newsletter cruza 5k envíos/día (mínimo Gmail/Yahoo 2024+); (c) aparece evidencia de ataque TLS downgrade en algún proveedor. Mientras tanto, SPF + DKIM + DMARC + catch-all cubren ~95% del valor.

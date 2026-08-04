@@ -247,7 +247,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     );
   }
 
-  // Store email + push a MailerLite + increment rate-limit counter (fire-and-forget)
+  // Store email + push a Postmark (welcome-cv) + increment rate-limit counter (fire-and-forget)
   // Usamos ctx.waitUntil para que Cloudflare mantenga el worker vivo hasta que terminen
   const ip = clientAddress ?? request.headers.get('cf-connecting-ip');
   const ctx = (runtime as { ctx?: { waitUntil?: (p: Promise<unknown>) => void } } | undefined)?.ctx;

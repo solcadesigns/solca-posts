@@ -151,7 +151,7 @@ El PDF descargable al cerrar la sesión incluye:
 - **Astro 5 SSR** sobre Cloudflare Workers (adapter `@astrojs/cloudflare`).
 - **Cloudflare KV** bindings activos: `CV_LIMITS`, `EMAILS`, `CONTACTS`, `QUIZ_METRICS`, `CV_METRICS`. Patrón para rate-limit y métricas anónimas ya probado.
 - **API endpoints serverless** en `src/pages/api/*.ts`: cv-review, cv-survey, cv-stats, cv-export, quiz-subscribe, quiz-stats, quiz-export, contact. Lleva el patrón de auth opcional vía `STATS_KEY` env var.
-- **MailerLite** integrado para email transactional y nurture.
+- **Postmark** integrado para email transactional (jul 2026, reemplazó a Brevo/MailerLite). Tags activos: `welcome-cv`, `welcome-quiz`, `blog-broadcast`. Wrapper: `src/lib/postmark.ts`. Nurture drip pendiente vía Cloudflare Cron (ver `PLAN_VENTAS_MARKETING.md` § 3.4).
 - **Hotmart** integrado para venta de libros con URLs vivas.
 - **Frontend stack** Inter + Space Grotesk fonts, paleta navy + naranja, layouts compartidos (`BaseLayout.astro`, `BlogPostLayout.astro`).
 - **PDF generation client-side** vía jsPDF (visible en `revisar-cv.astro`) — reusable para el reporte del simulador.
@@ -164,7 +164,7 @@ El PDF descargable al cerrar la sesión incluye:
 | API | **Cloudflare Worker** vía `src/pages/api/simulator-*.ts` | Patrón ya establecido en cv-review. |
 | LLM | **Claude Sonnet** via API de Anthropic | Helper `src/lib/anthropic.ts` ya existe. Reusar. |
 | Voz | **Web Speech API** (Chrome/Edge desktop) | Tratar como progressive enhancement. Fallback texto siempre disponible. Detectar ausencia y ocultar botón de voz. |
-| Auth | **Magic link via MailerLite** o **Google OAuth** | Evitar Supabase. NextAuth ya está en `solca_app 2`; portable. Magic link es más simple si solo necesitamos verificar identidad. |
+| Auth | **Magic link via Postmark** o **Google OAuth** | Evitar Supabase. NextAuth ya está en `solca_app 2`; portable. Magic link con Postmark = generar token en KV + `sendEmail` con URL firmada. Simple si solo necesitamos verificar identidad. |
 | DB sesiones | **Cloudflare KV** para metadata + `sesiones_restantes` por user | Mismo patrón que CV_LIMITS. Si necesitamos historial completo de sesiones, agregar Cloudflare D1 (SQLite serverless). |
 | Métricas anónimas | **Cloudflare KV** `SIMULATOR_METRICS` | Para análisis agregado tipo cv-stats. |
 | Pagos | **Hotmart primero, Conekta después** | Hotmart cobra ~10% pero ya está integrado y maneja LATAM completo. Conekta solo cuando validemos demanda y queramos margen extra + OXXO directo. |
@@ -216,7 +216,9 @@ El simulador NO vive aislado — entra como tercer paso del embudo Solca:
             ┌────────▼─────────┐
             │   /quiz-rol      │  ← identifica rol pharma
             │  (suscripción    │     más probable
-            │   MailerLite)    │
+            │   KV EMAILS +    │
+            │   welcome        │
+            │   Postmark)      │
             └────────┬─────────┘
                      │
             ┌────────▼──────────────┐
@@ -411,7 +413,7 @@ Hotmart soporta bundles vía "infoproducto agrupado".
 El doc original dice "Captura de email antes del resultado". **Corrección:** alinear con `/revisar-cv` que NO obliga email.
 
 - Sesión gratis: 5 preguntas, feedback completo en pantalla, **sin email obligatorio**.
-- Opcional: *"¿Quieres el reporte por mail? Deja tu correo."* — si lo deja, va a MailerLite con grupo "Simulator-trial".
+- Opcional: *"¿Quieres el reporte por mail? Deja tu correo."* — si lo deja, se guarda en KV EMAILS (prefix `sim:`) y se dispara `sendEmailWithTemplate` de Postmark con tag `simulator-trial`.
 - Reporte PDF descargable solo desde el momento (no en mail) si no deja email.
 
 Eso preserva el principio Solca de baja fricción + honestidad.
@@ -462,7 +464,7 @@ El simulador captura: emails (si los dan), respuestas grabadas/escritas, área y
 - Aviso de privacidad ligado al existente en `/privacidad`.
 - Borrar sesiones de KV después de 90 días (TTL).
 - Opción de "borrar mis datos" por email vía `mailto:hello@solcaciencia.com` (ya documentado en /privacidad).
-- No usar emails para spam — solo para los grupos MailerLite con doble opt-in.
+- No usar emails para spam — solo para envíos Postmark con opt-in explícito registrado en KV EMAILS.
 
 ### 7.7 · Honestidad sobre lo que el simulador no es
 
@@ -493,7 +495,7 @@ Para los 20-30 invitados, priorizar:
 
 ### 7.8.2 · Cómo seleccionar técnicamente
 
-- Lista de MailerLite suscriptores activos últimos 60 días.
+- Lista de suscriptores activos últimos 60 días desde KV EMAILS (filtrar `ts >= now - 60d`).
 - Cruzar con quienes abrieron `/revisar-cv` con email opcional (los emails están en KV `EMAILS`).
 - Cruzar con los 15 contactos warm de LinkedIn outreach mayo 2026 (`LINKEDIN_OUTREACH_2026Q2.xlsx`).
 - Generar lista de ~40 candidatos.
@@ -689,7 +691,7 @@ Las 23 métricas (17 base + 6 derivadas / demográficos) se clasifican así:
 **Automatización: cron semanal por email.**
 
 - Cloudflare Cron Triggers cada lunes a las 8 AM CDMX.
-- Endpoint cron que ejecuta queries de la semana anterior y envía resumen por email a `hello@solcaciencia.com` vía MailerLite transactional API.
+- Endpoint cron que ejecuta queries de la semana anterior y envía resumen por email a `hello@solcaciencia.com` vía Postmark (`sendEmailWithTemplate` del wrapper `src/lib/postmark.ts`).
 
 ### 7.16.4 · Schema SQL inicial de la tabla `sessions` (D1)
 
@@ -1014,7 +1016,7 @@ El doc original propone 3 fases sin tiempo. Te doy tiempos estimados realistas d
 
 ### Fase 2 · Pagos y cuentas (~1-2 semanas)
 
-- Login magic-link via MailerLite (o Google OAuth si preferimos).
+- Login magic-link via Postmark (o Google OAuth si preferimos).
 - Hotmart SKU para cada paquete.
 - Webhook Hotmart → endpoint que escribe `simulator_credits:<email_hash>` en KV.
 - UI de "mis sesiones restantes" + paywall cuando llega a 0.
@@ -1041,7 +1043,7 @@ Hay 2 decisiones de arquitectura que prefiero validar contigo antes de tocar có
 
 | Decisión | Opción A | Opción B | Mi recomendación |
 |---|---|---|---|
-| **Auth** | Magic link MailerLite (más simple, sin password) | Google OAuth (más rápido login, requiere setup OAuth) | A si validamos demanda con MVP gratis; B si vamos directo a pagos. |
+| **Auth** | Magic link Postmark (más simple, sin password) | Google OAuth (más rápido login, requiere setup OAuth) | A si validamos demanda con MVP gratis; B si vamos directo a pagos. |
 | **Pagos** | Hotmart desde día 1 (10% comisión, integrado) | Conekta desde día 1 (3-4% comisión, setup técnico) | A. Iteramos a B cuando tengamos data. |
 | **DB** | KV solo (suficiente para MVP) | KV + D1 para historial complejo | A. D1 cuando necesitemos queries reales. |
 | **Voz** | Solo Web Speech API (gratis, limitada) | Whisper API (costo extra, mejor calidad) | A en Fase 1. B en Fase 3 si validamos demanda. |
@@ -1130,11 +1132,11 @@ Adicionalmente se loguea `console.warn` cuando `response.stop_reason === 'max_to
 
 ### 11.6 · Cron semanal · arquitectura y rationale
 
-**Decisión**: el digest semanal NO se envía por email (todavía). Se persiste en KV `SIMULATOR_METRICS` con clave `digest:YYYY-WNN`, TTL 365 días. Razón: enviar email requiere MailerLite Transactional (rebranded MailerSend), un producto separado con API distinta que no está configurado. El valor del cron está en tener la foto semanal consolidada y auditable.
+**Decisión** (jul 2026, obsoleta parcialmente): el digest semanal se persiste en KV `SIMULATOR_METRICS` con clave `digest:YYYY-WNN`, TTL 365 días. La razón original era que MailerSend/MailerLite Transactional no estaba configurado. **Desde jul 2026 tenemos Postmark integrado** (ver `src/lib/postmark.ts`), así que el envío por email es viable con un cambio pequeño: llamar a `sendEmailWithTemplate` con un template `simulator-digest-weekly` desde el endpoint cron. Sigue vigente que el valor primario está en tener la foto semanal consolidada y auditable, no en el envío.
 
 Para consultar el último digest: `GET /api/simulator-weekly-cron?key=<STATS_KEY>&show=latest`.
 
-Cuando se configure MailerSend (u otro sender), agregar envío de email en el endpoint (TODO marcado en el código).
+TODO: agregar envío Postmark en el endpoint cuando el template esté creado.
 
 **Mecanismo técnico**: el adapter de Astro Cloudflare solo expone `fetch`. Para soportar Cloudflare Cron Triggers (eventos `scheduled`) se usa un patch post-build (`scripts/patch-cron-handler.mjs`) que inyecta un wrapper en `dist/_worker.js/index.js` exponiendo ambos handlers. El patch es idempotente (marker `/* SOLCA_CRON_PATCH_v2 */`) y se ejecuta automáticamente desde `npm run build` antes de `wrangler deploy`. Headers `Content-Type: application/json` + `Origin: https://solcaciencia.com` evitan el CSRF check de Astro 5 en la llamada interna.
 
@@ -1162,7 +1164,7 @@ Notas operativas:
 ### 11.9 · Pendientes que se difirieron a Fase 1.5+
 
 - Post free dedicado a STAR + manejo de preguntas pharma (task tracked). Cuando esté vivo, sustituye `/revisar-cv` como URL del CTA override por desempeño bajo.
-- Email del cron semanal vía MailerSend cuando se configure.
+- Email del cron semanal vía Postmark cuando se cree el template `simulator-digest-weekly` (código listo en `simulator-weekly-cron.ts`, solo faltan el template y el llamado descomentado).
 - Role mapping explícito para las 8 áreas nuevas (matemáticas/computación/admin) en el system prompt.
 - Retry UX pre-envío en frontend para respuestas cortas (per §7.4).
 - Whisper API como alternativa al Web Speech API para mejorar transcripción en español (evaluar si los betas reportan que la voz es deficiente · ya hay un reporte de Oscar 19 jun 2026 en esa dirección).

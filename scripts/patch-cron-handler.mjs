@@ -2,6 +2,7 @@
 /**
  * scripts/patch-cron-handler.mjs · Fase 1.4.E · 19 jun 2026
  * · v3 · 21 jul 2026 — rutea por cron pattern a múltiples endpoints
+ * · v4 · 4 ago 2026  — añade drip diario 9am CDMX
  *
  * Inyecta un handler `scheduled` en el worker generado por @astrojs/cloudflare
  * para que Cloudflare Cron Triggers (configurados en wrangler.jsonc) puedan
@@ -10,6 +11,7 @@
  * Rutas actuales:
  *   "0 14 * * 1" (Lun 8am CDMX) → /api/simulator-weekly-cron
  *   "0 14 * * 5" (Vie 8am CDMX) → /api/blog-broadcast
+ *   "0 15 * * *" (Diario 9am CDMX) → /api/drip-tick
  *
  * Por qué un patch post-build: el adapter de Astro solo expone `fetch`. No hay
  * forma documentada de añadir otros handlers (scheduled, queue, etc.) desde
@@ -29,7 +31,7 @@ import { dirname, resolve } from 'node:path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const WORKER_INDEX = resolve(__dirname, '..', 'dist', '_worker.js', 'index.js');
 
-const PATCH_MARKER = '/* SOLCA_CRON_PATCH_v3 */';
+const PATCH_MARKER = '/* SOLCA_CRON_PATCH_v4 */';
 
 const PATCH = `
 ${PATCH_MARKER}
@@ -55,6 +57,10 @@ const __solcaCronWrapper = {
       // Vie 8am CDMX · blog broadcast
       url = 'https://internal.cron/api/blog-broadcast';
       extraHeaders['x-broadcast-secret'] = env.BROADCAST_SECRET ?? '';
+    } else if (cronExpr === '0 15 * * *') {
+      // Diario 9am CDMX · drip de bienvenida (tracks CV + Quiz, steps d3/d7/d12/d20)
+      const key = env.STATS_KEY ?? '';
+      url = \`https://internal.cron/api/drip-tick?key=\${encodeURIComponent(key)}&trigger=\${encodeURIComponent(cronExpr)}\`;
     } else {
       console.warn('scheduled: no route for cron', cronExpr);
       return;

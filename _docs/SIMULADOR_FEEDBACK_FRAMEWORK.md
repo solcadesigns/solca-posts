@@ -341,15 +341,15 @@ Se envía automáticamente 2-5 minutos después de cerrar la sesión (cuando el 
 
 ### Día 0 (inmediato post-sesión)
 
-**Trigger:** webhook al cerrar la sesión en el frontend → endpoint `/api/simulator-feedback-trigger` → MailerLite con template específico + variables `{nombre}` y `{rol_practicado}`.
+**Trigger:** webhook al cerrar la sesión en el frontend → endpoint `/api/simulator-feedback-trigger` → Postmark `sendEmailWithTemplate` con template alias `simulator-feedback-d0` + `templateModel: {nombre, rol_practicado, survey_url}`.
 
-**Implementación:** un automation en MailerLite con trigger personalizado. El frontend manda `POST /api/simulator-feedback-trigger` con `{email, nombre, rol, codigo_beta}`. El endpoint llama al API de MailerLite que dispara el email con el survey link incluido (Google Forms o Tally.so).
+**Implementación:** el frontend manda `POST /api/simulator-feedback-trigger` con `{email, nombre, rol, codigo_beta}`. El endpoint valida, guarda estado en KV `SIMULATOR_FEEDBACK` con clave `sf:{email}:d0` (para dedupe y para saber si contestó), y llama al wrapper `src/lib/postmark.ts::sendEmailWithTemplate` que dispara el email con el survey link incluido (Google Forms o Tally.so).
 
 ### Día 3 (recordatorio condicional)
 
-**Trigger:** scheduled task en MailerLite. Si el subscriber abrió el email del Día 0 pero NO contestó el survey, manda B6+B7. Si contestó el survey, no recibe nada el Día 3.
+**Trigger:** Cloudflare Cron 1x/día. Recorre KV `SIMULATOR_FEEDBACK` buscando keys `sf:*:d0` con `age >= 3d` y `completed !== true`. Para esos, envía B6+B7 vía Postmark (template `simulator-feedback-d3-recordatorio`) y marca `d3_sent: true` para no repetir.
 
-**Cómo se sabe si contestó:** Google Forms / Tally tienen webhooks que avisan cuando alguien envía respuesta. Eso actualiza un campo `feedback_day0_completed` en MailerLite.
+**Cómo se sabe si contestó:** Google Forms / Tally tienen webhooks que avisan cuando alguien envía respuesta. Endpoint `POST /api/simulator-feedback-webhook` recibe el evento y setea `completed: true` en el record de KV `SIMULATOR_FEEDBACK`.
 
 ### Día 7 (cierre de cohorte)
 
@@ -358,7 +358,7 @@ Se envía automáticamente 2-5 minutos después de cerrar la sesión (cuando el 
 ### Plataformas
 
 - **Forms:** Tally.so (mejor UX que Google Forms, free plan suficiente para 30 usuarios).
-- **Email:** MailerLite (ya está integrado).
+- **Email:** Postmark (integrado desde jul 2026, ver `src/lib/postmark.ts`). Templates a crear: `simulator-feedback-d0`, `simulator-feedback-d3-recordatorio`, `simulator-feedback-d7-cierre`.
 - **Tracking:** UTM en cada link para separar Día 0 vs Día 3 vs Día 7 en analytics.
 
 ### Datos a guardar

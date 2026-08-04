@@ -11,8 +11,9 @@
  *      top preguntas reprobadas, distribución por área y rol.
  *   3. Guarda el digest en KV SIMULATOR_METRICS con clave `digest:YYYY-WNN`
  *      (TTL 365 días — historial anual).
- *   4. TODO opcional: enviar email a hello@solcaciencia.com via MailerSend
- *      cuando exista env.MAILERSEND_API_KEY (no bloqueante).
+ *   4. TODO opcional: enviar email a hello@solcaciencia.com via Postmark
+ *      (sendEmailWithTemplate del wrapper src/lib/postmark.ts) cuando exista
+ *      un template 'simulator-digest-weekly'. No bloqueante.
  *   5. Devuelve JSON con el digest para debug manual.
  *
  * Auth: ?key= debe coincidir con env.STATS_KEY. Esto cubre tanto invocación
@@ -270,9 +271,16 @@ async function runWeeklyDigest(env: Record<string, unknown>): Promise<WeeklyDige
     });
   }
 
-  // TODO opcional · envío de email via MailerSend (transactional)
-  // Cuando env.MAILERSEND_API_KEY esté presente:
-  //   await sendDigestEmail(env.MAILERSEND_API_KEY, 'hello@solcaciencia.com', digest);
+  // TODO opcional · envío de email via Postmark (transactional)
+  // Cuando exista template 'simulator-digest-weekly' en Postmark:
+  //   import { sendEmailWithTemplate } from '../../lib/postmark';
+  //   await sendEmailWithTemplate(env.POSTMARK_SERVER_TOKEN, {
+  //     to: 'hello@solcaciencia.com',
+  //     from: 'hello@solcaciencia.com',
+  //     templateAlias: 'simulator-digest-weekly',
+  //     templateModel: { week: weekIso, ...digest },
+  //     tag: 'simulator-digest',
+  //   });
   // Mientras tanto: consulta /api/simulator-weekly-cron?show=latest o ve a /admin/simulator-metrics.
 
   return digest;

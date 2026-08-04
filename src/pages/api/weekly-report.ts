@@ -77,6 +77,10 @@ interface WeeklyReport {
     semana_anterior: number;
     emails_unicos_acumulado: number;
   };
+  // Survey opcional de /revisar-cv. Proporciones se calculan sobre
+  // por_pregunta[qid].exposiciones (no sobre submissions_totales) porque el
+  // formulario muestra un subconjunto aleatorio de preguntas.
+  cv_survey: CvSurveyStats;
   simulator: {
     sesiones_acumuladas: number;
     esta_semana: number;
@@ -151,6 +155,32 @@ interface QuizRec {
   ts: string;
   role?: 'PM' | 'MSL' | 'CR';
   selfMatch?: 'PM' | 'MSL' | 'CR' | 'NS';
+}
+
+// KV CV_METRICS · schema escrito por src/pages/api/cv-survey.ts
+//   key:   `s:{iso_ts}:{rand6}`
+//   value: { ts, exposed: string[], answers: Record<qid, string | string[]> }
+// El formulario expone SURVEY_CORE (`stage`, siempre) + 2 preguntas al azar de
+// un pool de 9. Por eso las proporciones se calculan sobre EXPOSICIONES, no
+// sobre submissions totales. Ver AUDITORIA_CIFRAS_BLOG_2026_08.md caso 21.
+interface SurveyRec {
+  ts?: string;
+  exposed?: string[];
+  answers?: Record<string, string | string[]>;
+}
+
+interface QuestionStats {
+  exposiciones: number;                    // veces que la pregunta se mostró al usuario
+  respondidas: number;                     // veces que el usuario efectivamente respondió (skip = expuesta sin respuesta)
+  respuestas: Record<string, number>;      // opción → count. Multi-select cuenta cada valor por separado.
+}
+
+interface CvSurveyStats {
+  submissions_totales: number;
+  esta_semana: number;
+  semana_anterior: number;
+  por_pregunta: Record<string, QuestionStats>;
+  nota?: string;
 }
 
 /**
@@ -407,6 +437,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
   const emailsKv = env.EMAILS as KVNamespace | undefined;
   const quizKv = env.QUIZ_METRICS as KVNamespace | undefined;
   const limitsKv = env.CV_LIMITS as KVNamespace | undefined;
+  const surveyKv = env.CV_METRICS as KVNamespace | undefined;
   const simDb = env.SIMULATOR_METRICS_DB as D1Database | undefined;
 
   const now = Date.now();
@@ -555,6 +586,80 @@ export const GET: APIRoute = async ({ url, locals }) => {
         }
       }
     }
+
+    // ── 4b. CV Survey (KV CV_METRICS, prefix "s:") ──────────────
+    // Formulario en /revisar-cv envía { exposed, answers } donde `exposed` es
+    // la lista de qids mostrados al usuario (SURVEY_CORE `stage` + 2 al azar
+    // del pool de 9) y `answers` es lo que respondió (posiblemente vacío para
+    // preguntas que expuso pero skipped).
+    //
+    // Reportamos por pregunta: cuántas veces se expuso y de esas cuántas
+    // recibieron respuesta. Las proporciones útiles se calculan sobre
+    // `exposiciones`, no sobre `submissions_totales`. Con pool aleatorio de 2
+    // sobre 9, cada pregunta del pool aparece en ~22% de submissions;
+    // interpretar por encima de esa base sesga.
+    //
+    // Multi-select (ver MULTI_SELECT en cv-survey.ts): las opciones marcadas
+    // se cuentan por separado. Sum de counts en `respuestas` puede exceder
+    // `respondidas`; interpretar como "de X que respondieron, Y marcaron esta opción".
+    const surveyStats = {
+      submissions: 0,
+      cur: 0,
+      prev: 0,
+      porPregunta: new Map<string, QuestionStats>(),
+    };
+
+    if (surveyKv) {
+      await walkKv<SurveyRec>(surveyKv, 's:', (rec) => {
+        surveyStats.submissions++;
+        const tsMs = rec.ts ? Date.parse(rec.ts) : NaN;
+        if (!isNaN(tsMs)) {
+          if (tsMs >= weekAgo && tsMs <= now) surveyStats.cur++;
+          else if (tsMs >= twoWeeksAgo && tsMs < weekAgo) surveyStats.prev++;
+        }
+
+        const exposed = Array.isArray(rec.exposed) ? rec.exposed : [];
+        const answers = rec.answers && typeof rec.answers === 'object' ? rec.answers : {};
+
+        for (const qid of exposed) {
+          if (typeof qid !== 'string') continue;
+          let bucket = surveyStats.porPregunta.get(qid);
+          if (!bucket) {
+            bucket = { exposiciones: 0, respondidas: 0, respuestas: {} };
+            surveyStats.porPregunta.set(qid, bucket);
+          }
+          bucket.exposiciones++;
+
+          const ans = answers[qid];
+          if (ans === undefined || ans === null) continue;
+
+          if (Array.isArray(ans)) {
+            // Multi-select · una respuesta pero múltiples valores
+            if (ans.length === 0) continue;
+            bucket.respondidas++;
+            for (const v of ans) {
+              if (typeof v !== 'string') continue;
+              bucket.respuestas[v] = (bucket.respuestas[v] ?? 0) + 1;
+            }
+          } else if (typeof ans === 'string' && ans.length > 0) {
+            bucket.respondidas++;
+            bucket.respuestas[ans] = (bucket.respuestas[ans] ?? 0) + 1;
+          }
+        }
+      });
+    }
+
+    const cv_survey: CvSurveyStats = {
+      submissions_totales: surveyStats.submissions,
+      esta_semana: surveyStats.cur,
+      semana_anterior: surveyStats.prev,
+      por_pregunta: Object.fromEntries(surveyStats.porPregunta),
+      nota: !surveyKv
+        ? 'CV_METRICS binding no disponible en env.'
+        : surveyStats.submissions < 50
+          ? `Muestra pequeña (n=${surveyStats.submissions}). Interpretar proporciones por pregunta solo cuando exposiciones >= 20.`
+          : undefined,
+    };
 
     // ── 4. Simulator (D1) ─────────────────────────────────────────
     const sim = {
@@ -722,6 +827,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
         semana_anterior: cv.prev,
         emails_unicos_acumulado: cv.emails_unicos,
       },
+      cv_survey,
       simulator: {
         sesiones_acumuladas: sim.total,
         esta_semana: sim.cur,

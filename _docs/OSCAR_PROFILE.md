@@ -96,7 +96,7 @@ Aplican a TODO contenido público que sale bajo la marca Solca.
 | App interna `app.solcalegal.com` | **Next.js 14 App Router** + **NextAuth (Google)** | Repo: `solca_app 2/`. Escribe a Google Sheets vía service account. |
 | Email | **Cloudflare Email Routing** | MX cloudflare. Catch-all `*@solcaciencia.com` → `solcadesigns@gmail.com`. SPF + DKIM + DMARC (modo monitor) publicados. |
 | CRM | **Google Apps Script** sobre Sheet `CRM_Solca` | Sheet ID `1r9yBN5xLHASkwiwxxc0CoU8IWP4pyFp8eUQX3dvHSOU`. |
-| Email marketing | **MailerLite** | Verificación de dominio en SPF. |
+| Email marketing | **Postmark** (jul 2026, reemplazó a Brevo/MailerLite) | Transactional puro. Opt-in vive en KV EMAILS. Tags activos: `welcome-cv`, `welcome-quiz`, `blog-broadcast`. |
 | Libros | **Hotmart** | Tres SKUs: PM, MSL, CR. URLs en `src/pages/index.astro`. |
 | Repos git | GitHub: `solcadesigns/solca-posts` (sitio público) | Otros repos pueden existir pero no relevantes salvo se mencione. |
 | Dominio + DNS | **Cloudflare** | Owner: solcadesigns@gmail.com. |

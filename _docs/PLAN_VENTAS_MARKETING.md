@@ -323,7 +323,7 @@ LEAD MAGNET GRATIS (top of funnel → mid funnel)
     ↓
 
 CAPTURA EMAIL (mid funnel)
-└── MailerLite: automation bienvenida → 3 emails valor puro → 1 email pitch curso CV
+└── Postmark: welcome día 0 (montado) + drip días 3/7/12/20 vía Cloudflare Cron (ver 3.4)
 
     ↓
 
@@ -358,7 +358,7 @@ Complementa el sprint editorial mensual (documentado en `_docs/SPRINT_WORKFLOW.m
 - 1 mención natural del producto en el newsletter Solca Insight del viernes
 
 **Quincenal:**
-- 1 email dedicado a MailerLite con oferta específica (ej. "aún hay 15 cupos al precio de lanzamiento")
+- 1 broadcast Postmark dedicado con oferta específica (ej. "aún hay 15 cupos al precio de lanzamiento"). Tag `promo-quincenal` para segmentación posterior.
 
 **Mensual:**
 - 1 blog nuevo que aterriza en curso CV específicamente (temas: "cómo escribir declaración personal para posgrado biosciencias LATAM", "5 errores en CV que descalifican en pharma", etc.)
@@ -379,24 +379,39 @@ Complementa el sprint editorial mensual (documentado en `_docs/SPRINT_WORKFLOW.m
 
 **Regla de sanidad:** si refund rate sube de 8%, es señal de que el copy sobrevende. Retroceder promesas o reforzar screening del target.
 
-### 3.4 · Automations MailerLite recomendadas
+### 3.4 · Secuencias post-registro sobre Postmark
 
-Configurar en Sprint 1 (día 5 o siguiente semana):
+Postmark es transaccional puro (ver `src/lib/postmark.ts:8-9`): sin listas ni workflows visuales. Cada secuencia se orquesta desde nuestro lado con Cloudflare Cron + KV.
 
-**Automation 1 · Bienvenida al newsletter (trigger: suscripción)**
-- Email 1 (día 0): "Bienvenido a Solca Insight" + link al blog más leído + regalo (checklist CV pharma PDF)
-- Email 2 (día 3): "El error #1 en CV PhD" (contenido puro, sin pitch)
-- Email 3 (día 7): "Cómo pasamos filtros ATS" (contenido + link suave al blog cv-cinco-ajustes)
-- Email 4 (día 12): pitch curso CV con precio de lanzamiento + garantía 30 días
-- Email 5 (día 20): recordatorio con caso real (cuando exista) o el "por qué construí esto"
+**Ya vivo (no duplicar):**
+- Welcome CV Review · tag `welcome-cv` · disparo en `src/pages/api/cv-review.ts` al momento del registro.
+- Welcome Quiz · tag `welcome-quiz` · disparo en `src/pages/api/quiz-subscribe.ts`.
+- Broadcast blog Solca Insight · tag `blog-broadcast` · envío manual al publicar cada post (ver `BLOG_WEEKLY_WORKFLOW.md`).
 
-**Automation 2 · Post-compra curso CV (trigger: compra Hotmart curso)**
-- Email 1 (día 0): confirmación acceso + kickoff del módulo 1
-- Email 7 (día 15): pregunta "¿qué rol específico persigues?" con 3 opciones (PM, MSL, CR)
-- Email 8 (día 30): recomendación de libro específico según elección (ancla: "los compradores del curso reciben libro PM/MSL/CR con 20% de descuento en los próximos 7 días")
+**Pendiente de montar · Drip de bienvenida (días 3/7/12/20 desde registro):**
+- Trigger: Cloudflare Cron 1x/día.
+- Lector: KV EMAILS con prefix `email:` (track CV Review) y `quiz:` (track Quiz).
+- Envío: Postmark templates `drip-{track}-d{n}` donde `track ∈ {cv, quiz}` y `n ∈ {3, 7, 12, 20}` = 8 templates a crear.
+- Dedupe: KV `DRIP_STATE` con key `d:{email}:{track}:{step}`. Sin esto se envía 2x al día siguiente.
+- Colisión anti-fatiga: skip drip a un email si tuvo `blog-broadcast` en últimas 48h (consulta Postmark Analytics).
+- Kill switch: link "no quiero recibir más de estos" en footer que setea flag `unsub:{email}:drip` en KV.
 
-**Automation 3 · Recuperación de carrito abandonado**
-- Hotmart tiene integración nativa con MailerLite vía webhook. Configurar recuperación día 1, 3 y 7 con precio de lanzamiento como ancla.
+**Contenido por track (borradores):**
+- **Track CV** (registro por `/revisar-cv`, intención: mejorar CV):
+  - Día 3: "El error #1 en CV PhD LATAM" — contenido puro sin pitch
+  - Día 7: "Cómo pasamos filtros ATS" — contenido + link suave al blog `cv-cinco-ajustes`
+  - Día 12: pitch curso CV con precio de lanzamiento + garantía 30 días
+  - Día 20: recordatorio con caso real o el "por qué construí esto"
+- **Track Quiz** (registro por `/quiz-rol`, intención: encontrar rol, sabemos qué rol le tocó):
+  - Día 3: profundizar en el rol asignado (link al blog `como-ser-{rol}-en-mexico`)
+  - Día 7: rutas de entrada al rol para su nivel (link a blogs específicos)
+  - Día 12: pitch libro del rol (PM/MSL/CR) con descuento
+  - Día 20: bundle 3 libros con ancla "para quienes aún están evaluando entre roles"
+
+**Automation 2 vieja (post-compra Hotmart curso) y Automation 3 (carrito abandonado):**
+- Ambas requieren webhook receiver Hotmart. No portables 1:1 desde MailerLite.
+- Se documentan como bloque separado en Fase 2, cuando el drip de bienvenida esté vivo y probado.
+- Endpoint futuro: `POST /api/hotmart-webhook` con validación HMAC.
 
 ### 3.5 · Cross-sell entre productos
 

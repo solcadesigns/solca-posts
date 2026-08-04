@@ -64,7 +64,7 @@ Oscar
 
 ## Notas de uso
 
-**Variables a sustituir** (en MailerLite, Gmail merge, o el sender que uses):
+**Variables a sustituir** (en Postmark templateModel, Gmail merge, o el sender que uses):
 - `{{nombre}}` → columna `nombre` del CSV
 - `{{url}}` → columna `url` del CSV (link de un clic con código pre-armado)
 - `{{codigo}}` → columna `codigo` del CSV (fallback si el link falla)

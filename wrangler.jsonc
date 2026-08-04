@@ -4,17 +4,20 @@
 	"main": "./dist/_worker.js/index.js",
 	"compatibility_date": "2025-01-01",
 	// Cron Triggers
-	// Lunes 14:00 UTC = 8:00 AM CDMX (UTC-6, sin DST desde 2022).
-	// Viernes 14:00 UTC = 8:00 AM CDMX. Blog broadcast semanal.
+	// UTC-6 (CDMX, sin DST desde 2022):
+	//   14:00 UTC = 08:00 CDMX · slots ya usados (Lun simulator, Vie blog)
+	//   15:00 UTC = 09:00 CDMX · drip diario (todos los días)
 	// El handler scheduled lo inyecta scripts/patch-cron-handler.mjs
 	// al final del build (post astro build, antes de wrangler deploy).
 	// El handler debe rutear por controller.cron:
 	//   "0 14 * * 1" → /api/simulator-weekly-cron  (digest simulador)
 	//   "0 14 * * 5" → /api/blog-broadcast         (broadcast blog Vie)
+	//   "0 15 * * *" → /api/drip-tick              (drip diario CV + Quiz)
 	"triggers": {
 		"crons": [
 			"0 14 * * 1",
-			"0 14 * * 5"
+			"0 14 * * 5",
+			"0 15 * * *"
 		]
 	},
 	"compatibility_flags": [
