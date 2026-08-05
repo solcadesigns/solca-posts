@@ -39,17 +39,19 @@ if (!TOKEN) {
 
 const dripCvD3 = {
   alias: 'drip-cv-d3',
-  name: 'Drip CV · día 3 · error #1 en CV PhD',
-  subject: 'El error #1 en CV PhD LATAM',
+  name: 'Drip CV · día 3 · el error más común',
+  subject: 'El error más común en CVs a pharma LATAM',
   textBody: `Hola {{first_name}},
 
 Tres días después de mandar tu CV a Solca Ciencia. Va una observación breve.
 
-El error que más veo en CVs de PhD y posdoc que apuntan a industria pharma LATAM: la sección de experiencia describe lo que hiciste como investigador, pero no traduce el output a lo que la industria compra.
+El error que más veo en CVs que apuntan a industria pharma LATAM: la sección de experiencia describe lo que hiciste como investigador, académico o estudiante, pero no traduce el output a lo que la industria compra.
 
-"Publiqué 3 artículos indexados" es dato de academia. Lo que industria pharma lee es: "generé evidencia sobre X en Y personas y presenté los resultados en formato de decisión ejecutiva a Z audiencias".
+Ejemplo: "Publiqué 3 artículos indexados" es dato de academia. Lo que industria pharma busca es: "generé evidencia sobre X en Y personas y presenté los resultados en formato de decisión ejecutiva a Z audiencia".
 
-Esta semana, si tienes 20 minutos, agarra tu CV y reescribe una sola bala así. Solo una. La diferencia es medible en la primera respuesta que recibas.
+Esta semana, si tienes 20 minutos, agarra tu CV y traduce tus experiencias al lenguaje pharma.
+
+Si quieres profundizar en cómo hacer una aplicación exitosa (desde CV a entrevista) te recomiendo nuestro curso en línea: CV para Ciencias Biológicas y de la Salud → https://go.hotmart.com/B104495115T
 
 Oscar
 
@@ -62,20 +64,18 @@ Sigues suscrito al newsletter Solca Insight aparte.`,
 const dripCvD7 = {
   alias: 'drip-cv-d7',
   name: 'Drip CV · día 7 · filtros ATS',
-  subject: 'Cómo pasar filtros ATS sin trucos de keyword stuffing',
+  subject: 'Tres ajustes de CV para pasar filtros ATS',
   textBody: `{{first_name}},
 
-Una semana. Tu CV probablemente ya pasó por 1-2 filtros ATS. Estos filtros no son mágicos, pero sí son literales: hacen match entre palabras del posting y palabras del CV.
+Una semana. Si estas aplicando activamente a vacantes, tu CV probablemente ya pasó por 1-2 filtros ATS. Estos filtros no son mágicos, pero sí son literales: hacen match entre palabras del posting y palabras del CV.
 
-Cinco ajustes que sí mueven la aguja, sin caer en keyword stuffing (que las reclutadoras ven a la primera):
+Tres ajustes que sí pueden impactar inmediatamente:
 
-1. Poner el título exacto de la vacante en tu headline si es honesto.
-2. Sacrificar 2-3 responsibilities de bullet points para incluir la habilidad textual del posting.
-3. Ordenar la experiencia por relevancia al rol, no por cronología pura, si la más reciente no es la más pertinente.
-4. Reescribir tu formación en el idioma del posting (bilingüe puede ser CV en español con títulos técnicos en inglés).
-5. Verificar que tu PDF sea seleccionable (no imagen escaneada). Los ATS no leen imágenes.
+1. Poner el título exacto de la vacante en tu headline (a menos que no puedas defenderlo).
+2. Incluir las habilidades solicitadas textualmente del posting.
+3. Verificar que tu PDF sea seleccionable (no imagen escaneada). Los ATS cada vez son mejores, pero no te arriesgues a que no pueda leer imágenes.
 
-Escribí los cinco con más contexto y ejemplos aquí: {{site_origin}}/blog/cv-pharma-cinco-ajustes-desde-phd
+Si quieres profundizar en cómo hacer una aplicación exitosa (desde CV a entrevista) te recomiendo nuestro curso en línea: CV para Ciencias Biológicas y de la Salud → https://go.hotmart.com/B104495115T
 
 Oscar
 
@@ -87,23 +87,20 @@ No quieres recibir más de estos: {{unsub_url}}`,
 const dripCvD12 = {
   alias: 'drip-cv-d12',
   name: 'Drip CV · día 12 · pitch curso',
-  subject: 'El curso de CV pharma existe, y lo hice porque me hartó ver el mismo error',
+  subject: 'Curso CV pharma · si tu CV podría no estar funcionando',
   textBody: `{{first_name}},
 
-Doce días. Si estás aquí porque tu CV no está funcionando, y ya probaste los ajustes de los emails anteriores sin ver cambio, es momento de considerar trabajarlo con guía estructurada.
+Doce días. Si estás aquí porque tu CV podría no estar funcionando.
 
 Hice un curso de CV pharma con:
 
 - Framework paso a paso para reescribir un CV académico en formato industria.
-- Diez ejemplos anonimizados de antes/después de candidatos LATAM reales.
-- Plantilla ATS-friendly (Word, no template raro que se rompe al abrir).
-- Sección sobre cover letter que sí se lee (la mayoría de guías la ignoran).
+- Plantillas ATS-friendly.
+- Sección sobre entrevistas y estrategias para responder.
 
 Precio de lanzamiento: MXN $999 (regular $1,499). Garantía 30 días completos: si el curso no te sirve, te devuelvo el dinero sin preguntas.
 
-{{site_origin}}/curso-cv
-
-No es para todos. Si tu CV ya está funcionando y tienes 30% de respuestas o más, no lo compres. Si estás por debajo de eso, probablemente sí te ayuda.
+CV para Ciencias Biológicas y de la Salud → https://go.hotmart.com/B104495115T
 
 Oscar
 
@@ -118,11 +115,11 @@ const dripCvD20 = {
   subject: 'Por qué construí Solca Ciencia (y qué sigue si el CV no es el bloqueo)',
   textBody: `{{first_name}},
 
-Veinte días. Este es el último email de la secuencia de bienvenida.
+Veinte días. Este es el último email de mi secuencia de bienvenida.
 
-Construí Solca Ciencia porque, después de años entrevistando candidatos PhD para industria pharma en LATAM, vi el mismo patrón: gente talentosa que se quedaba fuera no por falta de fondo científico, sino por no saber traducir su perfil al lenguaje que la industria compra.
+Construí Solca Ciencia porque, después de años de ver el mismo patrón: gente talentosa que se quedaba fuera no por falta de fondo científico, sino por no saber traducir su perfil al lenguaje que la industria busca.
 
-Los recursos existían, pero fragmentados, mal etiquetados, escritos para gente que ya está adentro. Solca Ciencia intenta cerrar esa brecha con contenido directo, herramientas gratis (revisar CV, quiz de rol, simulador entrevistas) y guías pagadas cuando quieres profundizar.
+Los recursos existen, pero fragmentados, mal etiquetados, escritos para gente que ya está adentro. Solca Ciencia intenta cerrar esa brecha con contenido directo, herramientas gratis (revisar CV, quiz de rol, simulador entrevistas), así como herramientas premium, cursos y guías pagadas cuando quieres profundizar.
 
 Si el CV no es tu bloqueo real, aquí lo que puede serlo y con qué recurso lo atacas:
 
@@ -149,11 +146,13 @@ const dripQuizD3 = {
 
 Tres días desde que hiciste el quiz. El rol que más se ajusta a tu perfil fue {{role_label}}.
 
-Un rol no es un título. Es una decisión diaria sobre en qué gastas tu tiempo. {{role_label}} implica un tipo específico de trabajo que quizás no viste en la descripción corta del resultado del quiz.
+Un rol no es un título. Es una decisión diaria sobre en qué invertir tu tiempo. {{role_label}} implica un tipo específico de trabajo que quizás no viste en la descripción corta del resultado del quiz.
 
-Escribí una guía detallada del rol pensada para gente que sale de academia y está evaluando entrar: qué pide un posting real, qué NO se dice en el JD, y cómo verificar si de verdad te queda antes de invertir semanas en la aplicación.
+Escribí unas guías introductorias para tres roles comunes en la industria pharma con las que puedes iniciar tu camino. Cada guía incluye información para iniciar tu formación y prepararte para adaptar y transformar tus habilidades a lo que cada rol necesita.
 
-Léela aquí: {{site_origin}}/blog/como-ser-{{role_slug}}-en-mexico
+Project Manager → https://go.hotmart.com/R105710415P
+MSL → https://go.hotmart.com/Y105718405Y
+Clinical Research → https://go.hotmart.com/U105724060O
 
 Si después de leerla el rol no te queda tan bien como el quiz sugirió, es información valiosa. El quiz es una hipótesis; la guía es el reality check.
 
@@ -167,20 +166,16 @@ No quieres recibir más de estos: {{unsub_url}}`,
 const dripQuizD7 = {
   alias: 'drip-quiz-d7',
   name: 'Drip Quiz · día 7 · rutas de entrada',
-  subject: 'Cómo entrar a {{role_label}} desde donde estás hoy',
+  subject: 'Tres rutas realistas para entrar a pharma en LATAM',
   textBody: `{{first_name}},
 
-Una semana. Asumo que ya leíste la guía del rol {{role_label}} y que sigues con interés. La pregunta ahora es: cómo entrar desde donde estás hoy.
+Una semana. Te comparto tres posibles rutas de entrada realistas a pharma en LATAM:
 
-Hay tres rutas de entrada realistas a {{role_label}} en LATAM:
-
-1. Directa · aplicar a vacantes junior o entry-level de {{role_label}} en empresas que sí contratan sin experiencia previa en industria (típicamente CROs multinacionales o farma local con programas de entrenamiento).
+1. Directa · aplicar a vacantes junior o entry-level en empresas que sí anuncian vacantes sin experiencia previa en industria.
 2. Adyacente · entrar primero a un rol vecino (Regulatory, Medical Affairs Coordinator, In-house CRA según el caso) y transicionar en 12-18 meses.
-3. Vía posgrado · si la ruta directa no está funcionando, un MBA con enfoque salud o una maestría específica del rol puede desbloquear la ventana de entrada, pero es una inversión de tiempo y dinero que hay que justificar.
+3. Vía posgrado · si la ruta directa no está funcionando, un MBA con enfoque salud o una maestría o diplomado específico del rol puede desbloquear la ventana de entrada, pero es una inversión de tiempo y dinero que hay que justificar. Asegúrate de crecer tu red de contactos en estas etapas.
 
-Qué ruta te queda depende de: tu formación, tu geografía, tu inglés, tu tolerancia a viajar, y tu urgencia financiera. Ninguna es "la buena" en abstracto.
-
-Si quieres discutir cuál ruta te queda, contéstame este email con tu contexto en 3-4 líneas y te doy mi lectura franca (gratis, no es un pitch).
+Qué ruta te queda depende de: tu formación, tu geografía, tu inglés, tu tolerancia a viajar, y tu urgencia financiera. Cada camino es diferente y no hay camino malo.
 
 Oscar
 
@@ -192,24 +187,21 @@ No quieres recibir más de estos: {{unsub_url}}`,
 const dripQuizD12 = {
   alias: 'drip-quiz-d12',
   name: 'Drip Quiz · día 12 · pitch libro del rol',
-  subject: 'El libro de {{role_label}} existe (y te ahorra 6 meses de research)',
+  subject: 'El libro de {{role_label}} está listo si sigue en tu radar',
   textBody: `{{first_name}},
 
 Doce días. Si {{role_label}} sigue en tu radar como opción real, y estás juntando información para preparar aplicación o entrevista, tengo un recurso específico para ti.
 
-Hice un libro dedicado al rol {{role_label}} con:
+Como te comenté hace unos días, hice un libro dedicado al rol {{role_label}} con:
 
 - Radiografía completa del rol en LATAM (México, Argentina, Colombia, Chile).
-- Bandas salariales por seniority con fuentes públicas verificables.
-- Preguntas típicas de entrevista y cómo estructurar respuesta con marco STAR.
-- Perfil de reclutador que suele contratar {{role_label}} y qué busca.
-- Los cinco errores más frecuentes en aplicación al rol.
+- Fundamentos teóricos, lenguaje clave, el día a día operativo del rol.
+- Módulo de aplicaciones para vacantes.
+- Las herramientas de IA que se utilizan en el rol.
 
-Precio de lanzamiento: MXN $799 (regular $999). En Hotmart, entrega inmediata, garantía 30 días.
+Precio de lanzamiento: MXN $599 (regular $799). En Hotmart, entrega inmediata, garantía 7 días.
 
-{{site_origin}}/libro-{{role_slug}}
-
-Si el rol te queda pero prefieres el paquete completo, hay un bundle con los tres libros (PM, MSL, CR) con descuento. Te lo pongo en el próximo email por si vale la pena en tu caso.
+{{site_origin}}/#libros
 
 Oscar
 
@@ -220,24 +212,21 @@ No quieres recibir más de estos: {{unsub_url}}`,
 
 const dripQuizD20 = {
   alias: 'drip-quiz-d20',
-  name: 'Drip Quiz · día 20 · bundle 3 libros',
-  subject: 'Bundle 3 libros pharma (por si aún estás decidiendo entre roles)',
+  name: 'Drip Quiz · día 20 · cierre + cupón',
+  subject: 'Último email · cupón BIENVENIDA50 para tu libro',
   textBody: `{{first_name}},
 
 Veinte días. Este es el último email de la secuencia de bienvenida.
 
-El quiz te asignó {{role_label}}, pero sé por conversaciones directas que mucha gente en tu situación aún está evaluando entre dos o tres roles antes de decidir dónde poner las semanas de aplicación.
+El quiz te asignó {{role_label}}. Ese resultado es una imagen del perfil que podrías disfrutar más; tu resultado no está basado en lo que te hará ganar más dinero, en lo que puede ser más fácil o el que más vacantes publica. Es decir, es el rol para el que posiblemente tengas mayor vocación.
 
-Si ese es tu caso, el bundle de los tres libros (PM, MSL, CR) suele salir mejor que comprar dos por separado:
+Puedes encontrarlo en nuestra página. Te comparto un cupón de descuento para que puedas iniciar tu camino a tu siguiente éxito profesional (úsalo en el checkout).
 
-- Bundle 3 libros: MXN $1,999 (vs. $2,397 comprando individual).
-- Los tres libros usan el mismo marco de análisis; comparar entre ellos te ayuda a decidir sin cambiar de vocabulario.
+Cupón: BIENVENIDA50
 
-{{site_origin}}/bundle-pharma
+Selecciona el libro en {{site_origin}}/#libros
 
-Si ya te decidiste por {{role_label}} y solo quieres el libro específico, sigue disponible: {{site_origin}}/libro-{{role_slug}}.
-
-Si algo de todo esto (quiz, blog, libros, contenido gratis) te ha servido, contéstame este email y dime qué. Leo todas las respuestas.
+Si algo de todo esto (quiz, blog, libros, contenido gratis) te ha servido, te agradecería recomendarlos.
 
 Oscar
 
