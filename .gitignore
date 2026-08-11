@@ -47,3 +47,4 @@ _docs/beta-outreach*.csv
 _docs/private-*.json
 _docs/*-privado*.json
 _docs/*-privado*.csv
+deploy.log
