@@ -69,6 +69,19 @@ Antes de abrir el PR, revisar cada afirmación con número, porcentaje, tendenci
 
 ---
 
+## Reglas de edición (feedback Oscar, 10 ago 2026)
+
+Detonante: review del draft `cro-latam-entry-level-icon-iqvia-que-piden-en-realidad`. Cuatro reglas nuevas, obligatorias para todo draft futuro:
+
+1. **Anclaje temporal explícito.** Si el contenido deriva de una actividad acotada en el tiempo (las vacantes de este mes, un reporte puntual), el texto lo declara con mes/año — "la selección que encontré este mes (ago/2026)" — y usa pasado donde corresponde ("lo que ICON e IQVIA publicaron"). Prohibido el tono perene sobre material temporal: el blog vive años, la muestra no.
+2. **El texto sostiene la promesa del subheading.** Cada H2 es un contrato: si el cuerpo de la sección no entrega lo que el H2 promete, se reescribe el H2 o se reescribe el cuerpo. Verificar sección por sección antes de entregar.
+3. **Cero links rotos o placeholder.** Todo link interno usa URL absoluta `https://solcaciencia.com/...` y apunta solo a posts YA publicados (pubDate anterior a hoy y deployed). Nunca linkear un post cuyo pubDate sea futuro. Todo link (interno y externo) se abre y verifica antes de entregar el draft.
+4. **Directo y concreto.** Sin vueltas: párrafos cortos que entregan el dato y avanzan. Sin secciones de relleno (el "Resumen operativo" se elimina si solo repite lo ya dicho). Referencia de estilo: la versión editada por Oscar del blog CRO del 10 ago 2026.
+
+**Agente revisor obligatorio.** Antes de entregar cualquier draft, lanzar un subagente (Task tool) que revise el texto contra estas cuatro reglas más el barrido antifabricación existente, y corregir lo que marque. El draft no se entrega sin este paso.
+
+---
+
 ## Broadcast por email · Vie 8am
 
 **Audiencia:** todos los emails en KV EMAILS con consent activo (opt-in vía formularios de solcaciencia.com).

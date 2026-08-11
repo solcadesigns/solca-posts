@@ -10,7 +10,6 @@
 
 | Semana | Fecha objetivo | Fuente LinkedIn | Keyword primary tentativa | Slug propuesto |
 |---|---|---|---|---|
-| 3 | Vie 22 ago 2026 | Mié 13 ago · Serie #3 "CROs entry-level" | trabajar cro latam sin experiencia | cro-latam-entry-level-icon-iqvia-que-piden-en-realidad |
 | 4 | Vie 29 ago 2026 | Mié 20 ago · Serie #4 "Regulatorio, calidad, prácticas" | asuntos regulatorios pharma sin experiencia | asuntos-regulatorios-calidad-practicas-entrada-pharma-latam |
 
 ---
@@ -33,6 +32,9 @@
 |---|---|---|---|---|
 | entrevista-pharma-ingles-b2-c1-como-prepararla | "Entrevista pharma en inglés: cómo prepararla de B2 a C1" | Lun 27 jul 2026 | Vie 7 ago 2026 | Vie 31 jul · Insight #13 |
 | farmacovigilancia-entry-level-trainee-cro-latam | "Farmacovigilancia entry-level: qué dicen los postings trainee" | Lun 3 ago 2026 | Vie 14 ago 2026 | Mié 6 ago · Serie #2 |
+| cro-latam-entry-level-icon-iqvia-que-piden-en-realidad | "Trabajar en un CRO en LATAM sin experiencia: por dónde entrar" | Lun 10 ago 2026 | Vie 21 ago 2026 | Mié 13 ago · Serie #3 |
+
+Nota (10 ago 2026): la fecha objetivo del backlog decía "Vie 22 ago 2026", pero el 22 de agosto de 2026 es sábado; pubDate ajustado al viernes real 2026-08-21 (consistente con la nota del 27 jul). Slug del backlog conservado — no colisiona con ningún post existente. La keyword "trabajar cro latam sin experiencia" es CRO-específica y no canibaliza a `trabajar-industria-farmaceutica-sin-experiencia-latam` (intención industria-general, 5 puertas); ese post, la guía CRA México y el blog de farmacovigilancia trainee quedan linkeados inline. Fuentes externas verificadas: ICON Graduate Opportunities, IQVIA CRA careers, curso GCP del NIDA. CTA: /quiz-rol (el tema CRA/clinical research está dentro de las tres rutas del quiz; los dos blogs previos en review usan /revisar-cv).
 
 Nota (3 ago 2026): el slug propuesto en backlog ("farmacovigilancia-mexico-como-entrar-sin-experiencia") colisionaba con el blog ya publicado el 13 jul 2026 (`farmacovigilancia-mexico-empezar-sin-experiencia`, keyword "farmacovigilancia méxico sin experiencia"). Para evitar canibalización SEO, el draft cambió el ángulo al de la fuente LinkedIn (programas trainee/graduate en CROs), keyword primary "farmacovigilancia entry-level / programas trainee de farmacovigilancia", y linkea inline al blog existente como guía México.
 
