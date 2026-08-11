@@ -67,9 +67,11 @@ function getValue(keyName) {
 }
 
 function deleteKey(keyName) {
+  // wrangler kv key delete pide confirmación interactiva ("y/N"). En v4.90 el
+  // flag --force ya no existe; pipeamos "y\n" al stdin para responder al prompt.
   execSync(
-    `npx wrangler kv key delete "${keyName}" --namespace-id=${KV_NAMESPACE_ID} --remote --force`,
-    { encoding: 'utf8' },
+    `npx wrangler kv key delete "${keyName}" --namespace-id=${KV_NAMESPACE_ID} --remote`,
+    { encoding: 'utf8', input: 'y\n' },
   );
 }
 
