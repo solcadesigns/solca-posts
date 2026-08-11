@@ -31,7 +31,11 @@
 	"vars": {
 		"SOLCACIENCIA_ZONE_ID": "80c71a476167b48983cfbb78e789400e",
 		"SOLCACIENCIA_RUM_SITE_TAG": "c3ed59e5d60b44bc9aaaac0c95911c1f",
-		"CLOUDFLARE_ACCOUNT_TAG": "187219480b04d6f4afea8aa7e6231852"
+		"CLOUDFLARE_ACCOUNT_TAG": "187219480b04d6f4afea8aa7e6231852",
+		// Propiedad GSC. Si la propiedad es URL-prefix en vez de dominio,
+		// cambiar a "https://solcaciencia.com/". Secrets requeridos:
+		// GSC_CLIENT_EMAIL + GSC_PRIVATE_KEY (wrangler secret put).
+		"GSC_SITE_URL": "sc-domain:solcaciencia.com"
 	},
 	"assets": {
 		"binding": "ASSETS",

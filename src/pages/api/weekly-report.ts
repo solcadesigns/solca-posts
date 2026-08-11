@@ -115,6 +115,35 @@ interface WeeklyReport {
     top_paises: Array<{ pais: string; views: number }>;
     nota?: string;
   };
+  // Google Search Console · Search Analytics API (agregado 10 ago 2026).
+  // Requiere secrets GSC_CLIENT_EMAIL + GSC_PRIVATE_KEY (service account con
+  // acceso de lectura a la propiedad) y var GSC_SITE_URL.
+  // GSC publica data con ~3 días de lag: la ventana termina hace 3 días.
+  gsc: {
+    disponible: boolean;
+    ventana: { start: string; end: string };
+    ventana_anterior: { start: string; end: string };
+    totales: GscTotals;
+    totales_anterior: GscTotals;
+    top_queries: GscDimRow[];
+    top_paginas: GscDimRow[];
+    nota?: string;
+  };
+}
+
+interface GscTotals {
+  clicks: number;
+  impresiones: number;
+  ctr_pct: number | null;
+  posicion_media: number | null;
+}
+
+interface GscDimRow {
+  key: string;
+  clicks: number;
+  impresiones: number;
+  ctr_pct: number;
+  posicion: number;
 }
 
 interface EmailTagStats {
@@ -401,6 +430,122 @@ async function fetchCloudflareTraffic(
     console.warn('cloudflare-rum fetch failed', err);
     return { error: `Exception: ${(err as Error)?.message}` };
   }
+}
+
+// ── Google Search Console ────────────────────────────────────────
+// Auth por service account: JWT RS256 firmado con WebCrypto → access token.
+// Sin dependencias externas (googleapis no corre en Workers).
+
+interface GscApiRow {
+  keys?: string[];
+  clicks?: number;
+  impressions?: number;
+  ctr?: number;
+  position?: number;
+}
+
+/** PEM (PKCS8) → ArrayBuffer para crypto.subtle.importKey. */
+function pemToArrayBuffer(pem: string): ArrayBuffer {
+  const b64 = pem.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
+  const bin = atob(b64);
+  const buf = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  return buf.buffer;
+}
+
+function base64url(data: ArrayBuffer | string): string {
+  const bytes = typeof data === 'string' ? new TextEncoder().encode(data) : new Uint8Array(data);
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+/**
+ * Intercambia un JWT de service account por un access token de Google.
+ * privateKeyPem acepta tanto saltos de línea reales como "\n" escapados
+ * (wrangler secret put suele guardar el segundo formato).
+ */
+async function getGoogleAccessToken(clientEmail: string, privateKeyPem: string): Promise<string> {
+  const nowSec = Math.floor(Date.now() / 1000);
+  const header = base64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+  const claims = base64url(
+    JSON.stringify({
+      iss: clientEmail,
+      scope: 'https://www.googleapis.com/auth/webmasters.readonly',
+      aud: 'https://oauth2.googleapis.com/token',
+      iat: nowSec,
+      exp: nowSec + 3600,
+    }),
+  );
+  const key = await crypto.subtle.importKey(
+    'pkcs8',
+    pemToArrayBuffer(privateKeyPem.replace(/\\n/g, '\n')),
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const signature = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5',
+    key,
+    new TextEncoder().encode(`${header}.${claims}`),
+  );
+  const jwt = `${header}.${claims}.${base64url(signature)}`;
+
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `grant_type=${encodeURIComponent('urn:ietf:params:oauth:grant-type:jwt-bearer')}&assertion=${jwt}`,
+  });
+  if (!res.ok) {
+    throw new Error(`google token ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  }
+  const data = (await res.json()) as { access_token?: string };
+  if (!data.access_token) throw new Error('google token: respuesta sin access_token');
+  return data.access_token;
+}
+
+/** POST a Search Analytics API. Devuelve rows ([] si no hay data). */
+async function gscQuery(
+  token: string,
+  siteUrl: string,
+  body: Record<string, unknown>,
+): Promise<GscApiRow[]> {
+  const res = await fetch(
+    `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+  );
+  if (!res.ok) {
+    throw new Error(`gsc query ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  }
+  const data = (await res.json()) as { rows?: GscApiRow[] };
+  return data.rows ?? [];
+}
+
+function gscTotalsFromRow(row: GscApiRow | undefined): GscTotals {
+  const clicks = row?.clicks ?? 0;
+  const impresiones = row?.impressions ?? 0;
+  return {
+    clicks,
+    impresiones,
+    ctr_pct: impresiones > 0 ? +(((row?.ctr ?? 0) * 100).toFixed(1)) : null,
+    posicion_media: impresiones > 0 ? +((row?.position ?? 0).toFixed(1)) : null,
+  };
+}
+
+function gscDimRows(rows: GscApiRow[], stripOrigin: boolean): GscDimRow[] {
+  return rows
+    .filter((r) => r.keys?.[0])
+    .map((r) => ({
+      key: stripOrigin ? r.keys![0].replace(/^https?:\/\/[^/]+/, '') : r.keys![0],
+      clicks: r.clicks ?? 0,
+      impresiones: r.impressions ?? 0,
+      ctr_pct: +(((r.ctr ?? 0) * 100).toFixed(1)),
+      posicion: +((r.position ?? 0).toFixed(1)),
+    }));
 }
 
 /**
@@ -792,6 +937,55 @@ export const GET: APIRoute = async ({ url, locals }) => {
           : 'Falta SOLCACIENCIA_RUM_SITE_TAG.';
     }
 
+    // ── 7. Google Search Console (Search Analytics API) ──────────
+    // GSC publica con ~3 días de lag: ventana actual = 7 días terminando
+    // hace 3. Comparamos contra los 7 días previos a esa ventana.
+    const gscEmail = env.GSC_CLIENT_EMAIL as string | undefined;
+    const gscPrivateKey = env.GSC_PRIVATE_KEY as string | undefined;
+    const gscSiteUrl = (env.GSC_SITE_URL as string | undefined) ?? 'sc-domain:solcaciencia.com';
+
+    const fmtDay = (t: number) => new Date(t).toISOString().slice(0, 10);
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const gscEnd = now - 3 * DAY_MS;
+    const gscStart = gscEnd - 6 * DAY_MS;
+    const gscPrevEnd = gscStart - 1 * DAY_MS;
+    const gscPrevStart = gscPrevEnd - 6 * DAY_MS;
+
+    const gsc: WeeklyReport['gsc'] = {
+      disponible: false,
+      ventana: { start: fmtDay(gscStart), end: fmtDay(gscEnd) },
+      ventana_anterior: { start: fmtDay(gscPrevStart), end: fmtDay(gscPrevEnd) },
+      totales: gscTotalsFromRow(undefined),
+      totales_anterior: gscTotalsFromRow(undefined),
+      top_queries: [],
+      top_paginas: [],
+      nota: undefined,
+    };
+
+    if (gscEmail && gscPrivateKey) {
+      try {
+        const gToken = await getGoogleAccessToken(gscEmail, gscPrivateKey);
+        const cur = { startDate: fmtDay(gscStart), endDate: fmtDay(gscEnd) };
+        const prev = { startDate: fmtDay(gscPrevStart), endDate: fmtDay(gscPrevEnd) };
+        const [totCur, totPrev, queries, pages] = await Promise.all([
+          gscQuery(gToken, gscSiteUrl, { ...cur }),
+          gscQuery(gToken, gscSiteUrl, { ...prev }),
+          gscQuery(gToken, gscSiteUrl, { ...cur, dimensions: ['query'], rowLimit: 10 }),
+          gscQuery(gToken, gscSiteUrl, { ...cur, dimensions: ['page'], rowLimit: 10 }),
+        ]);
+        gsc.disponible = true;
+        gsc.totales = gscTotalsFromRow(totCur[0]);
+        gsc.totales_anterior = gscTotalsFromRow(totPrev[0]);
+        gsc.top_queries = gscDimRows(queries, false);
+        gsc.top_paginas = gscDimRows(pages, true);
+      } catch (err) {
+        gsc.nota = `GSC falló: ${(err as Error)?.message}`;
+        console.warn('gsc fetch failed', err);
+      }
+    } else {
+      gsc.nota = 'Faltan GSC_CLIENT_EMAIL / GSC_PRIVATE_KEY (secrets); gsc no disponible.';
+    }
+
     // ── Armar respuesta ──────────────────────────────────────────
     const topDelta = computeDelta(subs.cur.n, subs.prev.n);
 
@@ -841,6 +1035,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
       },
       email_health,
       traffic,
+      gsc,
     };
 
     return jsonResponse(report, 200);
