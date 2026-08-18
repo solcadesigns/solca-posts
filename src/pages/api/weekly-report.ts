@@ -64,10 +64,14 @@ interface WeeklyReport {
     distribucion_rol_acumulado: Record<string, number>;
     agreement_rate: number | null;
     // Funnel gate→complete con definiciones estrictas:
-    // gates_unique_acumulado = emails únicos que enviaron gate del quiz
-    // drop_off_pct = 1 - (completions / gates_unique)
+    // gates_unique_actual = emails únicos que actualmente existen en KV EMAILS
+    //   con prefix `quiz:`. NO es histórico real — si se limpian leads de
+    //   prueba o se rota KV, este número baja. Para el acumulado histórico
+    //   verdadero, ver la hoja `semanal` de metrics.xlsx (append-only).
+    //   Renombrado 2026-08-18 (antes: gates_unique_acumulado, engañoso).
+    // drop_off_pct = 1 - (completions / gates_unique_actual)
     // repeat_gates = emails que enviaron gate 2+ veces (intentos con abandono)
-    gates_unique_acumulado: number;
+    gates_unique_actual: number;
     drop_off_gate_to_complete_pct: number | null;
     repeat_gates: number;
   };
@@ -1011,7 +1015,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
         semana_anterior: quiz.prev,
         distribucion_rol_acumulado: quiz.rol,
         agreement_rate: quiz.agree_total > 0 ? +(quiz.agree_hits / quiz.agree_total).toFixed(3) : null,
-        gates_unique_acumulado: gates_unique,
+        gates_unique_actual: gates_unique,
         drop_off_gate_to_complete_pct: drop_off_pct,
         repeat_gates,
       },
