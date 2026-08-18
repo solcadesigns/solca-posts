@@ -74,11 +74,20 @@ export async function chatCompletion(
   });
 
   if (!response.ok) {
-    let errorBody: unknown;
+    // Bug fix 2026-08-18: leer el body UNA SOLA VEZ.
+    // Antes usábamos try { await response.json() } catch { await response.text() },
+    // pero cuando .json() fallaba (Anthropic 5xx devuelve HTML de overload, 529
+    // devuelve texto plano de infra), el segundo await intentaba consumir el
+    // body ya leído y tiraba "Body has already been used. It can only be used
+    // once. Use tee() first if you need to read it twice." — esa excepción se
+    // propagaba fuera del AnthropicError y rompía retryableChatCompletion.
+    // Fix: leer como texto una sola vez, después intentar parsear el string.
+    const errorText = await response.text();
+    let errorBody: unknown = errorText;
     try {
-      errorBody = await response.json();
+      errorBody = JSON.parse(errorText);
     } catch {
-      errorBody = await response.text();
+      // errorBody se queda como el string plano; suficiente para diagnosticar.
     }
     throw new AnthropicError(
       response.status,

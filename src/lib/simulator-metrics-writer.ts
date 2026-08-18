@@ -127,6 +127,86 @@ export async function writeMetricsToD1(
 }
 
 /**
+ * F1 (2026-08-18): registrar sesión al terminar la última respuesta,
+ * ANTES de pedirle el reporte final a Claude. Así, si Claude falla o
+ * el parsing revienta, la sesión queda contada en D1 y el usuario
+ * puede enviar feedback beta (que valida FK contra sessions).
+ *
+ * Diseño: INSERT con scores NULL + completed=1. Cuando writeMetricsToD1
+ * corra después con el reporte exitoso, el ON CONFLICT DO UPDATE llena
+ * los scores. Si el reporte nunca se genera, la sesión queda con scores
+ * NULL pero contada.
+ *
+ * Detonante: bug 2026-08-18 dejó sesiones de Lilian y Oscar fuera de D1
+ * (aunque completaron las 10 preguntas) porque el reporte de Claude
+ * fallaba y writeMetricsToD1 nunca se llamaba.
+ */
+export interface WriteInitialSessionInput {
+  sessionId: string;
+  startedAtIso: string;
+  areaFormacion: string;
+  aniosExperiencia: string;
+  paisInferido?: string | null;
+  rolApuntado: string;
+  idioma: string;
+  etapa: string;
+  numeroPreguntas: number;
+  focus: string;
+  sesionDuracionTotalSeg?: number | null;
+  respuestaPromedioSeg?: number | null;
+  hasCvSummary?: boolean;
+}
+
+export async function writeSessionInitialToD1(
+  db: D1Database,
+  body: WriteInitialSessionInput,
+): Promise<void> {
+  const tsEpoch = new Date(body.startedAtIso).getTime();
+
+  // INSERT ... ON CONFLICT DO NOTHING: si la sesión ya existe (por retry),
+  // no la sobreescribimos con scores NULL. writeMetricsToD1 hace la actualización.
+  const sql = `
+    INSERT INTO sessions (
+      session_id, ts,
+      area_formacion, anios_experiencia, pais_inferido, rol_apuntado,
+      idioma, etapa, numero_preguntas, focus,
+      sesion_duracion_total_seg, respuesta_promedio_seg,
+      score_tecnico, score_estructura, score_especificidad,
+      alertas_count, rol_y_match,
+      completed, has_cv_summary
+    ) VALUES (
+      ?, ?,
+      ?, ?, ?, ?,
+      ?, ?, ?, ?,
+      ?, ?,
+      NULL, NULL, NULL,
+      NULL, NULL,
+      1, ?
+    )
+    ON CONFLICT(session_id) DO NOTHING;
+  `;
+
+  await db
+    .prepare(sql)
+    .bind(
+      body.sessionId,
+      tsEpoch,
+      body.areaFormacion,
+      body.aniosExperiencia,
+      body.paisInferido ?? null,
+      body.rolApuntado,
+      body.idioma,
+      body.etapa,
+      body.numeroPreguntas,
+      body.focus,
+      body.sesionDuracionTotalSeg ?? null,
+      body.respuestaPromedioSeg ?? null,
+      body.hasCvSummary ? 1 : 0,
+    )
+    .run();
+}
+
+/**
  * Update parcial: solo demográficos. Asume que la sesión ya existe en D1.
  * Usado por el flow de micro-encuesta post-feedback (Fase 1.4.3).
  */

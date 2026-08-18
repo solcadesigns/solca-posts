@@ -18,7 +18,8 @@ import { retryableChatCompletion, extractText, AnthropicError } from '../../lib/
 import { buildSystemPrompt } from '../../lib/simulator-prompt';
 import { inferRole, getStageInfo } from '../../lib/simulator-defaults';
 import { parseFinalOutput } from '../../lib/simulator-metrics-parser';
-import { writeMetricsToD1 } from '../../lib/simulator-metrics-writer';
+import { writeMetricsToD1, writeSessionInitialToD1 } from '../../lib/simulator-metrics-writer';
+import { sendEmail, PostmarkError } from '../../lib/postmark';
 import type {
   CandidateProfile,
   CvSummary,
@@ -343,6 +344,44 @@ async function handleNext(
 
   const isLastQuestion = state.turns.length >= profile.questionCount;
 
+  // F1 (2026-08-18) · si esta es la última respuesta, registrar la sesión en D1
+  // ANTES de pedirle el reporte a Claude. Así, aunque Claude falle o el parsing
+  // reviente, la sesión queda contada y el usuario puede enviar feedback beta
+  // (endpoint /api/simulator-beta-feedback valida FK contra sessions).
+  if (isLastQuestion) {
+    try {
+      const db = env.SIMULATOR_METRICS_DB as D1Database | undefined;
+      if (db) {
+        const startedAtMs = new Date(state.startedAt).getTime();
+        const respuestaTimings = state.turns
+          .map((t) => t.userAnswerSeconds)
+          .filter((v): v is number => typeof v === 'number' && v > 0);
+        const respuestaPromedioSeg = respuestaTimings.length > 0
+          ? Math.round(respuestaTimings.reduce((a, b) => a + b, 0) / respuestaTimings.length)
+          : null;
+        const sesionDuracionTotalSeg = Math.max(0, Math.round((Date.now() - startedAtMs) / 1000));
+        await writeSessionInitialToD1(db, {
+          sessionId: state.sessionId,
+          startedAtIso: state.startedAt,
+          areaFormacion: profile.formationArea,
+          aniosExperiencia: profile.experienceYears,
+          paisInferido: null,
+          rolApuntado: profile.role ?? 'Other',
+          idioma: profile.language,
+          etapa: profile.interviewStage ?? 'panel',
+          numeroPreguntas: profile.questionCount,
+          focus: profile.focus,
+          sesionDuracionTotalSeg,
+          respuestaPromedioSeg,
+          hasCvSummary: Boolean(cvSummary),
+        });
+      }
+    } catch (initErr) {
+      // Best-effort: no bloqueamos el flujo si el D1 write falla.
+      console.error('[simulator-session] F1 initial session write failed:', initErr);
+    }
+  }
+
   const systemPrompt = buildSystemPrompt({
     profile,
     plan,
@@ -389,8 +428,11 @@ async function handleNext(
     // Si fue en el último turn (reporte final), marcar el state para que
     // el frontend pueda ofrecer 'retry_report' sin re-hacer preguntas.
     if (isLastQuestion) {
-      state.finalReportError = err instanceof Error ? err.message : 'unknown';
+      const errorMessage = err instanceof Error ? err.message : 'unknown';
+      state.finalReportError = errorMessage;
       await persistSessionState(env, state);
+      // F2: notificar a Solca (no bloqueante)
+      await notifyReportFailure(env, state, errorMessage, 'next');
     }
     if (err instanceof AnthropicError) {
       console.error('Anthropic error in next:', err.status, err.body);
@@ -542,6 +584,80 @@ async function handleFinish(
 
 // ──────────────────────────────────────────────────────────────────
 // ──────────────────────────────────────────────────────────────────
+// F2 (2026-08-18) · notificar por Postmark cuando el reporte final falla
+// después del segundo intento. Antes nos enterábamos por email del propio
+// usuario (caso Lilian) o revisando snapshots por diferencia de conteo.
+// Ahora hello@solcaciencia.com recibe un email con sessionId, perfil resumen
+// y error para poder disparar retry_report o generar el reporte manualmente.
+// ──────────────────────────────────────────────────────────────────
+
+async function notifyReportFailure(
+  env: Record<string, unknown>,
+  state: SessionState,
+  errorMessage: string,
+  origin: 'next' | 'retry_report',
+): Promise<void> {
+  const token = env.POSTMARK_SERVER_TOKEN as string | undefined;
+  if (!token) {
+    console.warn('[simulator-session] POSTMARK_SERVER_TOKEN missing · skip notify');
+    return;
+  }
+  const p = state.profile;
+  const respuestasCount = state.turns.filter((t) => t.userAnswer).length;
+  const subject = `[Simulador] Fallo reporte final · ${p.roleTitle ?? p.role ?? 'rol'} · ${origin}`;
+  const textBody = [
+    `Falló la generación del reporte final del simulador.`,
+    ``,
+    `sessionId: ${state.sessionId}`,
+    `origen del fallo: ${origin}`,
+    `error: ${errorMessage}`,
+    ``,
+    `Perfil:`,
+    `  rol: ${p.roleTitle ?? '(no especificado)'}`,
+    `  empresa: ${p.company ?? '(no especificada)'}`,
+    `  area formación: ${p.formationArea}`,
+    `  años experiencia: ${p.experienceYears}`,
+    `  idioma: ${p.language}`,
+    `  etapa: ${p.interviewStage ?? 'panel'}`,
+    `  dificultad: ${p.difficulty}`,
+    `  n preguntas: ${p.questionCount}`,
+    `  plan: ${state.plan}`,
+    ``,
+    `Respuestas completadas: ${respuestasCount}/${p.questionCount}`,
+    ``,
+    `Recuperación:`,
+    `  curl -X POST https://solcaciencia.com/api/simulator-session \\`,
+    `    -H "Content-Type: application/json" \\`,
+    `    -d '{"action":"retry_report","sessionId":"${state.sessionId}"}'`,
+    ``,
+    `Si retry falla de nuevo, extraer state del KV SIMULATOR_SESSIONS y regenerar manualmente.`,
+  ].join('\n');
+
+  try {
+    await sendEmail(token, {
+      from: 'hello@solcaciencia.com',
+      to: 'hello@solcaciencia.com',
+      subject,
+      textBody,
+      tag: 'simulator-report-failure',
+      metadata: {
+        sessionId: state.sessionId,
+        origin,
+        rolApuntado: p.role ?? 'Other',
+        plan: state.plan,
+      },
+    });
+  } catch (mailErr) {
+    if (mailErr instanceof PostmarkError) {
+      console.error('[simulator-session] Postmark failure notify failed:',
+        mailErr.status, mailErr.body);
+    } else {
+      console.error('[simulator-session] notifyReportFailure error:', mailErr);
+    }
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────
 // Persistencia del sessionState en KV (Fase 1.5.J · 19 jun 2026)
 // ──────────────────────────────────────────────────────────────────
 //
@@ -676,8 +792,11 @@ async function handleRetryReport(
     );
   } catch (err) {
     // Marca el state como failed para que el frontend pueda mostrar otro reintento
-    state.finalReportError = err instanceof Error ? err.message : 'unknown error';
+    const errorMessage = err instanceof Error ? err.message : 'unknown error';
+    state.finalReportError = errorMessage;
     await persistSessionState(env, state);
+    // F2: notificar a Solca (no bloqueante) — se llegó aquí después del segundo intento
+    await notifyReportFailure(env, state, errorMessage, 'retry_report');
     if (err instanceof AnthropicError) {
       return { ok: false, error: `Anthropic API error ${err.status}`, errorCode: 'anthropic_error' };
     }
