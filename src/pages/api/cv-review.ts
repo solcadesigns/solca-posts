@@ -3,6 +3,7 @@ import { CV_REVIEW_SYSTEM_PROMPT } from '../../lib/cv-review-prompt';
 import { chatCompletion, extractText, AnthropicError } from '../../lib/anthropic';
 import { checkCvSubmitLimit, incrementCvSubmitCount } from '../../lib/rate-limit';
 import { sendEmailWithTemplate, PostmarkError } from '../../lib/postmark';
+import { extractUtms, type UtmRecord } from '../../lib/utm';
 // Postmark reemplaza a Brevo (jul 2026). Ver _docs/que-rompimos-brevo-mailerlite.md.
 
 export const prerender = false;
@@ -12,6 +13,12 @@ interface CVReviewRequest {
   email: string;
   country?: string;
   consent?: boolean;
+  // UTMs opcionales: los agrega el cliente desde window.__utm (P1 sprint 2026-08-18).
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_content?: string;
+  utm_term?: string;
 }
 
 interface Observacion {
@@ -82,6 +89,7 @@ async function storeEmail(
   email: string,
   country: string | undefined,
   ip: string | null,
+  utms: UtmRecord,
 ): Promise<void> {
   // Si hay KV namespace `EMAILS` configurado, guardamos. Si no, log a console (visible vía `wrangler tail`).
   const kv = runtime?.env?.EMAILS as KVNamespace | undefined;
@@ -90,6 +98,7 @@ async function storeEmail(
     country: country?.toLowerCase().trim(),
     ip,
     ts: new Date().toISOString(),
+    ...utms,
   };
   if (kv && typeof kv.put === 'function') {
     const key = `email:${record.ts}:${record.email}`;
@@ -253,12 +262,16 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
   const ctx = (runtime as { ctx?: { waitUntil?: (p: Promise<unknown>) => void } } | undefined)?.ctx;
   const waitUntil = ctx?.waitUntil?.bind(ctx) ?? ((p: Promise<unknown>) => p);
 
+  // Extraer UTMs del body (los pone el cliente desde window.__utm).
+  const utms = extractUtms(body as unknown as Record<string, unknown>);
+
   waitUntil(
     storeEmail(
       runtime as { env?: Record<string, unknown> },
       email,
       country,
       ip,
+      utms,
     ).catch((err) => console.error('storeEmail failed', err)),
   );
   waitUntil(

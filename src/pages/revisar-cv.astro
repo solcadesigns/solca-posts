@@ -1273,6 +1273,8 @@ const atsBlogURL =
       email: String(fd.get('email') ?? '').trim(),
       country: String(fd.get('country') ?? ''),
       consent: fd.get('consent') === 'on',
+      // UTM attribution (P1 sprint 2026-08-18): window.__utm lo llena BaseLayout.
+      ...(window.__utm || {}),
     };
 
     // Quick client-side validation

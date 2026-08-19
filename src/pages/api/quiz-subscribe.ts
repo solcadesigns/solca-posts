@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { sendEmailWithTemplate, PostmarkError } from '../../lib/postmark';
+import { extractUtms, UTM_KEYS } from '../../lib/utm';
 // Postmark reemplaza a Brevo (jul 2026). Ver _docs/que-rompimos-brevo-mailerlite.md.
 // El opt-in vive en KV EMAILS. La segmentación por rol (PM/MSL/CR) vive en el record
 // del KV — Postmark no maneja listas.
@@ -22,6 +23,12 @@ interface QuizSubscribeRequest {
   consent?: boolean;
   stage?: 'gate' | 'complete';
   selfMatch?: 'PM' | 'MSL' | 'CR' | 'NS';
+  // UTMs opcionales: los agrega el cliente desde window.__utm (P1 sprint 2026-08-18).
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_content?: string;
+  utm_term?: string;
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -173,6 +180,10 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
   const waitUntil = ctx?.waitUntil?.bind(ctx) ?? ((p: Promise<unknown>) => p);
   const ip = clientAddress ?? request.headers.get('cf-connecting-ip');
 
+  // Extraer UTMs del body (los pone el cliente desde window.__utm).
+  // Server-side sanitiza (allow-list + truncado); no confiamos en input crudo.
+  const utms = extractUtms(body as unknown as Record<string, unknown>);
+
   const record: Record<string, unknown> = {
     source: 'quiz',
     stage,
@@ -183,6 +194,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     country: country?.toLowerCase(),
     ip,
     ts: new Date().toISOString(),
+    ...utms,
   };
 
   waitUntil(
@@ -199,6 +211,11 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
       scores,
       selfMatch,
       country: country?.toLowerCase(),
+      // Solo utm_campaign en el metric anónimo — suficiente para atribución
+      // de conversión en weekly-report. Source/medium quedan solo en el
+      // record de EMAILS (que ya tiene PII como email).
+      utm_campaign: utms.utm_campaign,
+      utm_source: utms.utm_source,
     };
     waitUntil(
       storeQuizMetric(runtime as { env?: Record<string, unknown> }, anonMetric).catch((err) =>

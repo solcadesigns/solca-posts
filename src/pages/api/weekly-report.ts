@@ -81,6 +81,25 @@ interface WeeklyReport {
     semana_anterior: number;
     emails_unicos_acumulado: number;
   };
+  // Atribución por campaña UTM (P1 sprint 2026-08-18). Solo cuenta records
+  // que llegaron con utm_campaign definido — los que aterrizaron sin campaña
+  // no aparecen aquí (ver `subscripciones.total_acumulado` para el gran total).
+  utm_attribution: {
+    disponible: boolean;
+    por_campaign: Array<{
+      utm_campaign: string;
+      utm_source: string | null;
+      total_leads: number;      // suma de records con este campaign (dedup por email en semana)
+      quiz_gates: number;       // gate del quiz
+      quiz_completes: number;   // quiz completado (rol asignado)
+      cv_reviews: number;       // CV Review submissions
+      esta_semana: number;      // leads en la ventana actual
+      semana_anterior: number;  // leads en la ventana previa
+    }>;
+    // % de leads TOTALES que llegaron con UTM (barómetro de qué tan bien
+    // se está poniendo UTM en los enlaces de LinkedIn/newsletter).
+    pct_leads_con_utm: number | null;
+  };
   // Survey opcional de /revisar-cv. Proporciones se calculan sobre
   // por_pregunta[qid].exposiciones (no sobre submissions_totales) porque el
   // formulario muestra un subconjunto aleatorio de preguntas.
@@ -182,6 +201,13 @@ interface EmailRec {
   ts?: string;
   country?: string;
   stage?: 'gate' | 'complete';
+  // UTMs opcionales (P1 sprint 2026-08-18) — solo llegan si el visitante
+  // aterrizó con parámetros de campaña y luego hizo gate/CV.
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_content?: string;
+  utm_term?: string;
 }
 
 interface QuizRec {
@@ -613,6 +639,19 @@ export const GET: APIRoute = async ({ url, locals }) => {
       quiz_gate_emails_unique: new Set<string>(),   // gates únicos (dedupe por email)
       quiz_gate_records_total: 0,                    // total records `quiz:` en EMAILS (con dupes por reintento)
       cv_review_emails_unique: new Set<string>(),   // suscripciones CV Review únicas
+      // UTM attribution (P1 sprint 2026-08-18) — un bucket por utm_campaign.
+      utm_buckets: new Map<string, {
+        utm_campaign: string;
+        utm_source: string | null;
+        emails_unicos: Set<string>;
+        quiz_gates: number;
+        quiz_completes: number;
+        cv_reviews: number;
+        cur: number;
+        prev: number;
+      }>(),
+      total_records_con_utm: 0,
+      total_records: 0,
     };
 
     if (emailsKv) {
@@ -641,6 +680,33 @@ export const GET: APIRoute = async ({ url, locals }) => {
           if (rec.country) {
             subs.paises.set(rec.country, (subs.paises.get(rec.country) ?? 0) + 1);
           }
+        }
+
+        // UTM attribution: si el record tiene utm_campaign, agrégalo al bucket.
+        subs.total_records++;
+        if (rec.utm_campaign) {
+          subs.total_records_con_utm++;
+          const campaign = rec.utm_campaign;
+          let bucket = subs.utm_buckets.get(campaign);
+          if (!bucket) {
+            bucket = {
+              utm_campaign: campaign,
+              utm_source: rec.utm_source ?? null,
+              emails_unicos: new Set<string>(),
+              quiz_gates: 0,
+              quiz_completes: 0,
+              cv_reviews: 0,
+              cur: 0,
+              prev: 0,
+            };
+            subs.utm_buckets.set(campaign, bucket);
+          }
+          bucket.emails_unicos.add(email);
+          if (isQuiz && rec.stage === 'gate') bucket.quiz_gates++;
+          if (isQuiz && rec.stage === 'complete') bucket.quiz_completes++;
+          if (isEmail) bucket.cv_reviews++;
+          if (tsMs >= weekAgo && tsMs <= now) bucket.cur++;
+          else if (tsMs >= twoWeeksAgo && tsMs < weekAgo) bucket.prev++;
         }
 
         // Deltas por semana + fuente (cuenta cada registro, no email único)
@@ -993,6 +1059,24 @@ export const GET: APIRoute = async ({ url, locals }) => {
     // ── Armar respuesta ──────────────────────────────────────────
     const topDelta = computeDelta(subs.cur.n, subs.prev.n);
 
+    // UTM attribution: array ordenado por total_leads desc, top 20.
+    const utmArray = Array.from(subs.utm_buckets.values())
+      .map((b) => ({
+        utm_campaign: b.utm_campaign,
+        utm_source: b.utm_source,
+        total_leads: b.emails_unicos.size,
+        quiz_gates: b.quiz_gates,
+        quiz_completes: b.quiz_completes,
+        cv_reviews: b.cv_reviews,
+        esta_semana: b.cur,
+        semana_anterior: b.prev,
+      }))
+      .sort((a, b) => b.total_leads - a.total_leads)
+      .slice(0, 20);
+    const pctLeadsConUtm = subs.total_records > 0
+      ? +((subs.total_records_con_utm / subs.total_records) * 100).toFixed(1)
+      : null;
+
     const report: WeeklyReport = {
       generated_at: nowIso,
       window: {
@@ -1024,6 +1108,11 @@ export const GET: APIRoute = async ({ url, locals }) => {
         esta_semana: cv.cur,
         semana_anterior: cv.prev,
         emails_unicos_acumulado: cv.emails_unicos,
+      },
+      utm_attribution: {
+        disponible: subs.total_records_con_utm > 0,
+        por_campaign: utmArray,
+        pct_leads_con_utm: pctLeadsConUtm,
       },
       cv_survey,
       simulator: {

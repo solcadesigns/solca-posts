@@ -907,6 +907,8 @@ const QUESTIONS = [
       country: String(fd.get('country') ?? '') || undefined,
       consent: fd.get('consent') === 'on',
       stage: 'gate',
+      // UTM attribution (P1 sprint 2026-08-18): window.__utm lo llena BaseLayout.
+      ...(window.__utm || {}),
     };
     if (!payload.consent) {
       alert('Necesitamos tu consentimiento para enviarte los emails.');
@@ -1012,6 +1014,8 @@ const QUESTIONS = [
           role,
           scores,
           selfMatch: state.selfMatch,
+          // UTM attribution (P1 sprint 2026-08-18).
+          ...(window.__utm || {}),
         }),
       });
     } catch (err) {
