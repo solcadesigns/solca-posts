@@ -711,11 +711,49 @@ async function handleNext(
       }
     }
 
+    // Consultar créditos restantes (post-decremento) para que el frontend
+    // sepa si mostrar el cuestionario package_final (cuando remaining=0).
+    let creditsRemaining: number | undefined;
+    if (state.emailHash) {
+      const creditsKv = env.SIMULATOR_CREDITS as KVNamespace | undefined;
+      if (creditsKv) {
+        try {
+          const raw = await creditsKv.get(`credits:${state.emailHash}`);
+          if (raw) {
+            const rec = JSON.parse(raw) as CreditsRecord;
+            creditsRemaining = rec.remaining;
+          }
+        } catch {
+          /* best-effort */
+        }
+      }
+    }
+
+    // Task #74: si es la última sesión del paquete pagado, encola email
+    // post-paquete opcional con cupón. El cron `/api/simulator-post-package-cron`
+    // lo procesa 24h después si el usuario no dejó feedback package_final.
+    if (
+      creditsRemaining === 0 &&
+      (state.plan === 'basico' || state.plan === 'premium') &&
+      body.email
+    ) {
+      const firstName = body.email.split('@')[0];
+      await enqueuePackageEndEmail(env, state.sessionId, {
+        email: body.email,
+        firstName,
+        plan: state.plan,
+        role: profile.roleTitle ?? profile.role,
+        terminadoAt: new Date().toISOString(),
+      });
+    }
+
     return {
       ok: true,
       sessionState: state,
       finished: true,
       finalReport,
+      planUsed: state.plan,
+      creditsRemaining,
     };
   }
 
@@ -867,6 +905,30 @@ async function persistSessionState(
   } catch (err) {
     // Best-effort · no bloqueamos al usuario si falla la persistencia
     console.error('[simulator-session] persist failed for', state.sessionId, err);
+  }
+}
+
+/**
+ * Task #74 · encola un email post-paquete cuando el usuario termina la última
+ * sesión de su paquete (remaining=0). Cron `/api/simulator-post-package-cron`
+ * lo procesa al día siguiente para enviar email opcional de feedback + cupón.
+ *
+ * KV: SIMULATOR_SESSIONS con prefix `pkg_end:{sessionId}` · TTL 3 días.
+ * Guarda email plano (necesario para Postmark) pero solo temporalmente.
+ */
+async function enqueuePackageEndEmail(
+  env: Record<string, unknown>,
+  sessionId: string,
+  data: { email: string; firstName?: string; plan: Plan; role?: string; terminadoAt: string },
+): Promise<void> {
+  const kv = env.SIMULATOR_SESSIONS as KVNamespace | undefined;
+  if (!kv) return;
+  try {
+    await kv.put(`pkg_end:${sessionId}`, JSON.stringify(data), {
+      expirationTtl: 60 * 60 * 24 * 3, // 3 días
+    });
+  } catch (err) {
+    console.error('[simulator-session] enqueue pkg_end failed for', sessionId, err);
   }
 }
 
@@ -1111,11 +1173,35 @@ async function handleRetryReport(
     }
   }
 
+  // Créditos restantes post-decremento (para el frontend decidir survey final)
+  let creditsRemaining: number | undefined;
+  if (state.emailHash) {
+    const creditsKv = env.SIMULATOR_CREDITS as KVNamespace | undefined;
+    if (creditsKv) {
+      try {
+        const raw = await creditsKv.get(`credits:${state.emailHash}`);
+        if (raw) {
+          const rec = JSON.parse(raw) as CreditsRecord;
+          creditsRemaining = rec.remaining;
+        }
+      } catch {
+        /* best-effort */
+      }
+    }
+  }
+
+  // Task #74: encola email post-paquete si es la última sesión pagada.
+  // Retry_report NO tiene body.email (viene de sessionId), así que solo
+  // encolamos si tenemos otra fuente del email. Aquí lo dejamos como TODO —
+  // el caso principal (handleNext) sí lo maneja. Retry post-fallo es raro.
+
   return {
     ok: true,
     sessionState: state,
     finished: true,
     finalReport,
+    planUsed: state.plan,
+    creditsRemaining,
   };
 }
 

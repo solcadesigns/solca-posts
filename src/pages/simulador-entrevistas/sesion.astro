@@ -367,6 +367,122 @@ const noIndex = true;
           <a href="/simulador-entrevistas" class="btn btn-secondary">Nueva sesión</a>
         </div>
 
+        <!-- Micro-encuesta post-sesión · visible para todos los planes pagados (post-paywall) -->
+        <section id="paid-micro-survey" class="beta-survey" hidden>
+          <div class="survey-details" style="padding:14px 18px;">
+            <button type="button" id="paid-micro-close" style="float:right;background:none;border:none;font-size:20px;cursor:pointer;color:#4B5563;line-height:1;padding:0;" aria-label="Cerrar">×</button>
+            <form id="paid-micro-form" class="survey-form" novalidate>
+              <p class="survey-intro" style="margin:0 0 12px;">
+                <strong>Una pregunta rápida.</strong> Nos ayuda a mejorar el simulador.
+              </p>
+              <fieldset class="survey-field">
+                <legend>¿Qué tan útil te fue esta sesión para tu próxima entrevista?</legend>
+                <div class="rating-row" role="radiogroup" aria-label="Utilidad">
+                  <label class="rating"><input type="radio" name="pm_utilidad" value="1" /><span>1<small>nada</small></span></label>
+                  <label class="rating"><input type="radio" name="pm_utilidad" value="2" /><span>2</span></label>
+                  <label class="rating"><input type="radio" name="pm_utilidad" value="3" /><span>3</span></label>
+                  <label class="rating"><input type="radio" name="pm_utilidad" value="4" /><span>4</span></label>
+                  <label class="rating"><input type="radio" name="pm_utilidad" value="5" /><span>5<small>mucho</small></span></label>
+                </div>
+              </fieldset>
+              <label class="survey-field">
+                <span class="survey-label">¿Algo que quieras contarnos? <small class="survey-hint">(opcional, máximo 280)</small></span>
+                <textarea name="pm_comentario" maxlength="280" rows="2" placeholder="Lo mejor, lo peor, lo que faltó."></textarea>
+              </label>
+              <div class="survey-actions">
+                <button type="button" id="paid-micro-skip" class="btn btn-secondary">Saltar</button>
+                <button type="submit" id="paid-micro-submit" class="btn btn-primary">Enviar</button>
+              </div>
+              <p id="paid-micro-message" class="survey-message" hidden></p>
+            </form>
+            <div id="paid-micro-thanks" class="survey-thanks" hidden>
+              <p><strong>Gracias.</strong></p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Cuestionario amplio · solo al terminar el paquete (remaining=0) -->
+        <section id="paid-final-survey" class="beta-survey" hidden>
+          <details open class="survey-details">
+            <summary>Completaste tu paquete · 3 minutos de feedback (opcional)</summary>
+            <form id="paid-final-form" class="survey-form" novalidate>
+              <p class="survey-intro">
+                Estas 5 preguntas nos ayudan a ajustar el producto y el precio para
+                los próximos usuarios. Son opcionales; puedes cerrar cuando quieras.
+              </p>
+
+              <fieldset class="survey-field">
+                <legend>1 · En una escala 0-10, ¿qué tan probable es que recomiendes el Simulador Solca a un colega?</legend>
+                <div class="rating-row" role="radiogroup" aria-label="NPS">
+                  <label class="rating"><input type="radio" name="pf_nps" value="0" /><span>0</span></label>
+                  <label class="rating"><input type="radio" name="pf_nps" value="1" /><span>1</span></label>
+                  <label class="rating"><input type="radio" name="pf_nps" value="2" /><span>2</span></label>
+                  <label class="rating"><input type="radio" name="pf_nps" value="3" /><span>3</span></label>
+                  <label class="rating"><input type="radio" name="pf_nps" value="4" /><span>4</span></label>
+                  <label class="rating"><input type="radio" name="pf_nps" value="5" /><span>5</span></label>
+                  <label class="rating"><input type="radio" name="pf_nps" value="6" /><span>6</span></label>
+                  <label class="rating"><input type="radio" name="pf_nps" value="7" /><span>7</span></label>
+                  <label class="rating"><input type="radio" name="pf_nps" value="8" /><span>8</span></label>
+                  <label class="rating"><input type="radio" name="pf_nps" value="9" /><span>9</span></label>
+                  <label class="rating"><input type="radio" name="pf_nps" value="10" /><span>10</span></label>
+                </div>
+              </fieldset>
+
+              <fieldset class="survey-field">
+                <legend>2 · El precio del plan te pareció…</legend>
+                <label class="choice"><input type="radio" name="pf_precio" value="muy_caro" /><span>Muy caro</span></label>
+                <label class="choice"><input type="radio" name="pf_precio" value="caro" /><span>Caro</span></label>
+                <label class="choice"><input type="radio" name="pf_precio" value="justo" /><span>Justo</span></label>
+                <label class="choice"><input type="radio" name="pf_precio" value="barato" /><span>Barato</span></label>
+              </fieldset>
+
+              <fieldset class="survey-field">
+                <legend>3 · Utilidad del paquete completo para tu preparación real</legend>
+                <div class="rating-row" role="radiogroup" aria-label="Utilidad paquete">
+                  <label class="rating"><input type="radio" name="pf_utilidad" value="1" /><span>1<small>nada</small></span></label>
+                  <label class="rating"><input type="radio" name="pf_utilidad" value="2" /><span>2</span></label>
+                  <label class="rating"><input type="radio" name="pf_utilidad" value="3" /><span>3</span></label>
+                  <label class="rating"><input type="radio" name="pf_utilidad" value="4" /><span>4</span></label>
+                  <label class="rating"><input type="radio" name="pf_utilidad" value="5" /><span>5<small>mucho</small></span></label>
+                </div>
+              </fieldset>
+
+              <label class="survey-field">
+                <span class="survey-label">4 · ¿Qué te habría gustado tener y no tuvimos? <small class="survey-hint">(opcional, máximo 500)</small></span>
+                <textarea name="pf_que_falto" maxlength="500" rows="3" placeholder="Formato, contenido, precio, otro."></textarea>
+              </label>
+
+              <fieldset class="survey-field pf-premium-only" hidden>
+                <legend>5 · (Premium) El historial etiquetado por CV/vacante, ¿te sirvió para comparar preparaciones?</legend>
+                <label class="choice"><input type="radio" name="pf_historial" value="si" /><span>Sí, me sirvió</span></label>
+                <label class="choice"><input type="radio" name="pf_historial" value="no" /><span>No, no me sirvió</span></label>
+                <label class="choice"><input type="radio" name="pf_historial" value="no_use" /><span>No lo usé</span></label>
+              </fieldset>
+
+              <fieldset class="survey-field">
+                <legend>5 · Testimonio · ¿autorizas usar tu comentario como testimonio en solcaciencia.com?</legend>
+                <label class="choice"><input type="radio" name="pf_testimonial_ok" value="si" /><span>Sí, adelante</span></label>
+                <label class="choice"><input type="radio" name="pf_testimonial_ok" value="no" checked /><span>Prefiero que no</span></label>
+                <label class="survey-field" id="pf-testimonial-fields" hidden>
+                  <span class="survey-label">Escribe tu testimonio (opcional)</span>
+                  <textarea name="pf_testimonial_texto" maxlength="500" rows="3" placeholder="En 1-3 frases · cómo te ayudó el simulador."></textarea>
+                  <span class="survey-label" style="margin-top:8px;">Firma pública (rol + país)</span>
+                  <input type="text" name="pf_testimonial_firma" maxlength="100" placeholder="Ej. Bióloga, México" />
+                </label>
+              </fieldset>
+
+              <div class="survey-actions">
+                <button type="button" id="paid-final-skip" class="btn btn-secondary">Saltar</button>
+                <button type="submit" id="paid-final-submit" class="btn btn-primary">Enviar feedback</button>
+              </div>
+              <p id="paid-final-message" class="survey-message" hidden></p>
+            </form>
+            <div id="paid-final-thanks" class="survey-thanks" hidden>
+              <p><strong>Gracias.</strong> Tu feedback ayuda a ajustar el producto para los próximos usuarios.</p>
+            </div>
+          </details>
+        </section>
+
         <!-- Encuesta beta · solo visible para usuarios con código beta (Fase 1.5.H) -->
         <section id="beta-survey" class="beta-survey" hidden>
           <details open class="survey-details">
@@ -1085,6 +1201,10 @@ const noIndex = true;
         }
 
         appState.sessionState = data.sessionState;
+        // Paywall: guardar remaining para decidir survey final (task #73)
+        if (typeof data.creditsRemaining === 'number') {
+          (appState as unknown as { creditsRemaining?: number }).creditsRemaining = data.creditsRemaining;
+        }
         loadingEl.hidden = true;
         submitBtn.disabled = false;
 
@@ -1162,6 +1282,10 @@ const noIndex = true;
         }
         if (!data.ok) throw new Error(data.error || 'Error al reintentar el reporte');
         appState.sessionState = data.sessionState;
+        // Paywall (task #73): guardar remaining para survey final
+        if (typeof data.creditsRemaining === 'number') {
+          (appState as unknown as { creditsRemaining?: number }).creditsRemaining = data.creditsRemaining;
+        }
         loadingEl.hidden = true;
         showView('report');
         renderFinalReport(data.finalReport);
@@ -1952,23 +2076,157 @@ const noIndex = true;
     // Todas las preguntas son opcionales individualmente · botón Saltar oculta
     // el panel sin enviar.
 
-    function maybeShowBetaSurvey() {
+    function maybeShowSurvey() {
+      const plan = (appState.sessionState as unknown as { plan?: string })?.plan ?? 'gratis';
       const betaCode = sessionStorage.getItem('solca_beta_code');
-      if (!betaCode) return; // No es beta · no se muestra
-      const surveyEl = document.getElementById('beta-survey') as HTMLElement | null;
-      if (surveyEl) surveyEl.hidden = false;
+      // Créditos restantes reportados por el backend en el response del reporte final
+      const remaining = (appState as unknown as { creditsRemaining?: number }).creditsRemaining;
+
+      // 1. Plan gratis + betaCode legacy → survey beta original (7 preguntas)
+      if (plan === 'gratis' && betaCode) {
+        const surveyEl = document.getElementById('beta-survey') as HTMLElement | null;
+        if (surveyEl) surveyEl.hidden = false;
+        return;
+      }
+
+      // 2. Plan pagado (básico o premium) → micro-encuesta post-sesión SIEMPRE
+      if (plan === 'basico' || plan === 'premium') {
+        const microEl = document.getElementById('paid-micro-survey') as HTMLElement | null;
+        if (microEl) microEl.hidden = false;
+
+        // 3. Si es la última sesión del paquete (remaining=0) → cuestionario final amplio
+        if (typeof remaining === 'number' && remaining === 0) {
+          const finalEl = document.getElementById('paid-final-survey') as HTMLElement | null;
+          if (finalEl) {
+            finalEl.hidden = false;
+            // Si plan premium, mostrar la pregunta extra sobre historial etiquetado
+            if (plan === 'premium') {
+              const premiumBlock = finalEl.querySelector('.pf-premium-only') as HTMLElement | null;
+              if (premiumBlock) premiumBlock.hidden = false;
+            }
+          }
+        }
+      }
+      // 4. Plan gratis SIN betaCode (freemium post-paywall auto-asignado) → sin survey aún
+      //    (el drip email freemium se encarga · task #63)
     }
 
-    // Hookear al cambio de view: cuando se muestra report, evaluamos si mostrar la encuesta
-    (function wireBetaSurveyVisibility() {
+    // Hookear al cambio de view: cuando se muestra report, evaluamos qué encuesta mostrar
+    (function wireSurveyVisibility() {
       const reportView = document.getElementById('view-report');
       if (!reportView) return;
       const observer = new MutationObserver(() => {
         if (!reportView.classList.contains('hidden')) {
-          maybeShowBetaSurvey();
+          maybeShowSurvey();
         }
       });
       observer.observe(reportView, { attributes: true, attributeFilter: ['class'] });
+    })();
+
+    // ────────────────────────────────────────────────────────────────
+    // Handlers de los nuevos surveys pagados (micro post-sesión + final paquete)
+    // ────────────────────────────────────────────────────────────────
+    (function wirePaidSurveys() {
+      const microEl = document.getElementById('paid-micro-survey') as HTMLElement | null;
+      const microForm = document.getElementById('paid-micro-form') as HTMLFormElement | null;
+      const microSkip = document.getElementById('paid-micro-skip') as HTMLButtonElement | null;
+      const microClose = document.getElementById('paid-micro-close') as HTMLButtonElement | null;
+      const microThanks = document.getElementById('paid-micro-thanks') as HTMLDivElement | null;
+      const microMessage = document.getElementById('paid-micro-message') as HTMLParagraphElement | null;
+
+      function closeMicro() { if (microEl) microEl.hidden = true; }
+      if (microSkip) microSkip.addEventListener('click', closeMicro);
+      if (microClose) microClose.addEventListener('click', closeMicro);
+      if (microForm && microMessage && microThanks) {
+        microForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          if (!appState.sessionState) return;
+          const utilidad = (document.querySelector('input[name="pm_utilidad"]:checked') as HTMLInputElement | null)?.value;
+          const comentario = (microForm.elements.namedItem('pm_comentario') as HTMLTextAreaElement | null)?.value ?? null;
+          const plan = (appState.sessionState as unknown as { plan?: string }).plan;
+          try {
+            const r = await fetch('/api/simulator-paid-feedback', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                sessionId: appState.sessionState.sessionId,
+                feedbackType: 'micro',
+                plan,
+                utilidad: utilidad ? parseInt(utilidad, 10) : null,
+                comentarioLibre: comentario,
+              }),
+            });
+            const j = await r.json();
+            if (!r.ok || !j.ok) throw new Error(j.error || `Error ${r.status}`);
+            microForm.hidden = true;
+            microThanks.hidden = false;
+            setTimeout(closeMicro, 2500);
+          } catch (err) {
+            microMessage.textContent = err instanceof Error ? err.message : 'Error inesperado';
+            microMessage.hidden = false;
+          }
+        });
+      }
+
+      // Final paquete survey
+      const finalEl = document.getElementById('paid-final-survey') as HTMLElement | null;
+      const finalForm = document.getElementById('paid-final-form') as HTMLFormElement | null;
+      const finalSkip = document.getElementById('paid-final-skip') as HTMLButtonElement | null;
+      const finalThanks = document.getElementById('paid-final-thanks') as HTMLDivElement | null;
+      const finalMessage = document.getElementById('paid-final-message') as HTMLParagraphElement | null;
+
+      if (finalSkip && finalEl) finalSkip.addEventListener('click', () => { finalEl.hidden = true; });
+
+      // Toggle testimonial fields al elegir "Sí, adelante"
+      document.querySelectorAll('input[name="pf_testimonial_ok"]').forEach((r) => {
+        r.addEventListener('change', () => {
+          const ok = (document.querySelector('input[name="pf_testimonial_ok"]:checked') as HTMLInputElement | null)?.value === 'si';
+          const box = document.getElementById('pf-testimonial-fields') as HTMLElement | null;
+          if (box) box.hidden = !ok;
+        });
+      });
+
+      if (finalForm && finalMessage && finalThanks) {
+        finalForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          if (!appState.sessionState) return;
+          const nps = (document.querySelector('input[name="pf_nps"]:checked') as HTMLInputElement | null)?.value;
+          const precio = (document.querySelector('input[name="pf_precio"]:checked') as HTMLInputElement | null)?.value;
+          const utilidad = (document.querySelector('input[name="pf_utilidad"]:checked') as HTMLInputElement | null)?.value;
+          const queFalto = (finalForm.elements.namedItem('pf_que_falto') as HTMLTextAreaElement | null)?.value ?? null;
+          const historial = (document.querySelector('input[name="pf_historial"]:checked') as HTMLInputElement | null)?.value ?? null;
+          const testOk = (document.querySelector('input[name="pf_testimonial_ok"]:checked') as HTMLInputElement | null)?.value === 'si';
+          const testTexto = (finalForm.elements.namedItem('pf_testimonial_texto') as HTMLTextAreaElement | null)?.value ?? null;
+          const testFirma = (finalForm.elements.namedItem('pf_testimonial_firma') as HTMLInputElement | null)?.value ?? null;
+          const plan = (appState.sessionState as unknown as { plan?: string }).plan;
+          try {
+            const r = await fetch('/api/simulator-paid-feedback', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                sessionId: appState.sessionState.sessionId,
+                feedbackType: 'package_final',
+                plan,
+                nps: nps ? parseInt(nps, 10) : null,
+                precioPercibido: precio,
+                utilidadPaquete: utilidad ? parseInt(utilidad, 10) : null,
+                queFalto,
+                historialUtil: historial,
+                testimonialOk: testOk,
+                testimonialTexto: testOk ? testTexto : null,
+                testimonialFirma: testOk ? testFirma : null,
+              }),
+            });
+            const j = await r.json();
+            if (!r.ok || !j.ok) throw new Error(j.error || `Error ${r.status}`);
+            finalForm.hidden = true;
+            finalThanks.hidden = false;
+          } catch (err) {
+            finalMessage.textContent = err instanceof Error ? err.message : 'Error inesperado';
+            finalMessage.hidden = false;
+          }
+        });
+      }
     })();
 
     const surveyForm = document.getElementById('survey-form') as HTMLFormElement | null;
