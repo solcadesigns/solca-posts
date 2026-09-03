@@ -49,17 +49,17 @@ const noIndex = true;
           <fieldset class="field-group">
             <legend>¿Tienes una vacante específica?</legend>
             <label class="radio">
-              <input type="radio" name="mode" value="A" />
+              <input type="radio" name="mode" value="A" checked />
               <span>Sí, tengo una vacante</span>
             </label>
             <label class="radio">
-              <input type="radio" name="mode" value="B" checked />
+              <input type="radio" name="mode" value="B" />
               <span>No, solo quiero practicar</span>
             </label>
           </fieldset>
 
-          <!-- Campos de vacante (visibles solo en Modo A) -->
-          <div id="vacancy-fields" class="hidden">
+          <!-- Campos de vacante (visibles por default · Modo A checked) -->
+          <div id="vacancy-fields">
             <label class="field">
               <span class="field-label">Nombre del puesto</span>
               <input type="text" name="roleTitle" placeholder="Ej. Clinical Research Associate" />
@@ -733,7 +733,7 @@ const noIndex = true;
     function updateDefaultsFromIntake() {
       const formData = new FormData(intakeForm);
       const partial: Partial<Profile> = {
-        mode: (formData.get('mode') as Mode) || 'B',
+        mode: (formData.get('mode') as Mode) || 'A',
         roleTitle:
           (formData.get('roleTitle') as string) ||
           (formData.get('roleGeneric') as string) ||

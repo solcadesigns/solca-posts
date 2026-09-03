@@ -282,6 +282,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
             day: 'numeric',
           }),
           access_url: `https://solcaciencia.com/simulador-entrevistas/sesion?email=${encodeURIComponent(email)}`,
+          access_email: email, // el email es la llave · el usuario debe entrar con el mismo
         },
         metadata: {
           source: 'stripe-webhook',
