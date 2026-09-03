@@ -1,0 +1,686 @@
+---
+// Landing pública del Simulador de Entrevistas Solca.
+// Reemplaza al MVP privado /simulador-entrevistas-beta/ (que redirige aquí).
+//
+// Fase actual (hasta 7 sept 2026 · pre-paywall):
+//   La landing captura suscripciones libres y envía un código con UNA sesión.
+//   La sesión se cuenta únicamente cuando el usuario completa la entrevista y
+//   recibe su reporte; abandonos a mitad no consumen el código.
+//
+// Fase próxima (desde 8 sept 2026 · post-paywall):
+//   Esta landing se reemplaza por una página de producto con planes de pago
+//   (nombres finales por definir). El mecanismo de código con contador se
+//   mantiene; el disparador cambia de "formulario libre" a "webhook Stripe".
+//
+// La página es pública e indexable (sin noindex): es la puerta canónica al producto.
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+<BaseLayout
+  title="Simulador de Entrevistas Pharma · Solca Ciencia"
+  description="Practica entrevistas para roles pharma LATAM con feedback estructurado por rol y CV. Acceso libre para la primera sesión."
+>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-brand">
+        <span class="dot"></span>
+        <span>Solca</span>
+      </a>
+      <div class="nav-links">
+        <a href="/blog">Blog</a>
+        <a href="/quiz-rol">Quiz</a>
+        <a href="/revisar-cv">Revisar CV</a>
+        <a href="/contacto">Contacto</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="container">
+      <div class="eyebrow">
+        <span class="dot"></span>
+        <span>Tres planes · una sesión gratis para empezar</span>
+      </div>
+      <h1>Practica entrevistas pharma con feedback estructurado.</h1>
+      <p class="lead">
+        Simulador para profesionales de ciencias biológicas y afines que aplican a roles pharma en
+        LATAM y España. El sistema lee tu perfil, adapta las preguntas a tu rol y te entrega un
+        reporte con lo que funcionó, lo que no y qué trabajar antes de la próxima entrevista.
+      </p>
+      <div class="cta-row">
+        <a href="#planes" class="btn btn-primary">Ver planes</a>
+        <a href="#como-funciona" class="btn btn-secondary">Cómo funciona</a>
+      </div>
+      <p class="hero-note">
+        ¿Ya tienes tu código? Pégalo abajo en
+        <a href="#codigo">tengo código</a>.
+      </p>
+    </div>
+  </header>
+
+  <section id="planes" class="plans-section">
+    <div class="container">
+      <h2>Tres planes</h2>
+      <p class="plans-lead">
+        Todos los planes incluyen: subir CV, elegir tu área de formación y nivel académico, y
+        recibir un reporte final estructurado. Cambia lo que puedes practicar en cada uno.
+      </p>
+      <div class="plans-grid">
+        <article class="plan-card">
+          <h3 class="plan-name">Freemium</h3>
+          <p class="plan-price"><span class="plan-price-num">$0</span> <span class="plan-price-unit">MXN</span></p>
+          <p class="plan-tagline">Prueba el formato con una sesión de llamada inicial.</p>
+          <ul class="plan-features">
+            <li><strong>1 sesión</strong> · llamada inicial con reclutador (5 preguntas)</li>
+            <li>Subir CV para personalizar preguntas</li>
+            <li>Título de la vacante (sin descripción)</li>
+            <li>Español, inglés o bilingüe</li>
+            <li>Reporte final con leyenda estándar</li>
+            <li>Vigencia 240 días</li>
+          </ul>
+          <button type="button" class="btn btn-secondary plan-cta" data-plan="gratis">Empezar sin costo</button>
+        </article>
+
+        <article class="plan-card plan-card-highlight">
+          <h3 class="plan-name">Básico</h3>
+          <p class="plan-price"><span class="plan-price-num">$149</span> <span class="plan-price-unit">MXN</span></p>
+          <p class="plan-tagline">3 sesiones para practicar tu ronda antes de la entrevista real.</p>
+          <ul class="plan-features">
+            <li><strong>3 sesiones</strong> · cualquier etapa (llamada, técnica o panel)</li>
+            <li>Subir CV distinto en cada sesión</li>
+            <li>Vacante completa (título + empresa + descripción)</li>
+            <li>Español, inglés o bilingüe</li>
+            <li>Reporte final con leyenda estándar</li>
+            <li>Historial de tus últimas 3 sesiones</li>
+            <li>Vigencia 240 días · pago único</li>
+          </ul>
+          <button type="button" class="btn btn-primary plan-cta" data-plan="basico">Comprar Básico</button>
+        </article>
+
+        <article class="plan-card">
+          <h3 class="plan-name">Premium</h3>
+          <p class="plan-price"><span class="plan-price-num">$299</span> <span class="plan-price-unit">MXN</span></p>
+          <p class="plan-tagline">8 sesiones + rúbrica extendida para preparación intensiva.</p>
+          <ul class="plan-features">
+            <li><strong>8 sesiones</strong> · cualquier etapa</li>
+            <li>CV distinto por sesión con historial etiquetado</li>
+            <li>Vacante completa</li>
+            <li>Español, inglés o bilingüe</li>
+            <li><strong>Leyenda extendida</strong> (rúbrica visible + tips por dimensión baja)</li>
+            <li>3 niveles de dificultad (moderado, exigente, muy exigente)</li>
+            <li>Vigencia 240 días · pago único</li>
+          </ul>
+          <button type="button" class="btn btn-secondary plan-cta" data-plan="premium">Comprar Premium</button>
+        </article>
+      </div>
+      <p class="plans-note">
+        Los pagos se procesan con Stripe (checkout seguro). El acceso llega al correo que ingreses
+        en un par de minutos. Sin suscripciones automáticas.
+      </p>
+    </div>
+  </section>
+
+  <section id="como-funciona" class="features">
+    <div class="container">
+      <h2>Qué hace distinto este simulador</h2>
+      <div class="feature-grid">
+        <div class="feature">
+          <h3>Adaptado por rol pharma</h3>
+          <p>
+            Frameworks específicos para CRA, MSL, Product Manager pharma, Regulatory Affairs y
+            otros roles clínicos. Las preguntas y la evaluación cambian según el rol al que apuntas.
+          </p>
+        </div>
+        <div class="feature">
+          <h3>Multistage bilingüe</h3>
+          <p>
+            Refleja la realidad de pharma multinacional LATAM: primera mitad en español como
+            screening con reclutador local, segunda mitad en inglés como ronda técnica con hiring
+            manager regional.
+          </p>
+        </div>
+        <div class="feature">
+          <h3>Feedback basado en evidencia</h3>
+          <p>
+            El reporte evalúa lo que está en tu respuesta, no promedios inventados. Sin frases
+            tipo "top 25 %" ni motivación inflada. Scores de técnico, estructura y especificidad
+            explicados uno a uno.
+          </p>
+        </div>
+        <div class="feature">
+          <h3>Tu sesión no se pierde si algo sale mal</h3>
+          <p>
+            El código se consume únicamente cuando terminas la entrevista y recibes tu reporte.
+            Si abres, te distraes y sales, o si algo falla técnicamente, el código sigue vivo para
+            que vuelvas cuando quieras.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="suscribir" class="signup-section">
+    <div class="container">
+      <h2 id="signup-heading">Confirma tu email para empezar</h2>
+      <p class="signup-lead" id="signup-lead">
+        <span id="signup-lead-freemium">
+          Recibes el código de acceso al freemium por email en un par de minutos. Vigencia 240
+          días. La sesión se cuenta únicamente cuando termines la entrevista y recibas tu reporte.
+        </span>
+        <span id="signup-lead-basico" hidden>
+          Al confirmar el pago recibes 3 sesiones por email. Pago único, sin suscripciones
+          automáticas. Vigencia 240 días.
+        </span>
+        <span id="signup-lead-premium" hidden>
+          Al confirmar el pago recibes 8 sesiones por email + acceso al reporte con leyenda
+          extendida. Pago único, sin suscripciones automáticas. Vigencia 240 días.
+        </span>
+      </p>
+      <form id="subscribe-form" class="signup-form" novalidate>
+        <input type="hidden" name="plan" id="selected-plan" value="gratis" />
+        <div class="field">
+          <label for="sub-name">Nombre</label>
+          <input type="text" id="sub-name" name="name" required maxlength="80" autocomplete="given-name" />
+        </div>
+        <div class="field">
+          <label for="sub-email">Email</label>
+          <input type="email" id="sub-email" name="email" required autocomplete="email" />
+        </div>
+        <div class="field checkbox">
+          <input type="checkbox" id="sub-consent" name="consent" required />
+          <label for="sub-consent">
+            Acepto la <a href="/privacidad" target="_blank" rel="noopener">política de datos</a> y
+            recibir emails de Solca Ciencia.
+          </label>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg" id="signup-submit">
+          Continuar
+        </button>
+        <p id="subscribe-message" class="form-message" hidden></p>
+      </form>
+    </div>
+  </section>
+
+  <section id="codigo" class="access-section">
+    <div class="container">
+      <h2>Ya tengo un código</h2>
+      <p>
+        Si recibiste un código por email (freemium, invitación o edición beta), pégalo aquí para
+        arrancar la sesión.
+      </p>
+      <form id="code-form" class="access-form" novalidate>
+        <label for="access-code">Código de acceso</label>
+        <input
+          type="text"
+          id="access-code"
+          name="code"
+          placeholder="Ejemplo: SIM-ABCD2345"
+          autocomplete="off"
+          required
+        />
+        <button type="submit" class="btn btn-primary">Validar y empezar</button>
+        <p id="code-message" class="form-message" hidden></p>
+      </form>
+    </div>
+  </section>
+
+  <footer class="page-footer">
+    <div class="container">
+      <p>
+        Producto en evolución. El feedback que nos das durante las primeras sesiones forma el
+        producto final. Escribe a
+        <a href="mailto:hello@solcaciencia.com">hello@solcaciencia.com</a> con dudas, ideas o
+        errores.
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    // Formulario de suscripción → POST /api/simulator-subscribe.
+    // Selector de plan · los botones .plan-cta actualizan el hidden input y hacen scroll
+    // al formulario. El form dispara /api/simulator-subscribe (freemium) o
+    // /api/simulator-checkout (básico/premium) según plan seleccionado.
+    const planCards = document.querySelectorAll<HTMLButtonElement>('.plan-cta');
+    const planHidden = document.getElementById('selected-plan') as HTMLInputElement | null;
+    const signupHeading = document.getElementById('signup-heading') as HTMLHeadingElement | null;
+    const signupSubmit = document.getElementById('signup-submit') as HTMLButtonElement | null;
+    const leadFree = document.getElementById('signup-lead-freemium') as HTMLElement | null;
+    const leadBasico = document.getElementById('signup-lead-basico') as HTMLElement | null;
+    const leadPremium = document.getElementById('signup-lead-premium') as HTMLElement | null;
+
+    const PLAN_LABELS: Record<string, { heading: string; button: string; lead: HTMLElement | null }> = {
+      gratis: { heading: 'Confirma tu email para empezar sin costo', button: 'Empezar sin costo', lead: leadFree },
+      basico: { heading: 'Confirma tu email para pagar el plan Básico ($149 MXN)', button: 'Continuar al pago · Básico', lead: leadBasico },
+      premium: { heading: 'Confirma tu email para pagar el plan Premium ($299 MXN)', button: 'Continuar al pago · Premium', lead: leadPremium },
+    };
+
+    function selectPlan(plan: string) {
+      if (!planHidden) return;
+      planHidden.value = plan;
+      const cfg = PLAN_LABELS[plan];
+      if (cfg) {
+        if (signupHeading) signupHeading.textContent = cfg.heading;
+        if (signupSubmit) signupSubmit.textContent = cfg.button;
+        [leadFree, leadBasico, leadPremium].forEach((el) => {
+          if (el) el.hidden = true;
+        });
+        if (cfg.lead) cfg.lead.hidden = false;
+      }
+    }
+
+    planCards.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const plan = btn.dataset.plan ?? 'gratis';
+        selectPlan(plan);
+        const target = document.getElementById('suscribir');
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    // Formulario de suscripción · dispara endpoint según plan seleccionado.
+    const subForm = document.getElementById('subscribe-form') as HTMLFormElement | null;
+    const subMsg = document.getElementById('subscribe-message') as HTMLParagraphElement | null;
+    if (subForm && subMsg) {
+      subForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        subMsg.hidden = true;
+        subMsg.textContent = '';
+        const btn = subForm.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+        if (btn) btn.disabled = true;
+
+        const fd = new FormData(subForm);
+        const plan = String(fd.get('plan') ?? 'gratis');
+        const name = String(fd.get('name') ?? '').trim();
+        const email = String(fd.get('email') ?? '').trim();
+        const consent = subForm.querySelector<HTMLInputElement>('#sub-consent')?.checked ?? false;
+
+        const utm = (window as unknown as { __utm?: Record<string, string> }).__utm ?? {};
+
+        try {
+          if (plan === 'gratis') {
+            // Freemium: mismo endpoint de siempre.
+            const res = await fetch('/api/simulator-subscribe', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name, email, consent, plan: 'gratis', ...utm }),
+            });
+            const data = (await res.json()) as { ok?: boolean; message?: string; error?: string };
+            if (res.ok && data.ok) {
+              subMsg.textContent = data.message ?? 'Suscrito. Revisa tu email en unos minutos.';
+              subMsg.classList.add('ok');
+              subMsg.hidden = false;
+              subForm.reset();
+              selectPlan('gratis');
+            } else {
+              subMsg.textContent = data.message ?? 'No se pudo procesar. Intenta de nuevo.';
+              subMsg.classList.add('err');
+              subMsg.hidden = false;
+            }
+          } else {
+            // Básico o Premium → Stripe Checkout.
+            if (!consent) {
+              subMsg.textContent = 'Debes aceptar la política de datos para continuar.';
+              subMsg.classList.add('err');
+              subMsg.hidden = false;
+              return;
+            }
+            const res = await fetch('/api/simulator-checkout', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ plan, email, name }),
+            });
+            const data = (await res.json()) as { ok?: boolean; url?: string; error?: string };
+            if (res.ok && data.ok && data.url) {
+              window.location.href = data.url;
+              return; // redirect toma el control
+            }
+            subMsg.textContent = data.error ?? 'No pudimos abrir el pago. Reintenta o escribe a hola@solcaciencia.com';
+            subMsg.classList.add('err');
+            subMsg.hidden = false;
+          }
+        } catch (err) {
+          console.error(err);
+          subMsg.textContent = 'Error de red. Intenta de nuevo.';
+          subMsg.classList.add('err');
+          subMsg.hidden = false;
+        } finally {
+          if (btn) btn.disabled = false;
+        }
+      });
+    }
+
+    // Formulario de código: guarda el código en sessionStorage y redirige a /sesion.
+    // Prefill desde ?codigo= del URL (para links del email).
+    const codeForm = document.getElementById('code-form') as HTMLFormElement | null;
+    const codeMsg = document.getElementById('code-message') as HTMLParagraphElement | null;
+    const codeInput = document.getElementById('access-code') as HTMLInputElement | null;
+
+    function submitCode(code: string): boolean {
+      if (!codeMsg) return false;
+      if (!code || code.length < 6) {
+        codeMsg.textContent = 'El código debe tener al menos 6 caracteres.';
+        codeMsg.classList.add('err');
+        codeMsg.hidden = false;
+        return false;
+      }
+      sessionStorage.setItem('solca_beta_code', code);
+      window.location.href = '/simulador-entrevistas/sesion';
+      return true;
+    }
+
+    if (codeForm && codeMsg && codeInput) {
+      const params = new URLSearchParams(window.location.search);
+      const codeFromUrl = (params.get('codigo') ?? params.get('code') ?? '').trim();
+      if (codeFromUrl) {
+        codeInput.value = codeFromUrl;
+        if (codeFromUrl.length >= 6) {
+          setTimeout(() => submitCode(codeFromUrl), 100);
+        }
+      }
+      codeForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        submitCode(codeInput.value.trim());
+      });
+    }
+  </script>
+
+  <style>
+    .nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(250, 249, 244, 0.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--rule);
+    }
+    .nav-inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      padding: 14px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-brand {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--text);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .nav-links { display: flex; gap: 28px; }
+    .nav-links a {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-mute);
+    }
+    .nav-links a:hover { color: var(--navy); opacity: 1; }
+
+    .hero { padding: 80px 0 60px; background: var(--bg); }
+    .hero .eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--text-mute); margin-bottom: 20px;
+    }
+    .hero .eyebrow .dot {
+      width: 8px; height: 8px; border-radius: 50%; background: var(--orange);
+    }
+    .hero h1 {
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(36px, 5vw, 60px);
+      line-height: 1.05;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      margin: 0 0 24px;
+      max-width: 880px;
+    }
+    .hero .lead {
+      font-size: 20px;
+      line-height: 1.55;
+      color: var(--text-mute);
+      max-width: 760px;
+      margin: 0 0 32px;
+    }
+    .hero .lead-mute {
+      font-size: 16px;
+      margin-top: -16px;
+      margin-bottom: 32px;
+      padding: 14px 18px;
+      border-left: 3px solid var(--orange);
+      background: rgba(232, 118, 42, 0.06);
+      border-radius: 6px;
+    }
+    .hero .lead-mute strong { color: var(--text); }
+    .cta-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+    .hero-note { font-size: 14px; color: var(--text-mute); }
+    .hero-note a { color: var(--navy); text-decoration: underline; }
+
+    .features { padding: 64px 0; border-top: 1px solid var(--rule); }
+    .features h2 {
+      font-family: 'Inter', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 32px;
+    }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 28px;
+    }
+    .feature {
+      background: white;
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      padding: 28px;
+    }
+    .feature h3 {
+      font-family: 'Inter', sans-serif;
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+    .feature p {
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--text-mute);
+    }
+
+    .signup-section, .access-section, .pricing-section {
+      padding: 64px 0;
+      border-top: 1px solid var(--rule);
+    }
+    .signup-section h2, .access-section h2, .pricing-section h2 {
+      font-family: 'Inter', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+    .signup-lead, .pricing-lead {
+      font-size: 16px; color: var(--text-mute); margin-bottom: 32px; max-width: 720px;
+    }
+    .signup-form, .access-form {
+      max-width: 480px;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field.checkbox { flex-direction: row; align-items: flex-start; gap: 10px; }
+    .field.checkbox label {
+      font-size: 13px; color: var(--text-mute); line-height: 1.5;
+    }
+    .field.checkbox a { color: var(--navy); text-decoration: underline; }
+    .field label {
+      font-size: 14px; font-weight: 600; color: var(--text);
+    }
+    .field input[type="text"], .field input[type="email"], .access-form input[type="text"] {
+      padding: 14px 16px;
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+    }
+    .field input:focus, .access-form input:focus {
+      outline: 2px solid var(--orange);
+      border-color: var(--orange);
+    }
+    .form-message {
+      margin-top: 8px;
+      font-size: 14px;
+      padding: 12px 16px;
+      border-radius: 6px;
+    }
+    .form-message.ok { background: #eaf5ee; color: #14532d; border-left: 3px solid #22c55e; }
+    .form-message.err { background: var(--orange-light, #fff2ea); color: #7c2d12; border-left: 3px solid var(--orange); }
+    .btn-lg { padding: 16px 24px; font-size: 16px; }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+    .tier {
+      background: white;
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      padding: 28px;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .tier-free { border-color: var(--orange); border-width: 2px; }
+    .tier h3 {
+      font-family: 'Inter', sans-serif; font-size: 20px; font-weight: 800; color: var(--text);
+      margin: 0;
+    }
+    .tier-price { font-size: 15px; color: var(--text-mute); margin: 0; font-weight: 600; }
+    .tier ul { list-style: disc; padding-left: 22px; margin: 0; }
+    .tier li { font-size: 14px; line-height: 1.6; color: var(--text); margin-bottom: 6px; }
+    .tier-cta { font-size: 14px; color: var(--text-mute); margin-top: auto; }
+    .tier-cta a { color: var(--navy); text-decoration: underline; }
+
+    .page-footer {
+      padding: 48px 0;
+      border-top: 1px solid var(--rule);
+      background: var(--bg);
+    }
+    .page-footer p {
+      font-size: 14px;
+      color: var(--text-mute);
+      max-width: 760px;
+    }
+    .page-footer a { color: var(--navy); }
+
+    /* ── Sección de planes (paywall · 2 sept 2026) ─────────────── */
+    .plans-section {
+      padding: 48px 0 40px;
+      background: var(--bg);
+      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+    }
+    .plans-section h2 {
+      margin: 0 0 8px;
+    }
+    .plans-lead {
+      font-size: 15px;
+      color: var(--text-mute);
+      max-width: 720px;
+      margin: 0 0 28px;
+    }
+    .plans-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    @media (max-width: 900px) {
+      .plans-grid { grid-template-columns: 1fr; }
+    }
+    .plan-card {
+      background: #fff;
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      padding: 24px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .plan-card-highlight {
+      border: 2px solid var(--orange);
+      box-shadow: 0 2px 12px rgba(231, 124, 60, 0.08);
+      position: relative;
+    }
+    .plan-card-highlight::before {
+      content: 'Más elegido';
+      position: absolute;
+      top: -12px;
+      left: 20px;
+      background: var(--orange);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 3px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .plan-name {
+      margin: 0;
+      font-size: 20px;
+      color: var(--navy);
+    }
+    .plan-price {
+      margin: 0;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .plan-price-num {
+      font-size: 34px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+    .plan-price-unit {
+      font-size: 14px;
+      color: var(--text-mute);
+      font-weight: 500;
+    }
+    .plan-tagline {
+      margin: 0;
+      font-size: 14px;
+      color: var(--text-mute);
+      min-height: 40px;
+    }
+    .plan-features {
+      list-style: none;
+      padding: 0;
+      margin: 4px 0 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.4;
+    }
+    .plan-features li {
+      padding-left: 18px;
+      position: relative;
+    }
+    .plan-features li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 6px;
+      width: 6px;
+      height: 6px;
+      background: var(--orange);
+      border-radius: 50%;
+    }
+    .plan-cta {
+      margin-top: auto;
+      width: 100%;
+    }
+    .plans-note {
+      margin: 28px 0 0;
+      font-size: 13px;
+      color: var(--text-mute);
+      text-align: center;
+    }
+  </style>
+</BaseLayout>

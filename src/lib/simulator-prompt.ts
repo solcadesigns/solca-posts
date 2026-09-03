@@ -25,6 +25,25 @@ import type {
 } from './simulator-types';
 import { getStageInfo } from './simulator-defaults';
 
+/**
+ * Etiqueta legible del nivel académico terminado más alto.
+ * Agregado tras feedback beta sept 2026 (f696558d) que reportó ausencia de Maestría.
+ */
+function academicLevelLabel(level?: CandidateProfile['academicLevel']): string {
+  switch (level) {
+    case 'licenciatura':
+      return 'Licenciatura o título profesional';
+    case 'maestria':
+      return 'Maestría';
+    case 'doctorado':
+      return 'Doctorado (PhD)';
+    case 'postdoc':
+      return 'Posdoctorado activo o completado';
+    default:
+      return '(no declarado)';
+  }
+}
+
 interface BuildSystemPromptOptions {
   profile: CandidateProfile;
   plan: Plan;
@@ -61,6 +80,7 @@ PERFIL DEL CANDIDATO
 - Empresa: ${profile.company ?? '(no especificado)'}
 - Descripción de la vacante: ${profile.vacancyText ?? '(no provista)'}
 - Área de formación: ${profile.formationArea}
+- Nivel académico terminado más alto: ${academicLevelLabel(profile.academicLevel)}
 - Roles pharma típicamente apuntados desde esta área: ${rolesProbables}
   (úsalo como contexto · si el rol al que aplica este candidato NO está en esa lista,
   trátalo como transición de carrera no típica y explora explícitamente la
@@ -591,17 +611,13 @@ En su lugar, pon valor genuino al cierre:
   - Sugerencia de rol complementario a practicar próxima sesión
   - Si feedback identificó gap específico, sugerencia accionable de cómo cerrarlo`;
 
-    case 'intensivo':
+    case 'premium':
+      // Migración 2 sept 2026: unifica 'intensivo' y 'pro' en 'premium' (8 sesiones one-shot 240 días).
       if (sessionNumber >= 8) {
-        return `${performanceOverride}Plan intensivo, sesión ${sessionNumber} (8-10, final del paquete): SÍ CTA libro contextual a ${roleHint}.`;
+        return `${performanceOverride}Plan premium, sesión ${sessionNumber} (última del paquete de 8): SÍ CTA libro contextual a ${roleHint} + invitación a Curso Solca CV+ATS+LinkedIn como siguiente paso.`;
       }
-      return `${performanceOverride}Plan intensivo, sesión ${sessionNumber} de 10: NO CTA libro.
-Solo valor genuino: recursos gratuitos enfocados en gaps acumulados.`;
-
-    case 'pro':
-      return `${performanceOverride}Plan pro (ilimitadas 30 días): NO CTA libro durante el mes.
-Solo valor genuino: recurso relacionado al gap detectado, sin promoción.
-El CTA libro solo aparece cuando el plan se acerca a expirar (manejado por el frontend).`;
+      return `${performanceOverride}Plan premium, sesión ${sessionNumber} de 8: NO CTA libro.
+Solo valor genuino: recursos gratuitos enfocados en gaps acumulados, sugerencia de rol complementario a practicar próxima sesión.`;
   }
 }
 

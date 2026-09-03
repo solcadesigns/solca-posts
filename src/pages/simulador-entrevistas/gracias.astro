@@ -1,0 +1,111 @@
+---
+/**
+ * /simulador-entrevistas/gracias · página post-checkout Stripe.
+ *
+ * Establecido: 2 sept 2026 (fase paywall).
+ * Ver `_docs/PAYWALL_SIMULADOR.md`.
+ *
+ * A esta página llega el usuario tras completar Stripe Checkout con éxito.
+ * El webhook /api/simulator-stripe-webhook ya escribió los créditos.
+ * Esta página solo confirma visualmente y ofrece el link a la primera sesión.
+ *
+ * El `session_id={CHECKOUT_SESSION_ID}` viene en query pero NO lo usamos para
+ * validar (Stripe recomienda no confiar en query params post-redirect). El
+ * webhook es la fuente de verdad.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Compra confirmada · Simulador de Entrevistas · Solca Ciencia"
+  description="Tu compra se confirmó. Ya te enviamos por email tu código de acceso al simulador."
+  canonical="https://solcaciencia.com/simulador-entrevistas/gracias"
+  noindex={true}
+>
+  <main class="thanks-main">
+    <section class="thanks-hero">
+      <div class="container">
+        <div class="check-circle" aria-hidden="true">✓</div>
+        <h1>Compra confirmada</h1>
+        <p class="lead">
+          Ya te llegó un correo con tu acceso al simulador. Revisa tu bandeja de entrada (y la
+          carpeta de spam la primera vez).
+        </p>
+        <p class="lead lead-mute">
+          El correo incluye tu resumen de sesiones incluidas y la fecha de vigencia. Puedes
+          empezar tu primera sesión ahora o cuando prefieras dentro del plazo.
+        </p>
+        <div class="cta-row">
+          <a href="/simulador-entrevistas/sesion" class="btn btn-primary">Empezar mi primera sesión</a>
+          <a href="/simulador-entrevistas/" class="btn btn-secondary">Volver al inicio</a>
+        </div>
+        <p class="thanks-note">
+          ¿No te llegó el correo en unos minutos? Escribe a
+          <a href="mailto:hola@solcaciencia.com">hola@solcaciencia.com</a> con el email que usaste
+          en la compra y te lo reenviamos.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <style>
+    .thanks-main {
+      min-height: 60vh;
+      display: flex;
+      align-items: center;
+      background: var(--bg, #FAF9F4);
+    }
+    .thanks-hero {
+      width: 100%;
+      padding: 80px 0;
+    }
+    .thanks-hero .container {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 0 24px;
+      text-align: center;
+    }
+    .check-circle {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: #E77C3C;
+      color: #fff;
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 64px;
+      margin: 0 auto 24px;
+    }
+    .thanks-hero h1 {
+      margin: 0 0 16px;
+      font-size: 32px;
+      color: #1F3A5F;
+    }
+    .lead {
+      font-size: 17px;
+      color: #111827;
+      line-height: 1.5;
+      margin: 0 0 12px;
+    }
+    .lead-mute {
+      color: #4B5563;
+      font-size: 15px;
+    }
+    .cta-row {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin: 32px 0 24px;
+      flex-wrap: wrap;
+    }
+    .thanks-note {
+      margin: 24px 0 0;
+      font-size: 14px;
+      color: #4B5563;
+    }
+    .thanks-note a {
+      color: #E77C3C;
+      font-weight: 600;
+    }
+  </style>
+</BaseLayout>

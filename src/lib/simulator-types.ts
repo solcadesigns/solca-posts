@@ -15,7 +15,97 @@ export type ExperienceYears = 'sin_experiencia' | '1-3' | '4-10' | '+10';
 export type DifficultyLevel = 'moderado' | 'exigente' | 'muy_exigente';
 export type Focus = 'tecnico' | 'conductual' | 'mezcla';
 export type Language = 'ingles' | 'bilingue' | 'espanol';
-export type Plan = 'gratis' | 'basico' | 'intensivo' | 'pro';
+export type Plan = 'gratis' | 'basico' | 'premium';
+// Migración 2 sept 2026 · unificación pre-paywall: 'intensivo' y 'pro' se fusionan en 'premium'.
+// Ver _docs/PAYWALL_SIMULADOR.md para el schema completo de PLAN_CONFIG.
+
+/**
+ * Config declarativa del plan · fuente única de verdad para el gating.
+ * Cualquier feature nueva por plan se agrega aquí primero.
+ */
+export interface PlanConfig {
+  plan: Plan;
+  sessionsIncluded: number;
+  allowedStages: InterviewStage[];
+  allowsCv: boolean;
+  allowsFullVacancy: boolean; // Modo A completo (título + empresa + descripción). Freemium = solo título.
+  allowedDifficulties: DifficultyLevel[];
+  reportLegend: 'standard' | 'extended';
+  ctaTarget: 'upsell_basico' | 'course_solca';
+  historyDepth: number;
+  vigenciaDias: number;
+  priceMxn: number; // 0 para gratis
+}
+
+export const PLAN_CONFIG: Record<Plan, PlanConfig> = {
+  gratis: {
+    plan: 'gratis',
+    sessionsIncluded: 1,
+    allowedStages: ['phone_screen'],
+    allowsCv: true,
+    allowsFullVacancy: false,
+    allowedDifficulties: ['moderado'],
+    reportLegend: 'standard',
+    ctaTarget: 'upsell_basico',
+    historyDepth: 1,
+    vigenciaDias: 240,
+    priceMxn: 0,
+  },
+  basico: {
+    plan: 'basico',
+    sessionsIncluded: 3,
+    allowedStages: ['phone_screen', 'technical_round', 'panel_round', 'general_practice'],
+    allowsCv: true,
+    allowsFullVacancy: true,
+    allowedDifficulties: ['moderado'],
+    reportLegend: 'standard',
+    ctaTarget: 'course_solca',
+    historyDepth: 3,
+    vigenciaDias: 240,
+    priceMxn: 149,
+  },
+  premium: {
+    plan: 'premium',
+    sessionsIncluded: 8,
+    allowedStages: ['phone_screen', 'technical_round', 'panel_round', 'general_practice'],
+    allowsCv: true,
+    allowsFullVacancy: true,
+    allowedDifficulties: ['moderado', 'exigente', 'muy_exigente'],
+    reportLegend: 'extended',
+    ctaTarget: 'course_solca',
+    historyDepth: 8,
+    vigenciaDias: 240,
+    priceMxn: 299,
+  },
+};
+
+/**
+ * Aplica el gating del plan al profile del candidato.
+ * Silenciosamente fuerza los valores permitidos si el frontend mandó algo fuera de spec.
+ * Se llama al inicio de handleInit ANTES de construir el system prompt.
+ */
+export function applyPlanGating(profile: CandidateProfile, plan: Plan): CandidateProfile {
+  const cfg = PLAN_CONFIG[plan];
+  const gated: CandidateProfile = { ...profile };
+
+  // Etapa: si no está permitida, fuerza a la primera permitida (phone_screen para gratis).
+  if (!cfg.allowedStages.includes(gated.interviewStage)) {
+    gated.interviewStage = cfg.allowedStages[0];
+  }
+
+  // Dificultad: si no permitida, fuerza a moderado.
+  if (!cfg.allowedDifficulties.includes(gated.difficulty)) {
+    gated.difficulty = cfg.allowedDifficulties[0];
+  }
+
+  // Modo A sin descripción/empresa en freemium: recorta.
+  if (!cfg.allowsFullVacancy && gated.mode === 'A') {
+    gated.company = undefined;
+    gated.vacancyText = undefined;
+  }
+
+  return gated;
+}
 export type Mode = 'A' | 'B';
 
 /**
@@ -72,6 +162,9 @@ export interface CandidateProfile {
   // Generales (siempre)
   formationArea: FormationArea;
   experienceYears: ExperienceYears;
+  // Nivel académico terminado más alto — agregado tras feedback beta sept 2026 (f696558d)
+  // que reportó ausencia de Maestría como opción. Opcional para no romper sesiones legacy.
+  academicLevel?: 'licenciatura' | 'maestria' | 'doctorado' | 'postdoc';
   specialty?: string; // libre
 
   // Calibración (con defaults inteligentes)
