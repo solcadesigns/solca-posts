@@ -14,7 +14,7 @@ Este documento es el contrato de implementación. Cualquier decisión que no est
 
 | | Freemium | Básico | Premium |
 |---|---|---|---|
-| Precio | $0 MXN | **$149 MXN** (one-shot) | **$299 MXN** (one-shot) |
+| Precio | $0 MXN | **$179 MXN** (one-shot) | **$349 MXN** (one-shot) |
 | Sesiones incluidas | 1 | 3 | 8 |
 | Etapa permitida | Solo `phone_screen` (5 preguntas) | Cualquiera (5/10/15) | Cualquiera |
 | CV upload | Sí | Sí | Sí (distinto por sesión, historial guardado) |
@@ -183,8 +183,8 @@ Reemplaza el mecanismo actual de `SIMULATOR_BETA_CODES` (que sigue funcionando e
 - Sección de 3 planes con tabla comparativa (columnas Freemium / Básico / Premium).
 - CTA de cada plan:
   - Freemium: "Empezar sin costo" → formulario email → llama `/api/simulator-subscribe` con `plan=free`.
-  - Básico: "Comprar $149 MXN" → formulario email → llama `/api/simulator-checkout` con `plan=basico`.
-  - Premium: "Comprar $299 MXN" → mismo → `plan=premium`.
+  - Básico: "Comprar $179 MXN" → formulario email → llama `/api/simulator-checkout` con `plan=basico`.
+  - Premium: "Comprar $349 MXN" → mismo → `plan=premium`.
 
 ### `/simulador-entrevistas/gracias`
 

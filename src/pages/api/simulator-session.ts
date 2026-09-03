@@ -27,6 +27,7 @@ import { writeMetricsToD1, writeSessionInitialToD1 } from '../../lib/simulator-m
 import { sendEmail, PostmarkError } from '../../lib/postmark';
 import type {
   CandidateProfile,
+  CreditsRecord,
   CvSummary,
   Plan,
   QuestionTurn,
@@ -36,6 +37,44 @@ import type {
   SessionState,
 } from '../../lib/simulator-types';
 import { PLAN_CONFIG, applyPlanGating } from '../../lib/simulator-types';
+
+/** Hash SHA-256 del email lowercased trimmed, primeros 16 hex chars. */
+async function hashEmail(email: string): Promise<string> {
+  const normalized = email.trim().toLowerCase();
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(normalized));
+  return [...new Uint8Array(buf)]
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+    .slice(0, 16);
+}
+
+/**
+ * Decrementa remaining en SIMULATOR_CREDITS. Se llama al persistir el reporte
+ * final exitoso (misma regla que betaCode: solo cuenta si el usuario completó).
+ * Idempotente: si el record no existe o remaining ya está en 0, no hace nada.
+ */
+async function decrementCredits(
+  env: Record<string, unknown>,
+  emailHashValue: string,
+): Promise<void> {
+  const kv = env.SIMULATOR_CREDITS as KVNamespace | undefined;
+  if (!kv) return;
+  try {
+    const raw = await kv.get(`credits:${emailHashValue}`);
+    if (!raw) return;
+    const record = JSON.parse(raw) as CreditsRecord;
+    if (record.remaining <= 0) return;
+    record.remaining -= 1;
+    await kv.put(`credits:${emailHashValue}`, JSON.stringify(record), {
+      expirationTtl: Math.max(
+        60 * 60 * 24, // mínimo 1 día
+        Math.floor((new Date(record.expiresAt).getTime() - Date.now()) / 1000),
+      ),
+    });
+  } catch (err) {
+    console.error('[simulator-session] decrementCredits failed for', emailHashValue, err);
+  }
+}
 
 export const prerender = false;
 
@@ -200,7 +239,7 @@ async function handleInit(
     return { ok: false, error: 'Falta profile', errorCode: 'invalid_profile' };
   }
 
-  // Validar beta code si vino
+  // Validar beta code si vino (legacy pre-paywall)
   if (body.betaCode) {
     const betaKv = env.SIMULATOR_BETA_CODES as KVNamespace | undefined;
     const check = await validateBetaCode(betaKv, body.betaCode);
@@ -214,7 +253,6 @@ async function handleInit(
   }
 
   // v0.6: si el frontend mandó interviewStage, derivamos questionCount de la etapa.
-  // Si solo mandó questionCount (compatibilidad con tests viejos), mantiene ese valor.
   const profile: CandidateProfile = {
     ...body.profile,
     role: body.profile.role ?? inferRole(body.profile.roleTitle),
@@ -223,7 +261,76 @@ async function handleInit(
     profile.questionCount = getStageInfo(profile.interviewStage).questionCount;
   }
 
-  const plan: Plan = body.plan ?? 'gratis';
+  // ── Paywall (2 sept 2026): lookup de créditos por email si no vino betaCode ──
+  // Si el body trae `email`, buscamos su record en SIMULATOR_CREDITS. Escenarios:
+  //   - No existe → asignamos plan='gratis' con 1 crédito (freemium automático).
+  //   - Existe expirado → error credits_expired (usuario debe recomprar).
+  //   - Existe con remaining=0 → error credits_exhausted (usuario debe recomprar).
+  //   - Existe válido → usamos record.plan (ignora el plan del body, la KV es la fuente de verdad).
+  // Si el body NO trae email pero sí betaCode, usamos el flujo legacy (plan=gratis por default).
+  let plan: Plan = body.plan ?? 'gratis';
+  let creditsRecord: CreditsRecord | null = null;
+  const email = body.email?.trim().toLowerCase();
+  if (email) {
+    const creditsKv = env.SIMULATOR_CREDITS as KVNamespace | undefined;
+    if (creditsKv) {
+      const hash = await hashEmail(email);
+      const existingRaw = await creditsKv.get(`credits:${hash}`);
+      if (existingRaw) {
+        try {
+          creditsRecord = JSON.parse(existingRaw) as CreditsRecord;
+        } catch {
+          creditsRecord = null;
+        }
+      }
+      if (creditsRecord) {
+        // Verificar expiración
+        if (new Date(creditsRecord.expiresAt).getTime() < Date.now()) {
+          return {
+            ok: false,
+            error:
+              'Tus créditos del simulador expiraron. Compra un paquete nuevo desde solcaciencia.com/simulador-entrevistas/.',
+            errorCode: 'credits_expired',
+            planUsed: creditsRecord.plan,
+          };
+        }
+        // Verificar remaining
+        if (creditsRecord.remaining <= 0) {
+          return {
+            ok: false,
+            error:
+              'Ya usaste todas las sesiones incluidas en tu paquete. Compra otro desde solcaciencia.com/simulador-entrevistas/.',
+            errorCode: 'credits_exhausted',
+            planUsed: creditsRecord.plan,
+          };
+        }
+        plan = creditsRecord.plan;
+      } else {
+        // Primer uso · asignar freemium automático.
+        const now = new Date();
+        const expiresAt = new Date(now.getTime() + PLAN_CONFIG.gratis.vigenciaDias * 24 * 60 * 60 * 1000);
+        creditsRecord = {
+          plan: 'gratis',
+          remaining: PLAN_CONFIG.gratis.sessionsIncluded,
+          purchasedAt: now.toISOString(),
+          expiresAt: expiresAt.toISOString(),
+          history: [
+            {
+              at: now.toISOString(),
+              plan: 'gratis',
+              sessionsAdded: PLAN_CONFIG.gratis.sessionsIncluded,
+              stripeSessionId: 'freemium-auto',
+            },
+          ],
+        };
+        await creditsKv.put(`credits:${hash}`, JSON.stringify(creditsRecord), {
+          expirationTtl: 60 * 60 * 24 * PLAN_CONFIG.gratis.vigenciaDias,
+        });
+        plan = 'gratis';
+      }
+    }
+  }
+
   const sessionNumberInPackage = body.sessionNumberInPackage ?? 1;
   const planConfig = PLAN_CONFIG[plan];
 
@@ -258,6 +365,10 @@ async function handleInit(
     cvSummary,
     turns: [],
     finished: false,
+    betaCode: body.betaCode,
+    // Paywall: persistimos el hash del email para decrementar credits al completar
+    // sesión. Solo el hash (16 hex chars) — no el email plano — para no exponer PII.
+    emailHash: email ? await hashEmail(email) : undefined,
   };
 
   const messages = buildMessagesFromState(state);
@@ -577,6 +688,12 @@ async function handleNext(
     state.metricsAnonymous = parsed.metricsAnonymous ?? undefined;
     delete state.finalReportError;
     await persistSessionState(env, state);
+
+    // Paywall (2 sept 2026): decrementar credits del paywall si el usuario
+    // pasó por email lookup. Mismo criterio que betaCode: solo al éxito.
+    if (state.emailHash) {
+      await decrementCredits(env, state.emailHash);
+    }
 
     // NUEVO (19 ago 2026): incrementar sessions_used SOLO ahora, cuando el
     // reporte final se generó y se persistió con éxito. Si algo revienta en el
@@ -974,6 +1091,11 @@ async function handleRetryReport(
   state.metricsAnonymous = parsed.metricsAnonymous ?? undefined;
   delete state.finalReportError;
   await persistSessionState(env, state);
+
+  // Paywall: decrementar credits si emailHash está en el state.
+  if (state.emailHash) {
+    await decrementCredits(env, state.emailHash);
+  }
 
   // NUEVO (19 ago 2026): mismo criterio que handleNext. El increment ocurre
   // solo aquí, cuando el retry sí generó reporte y lo persistió. Si el retry

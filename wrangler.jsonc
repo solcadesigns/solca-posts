@@ -90,6 +90,11 @@
 			"binding": "SIMULATOR_BETA_CODES",
 			"id": "577a2b9a2247465ab88bbf6b63e3eb4a",
 			"remote": true
+		},
+		{
+			"binding": "STRIPE_CHECKOUT_SESSIONS",
+			"id": "dd2d6926f1884cba8c649194d797fc88",
+			"remote": true
 		}
 	],
 	"d1_databases": [

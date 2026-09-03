@@ -823,18 +823,31 @@ const noIndex = true;
 
       try {
         const betaCode = sessionStorage.getItem('solca_beta_code') || undefined;
+        // Paywall (2 sept 2026): email prioritario sobre betaCode. Se lee de:
+        // 1. Query ?email= (post-checkout Stripe /gracias→/sesion redirect)
+        // 2. localStorage solca_user_email (persistido tras login o purchase)
+        const urlParams = new URLSearchParams(window.location.search);
+        const email =
+          urlParams.get('email') ||
+          localStorage.getItem('solca_user_email') ||
+          undefined;
+        if (email) {
+          try { localStorage.setItem('solca_user_email', email); } catch {}
+        }
+
         const resp = await fetch('/api/simulator-session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'init',
-            // En beta todos arrancan en 'gratis' por defecto; durante la beta cerrada
-            // tratamos a todos como 'basico' para habilitar CV-personalizado.
+            // Si viene email, el backend hace lookup en SIMULATOR_CREDITS y sobreescribe
+            // el plan según el paquete comprado. Este 'plan' es solo fallback si no hay email.
             plan: parsedCvSummary ? 'basico' : 'gratis',
             sessionNumberInPackage: 1,
             profile,
             cvSummary: parsedCvSummary || undefined,
             betaCode,
+            email,
           }),
         });
 

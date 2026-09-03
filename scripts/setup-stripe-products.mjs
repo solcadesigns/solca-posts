@@ -48,7 +48,7 @@ const PLANS = [
     name: 'Simulador de Entrevistas Pharma · Básico',
     description:
       '3 sesiones de simulador de entrevistas pharma. Elige cualquier etapa (llamada inicial, técnica o panel). Sube tu CV y practica con feedback estructurado. Vigencia 240 días desde la compra.',
-    priceMxnCents: 14900, // Stripe usa cents (mínima unidad monetaria)
+    priceMxnCents: 17900, // Stripe usa cents (mínima unidad monetaria)
     envVarName: 'STRIPE_PRICE_ID_BASICO',
   },
   {
@@ -56,7 +56,7 @@ const PLANS = [
     name: 'Simulador de Entrevistas Pharma · Premium',
     description:
       '8 sesiones de simulador de entrevistas pharma. Todas las etapas + 3 niveles de dificultad. Historial personal para practicar diferentes CVs y vacantes en paralelo. Reporte final con leyenda extendida (rúbrica visible + tips por dimensión). Vigencia 240 días desde la compra.',
-    priceMxnCents: 29900,
+    priceMxnCents: 34900,
     envVarName: 'STRIPE_PRICE_ID_PREMIUM',
   },
 ];

@@ -83,7 +83,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
         <article class="plan-card plan-card-highlight">
           <h3 class="plan-name">Básico</h3>
-          <p class="plan-price"><span class="plan-price-num">$149</span> <span class="plan-price-unit">MXN</span></p>
+          <p class="plan-price"><span class="plan-price-num">$179</span> <span class="plan-price-unit">MXN</span></p>
           <p class="plan-tagline">3 sesiones para practicar tu ronda antes de la entrevista real.</p>
           <ul class="plan-features">
             <li><strong>3 sesiones</strong> · cualquier etapa (llamada, técnica o panel)</li>
@@ -99,7 +99,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
         <article class="plan-card">
           <h3 class="plan-name">Premium</h3>
-          <p class="plan-price"><span class="plan-price-num">$299</span> <span class="plan-price-unit">MXN</span></p>
+          <p class="plan-price"><span class="plan-price-num">$349</span> <span class="plan-price-unit">MXN</span></p>
           <p class="plan-tagline">8 sesiones + rúbrica extendida para preparación intensiva.</p>
           <ul class="plan-features">
             <li><strong>8 sesiones</strong> · cualquier etapa</li>
@@ -250,8 +250,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
     const PLAN_LABELS: Record<string, { heading: string; button: string; lead: HTMLElement | null }> = {
       gratis: { heading: 'Confirma tu email para empezar sin costo', button: 'Empezar sin costo', lead: leadFree },
-      basico: { heading: 'Confirma tu email para pagar el plan Básico ($149 MXN)', button: 'Continuar al pago · Básico', lead: leadBasico },
-      premium: { heading: 'Confirma tu email para pagar el plan Premium ($299 MXN)', button: 'Continuar al pago · Premium', lead: leadPremium },
+      basico: { heading: 'Confirma tu email para pagar el plan Básico ($179 MXN)', button: 'Continuar al pago · Básico', lead: leadBasico },
+      premium: { heading: 'Confirma tu email para pagar el plan Premium ($349 MXN)', button: 'Continuar al pago · Premium', lead: leadPremium },
     };
 
     function selectPlan(plan: string) {

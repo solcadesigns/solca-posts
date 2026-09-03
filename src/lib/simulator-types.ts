@@ -62,7 +62,7 @@ export const PLAN_CONFIG: Record<Plan, PlanConfig> = {
     ctaTarget: 'course_solca',
     historyDepth: 3,
     vigenciaDias: 240,
-    priceMxn: 149,
+    priceMxn: 179,
   },
   premium: {
     plan: 'premium',
@@ -75,7 +75,7 @@ export const PLAN_CONFIG: Record<Plan, PlanConfig> = {
     ctaTarget: 'course_solca',
     historyDepth: 8,
     vigenciaDias: 240,
-    priceMxn: 299,
+    priceMxn: 349,
   },
 };
 
@@ -241,6 +241,9 @@ export interface SessionState {
   // frontend pueda ofrecer "Reintentar generación" sin re-hacer preguntas.
   finalReportError?: string;
   betaCode?: string; // persistido para soportar retry_report sin perder beta context
+  // Paywall (2 sept 2026): email persistido para decrementar credits al completar sesión.
+  // Se guarda solo el hash SHA-256 (primeros 16 hex chars) para no exponer email plano.
+  emailHash?: string;
 }
 
 // ──────────────────────────────────────────────────────────────────
@@ -375,11 +378,12 @@ export interface SessionEndpointRequest {
   sessionState?: SessionState; // requerido para 'next' y 'finish'
   profile?: CandidateProfile; // requerido para 'init'
   cvSummary?: CvSummary; // opcional, solo en 'init' para planes pagos
-  plan?: Plan; // requerido para 'init'
+  plan?: Plan; // requerido para 'init' — puede ser sobrescrito por lookup credits
   sessionNumberInPackage?: number; // requerido para 'init'
   userAnswer?: string; // requerido para 'next'
   userAnswerSeconds?: number; // opcional pero recomendado en 'next'
-  betaCode?: string; // opcional · valida acceso si está presente
+  betaCode?: string; // opcional · valida acceso si está presente (legacy)
+  email?: string; // opcional · si viene, se hace lookup en SIMULATOR_CREDITS
   sessionId?: string; // requerido para 'resume' y 'retry_report'
 }
 
@@ -395,7 +399,27 @@ export interface SessionEndpointResponse {
     | 'invalid_profile'
     | 'beta_code_invalid'
     | 'beta_code_exhausted'
+    | 'credits_expired'
+    | 'credits_exhausted'
+    | 'pending_async'
     | 'rate_limit'
     | 'anthropic_error'
     | 'internal';
+  // Info opcional del plan detectado (para debug frontend)
+  planUsed?: Plan;
+  creditsRemaining?: number;
+}
+
+/** Registro persistido en KV SIMULATOR_CREDITS (paywall · 2 sept 2026). */
+export interface CreditsRecord {
+  plan: Plan;
+  remaining: number;
+  purchasedAt: string; // ISO
+  expiresAt: string; // ISO
+  history: Array<{
+    at: string;
+    plan: Plan;
+    sessionsAdded: number;
+    stripeSessionId: string;
+  }>;
 }
