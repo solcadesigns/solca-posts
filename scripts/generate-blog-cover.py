@@ -117,7 +117,7 @@ def _wrap_simple(draw, text, font, max_width):
     return lines
 
 
-def generate_blog_cover(categoria, titulo, keyword, subtitulo, output_path):
+def generate_blog_cover(categoria, titulo, keyword, subtitulo, output_path, cta="revisar-cv"):
     img = Image.new("RGB", (W, H), NAVY)
     draw = ImageDraw.Draw(img)
 
@@ -148,9 +148,9 @@ def generate_blog_cover(categoria, titulo, keyword, subtitulo, output_path):
     # ── Línea naranja separadora antes del footer ───────────────
     draw.rectangle([90, H - 100, 250, H - 96], fill=ORANGE)
 
-    # ── Footer marca + revisar-cv ────────────────────────────────
+    # ── Footer marca + CTA rotativo ─────────────────────────────
     foot_font = _font(28, bold=True)
-    foot_text = "solcaciencia.com  ·  revisar-cv"
+    foot_text = f"solcaciencia.com  ·  {cta}"
     draw.text((90, H - 70), foot_text, font=foot_font, fill=ORANGE)
 
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
@@ -165,6 +165,7 @@ def main():
     parser.add_argument("--keyword", required=True, help="Palabras a destacar en naranja (1-3 palabras)")
     parser.add_argument("--subtitulo", required=True, help="Bajada o subtítulo")
     parser.add_argument("--output", required=True, help="Ruta de salida PNG")
+    parser.add_argument("--cta", default="revisar-cv", help="Slug del CTA en el footer (revisar-cv, simulador, quiz-rol). Default: revisar-cv")
     args = parser.parse_args()
     generate_blog_cover(
         categoria=args.categoria,
@@ -172,6 +173,7 @@ def main():
         keyword=args.keyword,
         subtitulo=args.subtitulo,
         output_path=args.output,
+        cta=args.cta,
     )
 
 
