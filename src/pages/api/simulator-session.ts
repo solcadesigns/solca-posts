@@ -105,6 +105,9 @@ interface BetaCodeRecord {
   granted_at: string;
   expires_at: string;
   cohort?: string;
+  // Post-paywall (3 sept 2026): cuando cohort='paywall' este campo trae el plan
+  // que fue comprado. handleInit lo usa para override del plan default.
+  plan?: Plan;
 }
 
 function jsonResponse(data: SessionEndpointResponse, status = 200) {
@@ -239,16 +242,23 @@ async function handleInit(
     return { ok: false, error: 'Falta profile', errorCode: 'invalid_profile' };
   }
 
-  // Validar beta code si vino (legacy pre-paywall)
+  // Validar beta code si vino (legacy pre-paywall + nuevo cohort='paywall').
+  // Post-paywall (3 sept 2026): el mismo mecanismo del código SIM-XXXXXXXX
+  // sirve como auth para créditos comprados. El record trae cohort='paywall'
+  // y el `plan` que se compró — lo capturamos aquí para override más adelante.
+  let paywallCodeRecord: BetaCodeRecord | null = null;
   if (body.betaCode) {
     const betaKv = env.SIMULATOR_BETA_CODES as KVNamespace | undefined;
     const check = await validateBetaCode(betaKv, body.betaCode);
     if (!check.ok) {
       return {
         ok: false,
-        error: `Código beta ${check.reason}`,
+        error: `Código ${check.reason}`,
         errorCode: check.reason === 'exhausted' ? 'beta_code_exhausted' : 'beta_code_invalid',
       };
+    }
+    if (check.record?.cohort === 'paywall' && check.record.plan) {
+      paywallCodeRecord = check.record;
     }
   }
 
@@ -270,8 +280,34 @@ async function handleInit(
   // Si el body NO trae email pero sí betaCode, usamos el flujo legacy (plan=gratis por default).
   let plan: Plan = body.plan ?? 'gratis';
   let creditsRecord: CreditsRecord | null = null;
+
+  // Prioridad #1: auth por código paywall (SIM-XXXXXXXX generado por Stripe webhook)
+  // El código es criptográficamente único, no adivinable con solo saber el email.
+  if (paywallCodeRecord && paywallCodeRecord.plan) {
+    plan = paywallCodeRecord.plan;
+    // Sincronizar emailHash del record al state para decremento de credits al finalizar
+    if (paywallCodeRecord.email_hash) {
+      // Manejado más abajo cuando armamos el state
+    }
+    // Lookup credits para verificar remaining (por si acaso el record beta y credits divergen)
+    if (paywallCodeRecord.email_hash) {
+      const creditsKv = env.SIMULATOR_CREDITS as KVNamespace | undefined;
+      if (creditsKv) {
+        const raw = await creditsKv.get(`credits:${paywallCodeRecord.email_hash}`);
+        if (raw) {
+          try {
+            creditsRecord = JSON.parse(raw) as CreditsRecord;
+          } catch {
+            /* ignore parse fail */
+          }
+        }
+      }
+    }
+  }
+
+  // Prioridad #2: lookup por email (freemium auto o lookup credits · legacy y para acceso freemium sin código)
   const email = body.email?.trim().toLowerCase();
-  if (email) {
+  if (!paywallCodeRecord && email) {
     const creditsKv = env.SIMULATOR_CREDITS as KVNamespace | undefined;
     if (creditsKv) {
       const hash = await hashEmail(email);
@@ -368,7 +404,9 @@ async function handleInit(
     betaCode: body.betaCode,
     // Paywall: persistimos el hash del email para decrementar credits al completar
     // sesión. Solo el hash (16 hex chars) — no el email plano — para no exponer PII.
-    emailHash: email ? await hashEmail(email) : undefined,
+    // Auth por código paywall: usar el email_hash del beta record (fuente autoritativa
+    // porque el usuario ya no envía email plano cuando entra con código).
+    emailHash: paywallCodeRecord?.email_hash ?? (email ? await hashEmail(email) : undefined),
   };
 
   const messages = buildMessagesFromState(state);

@@ -130,6 +130,20 @@ async function emailHash(email: string): Promise<string> {
     .slice(0, 16);
 }
 
+/**
+ * Genera código único legible SIM-XXXXXXXX (8 chars alfanum sin ambigüedades).
+ * Mismo formato que simulator-subscribe.ts para consistencia con la fase beta.
+ * Excluye O/0/I/1 para leerse bien copiado del email.
+ */
+function generateAccessCode(): string {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = 'SIM-';
+  for (let i = 0; i < 8; i += 1) {
+    code += alphabet[Math.floor(Math.random() * alphabet.length)];
+  }
+  return code;
+}
+
 function addDaysIso(days: number): string {
   const d = new Date();
   d.setUTCDate(d.getUTCDate() + days);
@@ -258,6 +272,32 @@ export const POST: APIRoute = async ({ request, locals }) => {
     expirationTtl: 60 * 60 * 24 * cfg.vigenciaDias, // TTL alineado con vigencia declarada
   });
 
+  // ── Auth por código SIM-XXXXXXXX (3 sept 2026) ─────────────────
+  // Reusa el mecanismo beta: escribe record en SIMULATOR_BETA_CODES con
+  // cohort='paywall' y plan. `validateBetaCode` en simulator-session ya
+  // maneja este KV — solo agregamos que si cohort='paywall' se propague el plan.
+  const accessCode = generateAccessCode();
+  const betaCodesKv = env.SIMULATOR_BETA_CODES as KVNamespace | undefined;
+  if (betaCodesKv) {
+    const betaRecord = {
+      nombre_pila: firstName || undefined,
+      email_hash: hash,
+      max_sessions: cfg.sessionsIncluded,
+      sessions_used: 0,
+      granted_at: nowIso,
+      expires_at: newExpiresAt,
+      cohort: 'paywall' as const,
+      plan, // 'basico' | 'premium' — lo lee handleInit para override del plan por default
+    };
+    try {
+      await betaCodesKv.put(`beta:${accessCode}`, JSON.stringify(betaRecord), {
+        expirationTtl: 60 * 60 * 24 * cfg.vigenciaDias,
+      });
+    } catch (err) {
+      console.error('[stripe-webhook] beta code write failed:', err);
+    }
+  }
+
   // Marcar dedup ANTES de enviar email (si el email falla no queremos duplicar créditos).
   await dedupKv.put(dedupKey, '1', { expirationTtl: 60 * 60 * 24 * 7 });
 
@@ -281,8 +321,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
             month: 'long',
             day: 'numeric',
           }),
-          access_url: `https://solcaciencia.com/simulador-entrevistas/sesion?email=${encodeURIComponent(email)}`,
-          access_email: email, // el email es la llave · el usuario debe entrar con el mismo
+          access_code: accessCode,
+          access_url: `https://solcaciencia.com/simulador-entrevistas/?codigo=${accessCode}`,
         },
         metadata: {
           source: 'stripe-webhook',

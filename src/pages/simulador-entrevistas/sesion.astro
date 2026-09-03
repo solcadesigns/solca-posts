@@ -938,11 +938,18 @@ const noIndex = true;
       startBtn.textContent = 'Iniciando sesión…';
 
       try {
-        const betaCode = sessionStorage.getItem('solca_beta_code') || undefined;
-        // Paywall (2 sept 2026): email prioritario sobre betaCode. Se lee de:
-        // 1. Query ?email= (post-checkout Stripe /gracias→/sesion redirect)
-        // 2. localStorage solca_user_email (persistido tras login o purchase)
+        // Auth prioritaria por CÓDIGO (post-paywall 3 sept 2026):
+        // El código SIM-XXXXXXXX es la llave segura. Se lee de sessionStorage
+        // (guardado por landing / código-form) o de query ?codigo= (link del email).
         const urlParams = new URLSearchParams(window.location.search);
+        const codeFromUrl = urlParams.get('codigo') || urlParams.get('code');
+        if (codeFromUrl) {
+          try { sessionStorage.setItem('solca_beta_code', codeFromUrl.trim().toUpperCase()); } catch {}
+        }
+        const betaCode = sessionStorage.getItem('solca_beta_code') || undefined;
+
+        // Email queda como fallback legacy (freemium sin código o casos edge).
+        // Post-paywall el email NO es la llave — solo referencia opcional.
         const email =
           urlParams.get('email') ||
           localStorage.getItem('solca_user_email') ||
