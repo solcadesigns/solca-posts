@@ -14,7 +14,12 @@
  */
 
 import type { APIRoute } from 'astro';
-import { retryableChatCompletion, extractText, AnthropicError } from '../../lib/anthropic';
+import {
+  retryableChatCompletion,
+  retryableChatCompletionStream,
+  extractText,
+  AnthropicError,
+} from '../../lib/anthropic';
 import { buildSystemPrompt } from '../../lib/simulator-prompt';
 import { inferRole, getStageInfo } from '../../lib/simulator-defaults';
 import { parseFinalOutput } from '../../lib/simulator-metrics-parser';
@@ -30,6 +35,7 @@ import type {
   SessionEndpointResponse,
   SessionState,
 } from '../../lib/simulator-types';
+import { PLAN_CONFIG, applyPlanGating } from '../../lib/simulator-types';
 
 export const prerender = false;
 
@@ -41,7 +47,11 @@ const MAX_TOKENS_PER_TURN = 2000;
 // pesa ~500-600 tokens; summary + cta + metrics_anonymous suman ~2500.
 // Cap a 16000 para mantenerse dentro del límite de Sonnet 4.6.
 const FINAL_REPORT_BASE_TOKENS = 3000;
-const FINAL_REPORT_TOKENS_PER_QUESTION = 600;
+// Bajado de 600 a 400 el 2 sept 2026 tras 524 timeout en sesión 27d9355c (10 preguntas
+// pedían 9000 tokens de output → generación >100s → Cloudflare cortaba). Con 400 tokens
+// por pregunta, 10q pide 7000 y suele completar en ~70s. Warning stop_reason=max_tokens
+// sigue activo para detectar truncamiento si el modelo insiste en más.
+const FINAL_REPORT_TOKENS_PER_QUESTION = 400;
 const FINAL_REPORT_TOKENS_CAP = 16000;
 function finalReportMaxTokens(questionCount: number): number {
   const computed = FINAL_REPORT_BASE_TOKENS + questionCount * FINAL_REPORT_TOKENS_PER_QUESTION;
@@ -213,9 +223,24 @@ async function handleInit(
     profile.questionCount = getStageInfo(profile.interviewStage).questionCount;
   }
 
-  const plan = body.plan ?? 'gratis';
+  const plan: Plan = body.plan ?? 'gratis';
   const sessionNumberInPackage = body.sessionNumberInPackage ?? 1;
-  const cvSummary = plan !== 'gratis' ? body.cvSummary : undefined;
+  const planConfig = PLAN_CONFIG[plan];
+
+  // Gating por plan · 2 sept 2026 (post-feedback beta):
+  // - Freemium: fuerza phone_screen, moderado, sin descripción/empresa de vacante.
+  // - Básico/Premium: valida stages/dificultades permitidas.
+  // Ver _docs/PAYWALL_SIMULADOR.md para el schema completo.
+  Object.assign(profile, applyPlanGating(profile, plan));
+
+  // Si por gating cambió la etapa, recalcula questionCount desde la nueva etapa.
+  if (profile.interviewStage) {
+    profile.questionCount = getStageInfo(profile.interviewStage).questionCount;
+  }
+
+  // CV: freemium SÍ acepta CV (regla post-beta), pero se respeta allowsCv del config
+  // por si un plan futuro lo restringe.
+  const cvSummary = planConfig.allowsCv ? body.cvSummary : undefined;
 
   const systemPrompt = buildSystemPrompt({
     profile,
@@ -284,13 +309,12 @@ async function handleInit(
   // simplemente registrar de qué beta vino · no se mostraría al usuario.
   if (body.betaCode) state.betaCode = body.betaCode;
 
-  // Si la beta code se validó, incrementamos el uso
-  if (body.betaCode) {
-    await incrementBetaCodeUsage(
-      env.SIMULATOR_BETA_CODES as KVNamespace | undefined,
-      body.betaCode,
-    );
-  }
+  // NOTA (19 ago 2026): NO incrementamos sessions_used aquí.
+  // Regla del pre-paywall: el contador se toca solo cuando el reporte final se
+  // genera con éxito (ver handleNext y handleRetryReport). Si el usuario abre
+  // el simulador y abandona a mitad, o si el LLM falla, el código queda vivo
+  // para reintentar. Esto evita "quemar" la sesión libre por accidente y
+  // sostiene la promesa pública: la sesión cuenta cuando entregamos el reporte.
 
   // Fase 1.5.J · persistir state inicial para recovery
   await persistSessionState(env, state);
@@ -413,24 +437,42 @@ async function handleNext(
 
   let response;
   try {
-    response = await retryableChatCompletion(
-      {
-        apiKey,
-        model: MODEL,
-        system: systemPrompt,
-        messages,
-        temperature: TEMPERATURE,
-        maxTokens: effectiveMaxTokens,
-      },
-      isLastQuestion ? 'next-final-report' : 'next-question',
-    );
+    // Blindaje B (2 sept 2026): reportes finales van por streaming para evitar
+    // el gateway timeout de Cloudflare (100s). Turnos normales usan la llamada
+    // non-streaming rápida (~5-15s).
+    response = isLastQuestion
+      ? await retryableChatCompletionStream(
+          {
+            apiKey,
+            model: MODEL,
+            system: systemPrompt,
+            messages,
+            temperature: TEMPERATURE,
+            maxTokens: effectiveMaxTokens,
+          },
+          'next-final-report',
+        )
+      : await retryableChatCompletion(
+          {
+            apiKey,
+            model: MODEL,
+            system: systemPrompt,
+            messages,
+            temperature: TEMPERATURE,
+            maxTokens: effectiveMaxTokens,
+          },
+          'next-question',
+        );
   } catch (err) {
     // Si fue en el último turn (reporte final), marcar el state para que
     // el frontend pueda ofrecer 'retry_report' sin re-hacer preguntas.
+    // Blindaje C: encolamos en pending para que el cron lo procese async,
+    // así el usuario no depende de hacer retry manual.
     if (isLastQuestion) {
       const errorMessage = err instanceof Error ? err.message : 'unknown';
       state.finalReportError = errorMessage;
       await persistSessionState(env, state);
+      await enqueuePendingReport(env, state, errorMessage);
       // F2: notificar a Solca (no bloqueante)
       await notifyReportFailure(env, state, errorMessage, 'next');
     }
@@ -438,9 +480,11 @@ async function handleNext(
       console.error('Anthropic error in next:', err.status, err.body);
       return {
         ok: false,
-        error: `Anthropic API error ${err.status}`,
-        errorCode: 'anthropic_error',
-        sessionState: state, // devolver state para que frontend tenga sessionId
+        error: isLastQuestion
+          ? 'Tu sesion se completo. Estamos generando el reporte en segundo plano y te llegara por email en unos minutos.'
+          : `Anthropic API error ${err.status}`,
+        errorCode: isLastQuestion ? 'pending_async' : 'anthropic_error',
+        sessionState: state,
       };
     }
     throw err;
@@ -533,6 +577,22 @@ async function handleNext(
     state.metricsAnonymous = parsed.metricsAnonymous ?? undefined;
     delete state.finalReportError;
     await persistSessionState(env, state);
+
+    // NUEVO (19 ago 2026): incrementar sessions_used SOLO ahora, cuando el
+    // reporte final se generó y se persistió con éxito. Si algo revienta en el
+    // camino (LLM error, parse fail que no llega a este punto), el código queda
+    // vivo para reintentar. Best-effort: si el KV falla, no bloqueamos al
+    // usuario que ya está viendo su reporte.
+    if (state.betaCode) {
+      try {
+        await incrementBetaCodeUsage(
+          env.SIMULATOR_BETA_CODES as KVNamespace | undefined,
+          state.betaCode,
+        );
+      } catch (incErr) {
+        console.error('[simulator-session] increment betaCode failed at report success:', incErr);
+      }
+    }
 
     return {
       ok: true,
@@ -693,6 +753,44 @@ async function persistSessionState(
   }
 }
 
+/**
+ * Blindaje C · encola una sesión cuyo reporte final falló para procesamiento
+ * async por el cron `/api/simulator-process-pending`.
+ *
+ * Usa el mismo KV SIMULATOR_SESSIONS con prefix `pending:{sessionId}`. El cron
+ * lista pendientes, genera el reporte fuera del contexto HTTP (sin timeout de
+ * Cloudflare gateway) y envía al usuario por email.
+ *
+ * Retention: 7 días. Si el cron no logra procesar en ese plazo, el pending
+ * expira y se pierde (extremadamente raro con streaming activo).
+ */
+async function enqueuePendingReport(
+  env: Record<string, unknown>,
+  state: SessionState,
+  errorMessage: string,
+): Promise<void> {
+  const kv = env.SIMULATOR_SESSIONS as KVNamespace | undefined;
+  if (!kv) {
+    console.warn('[simulator-session] SIMULATOR_SESSIONS KV no enlazado · no puedo encolar pending');
+    return;
+  }
+  const pending = {
+    sessionId: state.sessionId,
+    enqueuedAt: new Date().toISOString(),
+    errorMessage,
+    attempts: 0,
+    priority: 'normal' as const,
+  };
+  try {
+    await kv.put(`pending:${state.sessionId}`, JSON.stringify(pending), {
+      expirationTtl: 60 * 60 * 24 * 7, // 7 días
+    });
+    console.log(`[simulator-session] session ${state.sessionId} encolada en pending`);
+  } catch (err) {
+    console.error('[simulator-session] enqueue pending failed for', state.sessionId, err);
+  }
+}
+
 async function loadSessionState(
   env: Record<string, unknown>,
   sessionId: string,
@@ -779,7 +877,8 @@ async function handleRetryReport(
 
   let response;
   try {
-    response = await retryableChatCompletion(
+    // Blindaje B: retry_report también por streaming (mismo motivo que handleNext).
+    response = await retryableChatCompletionStream(
       {
         apiKey,
         model: MODEL,
@@ -791,14 +890,23 @@ async function handleRetryReport(
       'retry_report',
     );
   } catch (err) {
-    // Marca el state como failed para que el frontend pueda mostrar otro reintento
+    // Blindaje C (2 sept 2026): si retry_report también agotó sus reintentos,
+    // encolamos la sesión en KV `pending:` para que el cron worker la procese
+    // en background (sin límite HTTP de Cloudflare). El usuario recibe mensaje
+    // amigable "reporte llega por email en unos minutos" en vez de error crudo.
     const errorMessage = err instanceof Error ? err.message : 'unknown error';
     state.finalReportError = errorMessage;
     await persistSessionState(env, state);
-    // F2: notificar a Solca (no bloqueante) — se llegó aquí después del segundo intento
+    await enqueuePendingReport(env, state, errorMessage);
+    // F2: notificar a Solca (no bloqueante) para monitoreo
     await notifyReportFailure(env, state, errorMessage, 'retry_report');
     if (err instanceof AnthropicError) {
-      return { ok: false, error: `Anthropic API error ${err.status}`, errorCode: 'anthropic_error' };
+      return {
+        ok: false,
+        error:
+          'Estamos generando tu reporte en segundo plano. Te llegará por email en unos minutos.',
+        errorCode: 'pending_async',
+      };
     }
     throw err;
   }
@@ -866,6 +974,20 @@ async function handleRetryReport(
   state.metricsAnonymous = parsed.metricsAnonymous ?? undefined;
   delete state.finalReportError;
   await persistSessionState(env, state);
+
+  // NUEVO (19 ago 2026): mismo criterio que handleNext. El increment ocurre
+  // solo aquí, cuando el retry sí generó reporte y lo persistió. Si el retry
+  // vuelve a fallar, retornamos antes de este punto y el código queda vivo.
+  if (state.betaCode) {
+    try {
+      await incrementBetaCodeUsage(
+        env.SIMULATOR_BETA_CODES as KVNamespace | undefined,
+        state.betaCode,
+      );
+    } catch (incErr) {
+      console.error('[simulator-session] increment betaCode failed at retry_report success:', incErr);
+    }
+  }
 
   return {
     ok: true,

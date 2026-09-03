@@ -48,3 +48,5 @@ _docs/private-*.json
 _docs/*-privado*.json
 _docs/*-privado*.csv
 deploy.log
+.wrangler/
+_docs/~$*

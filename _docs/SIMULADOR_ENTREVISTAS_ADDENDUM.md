@@ -1173,3 +1173,99 @@ Notas operativas:
 ---
 
 — Cierre de Fase 1.4 documentado por Claude · 19 jun 2026
+
+---
+
+## Fase pre-paywall · aprendizajes filosóficos de feedback beta (2 sept 2026)
+
+Con n=3 feedbacks estructurados (D1 `beta_feedback`, exclusivo test row) surgió el impulso de aplicar 5 correcciones antes del paywall. Oscar corrigió el rumbo y persistió dos reglas de producto que gobiernan el simulador de aquí en adelante:
+
+### Regla P-1 · Severidad del evaluador es feature, no bug
+
+Con n bajo (≤10 sesiones reales), **no se baja la severidad del prompt del evaluador** aunque un feedback reporte "sensación de vaguedad", "preguntas muy específicas", o similar. Justificación operativa: Lilian (única sesión completada con feedback + entrevista real posterior) validó que la severidad la obligó a estudiar y prepararse mejor, y le fue bien en la entrevista real. La severidad del simulador ES la preparación.
+
+Aplicación: la regla anti-fabricación existe para NO inventar cifras. La severidad de la evaluación técnica (scores bajos por respuestas cortas, falta de STAR, generalidades) se mantiene.
+
+### Regla P-2 · No explicar frameworks antes de la sesión
+
+**No se explica STAR, PICO, ni ningún framework de entrevista en el intake del simulador.** El candidato debe llegar preparado a la entrevista real; el simulador que le explique el marco antes de responder deja de ser simulador y se convierte en tutor. La entrevista real no le va a explicar STAR antes de la pregunta.
+
+Aplicación:
+- **Intake:** sin bloques informativos sobre método de evaluación. El usuario responde en su nivel actual.
+- **Reporte final (web + PDF):** SÍ lleva glosa de STAR y leyenda de scores. Es "después de que lo hayan usado" — momento pedagógico legítimo.
+- **Reporte freemium en fase paywall:** aquí va la explicación educativa más detallada. Palanca de conversión al plan pagado: "el freemium te muestra qué pulir; el básico te da 3 sesiones para practicar hasta que lo domines".
+
+### Regla P-3 · No sobreinterpretar n pequeño
+
+n=3 no justifica cambios agresivos al prompt o al flujo. Antes de aplicar un fix motivado por feedback, evaluar si viene de un solo usuario, si contradice otro feedback, y si la señal es lo suficientemente robusta. Aplicar solo fixes de UX universales (accesibilidad, formularios incompletos como el caso "falta Maestría") sin importar el n. Los fixes de contenido/prompt esperan hasta n≥10 con señal consistente.
+
+### Decisiones específicas del batch 2 sept 2026 sobre 3 feedbacks reales
+
+| Fix propuesto | Decisión | Motivo |
+|---|---|---|
+| P0 · agregar Maestría al selector académico | APLICADO | Regla UX universal; excluye ~40% de la audiencia LATAM. |
+| P1 · explicar STAR en el intake | RECHAZADO + REVERTIDO | Rompe regla P-2. |
+| P1 · leyenda de scores T/E/Esp en reporte web + PDF | APLICADO | Consistente con regla P-2 (después de usarlo). Cierra task #45. |
+| P1 · bajar severidad del prompt "respuesta vaga" | RECHAZADO | Rompe regla P-1. |
+| P1 · investigar prompt vs interviewStage=phone_screen | PENDIENTE decisión | Es investigación, no aún cambio; puede ser bug real o percepción. |
+
+---
+— Aprendizaje persistido por Claude tras revisión con Oscar · 2 sept 2026
+
+---
+
+## Blindaje anti-524 · reporte final del simulador (2 sept 2026)
+
+Detonante: sesión `27d9355c` completó 10/10 respuestas y falló con `Anthropic API error: 524 <none>` (Cloudflare gateway timeout). El retry también cayó en 524. Usuario recibió 2 emails de alert; el reporte se recuperó manualmente con `scripts/simulator-recover-report.mjs`.
+
+Aplicadas 3 capas de defensa en paralelo para eliminar el problema en producción:
+
+### Capa A · AbortController 85s (fix rápido)
+
+`src/lib/anthropic.ts` · `chatCompletion` y `chatCompletionStream` aceptan `timeoutMs` opcional. Default 85000 ms (85s), 15s por debajo del gateway timeout de Cloudflare (100s). Si el fetch a Anthropic excede el timeout, aborta y lanza `AnthropicError` con status 524. `RETRYABLE_STATUS` incluye 524, así que dispara el retry interno limpio en vez de dejar que Cloudflare mate el Worker completo.
+
+### Capa B · Streaming del reporte final
+
+`src/lib/anthropic.ts` · funciones nuevas `chatCompletionStream` y `retryableChatCompletionStream`. Usan `stream: true` en el body a Anthropic, leen el SSE chunk por chunk, acumulan text_deltas y devuelven el response completo al recibir message_stop. Cloudflare NO hace 524 mientras haya bytes fluyendo — con streaming Anthropic empieza a emitir en 1-2s y la conexión se mantiene activa.
+
+Integración en `simulator-session.ts`:
+- `handleNext` cuando `isLastQuestion=true` usa `retryableChatCompletionStream`.
+- `handleRetryReport` usa `retryableChatCompletionStream`.
+- Turnos normales (`next-question`) siguen non-streaming (rápidos, no lo necesitan).
+
+Timeout default subido a 180s en streaming porque Cloudflare no corta si hay tráfico.
+
+### Capa C · Fallback async con cron worker
+
+Si aún así los 3 reintentos fallan, `enqueuePendingReport` marca la sesión con prefix `pending:{sessionId}` en KV `SIMULATOR_SESSIONS`. TTL 7 días.
+
+Endpoint `/api/simulator-process-pending?key=<STATS_KEY>` procesa los pendings:
+1. Lista `pending:*` (max 20 por corrida).
+2. Por cada pending: carga el state, resuelve email del usuario cruzando `state.betaCode` con `EMAILS` prefix `sim:`, intenta `retryableChatCompletionStream` con `timeoutMs: 300000` (5 min, sin límite HTTP en el contexto async).
+3. Éxito → actualiza `state.finalReport` en KV, envía email al usuario con link al reporte, borra el pending.
+4. Fallo → incrementa `attempts`. Si `>= MAX_ATTEMPTS (3)`, envía email al usuario con disculpa + pide reply, borra pending.
+
+UX: el frontend maneja `errorCode: 'pending_async'` con mensaje amigable ("Tu sesión se completó. El reporte llega por email en unos minutos"). Usuario no ve el fallo como error.
+
+### Configuración cron externo (requerido)
+
+Cloudflare Cron Trigger requiere `scheduled` handler que Astro adapter no expone trivialmente. Alternativas:
+
+- **cron-job.org** (gratis): configurar GET a `https://solcaciencia.com/api/simulator-process-pending?key=<STATS_KEY>` cada 10 min.
+- **GitHub Actions**: workflow con `schedule: cron '*/10 * * * *'` + curl.
+- **EasyCron** (freemium).
+- **Cloudflare Cron Trigger** con Astro (avanzado): requiere ajustar `astro.config` para exportar scheduled handler.
+
+Cualquiera de los 4 funciona. La opción recomendada hoy es cron-job.org por simplicidad.
+
+### Otras capas complementarias
+
+- **`FINAL_REPORT_TOKENS_PER_QUESTION` bajado de 600 a 400.** Para 10 preguntas ahora pide 7000 tokens (vs 9000 antes) → generación ~70s vs ~100s. Menos margen de timeout aunque streaming ya lo cubre.
+- **Script de recovery manual** `scripts/simulator-recover-report.mjs` documentado. Vía de último recurso si el cron falla o hay que reprocesar una sesión específica.
+
+### Runbook post-incidente
+
+Si un usuario reporta que su reporte no llegó:
+1. Verificar en KV `SIMULATOR_SESSIONS` si existe `pending:{sessionId}`. Si sí, esperar próxima corrida del cron o disparar manualmente el endpoint.
+2. Si el pending superó `MAX_ATTEMPTS`, correr `scripts/simulator-recover-report.mjs` local con state descargado.
+3. Notificar a Solca automático via `notifyReportFailure` (email a hello@solcaciencia.com) sigue activo para monitoreo.
