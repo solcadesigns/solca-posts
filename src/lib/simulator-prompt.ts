@@ -680,3 +680,120 @@ function rolesForArea(area: string): string {
   }
   return roles.join(', ');
 }
+
+// ──────────────────────────────────────────────────────────────────
+// Chunked report prompts (v0.8 · 3 sept 2026)
+//
+// Para evitar el subrequest timeout de 30s de Cloudflare, el reporte final
+// se genera en múltiples llamadas cortas en vez de una sola larga:
+//   1. Chunk 1: summary (scores agregados + fortalezas + areas + vocab + recomendacion + CTA)
+//   2. Chunks 2..N: breakdown por lotes de 5 preguntas
+//
+// Cada chunk cabe en <25s de subrequest. El merge final se hace en el cron.
+// ──────────────────────────────────────────────────────────────────
+
+interface ChunkPromptOptions {
+  profile: CandidateProfile;
+  plan: Plan;
+  sessionNumberInPackage: number;
+  cvSummary?: CvSummary;
+}
+
+/**
+ * Construye el system prompt para el CHUNK 1 (summary).
+ * El modelo debe devolver SOLO el summary + scores + fortalezas + areas_de_mejora
+ * + vocabulario_a_incorporar + recomendacion_final + CTA. NO questions_breakdown.
+ */
+export function buildSummaryChunkPrompt(options: ChunkPromptOptions): string {
+  const { profile, plan, sessionNumberInPackage, cvSummary } = options;
+  const base = buildSystemPrompt({ profile, plan, sessionNumberInPackage, cvSummary });
+
+  return `${base}
+
+═══════════════════════════════════════════════════════════════
+CHUNK 1 · SOLO SUMMARY (v0.8 · 3 sept 2026)
+═══════════════════════════════════════════════════════════════
+En este turno devuelves SOLO el bloque de SUMMARY del reporte final. NO devuelves questions_breakdown (viene en chunks separados). NO devuelves metrics_anonymous.
+
+Formato JSON:
+\`\`\`json
+{
+  "session_id": "(rellenar con id de la sesión)",
+  "rol": "${profile.roleTitle ?? profile.role ?? 'No especificado'}",
+  "n_questions": ${profile.questionCount},
+  "summary": {
+    "scores": {
+      "tecnico": {promedio_1_a_5},
+      "estructura": {promedio_1_a_5},
+      "especificidad": {promedio_1_a_5},
+      "alertas_count": {número}
+    },
+    "fortalezas": ["frase 1", "frase 2", "frase 3"],
+    "areas_de_mejora": ["frase 1 con acción concreta", "frase 2", "frase 3"],
+    "vocabulario_a_incorporar": ["términos pharma específicos que faltaron"],
+    "recomendacion_final": "Un párrafo de 3-4 frases con el siguiente paso operativo."
+  },
+  "cta": {
+    "type": "libro | recurso_gratuito",
+    "title": "título del CTA",
+    "description": "2-3 frases justificadas por el feedback acumulado",
+    "url": "url"
+  }
+}
+\`\`\`
+
+Los scores promedio los calculas mentalmente evaluando cada respuesta que el candidato dio. La calidad del análisis en fortalezas y areas_de_mejora debe reflejar la sesión completa. Devuelve SOLO el JSON, sin texto adicional.`;
+}
+
+/**
+ * Construye el system prompt para un CHUNK de BREAKDOWN (preguntas de startQ a endQ).
+ * Cada chunk cubre máximo 5 preguntas para caber en <25s de subrequest.
+ */
+export function buildBreakdownChunkPrompt(
+  options: ChunkPromptOptions,
+  startQ: number,
+  endQ: number,
+): string {
+  const { profile, plan, sessionNumberInPackage, cvSummary } = options;
+  const base = buildSystemPrompt({ profile, plan, sessionNumberInPackage, cvSummary });
+
+  return `${base}
+
+═══════════════════════════════════════════════════════════════
+CHUNK BREAKDOWN · preguntas ${startQ} a ${endQ} (v0.8 · 3 sept 2026)
+═══════════════════════════════════════════════════════════════
+En este turno devuelves SOLO el breakdown de las preguntas ${startQ} a ${endQ}. NO devuelves summary. NO devuelves CTA. NO devuelves metrics_anonymous.
+
+Formato JSON:
+\`\`\`json
+{
+  "questions_breakdown": [
+    {
+      "question_number": ${startQ},
+      "question_text": "{texto exacto de la pregunta ${startQ}}",
+      "user_answer": "{cita textual, ≤200 palabras}",
+      "scores": {
+        "tecnico": {1_a_5},
+        "estructura": {1_a_5},
+        "especificidad": {1_a_5},
+        "alertas": "sin alertas | descripción específica"
+      },
+      "angle_used": "A | C | D | E",
+      "what_worked": "1-2 frases concretas",
+      "what_to_improve": "1-2 frases con sugerencia accionable",
+      "model_phrase": "frase modelo del contenido literal, ≤30 palabras"
+    }
+    // ... una entrada por cada pregunta de ${startQ} a ${endQ}
+  ]
+}
+\`\`\`
+
+REGLAS:
+- UNA entrada por cada pregunta del ${startQ} al ${endQ} (inclusive).
+- "user_answer" es CITA TEXTUAL. Si fue muy largo, trunca con "..." al final pero conserva el inicio.
+- "angle_used" rota A, C, D, E sin repetir dos veces seguidas.
+- "model_phrase" del contenido literal de la respuesta, nunca plantilla.
+
+Devuelve SOLO el JSON, sin texto adicional.`;
+}
+

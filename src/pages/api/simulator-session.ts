@@ -242,6 +242,20 @@ async function handleInit(
     return { ok: false, error: 'Falta profile', errorCode: 'invalid_profile' };
   }
 
+  // Auth requerida (3 sept 2026): rechazar init sin código y sin email.
+  // Antes, un usuario podía abrir /sesion directo (sin código, sin email) y
+  // obtener freemium anónimo ilimitado. Cierre de fuga: para arrancar sesión
+  // el usuario debe llegar con código SIM-XXXX (pagado o freemium) O con email
+  // registrado en la landing.
+  if (!body.betaCode && !body.email) {
+    return {
+      ok: false,
+      error:
+        'Necesitas un código de acceso o registrarte primero en solcaciencia.com/simulador-entrevistas/',
+      errorCode: 'beta_code_invalid',
+    };
+  }
+
   // Validar beta code si vino (legacy pre-paywall + nuevo cohort='paywall').
   // Post-paywall (3 sept 2026): el mismo mecanismo del código SIM-XXXXXXXX
   // sirve como auth para créditos comprados. El record trae cohort='paywall'
@@ -555,202 +569,26 @@ async function handleNext(
     }
   }
 
-  const systemPrompt = buildSystemPrompt({
-    profile,
-    plan,
-    sessionNumberInPackage,
-    cvSummary,
-  });
-
-  const messages = buildMessagesFromState(state);
-
+  // v0.8 (3 sept 2026): reporte final SIEMPRE async con chunking.
+  // Motivo: Cloudflare Workers subrequest timeout = 30s. Un reporte de 10-15
+  // preguntas tarda 60-90s en Sonnet 4.5 → falla sistemático. La solución:
+  //   - No generar reporte sincrónico. Encolar pending y responder immediate.
+  //   - Cron procesa por chunks (<25s cada uno).
+  //   - Frontend polling opcional + email fallback.
   if (isLastQuestion) {
-    // v0.7: feedback diferido. Pedir el reporte final expandido con summary + questions_breakdown.
-    messages.push({
-      role: 'user',
-      content:
-        'Esa fue la última respuesta del candidato. Ahora devuelve los DOS bloques JSON del reporte final según el formato v0.7 especificado en el system prompt: primero el reporte expandido con summary + questions_breakdown + cta, después el JSON de métricas anónimas. NO devuelvas feedback por turnos — todo va consolidado en el reporte.',
-    });
-  } else {
-    // v0.7: sin feedback explícito. Solo transición breve + siguiente pregunta.
-    messages.push({
-      role: 'user',
-      content:
-        'Continúa con la siguiente pregunta. NO des feedback explícito sobre la respuesta anterior (eso va consolidado al final). Puedes hacer una transición breve de una línea si quieres ("Entendido", "Pasamos a la siguiente"), o ir directo a la pregunta. Recuerda que el adaptive de contenido (Mecanismo 2) sigue activo: si detectaste gap o fortaleza, la siguiente pregunta puede explorarlo.',
-    });
-  }
-
-  const effectiveMaxTokens = isLastQuestion
-    ? finalReportMaxTokens(profile.questionCount)
-    : MAX_TOKENS_PER_TURN;
-
-  let response;
-  try {
-    // Blindaje B (2 sept 2026): reportes finales van por streaming para evitar
-    // el gateway timeout de Cloudflare (100s). Turnos normales usan la llamada
-    // non-streaming rápida (~5-15s).
-    response = isLastQuestion
-      ? await retryableChatCompletionStream(
-          {
-            apiKey,
-            model: MODEL,
-            system: systemPrompt,
-            messages,
-            temperature: TEMPERATURE,
-            maxTokens: effectiveMaxTokens,
-          },
-          'next-final-report',
-        )
-      : await retryableChatCompletion(
-          {
-            apiKey,
-            model: MODEL,
-            system: systemPrompt,
-            messages,
-            temperature: TEMPERATURE,
-            maxTokens: effectiveMaxTokens,
-          },
-          'next-question',
-        );
-  } catch (err) {
-    // Si fue en el último turn (reporte final), marcar el state para que
-    // el frontend pueda ofrecer 'retry_report' sin re-hacer preguntas.
-    // Blindaje C: encolamos en pending para que el cron lo procese async,
-    // así el usuario no depende de hacer retry manual.
-    if (isLastQuestion) {
-      const errorMessage = err instanceof Error ? err.message : 'unknown';
-      state.finalReportError = errorMessage;
-      await persistSessionState(env, state);
-      await enqueuePendingReport(env, state, errorMessage);
-      // F2: notificar a Solca (no bloqueante)
-      await notifyReportFailure(env, state, errorMessage, 'next');
+    // Guardar userEmail en state para que el cron envíe email al terminar.
+    // Solo si viene en el body (Stripe checkout lo pasa, freemium landing lo pasa).
+    if (body.email) {
+      state.userEmail = body.email;
     }
-    if (err instanceof AnthropicError) {
-      console.error('Anthropic error in next:', err.status, err.body);
-      return {
-        ok: false,
-        error: isLastQuestion
-          ? 'Tu sesion se completo. Estamos generando el reporte en segundo plano y te llegara por email en unos minutos.'
-          : `Anthropic API error ${err.status}`,
-        errorCode: isLastQuestion ? 'pending_async' : 'anthropic_error',
-        sessionState: state,
-      };
-    }
-    throw err;
-  }
-
-  const assistantText = extractText(response);
-
-  // Detectar truncamiento por max_tokens (Fase 1.4.G.4)
-  if (response.stop_reason === 'max_tokens') {
-    console.warn(
-      '[simulator-session] Claude hit max_tokens cap',
-      JSON.stringify({
-        isLastQuestion,
-        maxTokensUsed: effectiveMaxTokens,
-        outputTokens: response.usage.output_tokens,
-        questionCount: profile.questionCount,
-        textPrefix: assistantText.slice(0, 200),
-        textSuffix: assistantText.slice(-200),
-      }),
-    );
-  }
-
-  if (isLastQuestion) {
+    state.finalReportStatus = 'queued';
     state.finished = true;
-
-    // v0.7 + Fase 1.4.1: parsing server-side completo del output de Claude.
-    const parsed = parseFinalOutput(assistantText);
-
-    // Timings reales server-side (más confiables que los que reporte Claude)
-    const startedAtMs = new Date(state.startedAt).getTime();
-    const sesionDuracionTotalSeg = Math.max(0, Math.round((Date.now() - startedAtMs) / 1000));
-    const respuestaTimings = state.turns
-      .map((t) => t.userAnswerSeconds)
-      .filter((v): v is number => typeof v === 'number' && v > 0);
-    const respuestaPromedioSeg =
-      respuestaTimings.length > 0
-        ? Math.round(respuestaTimings.reduce((a, b) => a + b, 0) / respuestaTimings.length)
-        : 0;
-
-    // Sobrescribir timings en métricas con los reales (si el parsing tuvo éxito)
-    if (parsed.metricsAnonymous) {
-      parsed.metricsAnonymous.sesionDuracionTotalSeg = sesionDuracionTotalSeg;
-      parsed.metricsAnonymous.respuestaPromedioSeg = respuestaPromedioSeg;
-      parsed.metricsAnonymous.ts = state.startedAt;
-    }
-
-    // Guardar en D1 (best-effort · no bloqueamos al usuario si falla)
-    if (parsed.metricsAnonymous) {
-      try {
-        const db = env.SIMULATOR_METRICS_DB as D1Database | undefined;
-        if (db) {
-          await writeMetricsToD1(db, {
-            sessionId: state.sessionId,
-            metrics: parsed.metricsAnonymous,
-            hasCvSummary: Boolean(cvSummary),
-          });
-        }
-      } catch (writeErr) {
-        console.error('Failed to write session metrics to D1:', writeErr);
-      }
-    }
-
-    // Asegurar sessionId en el reporte
-    const finalReport = parsed.finalReport ?? {
-      sessionId: state.sessionId,
-      rol: profile.roleTitle ?? 'No especificado',
-      nQuestions: profile.questionCount,
-      summary: {
-        scores: { tecnico: 0, estructura: 0, especificidad: 0, alertasCount: 0 },
-        fortalezas: [],
-        areasDeMejora: [],
-        vocabularioAIncorporar: [],
-        recomendacionFinal: assistantText,
-      },
-      questionsBreakdown: [],
-      cta: {
-        type: 'recurso_gratuito' as const,
-        title: 'Reporte sin parsear',
-        description: 'No se pudo parsear el JSON del reporte. Texto crudo abajo:\n\n' + assistantText,
-        url: '/revisar-cv',
-      },
-    };
-
-    if (!finalReport.sessionId) {
-      finalReport.sessionId = state.sessionId;
-    }
-
-    // Fase 1.5.J · persistir state completo con el reporte
-    state.finalReport = finalReport;
-    state.metricsAnonymous = parsed.metricsAnonymous ?? undefined;
-    delete state.finalReportError;
     await persistSessionState(env, state);
 
-    // Paywall (2 sept 2026): decrementar credits del paywall si el usuario
-    // pasó por email lookup. Mismo criterio que betaCode: solo al éxito.
-    if (state.emailHash) {
-      await decrementCredits(env, state.emailHash);
-    }
+    // Encolar pending con más contexto para el cron
+    await enqueuePendingReport(env, state, 'async_by_default_v0.8');
 
-    // NUEVO (19 ago 2026): incrementar sessions_used SOLO ahora, cuando el
-    // reporte final se generó y se persistió con éxito. Si algo revienta en el
-    // camino (LLM error, parse fail que no llega a este punto), el código queda
-    // vivo para reintentar. Best-effort: si el KV falla, no bloqueamos al
-    // usuario que ya está viendo su reporte.
-    if (state.betaCode) {
-      try {
-        await incrementBetaCodeUsage(
-          env.SIMULATOR_BETA_CODES as KVNamespace | undefined,
-          state.betaCode,
-        );
-      } catch (incErr) {
-        console.error('[simulator-session] increment betaCode failed at report success:', incErr);
-      }
-    }
-
-    // Consultar créditos restantes (post-decremento) para que el frontend
-    // sepa si mostrar el cuestionario package_final (cuando remaining=0).
+    // Devolver credits remaining para que el frontend decida survey final
     let creditsRemaining: number | undefined;
     if (state.emailHash) {
       const creditsKv = env.SIMULATOR_CREDITS as KVNamespace | undefined;
@@ -767,32 +605,90 @@ async function handleNext(
       }
     }
 
-    // Task #74: si es la última sesión del paquete pagado, encola email
-    // post-paquete opcional con cupón. El cron `/api/simulator-post-package-cron`
-    // lo procesa 24h después si el usuario no dejó feedback package_final.
-    if (
-      creditsRemaining === 0 &&
-      (state.plan === 'basico' || state.plan === 'premium') &&
-      body.email
-    ) {
-      const firstName = body.email.split('@')[0];
-      await enqueuePackageEndEmail(env, state.sessionId, {
-        email: body.email,
-        firstName,
-        plan: state.plan,
-        role: profile.roleTitle ?? profile.role,
-        terminadoAt: new Date().toISOString(),
-      });
+    // Decrementar créditos ahora (regla del pre-paywall: contador se toca cuando el
+    // usuario termina las preguntas. El reporte se garantiza por email async).
+    // Si el usuario abandonó a mitad, no hay decremento porque no llegamos aquí.
+    if (state.emailHash) {
+      await decrementCredits(env, state.emailHash);
+    }
+    if (state.betaCode) {
+      try {
+        await incrementBetaCodeUsage(
+          env.SIMULATOR_BETA_CODES as KVNamespace | undefined,
+          state.betaCode,
+        );
+      } catch (incErr) {
+        console.error('[simulator-session] increment betaCode failed at queue:', incErr);
+      }
     }
 
     return {
       ok: true,
       sessionState: state,
       finished: true,
-      finalReport,
+      finalReport: undefined,
       planUsed: state.plan,
       creditsRemaining,
+      errorCode: 'pending_async',
+      error:
+        'Tu sesion se completo. Estamos generando el reporte por chunks para evitar timeouts. Aparecera en esta pantalla en 2-5 min y te llegara por email tambien.',
     };
+  }
+
+  const systemPrompt = buildSystemPrompt({
+    profile,
+    plan,
+    sessionNumberInPackage,
+    cvSummary,
+  });
+
+  const messages = buildMessagesFromState(state);
+
+  // v0.7: sin feedback explícito por turno. Solo transición breve + siguiente pregunta.
+  messages.push({
+    role: 'user',
+    content:
+      'Continúa con la siguiente pregunta. NO des feedback explícito sobre la respuesta anterior (eso va consolidado al final). Puedes hacer una transición breve de una línea si quieres ("Entendido", "Pasamos a la siguiente"), o ir directo a la pregunta. Recuerda que el adaptive de contenido (Mecanismo 2) sigue activo: si detectaste gap o fortaleza, la siguiente pregunta puede explorarlo.',
+  });
+
+  let response;
+  try {
+    response = await retryableChatCompletion(
+      {
+        apiKey,
+        model: MODEL,
+        system: systemPrompt,
+        messages,
+        temperature: TEMPERATURE,
+        maxTokens: MAX_TOKENS_PER_TURN,
+      },
+      'next-question',
+    );
+  } catch (err) {
+    if (err instanceof AnthropicError) {
+      console.error('Anthropic error in next:', err.status, err.body);
+      return {
+        ok: false,
+        error: `Anthropic API error ${err.status}`,
+        errorCode: 'anthropic_error',
+        sessionState: state,
+      };
+    }
+    throw err;
+  }
+
+  const assistantText = extractText(response);
+
+  // Detectar truncamiento por max_tokens
+  if (response.stop_reason === 'max_tokens') {
+    console.warn(
+      '[simulator-session] Claude hit max_tokens cap on next-question',
+      JSON.stringify({
+        outputTokens: response.usage.output_tokens,
+        questionCount: profile.questionCount,
+        textPrefix: assistantText.slice(0, 200),
+      }),
+    );
   }
 
   // Pregunta siguiente

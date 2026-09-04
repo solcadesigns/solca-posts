@@ -594,6 +594,29 @@ const noIndex = true;
 
   <script>
     // ──────────────────────────────────────────────────────────────────
+    // Gate de acceso (3 sept 2026): esta página SIEMPRE requiere código
+    // (SIM-XXXXXXXX) o email registrado. Si el usuario llega a /sesion
+    // directo sin ninguno de los dos, redirect a la landing.
+    // Cierra la fuga de freemium ilimitado por acceso anónimo directo.
+    // ──────────────────────────────────────────────────────────────────
+    (function accessGate() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const codeFromUrl = urlParams.get('codigo') || urlParams.get('code');
+      const emailFromUrl = urlParams.get('email');
+      let hasCode = false;
+      let hasEmail = false;
+      try {
+        hasCode = !!(codeFromUrl || sessionStorage.getItem('solca_beta_code'));
+        hasEmail = !!(emailFromUrl || localStorage.getItem('solca_user_email'));
+      } catch { /* storage bloqueado */ }
+      if (!hasCode && !hasEmail) {
+        window.location.replace(
+          '/simulador-entrevistas/?err=necesitas-codigo#codigo'
+        );
+      }
+    })();
+
+    // ──────────────────────────────────────────────────────────────────
     // Tipos compartidos (subset de simulator-types.ts; sin importar para mantener vanilla)
     // ──────────────────────────────────────────────────────────────────
 
@@ -1160,13 +1183,13 @@ const noIndex = true;
       errorEl.hidden = true;
 
       // ¿Es la última pregunta? Si sí, el endpoint genera el reporte final
-      // que tarda más (20-60 segundos) porque sintetiza toda la sesión.
+      // que tarda entre 90 seg y 5 min según cantidad de preguntas (10-15 tarda más).
       const isLastQuestion =
         appState.sessionState.turns.length >= appState.sessionState.profile.questionCount;
 
       if (isLastQuestion) {
         loadingMessageEl.textContent =
-          'Generando tu reporte final · esto toma 30 a 60 segundos porque analizo toda la sesión, sintetizo fortalezas y áreas de mejora, y preparo el feedback por pregunta. No cierres la ventana.';
+          'Generando tu reporte final · esto puede tomar hasta 5 minutos según cuántas preguntas hayas hecho. Analizo toda la sesión, sintetizo fortalezas y áreas de mejora, y preparo el feedback por pregunta. No cierres la ventana. Si algo falla, tus respuestas quedan guardadas y te llegará el reporte por email.';
         loadingEl.classList.add('loading-extended');
       } else {
         loadingMessageEl.textContent = 'Procesando tu respuesta…';
@@ -1187,19 +1210,26 @@ const noIndex = true;
 
         const data = await resp.json();
 
-        // Blindaje C: si el reporte final falló pero se encoló en pending,
-        // mostramos mensaje amigable y no lanzamos error.
+        // v0.8 (3 sept 2026): reporte SIEMPRE async con chunking. Backend responde
+        // ok:true, finished:true, sin finalReport, errorCode:'pending_async'.
+        // El frontend hace polling cada 15s hasta que el reporte esté listo.
+        if (data.ok && data.finished && !data.finalReport) {
+          appState.sessionState = data.sessionState;
+          if (typeof data.creditsRemaining === 'number') {
+            (appState as unknown as { creditsRemaining?: number }).creditsRemaining = data.creditsRemaining;
+          }
+          loadingEl.hidden = true;
+          submitBtn.disabled = false;
+          startReportPolling(data.sessionState?.sessionId ?? appState.sessionState?.sessionId ?? '');
+          return;
+        }
+
+        // Legacy: errorCode='pending_async' del blindaje C anterior (por si acaso).
         if (!data.ok && data.errorCode === 'pending_async') {
           appState.sessionState = data.sessionState;
           loadingEl.hidden = true;
           submitBtn.disabled = false;
-          const sessionId = appState.sessionState?.sessionId ?? 'desconocido';
-          errorEl.innerHTML =
-            `<strong>Tu sesión se completó con éxito.</strong><br>` +
-            `Estamos generando tu reporte en segundo plano y te llegará por email en unos minutos. No necesitas hacer nada más — puedes cerrar esta ventana.<br>` +
-            `<small style="color:var(--text-mute)">Session: <code>${escapeHtml(sessionId)}</code></small>`;
-          errorEl.classList.add('info');
-          errorEl.hidden = false;
+          startReportPolling(data.sessionState?.sessionId ?? 'desconocido');
           return;
         }
 
@@ -1216,6 +1246,7 @@ const noIndex = true;
         submitBtn.disabled = false;
 
         if (data.finished) {
+          // Path legacy (sincrónico) por si acaso alguna sesión vieja llegue aquí
           showView('report');
           renderFinalReport(data.finalReport);
         } else {
@@ -1263,7 +1294,7 @@ const noIndex = true;
       const loadingEl = document.getElementById('session-loading') as HTMLDivElement;
       const loadingMessageEl = loadingEl.querySelector('.loading-message') as HTMLSpanElement;
       errorEl.hidden = true;
-      loadingMessageEl.textContent = 'Reintentando generación del reporte... esto toma 30-60 segundos.';
+      loadingMessageEl.textContent = 'Reintentando generación del reporte... puede tomar hasta 5 minutos si tu sesión fue larga (10-15 preguntas).';
       loadingEl.classList.add('loading-extended');
       loadingEl.hidden = false;
 
@@ -1279,12 +1310,8 @@ const noIndex = true;
         // el reporte por email al usuario.
         if (!data.ok && data.errorCode === 'pending_async') {
           loadingEl.hidden = true;
-          errorEl.innerHTML =
-            `<strong>Tu sesión se completó y estamos generando el reporte en segundo plano.</strong><br>` +
-            `Te llegará por email en unos minutos. No necesitas hacer nada más — puedes cerrar esta ventana.<br>` +
-            `<small style="color:var(--text-mute)">Session: <code>${escapeHtml(sessionId)}</code></small>`;
-          errorEl.classList.add('info');
-          errorEl.hidden = false;
+          // v0.8: usar polling en vez de solo mensaje estático
+          startReportPolling(sessionId);
           return;
         }
         if (!data.ok) throw new Error(data.error || 'Error al reintentar el reporte');
@@ -1350,6 +1377,112 @@ const noIndex = true;
     // ──────────────────────────────────────────────────────────────────
     // Report · render final
     // ──────────────────────────────────────────────────────────────────
+    // v0.8 (3 sept 2026): polling del reporte generado async por chunks.
+    // Muestra pantalla intermedia con progreso y hace polling cada 15s al
+    // endpoint /api/simulator-session-status. Cuando el status es 'ready',
+    // pinta el reporte. Si tarda >6 min, muestra fallback "cierra la ventana
+    // y espera el email".
+    function startReportPolling(sessionId: string) {
+      if (!sessionId) return;
+      // Muestra pantalla intermedia dentro del contenedor del reporte
+      showView('report');
+      const summaryEl = document.getElementById('report-summary') as HTMLDivElement | null;
+      const breakdownEl = document.getElementById('report-breakdown') as HTMLDivElement | null;
+      if (breakdownEl) breakdownEl.innerHTML = '';
+      const email = localStorage.getItem('solca_user_email') || '';
+      if (summaryEl) {
+        summaryEl.innerHTML = `
+          <div id="polling-status" style="background:#fff;border:1px solid #E5E1D8;border-radius:8px;padding:24px;margin:16px 0;">
+            <div style="text-align:center;">
+              <div class="loading-spinner" style="margin:0 auto 16px;"></div>
+              <h3 style="margin:0 0 12px;color:#1F3A5F;">Tu sesión se completó</h3>
+              <p style="margin:0 0 12px;font-size:15px;color:#111827;">
+                Estamos generando tu reporte por partes para evitar timeouts. Puedes:
+              </p>
+              <ul style="text-align:left;max-width:420px;margin:12px auto;font-size:14px;color:#4B5563;line-height:1.55;">
+                <li><strong>Esperar aquí</strong> · el reporte aparecerá cuando esté listo (2-5 min).</li>
+                <li><strong>Cerrar la ventana</strong> · te llegará por email${email ? ' a ' + email : ''}.</li>
+              </ul>
+              <p style="margin:16px 0 0;font-size:13px;color:#4B5563;">
+                <strong>Progreso:</strong> <span id="polling-progress">iniciando…</span>
+              </p>
+              <p style="margin:6px 0 0;font-size:11px;color:#4B5563;">
+                Tiempo transcurrido: <span id="polling-elapsed">0</span> seg
+              </p>
+              <p style="margin:12px 0 0;font-size:11px;color:#4B5563;">
+                Session ID: <code>${escapeHtml(sessionId)}</code>
+              </p>
+            </div>
+          </div>
+        `;
+      }
+
+      const startedAt = Date.now();
+      const MAX_MS = 6 * 60 * 1000; // 6 min máximo de polling
+      let attempts = 0;
+
+      async function poll() {
+        attempts += 1;
+        const elapsedSec = Math.round((Date.now() - startedAt) / 1000);
+        const elapsedEl = document.getElementById('polling-elapsed');
+        if (elapsedEl) elapsedEl.textContent = String(elapsedSec);
+
+        try {
+          const r = await fetch(`/api/simulator-session-status?sessionId=${encodeURIComponent(sessionId)}`);
+          const j = await r.json();
+          const progressEl = document.getElementById('polling-progress');
+
+          if (j.status === 'ready' && j.finalReport) {
+            appState.sessionState = j.sessionState;
+            renderFinalReport(j.finalReport);
+            return; // detener polling
+          }
+          if (j.status === 'failed') {
+            if (progressEl) progressEl.textContent = 'error · te contactaremos por email';
+            const errBox = document.getElementById('polling-status');
+            if (errBox) {
+              errBox.innerHTML = `
+                <div style="text-align:center;padding:12px;">
+                  <h3 style="color:#DC503C;">Hubo un problema al generar tu reporte</h3>
+                  <p style="font-size:14px;color:#4B5563;">Tus respuestas están guardadas. Te enviamos un email para revisar tu caso manualmente.</p>
+                  <p style="font-size:12px;color:#4B5563;">Detalle: ${escapeHtml(j.error || 'error desconocido')}</p>
+                </div>
+              `;
+            }
+            return;
+          }
+          // status = queued | processing → seguir polling
+          if (progressEl) progressEl.textContent = j.progress ?? 'procesando…';
+        } catch (err) {
+          // Error de red, reintentar
+          const progressEl = document.getElementById('polling-progress');
+          if (progressEl) progressEl.textContent = 'reintentando…';
+        }
+
+        if (Date.now() - startedAt > MAX_MS) {
+          // Timeout · el reporte sigue en background pero el usuario debe esperar el email
+          const box = document.getElementById('polling-status');
+          if (box) {
+            box.innerHTML = `
+              <div style="text-align:center;padding:12px;">
+                <h3 style="color:#1F3A5F;">Sigue procesando en segundo plano</h3>
+                <p style="font-size:14px;color:#4B5563;">Tu reporte tomó más tiempo del esperado. Te llegará por email en cuanto termine (usualmente en los próximos minutos). Puedes cerrar esta ventana.</p>
+                <p style="font-size:11px;color:#4B5563;margin-top:8px;">Session: <code>${escapeHtml(sessionId)}</code></p>
+              </div>
+            `;
+          }
+          return;
+        }
+
+        // Intervalo escalonado: 15s primeros 2 min, luego 30s
+        const nextIntervalMs = elapsedSec < 120 ? 15000 : 30000;
+        setTimeout(poll, nextIntervalMs);
+      }
+
+      // Primer poll inmediato para dar feedback rápido
+      setTimeout(poll, 2000);
+    }
+
     function renderFinalReport(finalReport: FinalReport | null | undefined) {
       stopTimer();
       const summaryEl = document.getElementById('report-summary-text') as HTMLDivElement;
@@ -2344,7 +2477,7 @@ const noIndex = true;
           const breakdownEl = document.getElementById('report-breakdown-text') as HTMLDivElement;
           summaryEl.innerHTML = `
             <p><strong>Tu sesión anterior terminó pero el reporte no llegó a generarse.</strong></p>
-            <p>Tus ${st.turns.length} respuestas siguen guardadas. Puedes reintentar la generación · normalmente toma 30-60 segundos.</p>
+            <p>Tus ${st.turns.length} respuestas siguen guardadas. Puedes reintentar la generación · toma entre 90 seg y 5 min según el largo de tu sesión.</p>
             <p><button id="recovery-retry-btn" class="btn btn-primary" style="margin-top:8px">Reintentar generación del reporte</button></p>
             <p><small style="color:var(--text-mute)">Si vuelve a fallar, escríbenos a <a href="mailto:hello@solcaciencia.com?subject=Simulador%20-%20Recovery%20fallido&body=sessionId%3A%20${encodeURIComponent(st.sessionId)}">hello@solcaciencia.com</a> con sessionId <code>${escapeHtml(st.sessionId)}</code>.</small></p>
           `;

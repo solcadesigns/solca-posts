@@ -244,6 +244,20 @@ export interface SessionState {
   // Paywall (2 sept 2026): email persistido para decrementar credits al completar sesión.
   // Se guarda solo el hash SHA-256 (primeros 16 hex chars) para no exponer email plano.
   emailHash?: string;
+  // Email plano — necesario para dispatch de email cuando reporte esté listo.
+  // Se guarda solo si el usuario proveyó email (paywall Stripe o freemium landing).
+  userEmail?: string;
+  // Reporte async v0.8 (3 sept 2026): estado del reporte generado por chunks.
+  //  - 'queued': encolado en pending, cron aún no procesó
+  //  - 'processing': chunks parciales completados, faltan más
+  //  - 'ready': merge final listo en state.finalReport
+  //  - 'failed': todos los reintentos fallaron
+  finalReportStatus?: 'queued' | 'processing' | 'ready' | 'failed';
+  // Chunks parciales del reporte (durante processing). Al terminar, mergean a finalReport.
+  finalReportChunks?: {
+    summary?: FinalReport['summary'] & { rol?: string; nQuestions?: number; cta?: FinalReport['cta'] };
+    breakdowns?: Array<{ start: number; end: number; questions: FinalReport['questionsBreakdown'] }>;
+  };
 }
 
 // ──────────────────────────────────────────────────────────────────
