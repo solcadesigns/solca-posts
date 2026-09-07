@@ -215,7 +215,7 @@ No quieres recibir más de estos: {{unsub_url}}
 ## Copy final · Track Quiz
 
 Los cuatro reciben `role_label` (nombre humano · "Medical Science Liaison",
-"Product Manager", "Clinical Research"). El `role_slug` se dejó de usar
+"Project Manager", "Clinical Research"). El `role_slug` se dejó de usar
 después de descubrir que las URLs por rol no existían — los templates finales
 apuntan a URLs Hotmart directas o a `{{site_origin}}/#libros` (ancla en home
 con los tres libros).
