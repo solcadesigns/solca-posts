@@ -16,14 +16,12 @@
 import type { APIRoute } from 'astro';
 import {
   retryableChatCompletion,
-  retryableChatCompletionStream,
   extractText,
   AnthropicError,
 } from '../../lib/anthropic';
 import { buildSystemPrompt } from '../../lib/simulator-prompt';
 import { inferRole, getStageInfo } from '../../lib/simulator-defaults';
-import { parseFinalOutput } from '../../lib/simulator-metrics-parser';
-import { writeMetricsToD1, writeSessionInitialToD1 } from '../../lib/simulator-metrics-writer';
+import { writeSessionInitialToD1 } from '../../lib/simulator-metrics-writer';
 import { sendEmail, PostmarkError } from '../../lib/postmark';
 import type {
   CandidateProfile,
@@ -78,7 +76,9 @@ async function decrementCredits(
 
 export const prerender = false;
 
-const MODEL = 'claude-sonnet-4-6';
+// FIX (7 sept 2026): revertimos de sonnet-4-6 a sonnet-4-5. Ver comentario en
+// simulator-process-pending.ts para el post-mortem del incidente de tokens.
+const MODEL = 'claude-sonnet-4-5';
 const TEMPERATURE = 0.5; // ligeramente más alto que cv-review para variabilidad de feedback
 const MAX_TOKENS_PER_TURN = 2000;
 // Fase 1.4.G.4 · 19 jun 2026 · max_tokens del reporte final escala con
@@ -978,6 +978,32 @@ async function handleRetryReport(
     return { ok: false, error: 'Session not found (puede haber expirado tras 90 días)', errorCode: 'invalid_action' };
   }
 
+  // CIRCUIT BREAKER (7 sept 2026): si la sesión ya fue marcada como
+  // permanently_failed por el cron, no dispares otro retry — respondemos
+  // directamente sin gastar tokens. El usuario debe contactar soporte.
+  if (state.finalReportStatus === 'failed' && (state.finalReportError ?? '').includes('circuit breaker')) {
+    return {
+      ok: false,
+      error: 'Tu sesión requiere revisión manual. Escríbenos a hello@solcaciencia.com y te lo hacemos llegar.',
+      errorCode: 'permanently_failed' as unknown as SessionEndpointResponse['errorCode'],
+    };
+  }
+
+  // CIRCUIT BREAKER (7 sept 2026): si ya hay un pending activo para esta
+  // sesión, NO dispares otro retry sincrónico — devuelve pending_async y deja
+  // que el cron continúe. Evita el sangrado por clicks múltiples del usuario.
+  const kv = env.SIMULATOR_SESSIONS as KVNamespace | undefined;
+  if (kv) {
+    const pendingRaw = await kv.get(`pending:${body.sessionId}`);
+    if (pendingRaw) {
+      return {
+        ok: false,
+        error: 'Ya estamos procesando tu reporte. Espera unos minutos — llegará por email cuando esté listo.',
+        errorCode: 'pending_async',
+      };
+    }
+  }
+
   // Verificar que todas las preguntas tienen respuesta antes de pedir el reporte
   const allAnswered = state.turns.length === state.profile.questionCount
     && state.turns.every((t) => t.userAnswer && t.userAnswer.length > 0);
@@ -989,168 +1015,24 @@ async function handleRetryReport(
     };
   }
 
-  const systemPrompt = buildSystemPrompt({
-    profile: state.profile,
-    plan: state.plan,
-    sessionNumberInPackage: state.sessionNumberInPackage,
-    cvSummary: state.cvSummary,
-  });
-  const messages = buildMessagesFromState(state);
-  messages.push({
-    role: 'user',
-    content:
-      'Esa fue la última respuesta del candidato. Ahora devuelve los DOS bloques JSON del reporte final según el formato v0.7 especificado en el system prompt: primero el reporte expandido con summary + questions_breakdown + cta, después el JSON de métricas anónimas. NO devuelvas feedback por turnos — todo va consolidado en el reporte.',
-  });
-
-  let response;
-  try {
-    // Blindaje B: retry_report también por streaming (mismo motivo que handleNext).
-    response = await retryableChatCompletionStream(
-      {
-        apiKey,
-        model: MODEL,
-        system: systemPrompt,
-        messages,
-        temperature: TEMPERATURE,
-        maxTokens: finalReportMaxTokens(state.profile.questionCount),
-      },
-      'retry_report',
-    );
-  } catch (err) {
-    // Blindaje C (2 sept 2026): si retry_report también agotó sus reintentos,
-    // encolamos la sesión en KV `pending:` para que el cron worker la procese
-    // en background (sin límite HTTP de Cloudflare). El usuario recibe mensaje
-    // amigable "reporte llega por email en unos minutos" en vez de error crudo.
-    const errorMessage = err instanceof Error ? err.message : 'unknown error';
-    state.finalReportError = errorMessage;
-    await persistSessionState(env, state);
-    await enqueuePendingReport(env, state, errorMessage);
-    // F2: notificar a Solca (no bloqueante) para monitoreo
-    await notifyReportFailure(env, state, errorMessage, 'retry_report');
-    if (err instanceof AnthropicError) {
-      return {
-        ok: false,
-        error:
-          'Estamos generando tu reporte en segundo plano. Te llegará por email en unos minutos.',
-        errorCode: 'pending_async',
-      };
-    }
-    throw err;
-  }
-
-  const assistantText = extractText(response);
-  if (response.stop_reason === 'max_tokens') {
-    console.warn('[retry_report] Claude hit max_tokens cap on retry', {
-      sessionId: state.sessionId,
-      questionCount: state.profile.questionCount,
-    });
-  }
-
-  const parsed = parseFinalOutput(assistantText);
-
-  if (parsed.metricsAnonymous) {
-    // Re-calcular timings reales basados en state persistido
-    const startedAtMs = new Date(state.startedAt).getTime();
-    const respuestaTimings = state.turns
-      .map((t) => t.userAnswerSeconds)
-      .filter((v): v is number => typeof v === 'number' && v > 0);
-    parsed.metricsAnonymous.sesionDuracionTotalSeg = Math.max(0, Math.round((Date.now() - startedAtMs) / 1000));
-    parsed.metricsAnonymous.respuestaPromedioSeg =
-      respuestaTimings.length > 0
-        ? Math.round(respuestaTimings.reduce((a, b) => a + b, 0) / respuestaTimings.length)
-        : 0;
-    parsed.metricsAnonymous.ts = state.startedAt;
-
-    try {
-      const db = env.SIMULATOR_METRICS_DB as D1Database | undefined;
-      if (db) {
-        await writeMetricsToD1(db, {
-          sessionId: state.sessionId,
-          metrics: parsed.metricsAnonymous,
-          hasCvSummary: Boolean(state.cvSummary),
-        });
-      }
-    } catch (writeErr) {
-      console.error('[retry_report] D1 write failed:', writeErr);
-    }
-  }
-
-  const finalReport = parsed.finalReport ?? {
-    sessionId: state.sessionId,
-    rol: state.profile.roleTitle ?? 'No especificado',
-    nQuestions: state.profile.questionCount,
-    summary: {
-      scores: { tecnico: 0, estructura: 0, especificidad: 0, alertasCount: 0 },
-      fortalezas: [],
-      areasDeMejora: [],
-      vocabularioAIncorporar: [],
-      recomendacionFinal: assistantText,
-    },
-    questionsBreakdown: [],
-    cta: {
-      type: 'recurso_gratuito' as const,
-      title: 'Reporte sin parsear',
-      description: 'No se pudo parsear el JSON del reporte. Texto crudo abajo:\n\n' + assistantText,
-      url: '/revisar-cv',
-    },
-  };
-  if (!finalReport.sessionId) finalReport.sessionId = state.sessionId;
-
-  state.finished = true;
-  state.finalReport = finalReport;
-  state.metricsAnonymous = parsed.metricsAnonymous ?? undefined;
-  delete state.finalReportError;
+  // v0.8.2 (7 sept 2026): SIEMPRE encolar en pending directamente. NO intentar
+  // fetch sync a Anthropic. Post-mortem del incidente 7 sept: el fetch sync
+  // aquí tenía riesgo alto de: (a) fallar por Cloudflare 30s timeout gastando
+  // tokens, (b) provocar retries múltiples si el usuario clickeaba el botón.
+  // El cron process-pending genera el reporte por chunks (task #76).
+  state.finalReportStatus = 'processing';
+  state.finalReportError = undefined;
   await persistSessionState(env, state);
-
-  // Paywall: decrementar credits si emailHash está en el state.
-  if (state.emailHash) {
-    await decrementCredits(env, state.emailHash);
-  }
-
-  // NUEVO (19 ago 2026): mismo criterio que handleNext. El increment ocurre
-  // solo aquí, cuando el retry sí generó reporte y lo persistió. Si el retry
-  // vuelve a fallar, retornamos antes de este punto y el código queda vivo.
-  if (state.betaCode) {
-    try {
-      await incrementBetaCodeUsage(
-        env.SIMULATOR_BETA_CODES as KVNamespace | undefined,
-        state.betaCode,
-      );
-    } catch (incErr) {
-      console.error('[simulator-session] increment betaCode failed at retry_report success:', incErr);
-    }
-  }
-
-  // Créditos restantes post-decremento (para el frontend decidir survey final)
-  let creditsRemaining: number | undefined;
-  if (state.emailHash) {
-    const creditsKv = env.SIMULATOR_CREDITS as KVNamespace | undefined;
-    if (creditsKv) {
-      try {
-        const raw = await creditsKv.get(`credits:${state.emailHash}`);
-        if (raw) {
-          const rec = JSON.parse(raw) as CreditsRecord;
-          creditsRemaining = rec.remaining;
-        }
-      } catch {
-        /* best-effort */
-      }
-    }
-  }
-
-  // Task #74: encola email post-paquete si es la última sesión pagada.
-  // Retry_report NO tiene body.email (viene de sessionId), así que solo
-  // encolamos si tenemos otra fuente del email. Aquí lo dejamos como TODO —
-  // el caso principal (handleNext) sí lo maneja. Retry post-fallo es raro.
-
+  await enqueuePendingReport(env, state, 'usuario disparó retry_report');
   return {
-    ok: true,
-    sessionState: state,
-    finished: true,
-    finalReport,
-    planUsed: state.plan,
-    creditsRemaining,
+    ok: false,
+    error: 'Estamos generando tu reporte en segundo plano. Te llegará por email en unos minutos.',
+    errorCode: 'pending_async',
   };
+
+  // Todo el código sync post-fetch (parseo, persist, decrementCredits,
+  // incrementBetaCodeUsage, D1 metrics) se ejecuta ahora en el cron
+  // process-pending cuando genera el chunk final. Ver task #76.
 }
 
 // ──────────────────────────────────────────────────────────────────

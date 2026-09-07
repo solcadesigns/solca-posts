@@ -35,9 +35,12 @@ import type { SessionState, ChatMessage, FinalReport } from '../../lib/simulator
 
 export const prerender = false;
 
-const MODEL = 'claude-sonnet-4-6';
+// FIX (7 sept 2026): revertimos a sonnet-4-5 (estable, más barato que 4-6).
+// El typo 'claude-sonnet-4-6' introducido en task #76 contribuyó al sangrado
+// de tokens del 7 sept — pricing más alto + chunks fallando persistentemente.
+const MODEL = 'claude-sonnet-4-5';
 const TEMPERATURE = 0.5;
-const MAX_ATTEMPTS = 3;
+const MAX_ATTEMPTS = 2; // Reducido de 3 → 2 · corta más rápido si algo falla persistente
 const CHUNK_BREAKDOWN_SIZE = 5; // preguntas por chunk
 
 interface PendingRecord {
@@ -370,6 +373,34 @@ export const GET: APIRoute = async ({ request, locals }) => {
     } catch {
       continue;
     }
+    // Safety: pending.attempts puede venir undefined si el pending es viejo.
+    pending.attempts = pending.attempts ?? 0;
+
+    // CIRCUIT BREAKER PRE-CHUNK (7 sept 2026): antes de gastar UN SOLO token,
+    // verificamos si este pending ya superó MAX_ATTEMPTS. Si sí, lo eliminamos
+    // sin invocar Anthropic. Esto evita el sangrado del incidente del 7 sept
+    // donde un pending con chunks fallando podía consumir tokens indefinidamente.
+    if (pending.attempts >= MAX_ATTEMPTS) {
+      console.warn(`[pending-cron] SKIP + DELETE pending ${pending.sessionId} (attempts=${pending.attempts} >= ${MAX_ATTEMPTS})`);
+      await kv.delete(k.name);
+      // Marcar la sesión como permanently_failed para que el frontend deje de reintentar
+      try {
+        const rawState = await kv.get(`session:${pending.sessionId}`);
+        if (rawState) {
+          const state = JSON.parse(rawState) as SessionState;
+          state.finalReportStatus = 'failed';
+          state.finalReportError = `Cortado por circuit breaker: ${pending.attempts} intentos sin éxito.`;
+          await kv.put(`session:${pending.sessionId}`, JSON.stringify(state), {
+            expirationTtl: 60 * 60 * 24 * 90,
+          });
+        }
+      } catch (err) {
+        console.error('[pending-cron] failed to mark state as permanently_failed:', err);
+      }
+      enqueued.push({ sessionId: pending.sessionId, status: 'skipped_max_attempts' });
+      continue;
+    }
+
     const promise = processOneChunk(env, k.name, pending);
     if (waitUntil) {
       waitUntil(promise);
