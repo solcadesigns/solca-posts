@@ -9,7 +9,7 @@ export const prerender = false;
 
 // Etiquetas humanas para el rol que resulta del quiz. Usadas en el template welcome.
 const ROLE_LABELS: Record<'PM' | 'MSL' | 'CR', string> = {
-  PM: 'Product Manager',
+  PM: 'Project Manager',
   MSL: 'Medical Science Liaison',
   CR: 'Clinical Research',
 };

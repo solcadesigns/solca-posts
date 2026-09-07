@@ -122,7 +122,7 @@ export function templateAliasFor(track: DripTrack, step: DripStep): string {
  * propósito para no crear import cíclico con endpoints (drip vive en /lib/).
  */
 export const DRIP_ROLE_LABELS: Record<'PM' | 'MSL' | 'CR', string> = {
-  PM: 'Product Manager',
+  PM: 'Project Manager',
   MSL: 'Medical Science Liaison',
   CR: 'Clinical Research',
 };
