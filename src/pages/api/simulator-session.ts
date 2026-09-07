@@ -751,6 +751,20 @@ async function notifyReportFailure(
     console.warn('[simulator-session] POSTMARK_SERVER_TOKEN missing · skip notify');
     return;
   }
+
+  // Dedup · si ya notificamos por este sessionId en la última hora, skip.
+  // Evita spam cuando el usuario da retry múltiples veces o cuando el cron
+  // vuelve a tocar la misma sesión. Usa el mismo KV que sessions (ya bound).
+  const kv = env.SIMULATOR_SESSIONS as KVNamespace | undefined;
+  const dedupKey = `notify:${state.sessionId}`;
+  if (kv) {
+    const already = await kv.get(dedupKey);
+    if (already) {
+      console.log(`[simulator-session] notify dedup hit para ${state.sessionId}, skip`);
+      return;
+    }
+    await kv.put(dedupKey, '1', { expirationTtl: 3600 });
+  }
   const p = state.profile;
   const respuestasCount = state.turns.filter((t) => t.userAnswer).length;
   const subject = `[Simulador] Fallo reporte final · ${p.roleTitle ?? p.role ?? 'rol'} · ${origin}`;
