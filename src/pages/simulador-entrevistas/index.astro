@@ -186,6 +186,21 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           <label for="sub-email">Email</label>
           <input type="email" id="sub-email" name="email" required autocomplete="email" />
         </div>
+        <div class="field">
+          <label for="sub-email-confirm">Confirma tu email</label>
+          <input
+            type="email"
+            id="sub-email-confirm"
+            name="email_confirm"
+            required
+            autocomplete="off"
+            spellcheck="false"
+            onpaste="return false;"
+            ondrop="return false;"
+            placeholder="Vuelve a escribirlo (no se puede pegar)"
+          />
+          <p class="field-hint" id="email-confirm-hint" hidden>Los correos no coinciden.</p>
+        </div>
         <div class="field checkbox">
           <input type="checkbox" id="sub-consent" name="consent" required />
           <label for="sub-consent">
@@ -207,6 +222,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       <p>
         Si recibiste un código por email (freemium, invitación o edición beta), pégalo aquí para
         arrancar la sesión.
+      </p>
+      <p id="access-gate-notice" class="form-message err" hidden>
+        <strong>Necesitas un código o registrarte primero.</strong> Elige tu plan arriba
+        (freemium sin costo, básico o premium) para recibir tu código de acceso por email.
       </p>
       <form id="code-form" class="access-form" novalidate>
         <label for="access-code">Código de acceso</label>
@@ -268,6 +287,32 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       }
     }
 
+    // Feedback vivo de coincidencia de correos (mientras el usuario escribe).
+    const emailInput = document.getElementById('sub-email') as HTMLInputElement | null;
+    const emailConfirmInput = document.getElementById('sub-email-confirm') as HTMLInputElement | null;
+    const emailConfirmHint = document.getElementById('email-confirm-hint') as HTMLParagraphElement | null;
+    function checkEmailMatch() {
+      if (!emailInput || !emailConfirmInput || !emailConfirmHint) return;
+      const a = emailInput.value.trim().toLowerCase();
+      const b = emailConfirmInput.value.trim().toLowerCase();
+      if (!b) {
+        emailConfirmHint.hidden = true;
+        emailConfirmInput.classList.remove('field-mismatch', 'field-match');
+        return;
+      }
+      if (a === b) {
+        emailConfirmHint.hidden = true;
+        emailConfirmInput.classList.remove('field-mismatch');
+        emailConfirmInput.classList.add('field-match');
+      } else {
+        emailConfirmHint.hidden = false;
+        emailConfirmInput.classList.add('field-mismatch');
+        emailConfirmInput.classList.remove('field-match');
+      }
+    }
+    emailInput?.addEventListener('input', checkEmailMatch);
+    emailConfirmInput?.addEventListener('input', checkEmailMatch);
+
     planCards.forEach((btn) => {
       btn.addEventListener('click', () => {
         const plan = btn.dataset.plan ?? 'gratis';
@@ -292,7 +337,20 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         const plan = String(fd.get('plan') ?? 'gratis');
         const name = String(fd.get('name') ?? '').trim();
         const email = String(fd.get('email') ?? '').trim();
+        const emailConfirm = String(fd.get('email_confirm') ?? '').trim();
         const consent = subForm.querySelector<HTMLInputElement>('#sub-consent')?.checked ?? false;
+
+        // Validación de coincidencia de correos (case-insensitive).
+        if (email.toLowerCase() !== emailConfirm.toLowerCase()) {
+          subMsg.textContent = 'Los correos no coinciden. Revisa que ambos sean iguales.';
+          subMsg.classList.remove('ok');
+          subMsg.classList.add('err');
+          subMsg.hidden = false;
+          const confirmField = subForm.querySelector<HTMLInputElement>('#sub-email-confirm');
+          if (confirmField) confirmField.focus();
+          if (btn) btn.disabled = false;
+          return;
+        }
 
         const utm = (window as unknown as { __utm?: Record<string, string> }).__utm ?? {};
 
@@ -367,6 +425,15 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       window.location.href = '/simulador-entrevistas/sesion';
       return true;
     }
+
+    // Notice de "necesitas código" si vino redirigido desde /sesion sin auth
+    (function showAccessGateNotice() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('err') === 'necesitas-codigo') {
+        const notice = document.getElementById('access-gate-notice');
+        if (notice) notice.hidden = false;
+      }
+    })();
 
     if (codeForm && codeMsg && codeInput) {
       const params = new URLSearchParams(window.location.search);
@@ -508,6 +575,19 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       font-size: 13px; color: var(--text-mute); line-height: 1.5;
     }
     .field.checkbox a { color: var(--navy); text-decoration: underline; }
+    .field-hint {
+      margin: 0;
+      font-size: 12px;
+      color: #b3261e;
+    }
+    .field input.field-mismatch {
+      border-color: #b3261e;
+      background: #fff5f5;
+    }
+    .field input.field-match {
+      border-color: #2e7d32;
+      background: #f5fbf6;
+    }
     .field label {
       font-size: 14px; font-weight: 600; color: var(--text);
     }
