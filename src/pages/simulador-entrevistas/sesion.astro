@@ -364,7 +364,11 @@ const noIndex = true;
           <button id="download-pdf" type="button" class="btn btn-primary" disabled>
             Descargar PDF
           </button>
-          <a href="/simulador-entrevistas" class="btn btn-secondary">Nueva sesión</a>
+          <a
+            href="/simulador-entrevistas/sesion"
+            class="btn btn-secondary"
+            onclick="try { localStorage.removeItem('solca_session_id'); } catch (_) {}"
+          >Nueva sesión</a>
         </div>
 
         <!-- Micro-encuesta post-sesión · visible para todos los planes pagados (post-paywall) -->
@@ -1281,58 +1285,49 @@ const noIndex = true;
       }
     }
 
-    // Fase 1.5.L · reintentar la generación del reporte sin re-hacer preguntas
+    // Fase 1.5.L · reintentar la generación del reporte sin re-hacer preguntas.
+    // v0.8.1 (7 sept 2026): SIEMPRE muestra polling primero (evita el bug de
+    // "nada pasa al clic" cuando el fetch síncrono cuelga por el subrequest
+    // timeout de Cloudflare). El fetch retry_report se dispara fire-and-forget:
+    // encola pending server-side, y el polling detecta ready/failed.
     async function retryReportGeneration() {
       const sessionId = appState.sessionState?.sessionId ?? localStorage.getItem('solca_session_id');
       if (!sessionId) {
-        const errorEl = document.getElementById('session-error') as HTMLParagraphElement;
-        errorEl.textContent = 'No hay sessionId guardado · no se puede reintentar. Inicia una sesión nueva.';
-        errorEl.hidden = false;
+        alert('No hay sessionId guardado. Empieza una sesión nueva.');
         return;
       }
-      const errorEl = document.getElementById('session-error') as HTMLParagraphElement;
-      const loadingEl = document.getElementById('session-loading') as HTMLDivElement;
-      const loadingMessageEl = loadingEl.querySelector('.loading-message') as HTMLSpanElement;
-      errorEl.hidden = true;
-      loadingMessageEl.textContent = 'Reintentando generación del reporte... puede tomar hasta 5 minutos si tu sesión fue larga (10-15 preguntas).';
-      loadingEl.classList.add('loading-extended');
-      loadingEl.hidden = false;
 
-      try {
-        const resp = await fetch('/api/simulator-session', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'retry_report', sessionId }),
-        });
-        const data = await resp.json();
-        // Blindaje C: si el backend encoló la sesión en pending, mostramos
-        // mensaje amigable en vez de error. El cron la procesará y enviará
-        // el reporte por email al usuario.
-        if (!data.ok && data.errorCode === 'pending_async') {
-          loadingEl.hidden = true;
-          // v0.8: usar polling en vez de solo mensaje estático
-          startReportPolling(sessionId);
-          return;
-        }
-        if (!data.ok) throw new Error(data.error || 'Error al reintentar el reporte');
-        appState.sessionState = data.sessionState;
-        // Paywall (task #73): guardar remaining para survey final
-        if (typeof data.creditsRemaining === 'number') {
-          (appState as unknown as { creditsRemaining?: number }).creditsRemaining = data.creditsRemaining;
-        }
-        loadingEl.hidden = true;
-        showView('report');
-        renderFinalReport(data.finalReport);
-      } catch (err) {
-        loadingEl.hidden = true;
-        errorEl.innerHTML =
-          `<strong>El reintento también falló.</strong> ` +
-          `Tus respuestas siguen guardadas. Escríbenos a ` +
-          `<a href="mailto:hello@solcaciencia.com?subject=Simulador%20-%20Reintento%20fallido&body=sessionId%3A%20${encodeURIComponent(sessionId)}">hello@solcaciencia.com</a> ` +
-          `con el sessionId <code>${escapeHtml(sessionId)}</code> y nos ponemos en contacto.<br>` +
-          `<small style="color:var(--text-mute)">Detalle: ${escapeHtml(err instanceof Error ? err.message : String(err))}</small>`;
-        errorEl.hidden = false;
+      // Guard · deshabilitar los botones del recovery para evitar retries
+      // múltiples (cada retry dispara email de notificación interno).
+      const recoveryBtn = document.getElementById('recovery-retry-btn') as HTMLButtonElement | null;
+      const discardBtn = document.getElementById('recovery-discard-btn') as HTMLButtonElement | null;
+      if (recoveryBtn) {
+        recoveryBtn.disabled = true;
+        recoveryBtn.textContent = 'Reintentando…';
       }
+      if (discardBtn) discardBtn.disabled = true;
+
+      // Pantalla de progreso inmediata → el usuario ve feedback al instante.
+      startReportPolling(sessionId);
+
+      // Fire-and-forget · el backend puede tardar >30s por el subrequest
+      // timeout de Cloudflare, así que NO esperamos la respuesta aquí.
+      // Si el backend logra encolar en pending KV, el cron lo procesa y el
+      // polling detecta 'ready'. Si logra generar inline antes del corte,
+      // también lo detecta el polling en el próximo tick.
+      fetch('/api/simulator-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'retry_report', sessionId }),
+      }).catch((err) => {
+        console.warn('[retry_report] fetch cortado (polling sigue):', err);
+      });
+    }
+
+    // v0.8.1 · descartar la sesión rota guardada y volver al intake limpio.
+    function discardBrokenSession() {
+      try { localStorage.removeItem('solca_session_id'); } catch {}
+      window.location.href = '/simulador-entrevistas/sesion';
     }
 
     // Submit click · si la respuesta es corta, muestra el warn y deja al usuario
@@ -2478,7 +2473,10 @@ const noIndex = true;
           summaryEl.innerHTML = `
             <p><strong>Tu sesión anterior terminó pero el reporte no llegó a generarse.</strong></p>
             <p>Tus ${st.turns.length} respuestas siguen guardadas. Puedes reintentar la generación · toma entre 90 seg y 5 min según el largo de tu sesión.</p>
-            <p><button id="recovery-retry-btn" class="btn btn-primary" style="margin-top:8px">Reintentar generación del reporte</button></p>
+            <p style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">
+              <button id="recovery-retry-btn" class="btn btn-primary">Reintentar generación del reporte</button>
+              <button id="recovery-discard-btn" class="btn btn-secondary" title="Descarta la sesión anterior y te lleva a empezar una nueva">Descartar y empezar nueva</button>
+            </p>
             <p><small style="color:var(--text-mute)">Si vuelve a fallar, escríbenos a <a href="mailto:hello@solcaciencia.com?subject=Simulador%20-%20Recovery%20fallido&body=sessionId%3A%20${encodeURIComponent(st.sessionId)}">hello@solcaciencia.com</a> con sessionId <code>${escapeHtml(st.sessionId)}</code>.</small></p>
           `;
           breakdownEl.innerHTML = '';
@@ -2486,6 +2484,8 @@ const noIndex = true;
           if (downloadBtn) downloadBtn.disabled = true;
           const recoveryBtn = document.getElementById('recovery-retry-btn');
           if (recoveryBtn) recoveryBtn.addEventListener('click', () => retryReportGeneration());
+          const discardBtn = document.getElementById('recovery-discard-btn');
+          if (discardBtn) discardBtn.addEventListener('click', () => discardBrokenSession());
           return;
         }
         // Si está en progreso · limpiamos para no confundir, dejamos arrancar nueva
