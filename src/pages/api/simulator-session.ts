@@ -21,7 +21,8 @@ import {
 } from '../../lib/anthropic';
 import { buildSystemPrompt } from '../../lib/simulator-prompt';
 import { inferRole, getStageInfo } from '../../lib/simulator-defaults';
-import { writeSessionInitialToD1 } from '../../lib/simulator-metrics-writer';
+import { parseFinalOutput } from '../../lib/simulator-metrics-parser';
+import { writeMetricsToD1, writeSessionInitialToD1 } from '../../lib/simulator-metrics-writer';
 import { sendEmail, PostmarkError } from '../../lib/postmark';
 import type {
   CandidateProfile,
@@ -490,6 +491,100 @@ async function handleInit(
 }
 
 // ──────────────────────────────────────────────────────────────────
+// v0.8.3 (7 sept 2026) · path SYNC inline para reportes de sesiones cortas
+// ──────────────────────────────────────────────────────────────────
+//
+// Cuando la sesión tiene ≤8 preguntas, el reporte final cabe en el subrequest
+// timeout de 30s de Cloudflare Workers. Intentamos generarlo sincrónicamente
+// aquí para dar el reporte inmediato al usuario. Si falla (timeout, JSON
+// malformado, cualquier error), devolvemos { ok:false } y el caller cae al
+// path async por chunks como respaldo automático.
+//
+// No lanza excepciones. Timeout duro de 25s (5s de margen bajo el 30s de CF).
+
+async function trySyncFinalReport(
+  state: SessionState,
+  env: Record<string, unknown>,
+): Promise<
+  | { ok: true; finalReport: NonNullable<SessionState['finalReport']> }
+  | { ok: false; error: string }
+> {
+  const apiKey = env.ANTHROPIC_API_KEY as string | undefined;
+  if (!apiKey) return { ok: false, error: 'no_api_key' };
+
+  try {
+    const systemPrompt = buildSystemPrompt({
+      profile: state.profile,
+      plan: state.plan,
+      sessionNumberInPackage: state.sessionNumberInPackage,
+      cvSummary: state.cvSummary,
+    });
+    const messages = buildMessagesFromState(state);
+    messages.push({
+      role: 'user',
+      content:
+        'Esa fue la última respuesta del candidato. Ahora devuelve los DOS bloques JSON del reporte final según el formato v0.7 especificado en el system prompt: primero el reporte expandido con summary + questions_breakdown + cta, después el JSON de métricas anónimas. NO devuelvas feedback por turnos — todo va consolidado en el reporte.',
+    });
+
+    const response = await retryableChatCompletion(
+      {
+        apiKey,
+        model: MODEL,
+        system: systemPrompt,
+        messages,
+        temperature: TEMPERATURE,
+        maxTokens: finalReportMaxTokens(state.profile.questionCount),
+        timeoutMs: 25000, // margen bajo el 30s subrequest limit de Cloudflare
+      },
+      'sync_final_report',
+    );
+
+    const assistantText = extractText(response);
+    const parsed = parseFinalOutput(assistantText);
+
+    if (!parsed.finalReport) {
+      return { ok: false, error: 'parse_no_final_report' };
+    }
+    if (!parsed.finalReport.sessionId) {
+      parsed.finalReport.sessionId = state.sessionId;
+    }
+
+    // Escribir métricas a D1 si vinieron
+    if (parsed.metricsAnonymous) {
+      const startedAtMs = new Date(state.startedAt).getTime();
+      const respuestaTimings = state.turns
+        .map((t) => t.userAnswerSeconds)
+        .filter((v): v is number => typeof v === 'number' && v > 0);
+      parsed.metricsAnonymous.sesionDuracionTotalSeg = Math.max(0, Math.round((Date.now() - startedAtMs) / 1000));
+      parsed.metricsAnonymous.respuestaPromedioSeg =
+        respuestaTimings.length > 0
+          ? Math.round(respuestaTimings.reduce((a, b) => a + b, 0) / respuestaTimings.length)
+          : 0;
+      parsed.metricsAnonymous.ts = state.startedAt;
+
+      try {
+        const db = env.SIMULATOR_METRICS_DB as D1Database | undefined;
+        if (db) {
+          await writeMetricsToD1(db, {
+            sessionId: state.sessionId,
+            metrics: parsed.metricsAnonymous,
+            hasCvSummary: Boolean(state.cvSummary),
+          });
+        }
+      } catch (writeErr) {
+        console.error('[sync_final_report] D1 write failed:', writeErr);
+      }
+      state.metricsAnonymous = parsed.metricsAnonymous;
+    }
+
+    return { ok: true, finalReport: parsed.finalReport };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { ok: false, error: msg };
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────
 // Acción 'next' · procesa respuesta y devuelve siguiente pregunta o reporte
 // ──────────────────────────────────────────────────────────────────
 
@@ -569,18 +664,73 @@ async function handleNext(
     }
   }
 
-  // v0.8 (3 sept 2026): reporte final SIEMPRE async con chunking.
-  // Motivo: Cloudflare Workers subrequest timeout = 30s. Un reporte de 10-15
-  // preguntas tarda 60-90s en Sonnet 4.5 → falla sistemático. La solución:
-  //   - No generar reporte sincrónico. Encolar pending y responder immediate.
-  //   - Cron procesa por chunks (<25s cada uno).
-  //   - Frontend polling opcional + email fallback.
+  // v0.8.3 (7 sept 2026): híbrido sync/async según largo de sesión.
+  // Los planes de sesión son 5 / 10 / 15 preguntas (no hay intermedios).
+  // - 5 preguntas: SYNC inline. Reporte cabe en <30s (Cloudflare subrequest).
+  //   Es el caso validado en producción antes del async chunks.
+  // - 10 y 15 preguntas: async por chunks (task #76 · cron process-pending).
+  //   El reporte sync tarda 40-90s → siempre timeout, no vale la pena intentar.
+  // Si sync falla (raro), cae al async como red de seguridad.
+  const SYNC_MAX_QUESTIONS = 5;
   if (isLastQuestion) {
     // Guardar userEmail en state para que el cron envíe email al terminar.
-    // Solo si viene en el body (Stripe checkout lo pasa, freemium landing lo pasa).
     if (body.email) {
       state.userEmail = body.email;
     }
+
+    // Path SYNC inline para sesiones cortas
+    if (profile.questionCount <= SYNC_MAX_QUESTIONS) {
+      const syncResult = await trySyncFinalReport(state, env);
+      if (syncResult.ok) {
+        // Reporte generado exitosamente inline · devolver directo
+        state.finished = true;
+        state.finalReport = syncResult.finalReport;
+        state.finalReportStatus = 'ready';
+        delete state.finalReportError;
+        await persistSessionState(env, state);
+
+        // Decrementar créditos + incrementar betaCode ya que el reporte se entregó
+        if (state.emailHash) await decrementCredits(env, state.emailHash);
+        if (state.betaCode) {
+          try {
+            await incrementBetaCodeUsage(
+              env.SIMULATOR_BETA_CODES as KVNamespace | undefined,
+              state.betaCode,
+            );
+          } catch (incErr) {
+            console.error('[simulator-session] increment betaCode failed at sync path:', incErr);
+          }
+        }
+
+        // Devolver creditsRemaining
+        let creditsRemaining: number | undefined;
+        if (state.emailHash) {
+          const creditsKv = env.SIMULATOR_CREDITS as KVNamespace | undefined;
+          if (creditsKv) {
+            try {
+              const raw = await creditsKv.get(`credits:${state.emailHash}`);
+              if (raw) {
+                const rec = JSON.parse(raw) as CreditsRecord;
+                creditsRemaining = rec.remaining;
+              }
+            } catch { /* best-effort */ }
+          }
+        }
+
+        return {
+          ok: true,
+          sessionState: state,
+          finished: true,
+          finalReport: syncResult.finalReport,
+          planUsed: state.plan,
+          creditsRemaining,
+        };
+      }
+      // Si sync falló, cae al async como respaldo (misma UX que sesiones largas)
+      console.warn(`[simulator-session] sync path failed for ${state.sessionId}, falling back to async: ${syncResult.error}`);
+    }
+
+    // Path ASYNC por chunks (sesiones largas o fallback de sync)
     state.finalReportStatus = 'queued';
     state.finished = true;
     await persistSessionState(env, state);

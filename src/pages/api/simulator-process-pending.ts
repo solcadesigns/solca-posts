@@ -384,6 +384,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
       console.warn(`[pending-cron] SKIP + DELETE pending ${pending.sessionId} (attempts=${pending.attempts} >= ${MAX_ATTEMPTS})`);
       await kv.delete(k.name);
       // Marcar la sesión como permanently_failed para que el frontend deje de reintentar
+      let stateUserEmail: string | undefined;
+      let stateRole: string | undefined;
       try {
         const rawState = await kv.get(`session:${pending.sessionId}`);
         if (rawState) {
@@ -393,11 +395,41 @@ export const GET: APIRoute = async ({ request, locals }) => {
           await kv.put(`session:${pending.sessionId}`, JSON.stringify(state), {
             expirationTtl: 60 * 60 * 24 * 90,
           });
+          stateUserEmail = state.userEmail;
+          stateRole = state.profile.roleTitle ?? state.profile.role;
         }
       } catch (err) {
         console.error('[pending-cron] failed to mark state as permanently_failed:', err);
       }
-      enqueued.push({ sessionId: pending.sessionId, status: 'skipped_max_attempts' });
+      // Email de alerta a Solca cuando el circuit breaker se activa
+      const postmarkToken = env.POSTMARK_SERVER_TOKEN as string | undefined;
+      if (postmarkToken) {
+        try {
+          await sendEmail(postmarkToken, {
+            from: 'hello@solcaciencia.com',
+            to: 'hello@solcaciencia.com',
+            subject: `[Simulador CIRCUIT BREAKER] Sesión ${pending.sessionId.slice(0, 8)} cortada tras ${pending.attempts} intentos`,
+            textBody: [
+              `El circuit breaker cortó una sesión del simulador porque ya no pudo generarse el reporte en ${pending.attempts} intentos.`,
+              ``,
+              `sessionId: ${pending.sessionId}`,
+              `rol: ${stateRole ?? 'desconocido'}`,
+              `usuario email: ${stateUserEmail ?? 'desconocido'}`,
+              `último error: ${pending.errorMessage}`,
+              ``,
+              `Recuperar manualmente:`,
+              `  node scripts/simulator-recover-report.mjs ${pending.sessionId}`,
+              ``,
+              `Si este es un fallo recurrente (varios en un día), investiga bug estructural antes de recuperar caso por caso.`,
+            ].join('\n'),
+            tag: 'simulator-circuit-breaker',
+            metadata: { sessionId: pending.sessionId, attempts: String(pending.attempts) },
+          });
+        } catch {
+          /* ignore email failure */
+        }
+      }
+      enqueued.push({ sessionId: pending.sessionId, status: 'skipped_max_attempts_notified' });
       continue;
     }
 
