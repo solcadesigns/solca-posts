@@ -2,9 +2,15 @@
 /**
  * scripts/setup-stripe-products.mjs · crea products+prices del Simulador en Stripe.
  *
- * Contexto: paywall del simulador (2 sept 2026). Dos planes one-shot en MXN:
- *   - Básico:  $149 MXN · 3 sesiones · 240 días vigencia
- *   - Premium: $299 MXN · 8 sesiones · 240 días vigencia
+ * Idempotente: reutiliza los productos existentes (metadata.solca_plan_id) y
+ * solo crea un precio nuevo si cambia el unit_amount. Los precios viejos
+ * quedan inactivos por sí solos (deja de usarlos el checkout).
+ *
+ * Historial de precios (MXN one-shot):
+ *   v1 (2 sept 2026): Básico $179 · Premium $349
+ *   v2 (8 sept 2026): Básico $199 · Premium $449 · target margen $149+ por paquete
+ *                     post-mortem del incidente de tokens del 7-8 sept.
+ * Ver `_docs/PAYWALL_SIMULADOR.md` para el schema completo.
  *
  * Ver `_docs/PAYWALL_SIMULADOR.md` para el schema completo.
  *
@@ -48,7 +54,7 @@ const PLANS = [
     name: 'Simulador de Entrevistas Pharma · Básico',
     description:
       '3 sesiones de simulador de entrevistas pharma. Elige cualquier etapa (llamada inicial, técnica o panel). Sube tu CV y practica con feedback estructurado. Vigencia 240 días desde la compra.',
-    priceMxnCents: 17900, // Stripe usa cents (mínima unidad monetaria)
+    priceMxnCents: 19900, // v2 (8 sept 2026) · era 17900 en v1
     envVarName: 'STRIPE_PRICE_ID_BASICO',
   },
   {
@@ -56,7 +62,7 @@ const PLANS = [
     name: 'Simulador de Entrevistas Pharma · Premium',
     description:
       '8 sesiones de simulador de entrevistas pharma. Todas las etapas + 3 niveles de dificultad. Historial personal para practicar diferentes CVs y vacantes en paralelo. Reporte final con leyenda extendida (rúbrica visible + tips por dimensión). Vigencia 240 días desde la compra.',
-    priceMxnCents: 34900,
+    priceMxnCents: 44900, // v2 (8 sept 2026) · era 34900 en v1
     envVarName: 'STRIPE_PRICE_ID_PREMIUM',
   },
 ];

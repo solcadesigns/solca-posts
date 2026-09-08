@@ -62,7 +62,7 @@ export const PLAN_CONFIG: Record<Plan, PlanConfig> = {
     ctaTarget: 'course_solca',
     historyDepth: 3,
     vigenciaDias: 240,
-    priceMxn: 179,
+    priceMxn: 199, // v2 (8 sept 2026) · era 179
   },
   premium: {
     plan: 'premium',
@@ -75,7 +75,7 @@ export const PLAN_CONFIG: Record<Plan, PlanConfig> = {
     ctaTarget: 'course_solca',
     historyDepth: 8,
     vigenciaDias: 240,
-    priceMxn: 349,
+    priceMxn: 449, // v2 (8 sept 2026) · era 349
   },
 };
 

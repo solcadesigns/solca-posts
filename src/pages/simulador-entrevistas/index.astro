@@ -65,6 +65,41 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         Todos los planes incluyen: subir CV, elegir tu área de formación y nivel académico, y
         recibir un reporte final estructurado. Cambia lo que puedes practicar en cada uno.
       </p>
+
+      <div class="pain-block">
+        <h3 class="pain-heading">
+          Aplicas. Llegas a la entrevista. Te rechazan.<br>
+          Nadie te dice por qué.
+        </h3>
+        <p class="pain-body">
+          Repites el ciclo con cada empresa pharma. Y las guías genéricas de
+          "cómo responder entrevistas" no te preparan para el marco específico de
+          tu rol — CRA, MSL, Product Manager, Regulatory, Market Access no se
+          evalúan igual.
+        </p>
+
+        <blockquote class="pain-quote">
+          <p>"gracias al feedback pude estudiar y prepararme mejor para mi entrevista real, donde me fue bien."</p>
+          <cite>— Candidata MSL · LATAM · beta ago 2026</cite>
+        </blockquote>
+
+        <p class="pain-lead">Preparar entrevistas pharma cuesta caro de dos formas:</p>
+        <div class="pain-grid">
+          <div class="pain-col">
+            <p class="pain-col-label">Tiempo</p>
+            <p class="pain-col-body">Semanas para agendar un coach humano. Una sola oportunidad para practicar antes de la real.</p>
+          </div>
+          <div class="pain-col">
+            <p class="pain-col-label">Dinero</p>
+            <p class="pain-col-body">$1,500 – $2,500 MXN por sesión de 90 min con coach general, sin especialización en tu rol pharma.</p>
+          </div>
+          <div class="pain-col pain-col-highlight">
+            <p class="pain-col-label">Solca</p>
+            <p class="pain-col-body">Empieza con 1 sesión gratis. Luego 3 a 8 sesiones desde $199 MXN, a tu ritmo, con frameworks pharma por rol.</p>
+          </div>
+        </div>
+      </div>
+
       <div class="plans-grid">
         <article class="plan-card">
           <h3 class="plan-name">Freemium</h3>
@@ -83,7 +118,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
         <article class="plan-card plan-card-highlight">
           <h3 class="plan-name">Básico</h3>
-          <p class="plan-price"><span class="plan-price-num">$179</span> <span class="plan-price-unit">MXN</span></p>
+          <p class="plan-price"><span class="plan-price-num">$199</span> <span class="plan-price-unit">MXN</span></p>
           <p class="plan-tagline">3 sesiones para practicar tu ronda antes de la entrevista real.</p>
           <ul class="plan-features">
             <li><strong>3 sesiones</strong> · cualquier etapa (llamada, técnica o panel)</li>
@@ -99,7 +134,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
         <article class="plan-card">
           <h3 class="plan-name">Premium</h3>
-          <p class="plan-price"><span class="plan-price-num">$349</span> <span class="plan-price-unit">MXN</span></p>
+          <p class="plan-price"><span class="plan-price-num">$449</span> <span class="plan-price-unit">MXN</span></p>
           <p class="plan-tagline">8 sesiones + rúbrica extendida para preparación intensiva.</p>
           <ul class="plan-features">
             <li><strong>8 sesiones</strong> · cualquier etapa</li>
@@ -269,8 +304,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
     const PLAN_LABELS: Record<string, { heading: string; button: string; lead: HTMLElement | null }> = {
       gratis: { heading: 'Confirma tu email para empezar sin costo', button: 'Empezar sin costo', lead: leadFree },
-      basico: { heading: 'Confirma tu email para pagar el plan Básico ($179 MXN)', button: 'Continuar al pago · Básico', lead: leadBasico },
-      premium: { heading: 'Confirma tu email para pagar el plan Premium ($349 MXN)', button: 'Continuar al pago · Premium', lead: leadPremium },
+      basico: { heading: 'Confirma tu email para pagar el plan Básico ($199 MXN)', button: 'Continuar al pago · Básico', lead: leadBasico },
+      premium: { heading: 'Confirma tu email para pagar el plan Premium ($449 MXN)', button: 'Continuar al pago · Premium', lead: leadPremium },
     };
 
     function selectPlan(plan: string) {
@@ -662,6 +697,89 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       color: var(--text-mute);
       max-width: 720px;
       margin: 0 0 28px;
+    }
+    .pain-block {
+      margin: 0 0 32px;
+      padding: 24px;
+      background: #FBF9F3;
+      border: 1px solid var(--rule);
+      border-radius: 12px;
+    }
+    .pain-heading {
+      margin: 0 0 12px;
+      font-size: clamp(20px, 2.4vw, 26px);
+      font-weight: 800;
+      line-height: 1.25;
+      letter-spacing: -0.01em;
+      color: var(--navy, #1F3A5F);
+      font-family: 'Inter', sans-serif;
+    }
+    .pain-body {
+      margin: 0 0 20px;
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--text, #111827);
+      max-width: 720px;
+    }
+    .pain-quote {
+      margin: 0 0 24px;
+      padding: 16px 20px;
+      background: #FFF;
+      border-left: 4px solid var(--orange, #E77C3C);
+      border-radius: 6px;
+    }
+    .pain-quote p {
+      margin: 0 0 6px;
+      font-size: 15px;
+      line-height: 1.5;
+      font-style: italic;
+      color: var(--text, #111827);
+    }
+    .pain-quote cite {
+      font-size: 12px;
+      color: var(--text-mute);
+      font-style: normal;
+    }
+    .pain-lead {
+      margin: 0 0 12px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text, #111827);
+    }
+    .pain-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    @media (max-width: 900px) {
+      .pain-grid { grid-template-columns: 1fr; }
+    }
+    .pain-col {
+      padding: 14px 16px;
+      background: #FFF;
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+    }
+    .pain-col-highlight {
+      background: #FFF7ED;
+      border-color: var(--orange, #E77C3C);
+    }
+    .pain-col-label {
+      margin: 0 0 6px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-mute);
+    }
+    .pain-col-highlight .pain-col-label {
+      color: var(--orange, #E77C3C);
+    }
+    .pain-col-body {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text, #111827);
     }
     .plans-grid {
       display: grid;
