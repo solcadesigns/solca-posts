@@ -35,10 +35,13 @@ import type { SessionState, ChatMessage, FinalReport } from '../../lib/simulator
 
 export const prerender = false;
 
-// FIX (7 sept 2026): revertimos a sonnet-4-5 (estable, más barato que 4-6).
-// El typo 'claude-sonnet-4-6' introducido en task #76 contribuyó al sangrado
-// de tokens del 7 sept — pricing más alto + chunks fallando persistentemente.
-const MODEL = 'claude-sonnet-4-5';
+// FIX (8 sept 2026): migrado a Haiku 4.5 para los chunks del reporte.
+// Post-mortem: Sonnet 4.5 tarda ~20-30s por chunk → excede el timeout del cron
+// externo (30s en cron-job.org free). Haiku 4.5 es 3x más rápido (~8s por chunk)
+// y 3x más barato ($1/$5 vs $3/$15). Calidad más que suficiente para generar
+// JSON estructurado según framework fijo (no razonamiento complejo).
+// Las preguntas de la sesión siguen con Sonnet (calidad conversacional).
+const MODEL = 'claude-haiku-4-5';
 const TEMPERATURE = 0.5;
 const MAX_ATTEMPTS = 2; // Reducido de 3 → 2 · corta más rápido si algo falla persistente
 const CHUNK_BREAKDOWN_SIZE = 5; // preguntas por chunk

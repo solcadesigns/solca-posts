@@ -344,10 +344,11 @@ const noIndex = true;
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <section id="view-report" class="view view-report hidden">
       <div class="container">
-        <h1>Reporte final de tu sesión</h1>
-        <p class="intro">
-          Tu sesión está completa. Abajo tienes el resumen ejecutivo + el desglose
-          por pregunta (expandible) + el siguiente paso recomendado.
+        <h1 id="report-heading">Reporte final de tu sesión</h1>
+        <p class="intro" id="report-intro">
+          Tu sesión terminó. La generación del reporte puede tardar varios minutos.
+          Cuando esté listo aparece aquí abajo y también te llega por email.
+          Mientras esperas, si quieres dejarnos feedback lo encuentras al final de la página.
         </p>
 
         <article class="report-summary">
@@ -1385,6 +1386,20 @@ const noIndex = true;
       const breakdownEl = document.getElementById('report-breakdown') as HTMLDivElement | null;
       if (breakdownEl) breakdownEl.innerHTML = '';
       const email = localStorage.getItem('solca_user_email') || '';
+
+      // Ajustar heading + intro para reflejar el estado real (estamos esperando,
+      // no hay reporte todavía). Se revierte cuando renderFinalReport arranca.
+      const headingEl = document.getElementById('report-heading');
+      const introEl = document.getElementById('report-intro');
+      if (headingEl) headingEl.textContent = 'Generando tu reporte…';
+      if (introEl) {
+        introEl.innerHTML =
+          'Tu sesión terminó. El reporte puede tardar <strong>varios minutos</strong> en generarse. ' +
+          'Cuando esté listo, aparece aquí abajo y también te llega por email' +
+          (email ? ' a <strong>' + escapeHtml(email) + '</strong>' : '') + '. ' +
+          'Puedes cerrar esta ventana con tranquilidad, o esperar aquí. ' +
+          'Mientras tanto, si quieres dejarnos feedback lo encuentras al final de la página.';
+      }
       if (summaryEl) {
         summaryEl.innerHTML = `
           <div id="polling-status" style="background:#fff;border:1px solid #E5E1D8;border-radius:8px;padding:24px;margin:16px 0;">
@@ -1480,6 +1495,17 @@ const noIndex = true;
 
     function renderFinalReport(finalReport: FinalReport | null | undefined) {
       stopTimer();
+
+      // Restaurar heading + intro (el polling pudo haberlos cambiado a "Generando…").
+      const headingEl = document.getElementById('report-heading');
+      const introEl = document.getElementById('report-intro');
+      if (headingEl) headingEl.textContent = 'Reporte final de tu sesión';
+      if (introEl) {
+        introEl.textContent =
+          'Tu sesión está completa. Abajo tienes el resumen ejecutivo + el desglose ' +
+          'por pregunta (expandible) + el siguiente paso recomendado.';
+      }
+
       const summaryEl = document.getElementById('report-summary-text') as HTMLDivElement;
       const breakdownEl = document.getElementById('report-breakdown-text') as HTMLDivElement;
       const downloadBtn = document.getElementById('download-pdf') as HTMLButtonElement | null;

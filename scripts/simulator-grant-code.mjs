@@ -67,7 +67,6 @@ function generateCode() {
 const accessCode = generateCode();
 const nowIso = new Date().toISOString();
 const expiresAt = new Date(Date.now() + cfg.vigenciaDias * 24 * 3600 * 1000).toISOString();
-const ttl = cfg.vigenciaDias * 24 * 3600;
 
 const betaRecord = {
   nombre_pila: nombre,
@@ -95,9 +94,11 @@ const creditsRecord = {
   ],
 };
 
-function wranglerPut(binding, key, value, ttlSec) {
-  const cmd = `npx wrangler kv key put "${key}" '${value}' --binding=${binding} --remote --expiration-ttl=${ttlSec}`;
-  console.log(`\n[wrangler] Escribiendo ${binding}/${key} (TTL ${ttlSec}s)`);
+function wranglerPut(binding, key, value) {
+  // Wrangler 4.x cambió la sintaxis de --expiration-ttl. Escribimos sin TTL
+  // (el key vive hasta que lo borres manualmente). Para pruebas manuales OK.
+  const cmd = `npx wrangler kv key put "${key}" '${value}' --binding=${binding} --remote`;
+  console.log(`\n[wrangler] Escribiendo ${binding}/${key}`);
   try {
     const out = execSync(cmd, { encoding: 'utf8' });
     console.log(out.trim().split('\n').slice(-2).join('\n'));
@@ -115,8 +116,8 @@ console.log(`  sesiones:    ${cfg.sessions}`);
 console.log(`  vigencia:    ${cfg.vigenciaDias} días · expira ${expiresAt.slice(0, 10)}`);
 console.log(`  código:      ${accessCode}`);
 
-wranglerPut('SIMULATOR_BETA_CODES', `beta:${accessCode}`, JSON.stringify(betaRecord), ttl);
-wranglerPut('SIMULATOR_CREDITS', `credits:${emailHash}`, JSON.stringify(creditsRecord), ttl);
+wranglerPut('SIMULATOR_BETA_CODES', `beta:${accessCode}`, JSON.stringify(betaRecord));
+wranglerPut('SIMULATOR_CREDITS', `credits:${emailHash}`, JSON.stringify(creditsRecord));
 
 console.log('\n== LISTO ==');
 console.log(`\nURL para el usuario:`);

@@ -529,7 +529,8 @@ async function trySyncFinalReport(
     const response = await retryableChatCompletion(
       {
         apiKey,
-        model: MODEL,
+        // Sync path también usa Haiku (más rápido, cabe mejor en el timeout)
+        model: 'claude-haiku-4-5',
         system: systemPrompt,
         messages,
         temperature: TEMPERATURE,
