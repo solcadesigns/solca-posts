@@ -355,14 +355,19 @@ export const GET: APIRoute = async ({ request, locals }) => {
   const kv = env.SIMULATOR_SESSIONS as KVNamespace | undefined;
   if (!kv) return jsonResponse({ ok: false, error: 'kv_missing' }, 500);
 
-  const list = await kv.list({ prefix: 'pending:', limit: 5 });
+  // Limit=1 · procesamos 1 pending por corrida (cada uno tarda hasta 25s).
+  // Con 5, la 2a corrida excedería el subrequest timeout de 30s.
+  const list = await kv.list({ prefix: 'pending:', limit: 1 });
   if (list.keys.length === 0) {
     return jsonResponse({ ok: true, processed: 0, message: 'no pending sessions' });
   }
 
-  // Fire-and-forget: procesar cada pending en background para no bloquear el cron.
+  // FIX 7 sept 2026: procesamiento SÍNCRONO await (antes fire-and-forget).
+  // Post-mortem: ctx.waitUntil() en Cloudflare Workers con Astro adapter NO
+  // ejecuta la promise después de responder 200 — el isolate muere. Todos los
+  // pendings quedaban en attempts=0, chunks=0. Ahora esperamos el chunk (~15-25s)
+  // dentro del handler; el cron externo tolera 30s, así que cabe.
   const enqueued: Array<{ sessionId: string; status: string }> = [];
-  const waitUntil = runtime?.ctx?.waitUntil;
 
   for (const k of list.keys) {
     const raw = await kv.get(k.name);
@@ -433,14 +438,10 @@ export const GET: APIRoute = async ({ request, locals }) => {
       continue;
     }
 
-    const promise = processOneChunk(env, k.name, pending);
-    if (waitUntil) {
-      waitUntil(promise);
-      enqueued.push({ sessionId: pending.sessionId, status: 'processing_background' });
-    } else {
-      const r = await promise;
-      enqueued.push({ sessionId: pending.sessionId, status: r.status });
-    }
+    // Await SÍNCRONO — 1 chunk por pending por corrida. Rompe si excede
+    // el subrequest timeout, pero el chunk está diseñado para <25s.
+    const r = await processOneChunk(env, k.name, pending);
+    enqueued.push({ sessionId: pending.sessionId, status: r.status });
   }
 
   return jsonResponse({
