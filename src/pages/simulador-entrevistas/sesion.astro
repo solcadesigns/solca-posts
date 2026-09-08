@@ -1379,7 +1379,11 @@ const noIndex = true;
     // pinta el reporte. Si tarda >6 min, muestra fallback "cierra la ventana
     // y espera el email".
     function startReportPolling(sessionId: string) {
-      if (!sessionId) return;
+      if (!sessionId) {
+        console.warn('[polling] START abortado: sessionId vacío');
+        return;
+      }
+      console.log('[polling] START · sessionId=', sessionId);
       // Muestra pantalla intermedia dentro del contenedor del reporte
       showView('report');
       const summaryEl = document.getElementById('report-summary') as HTMLDivElement | null;
@@ -1391,6 +1395,8 @@ const noIndex = true;
       // no hay reporte todavía). Se revierte cuando renderFinalReport arranca.
       const headingEl = document.getElementById('report-heading');
       const introEl = document.getElementById('report-intro');
+      if (!headingEl) console.warn('[polling] #report-heading no encontrado · posible HTML cacheado viejo');
+      if (!introEl) console.warn('[polling] #report-intro no encontrado · posible HTML cacheado viejo');
       if (headingEl) headingEl.textContent = 'Generando tu reporte…';
       if (introEl) {
         introEl.innerHTML =
@@ -2514,7 +2520,15 @@ const noIndex = true;
           if (discardBtn) discardBtn.addEventListener('click', () => discardBrokenSession());
           return;
         }
-        // Si está en progreso · limpiamos para no confundir, dejamos arrancar nueva
+        // v0.8 · si la sesión terminó y está esperando reporte async (queued/processing),
+        // arrancamos polling para no perder la referencia al reload.
+        if (st.finished && (st.finalReportStatus === 'queued' || st.finalReportStatus === 'processing')) {
+          appState.sessionState = st;
+          startReportPolling(st.sessionId);
+          return;
+        }
+        // Si sigue in-session (no terminada), no restauramos automáticamente
+        // para no confundir al usuario que quiera arrancar sesión nueva.
         try { localStorage.removeItem('solca_session_id'); } catch {}
       } catch (err) {
         console.error('[maybe-resume] failed:', err);
