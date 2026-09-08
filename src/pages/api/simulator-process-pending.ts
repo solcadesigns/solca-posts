@@ -43,8 +43,17 @@ export const prerender = false;
 // Las preguntas de la sesión siguen con Sonnet (calidad conversacional).
 const MODEL = 'claude-haiku-4-5';
 const TEMPERATURE = 0.5;
-const MAX_ATTEMPTS = 2; // Reducido de 3 → 2 · corta más rápido si algo falla persistente
-const CHUNK_BREAKDOWN_SIZE = 5; // preguntas por chunk
+// FIX (8 sept 2026): MAX_ATTEMPTS de 2 → 1. Single-shot por chunk.
+// Post-mortem: cada attempt gasta tokens completos y con reintentos internos
+// del retryableChatCompletion (3 más), un solo pending fallido gasta 6+ requests.
+// Con single-shot: 1 chunk = 1 request = costo predecible.
+const MAX_ATTEMPTS = 1;
+// FIX (8 sept 2026): reducido de 5 → 3 preguntas por chunk. Con Haiku 4.5
+// un breakdown de 5 preguntas todavía tarda >30s. Con 3 preguntas bajamos
+// a <15s por chunk, cabe holgado en el timeout del cron externo (30s).
+// Trade-off: más chunks totales (15q = 1 summary + 5 breakdowns = 6 corridas
+// del cron × 2 min = 12 min al reporte listo). Aceptable.
+const CHUNK_BREAKDOWN_SIZE = 3;
 
 interface PendingRecord {
   sessionId: string;
@@ -54,6 +63,31 @@ interface PendingRecord {
   priority: 'normal' | 'high';
   userEmail?: string;
   userFirstName?: string;
+}
+
+// Budget hard por sesión (8 sept 2026 · post-mortem sangrado).
+// Si una sola sesión supera este límite total de tokens (input+output sumado
+// entre todos los chunks + reintentos), se marca como failed y no se
+// procesa más. Protección de último recurso contra runaway.
+// 200k tokens ≈ $0.60 USD con Sonnet 4.5, ~$0.20 con Haiku 4.5.
+const MAX_TOKENS_PER_SESSION = 200000;
+
+/**
+ * Lee, suma y persiste el contador de tokens de una sesión.
+ * Retorna { exceeded: true } si el nuevo total supera el budget.
+ * Key: session_budget:<sessionId> · TTL 90 días.
+ */
+async function trackSessionBudget(
+  kv: KVNamespace,
+  sessionId: string,
+  tokensToAdd: number,
+): Promise<{ exceeded: boolean; totalTokens: number }> {
+  const key = `session_budget:${sessionId}`;
+  const rawCurrent = await kv.get(key);
+  const current = rawCurrent ? Number.parseInt(rawCurrent, 10) : 0;
+  const nextTotal = current + tokensToAdd;
+  await kv.put(key, String(nextTotal), { expirationTtl: 60 * 60 * 24 * 90 });
+  return { exceeded: nextTotal > MAX_TOKENS_PER_SESSION, totalTokens: nextTotal };
 }
 
 function jsonResponse(data: unknown, status = 200): Response {
@@ -86,7 +120,7 @@ async function generateChunk(
   state: SessionState,
   chunkType: 'summary' | 'breakdown',
   breakdownRange?: { start: number; end: number },
-): Promise<Record<string, unknown>> {
+): Promise<{ parsed: Record<string, unknown>; tokensUsed: number }> {
   const promptOptions = {
     profile: state.profile,
     plan: state.plan,
@@ -114,17 +148,20 @@ async function generateChunk(
       system: systemPrompt,
       messages,
       temperature: TEMPERATURE,
-      maxTokens: 4000, // suficiente para 1 chunk, cabe en <25s
-      timeoutMs: 25000, // margen bajo el subrequest limit de 30s de Cloudflare
+      maxTokens: 2500,
+      timeoutMs: 25000,
     },
     `pending-chunk-${chunkType}${breakdownRange ? `-${breakdownRange.start}-${breakdownRange.end}` : ''}`,
+    1, // maxAttempts=1 · single-shot, no reintentos internos silenciosos (post-mortem 8 sept)
   );
 
   const text = extractText(response);
+  const tokensUsed =
+    (response.usage?.input_tokens ?? 0) + (response.usage?.output_tokens ?? 0);
   // Extraer JSON del texto (puede venir con ```json ... ```)
   const jsonMatch = text.match(/```json\s*([\s\S]+?)\s*```/) ?? text.match(/(\{[\s\S]+\})/);
   const jsonStr = jsonMatch ? jsonMatch[1] : text;
-  return JSON.parse(jsonStr) as Record<string, unknown>;
+  return { parsed: JSON.parse(jsonStr) as Record<string, unknown>, tokensUsed };
 }
 
 /**
@@ -279,17 +316,35 @@ async function processOneChunk(
     return { ok: true, status: 'ready · email sent' };
   }
 
+  // GUARD DE BUDGET (8 sept 2026): check ANTES de cualquier llamada Anthropic.
+  // Si esta sesión ya excedió el budget en corridas anteriores, cortamos aquí
+  // sin gastar más tokens.
+  const budgetPre = await trackSessionBudget(kv, pending.sessionId, 0);
+  if (budgetPre.exceeded) {
+    console.warn(`[pending-cron] sessionBudget exceeded ${pending.sessionId} (${budgetPre.totalTokens}), aborting`);
+    await kv.delete(pendingKey);
+    state.finalReportStatus = 'failed';
+    state.finalReportError = `Session budget excedido: ${budgetPre.totalTokens} tokens > ${MAX_TOKENS_PER_SESSION}`;
+    await kv.put(`session:${state.sessionId}`, JSON.stringify(state), {
+      expirationTtl: 60 * 60 * 24 * 90,
+    });
+    return { ok: false, status: 'budget_exceeded' };
+  }
+
   // Procesar 1 chunk (el primero de la lista)
   const chunk = chunksNeeded[0];
   try {
+    let tokensUsedThisChunk = 0;
     if (chunk.type === 'summary') {
-      const parsed = await generateChunk(apiKey, state, 'summary');
+      const { parsed, tokensUsed } = await generateChunk(apiKey, state, 'summary');
+      tokensUsedThisChunk = tokensUsed;
       state.finalReportChunks.summary = parsed as SessionState['finalReportChunks']['summary'];
     } else {
-      const parsed = await generateChunk(apiKey, state, 'breakdown', {
+      const { parsed, tokensUsed } = await generateChunk(apiKey, state, 'breakdown', {
         start: chunk.start,
         end: chunk.end,
       });
+      tokensUsedThisChunk = tokensUsed;
       const questionsData = (parsed as { questions_breakdown?: unknown[] }).questions_breakdown ?? [];
       state.finalReportChunks.breakdowns = state.finalReportChunks.breakdowns ?? [];
       state.finalReportChunks.breakdowns.push({
@@ -304,15 +359,36 @@ async function processOneChunk(
       expirationTtl: 60 * 60 * 24 * 90,
     });
 
+    // Actualizar budget con tokens usados en este chunk
+    const budgetPost = await trackSessionBudget(kv, pending.sessionId, tokensUsedThisChunk);
     const remaining = chunksNeeded.length - 1;
     return {
       ok: true,
-      status: `chunk_done · ${chunk.type}${chunk.type === 'breakdown' ? ` ${chunk.start}-${chunk.end}` : ''} · ${remaining} chunks restantes`,
+      status: `chunk_done · ${chunk.type}${chunk.type === 'breakdown' ? ` ${chunk.start}-${chunk.end}` : ''} · ${remaining} restantes · ${tokensUsedThisChunk}t (total ${budgetPost.totalTokens}t)`,
     };
   } catch (err) {
     pending.attempts += 1;
     const errMsg = err instanceof Error ? err.message : String(err);
     console.error(`[pending-cron] chunk failed for ${pending.sessionId}:`, errMsg);
+
+    // Kill switch balance: si Anthropic devolvió 402/403, pausar TODO el
+    // Anthropic global por 15 min. Evita que las próximas corridas del cron
+    // sigan disparando requests que van a fallar y gastar dinero antes.
+    if (err instanceof AnthropicError && (err.status === 402 || err.status === 403)) {
+      await kv.put(
+        'anthropic_paused',
+        `pending-chunk ${err.status}: ${JSON.stringify(err.body).slice(0, 150)}`,
+        { expirationTtl: 15 * 60 },
+      );
+      console.warn('[pending-cron] anthropic_paused SET por 15 min');
+    }
+
+    // Cargo conservador de tokens estimados aunque no completó (evita subestimar).
+    const estimatedInputTokens = Math.min(
+      Math.round(JSON.stringify(state.turns).length / 4),
+      100000,
+    );
+    await trackSessionBudget(kv, pending.sessionId, estimatedInputTokens);
 
     if (pending.attempts >= MAX_ATTEMPTS) {
       // Damos up. Notificar al usuario con disculpa.
@@ -358,8 +434,21 @@ export const GET: APIRoute = async ({ request, locals }) => {
   const kv = env.SIMULATOR_SESSIONS as KVNamespace | undefined;
   if (!kv) return jsonResponse({ ok: false, error: 'kv_missing' }, 500);
 
+  // Kill switch global (post-mortem 8 sept): si el flag anthropic_paused
+  // existe, no procesamos nada. Evita que el cron dispare requests que
+  // sabemos van a fallar y gastar tokens.
+  const pauseReason = await kv.get('anthropic_paused');
+  if (pauseReason) {
+    return jsonResponse({
+      ok: true,
+      processed: 0,
+      paused: true,
+      reason: pauseReason.slice(0, 200),
+      note: 'Anthropic paused. Waiting for TTL to expire (15 min) or manual clear.',
+    });
+  }
+
   // Limit=1 · procesamos 1 pending por corrida (cada uno tarda hasta 25s).
-  // Con 5, la 2a corrida excedería el subrequest timeout de 30s.
   const list = await kv.list({ prefix: 'pending:', limit: 1 });
   if (list.keys.length === 0) {
     return jsonResponse({ ok: true, processed: 0, message: 'no pending sessions' });

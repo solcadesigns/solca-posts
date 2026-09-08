@@ -147,27 +147,41 @@ const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504, 524, 529]);
 // 529 = Anthropic's "overloaded_error" status
 // 429 = rate limit (con backoff suele resolver; si no, falla en el último intento)
 
+/**
+ * @param maxAttempts Override del máximo de intentos totales (default 3 · 1 inicial + 2 retries).
+ *                    Pasa 1 para desactivar reintentos internos completamente.
+ *                    Cada reintento consume tokens completos, así que en paths
+ *                    donde el costo importa más que la fiabilidad (ej. el cron
+ *                    del simulador), conviene usar 1.
+ *                    Post-mortem 8 sept 2026: los reintentos internos silenciosos
+ *                    contribuyeron al sangrado del 7-8 sept.
+ */
 export async function retryableChatCompletion(
   options: ChatCompletionOptions,
   context = 'unknown',
+  maxAttempts?: number,
 ): Promise<AnthropicResponse> {
+  const totalAttempts = Math.min(
+    Math.max(1, maxAttempts ?? RETRY_DELAYS_MS.length),
+    RETRY_DELAYS_MS.length,
+  );
   let lastError: unknown;
-  for (let attempt = 0; attempt < RETRY_DELAYS_MS.length; attempt++) {
+  for (let attempt = 0; attempt < totalAttempts; attempt++) {
     try {
       const result = await chatCompletion(options);
       if (attempt > 0) {
         console.warn(
-          `[anthropic-retry] ${context} succeeded on attempt ${attempt + 1}/${RETRY_DELAYS_MS.length}`,
+          `[anthropic-retry] ${context} succeeded on attempt ${attempt + 1}/${totalAttempts}`,
         );
       }
       return result;
     } catch (err) {
       lastError = err;
       const isRetryable = err instanceof AnthropicError && RETRYABLE_STATUS.has(err.status);
-      const willRetry = isRetryable && attempt < RETRY_DELAYS_MS.length - 1;
+      const willRetry = isRetryable && attempt < totalAttempts - 1;
 
       console.warn(
-        `[anthropic-retry] ${context} attempt ${attempt + 1}/${RETRY_DELAYS_MS.length} failed`,
+        `[anthropic-retry] ${context} attempt ${attempt + 1}/${totalAttempts} failed`,
         JSON.stringify({
           status: err instanceof AnthropicError ? err.status : 'unknown',
           message: err instanceof Error ? err.message : String(err),

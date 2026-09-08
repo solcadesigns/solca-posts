@@ -38,6 +38,45 @@ import type {
 import { PLAN_CONFIG, applyPlanGating } from '../../lib/simulator-types';
 
 /** Hash SHA-256 del email lowercased trimmed, primeros 16 hex chars. */
+/**
+ * Kill switch por balance Anthropic (8 sept 2026 · post-mortem sangrado).
+ *
+ * Cuando Anthropic devuelve 402 (payment required) o 403 (invalid API key /
+ * permission denied) o 529 recurrente (overloaded), seteamos un flag en KV
+ * con TTL 15 min. Mientras el flag esté activo, handleNext y trySyncFinalReport
+ * responden con error inmediato SIN llamar Anthropic — evita quemar dinero
+ * cuando ya no hay balance o la key está mal.
+ *
+ * El flag se limpia solo tras 15 min (por si el usuario recargó fondos).
+ * También se puede limpiar manualmente:
+ *   npx wrangler kv key delete "anthropic_paused" --binding=SIMULATOR_SESSIONS --remote
+ */
+const ANTHROPIC_PAUSED_TTL_SECONDS = 15 * 60;
+const ANTHROPIC_PAUSED_KEY = 'anthropic_paused';
+
+async function isAnthropicPaused(env: Record<string, unknown>): Promise<boolean> {
+  const kv = env.SIMULATOR_SESSIONS as KVNamespace | undefined;
+  if (!kv) return false;
+  const v = await kv.get(ANTHROPIC_PAUSED_KEY);
+  return v != null;
+}
+
+async function markAnthropicPaused(
+  env: Record<string, unknown>,
+  reason: string,
+): Promise<void> {
+  const kv = env.SIMULATOR_SESSIONS as KVNamespace | undefined;
+  if (!kv) return;
+  try {
+    await kv.put(ANTHROPIC_PAUSED_KEY, reason.slice(0, 200), {
+      expirationTtl: ANTHROPIC_PAUSED_TTL_SECONDS,
+    });
+    console.warn(`[anthropic-pause] MARKED: ${reason.slice(0, 200)}`);
+  } catch (err) {
+    console.error('[anthropic-pause] failed to persist:', err);
+  }
+}
+
 async function hashEmail(email: string): Promise<string> {
   const normalized = email.trim().toLowerCase();
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(normalized));
@@ -512,6 +551,11 @@ async function trySyncFinalReport(
   const apiKey = env.ANTHROPIC_API_KEY as string | undefined;
   if (!apiKey) return { ok: false, error: 'no_api_key' };
 
+  // Guard kill switch balance (post-mortem 8 sept)
+  if (await isAnthropicPaused(env)) {
+    return { ok: false, error: 'anthropic_paused' };
+  }
+
   try {
     const systemPrompt = buildSystemPrompt({
       profile: state.profile,
@@ -529,15 +573,15 @@ async function trySyncFinalReport(
     const response = await retryableChatCompletion(
       {
         apiKey,
-        // Sync path también usa Haiku (más rápido, cabe mejor en el timeout)
         model: 'claude-haiku-4-5',
         system: systemPrompt,
         messages,
         temperature: TEMPERATURE,
         maxTokens: finalReportMaxTokens(state.profile.questionCount),
-        timeoutMs: 25000, // margen bajo el 30s subrequest limit de Cloudflare
+        timeoutMs: 25000,
       },
       'sync_final_report',
+      1, // maxAttempts=1 · no reintentos internos (post-mortem 8 sept)
     );
 
     const assistantText = extractText(response);
@@ -580,6 +624,10 @@ async function trySyncFinalReport(
 
     return { ok: true, finalReport: parsed.finalReport };
   } catch (err) {
+    // Kill switch balance: si Anthropic devolvió 402/403, pausar
+    if (err instanceof AnthropicError && (err.status === 402 || err.status === 403)) {
+      await markAnthropicPaused(env, `sync_final_report ${err.status}: ${JSON.stringify(err.body).slice(0, 150)}`);
+    }
     const msg = err instanceof Error ? err.message : String(err);
     return { ok: false, error: msg };
   }
@@ -802,6 +850,16 @@ async function handleNext(
       'Continúa con la siguiente pregunta. NO des feedback explícito sobre la respuesta anterior (eso va consolidado al final). Puedes hacer una transición breve de una línea si quieres ("Entendido", "Pasamos a la siguiente"), o ir directo a la pregunta. Recuerda que el adaptive de contenido (Mecanismo 2) sigue activo: si detectaste gap o fortaleza, la siguiente pregunta puede explorarlo.',
   });
 
+  // Guard de kill switch por balance (8 sept 2026)
+  if (await isAnthropicPaused(env)) {
+    return {
+      ok: false,
+      error: 'Servicio temporalmente saturado. Reintenta en unos minutos.',
+      errorCode: 'anthropic_paused' as unknown as SessionEndpointResponse['errorCode'],
+      sessionState: state,
+    };
+  }
+
   let response;
   try {
     response = await retryableChatCompletion(
@@ -814,10 +872,15 @@ async function handleNext(
         maxTokens: MAX_TOKENS_PER_TURN,
       },
       'next-question',
+      1, // maxAttempts=1 · no reintentos internos (post-mortem 8 sept)
     );
   } catch (err) {
     if (err instanceof AnthropicError) {
       console.error('Anthropic error in next:', err.status, err.body);
+      // Kill switch · si es 402 (balance) o 403 (auth), pausar por 15 min
+      if (err.status === 402 || err.status === 403) {
+        await markAnthropicPaused(env, `next-question ${err.status}: ${JSON.stringify(err.body).slice(0, 150)}`);
+      }
       return {
         ok: false,
         error: `Anthropic API error ${err.status}`,
