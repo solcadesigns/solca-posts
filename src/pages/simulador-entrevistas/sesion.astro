@@ -202,6 +202,11 @@ const noIndex = true;
                 <em>10 preguntas · 45-60 min · entrevista técnica</em>
               </span>
             </label>
+            {/* Panel de 15 preguntas · deshabilitado 9 sept 2026.
+                Motivo: reporte de 15q no cabe en el subrequest timeout de
+                Cloudflare (30s) ni con Haiku + prompt caching + chunks de 2q.
+                Re-habilitar cuando migremos el async a Cloudflare Queues
+                (que no tiene el límite de 30s por chunk).
             <label class="radio">
               <input type="radio" name="interviewStage" value="panel_round" />
               <span>
@@ -209,6 +214,7 @@ const noIndex = true;
                 <em>15 preguntas · 60-90 min · final round</em>
               </span>
             </label>
+            */}
             <label class="radio">
               <input type="radio" name="interviewStage" value="general_practice" />
               <span>
