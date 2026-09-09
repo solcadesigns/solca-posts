@@ -148,8 +148,12 @@ async function generateChunk(
       system: systemPrompt,
       messages,
       temperature: TEMPERATURE,
-      maxTokens: 2500,
-      timeoutMs: 25000,
+      // FIX (9 sept 2026): output reducido de 2500 → 1500 tokens. Sesión de
+      // 15q real tenía contexto ~25-50k input, chunk tardaba >25s y era abortado.
+      // Con maxTokens=1500 el modelo genera más rápido y cabe en el timeout.
+      maxTokens: 1500,
+      // 28s · margen apretado bajo el 30s del subrequest de Cloudflare.
+      timeoutMs: 28000,
     },
     `pending-chunk-${chunkType}${breakdownRange ? `-${breakdownRange.start}-${breakdownRange.end}` : ''}`,
     1, // maxAttempts=1 · single-shot, no reintentos internos silenciosos (post-mortem 8 sept)
