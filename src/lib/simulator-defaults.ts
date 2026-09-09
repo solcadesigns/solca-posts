@@ -144,6 +144,74 @@ export function vacancyRequiresFluentEnglish(vacancyText?: string): boolean {
 /**
  * Detecta si el rol o vacante implica seniority alto (Senior, Manager, Director, Lead, Principal).
  */
+// ──────────────────────────────────────────────────────────────────
+// CTA whitelist por rol (9 sept 2026 · post-mortem PDF con URL inventada)
+// ──────────────────────────────────────────────────────────────────
+//
+// Antes: el modelo generaba título/descripción/URL del CTA libremente y
+// terminaba INVENTANDO títulos ("Oncology MSL Playbook") con URLs falsas.
+// Ahora: catálogo hardcoded por rol con URLs verificadas de Hotmart.
+// El modelo solo elige TIPO (libro | recurso_gratuito) internamente en el
+// chunk summary, pero el CTA final se sustituye por este catálogo en merge.
+
+interface RoleCta {
+  type: 'libro' | 'recurso_gratuito';
+  title: string;
+  description: string;
+  url: string;
+}
+
+const CV_COURSE_CTA: RoleCta = {
+  type: 'libro',
+  title: 'Curso Solca · CV y entrevistas pharma',
+  description:
+    'Curso completo para armar tu CV pharma, aplicar de forma efectiva y preparar entrevistas del sector. Incluye módulo de simulación de entrevistas. Ideal para reforzar la base antes de tu próxima ronda.',
+  url: 'https://go.hotmart.com/B104495115T?dp=1',
+};
+
+const ROLE_CTA_CATALOG: Partial<Record<string, RoleCta>> = {
+  MSL: {
+    type: 'libro',
+    title: 'Medical Science Liaison · Guía práctica para científicos de la salud · LATAM y España',
+    description:
+      'Guía para posiciones MSL en pharma LATAM y España: Scientific Engagement, insight capture, MLR compliance, manejo de KOLs, casos reales por área terapéutica. El siguiente paso para consolidar tu perfil antes de la próxima entrevista.',
+    url: 'https://go.hotmart.com/Y105718405Y',
+  },
+  Clinical_PM: {
+    type: 'libro',
+    title: 'Project Management · Guía práctica para científicos de la salud · LATAM y España',
+    description:
+      'Guía completa para Project Manager en pharma LATAM y España: stakeholder management, critical path, RACI, presupuestos y timelines. Cinco módulos con cuaderno de trabajo aplicable.',
+    url: 'https://go.hotmart.com/R105710415P',
+  },
+  CRA: {
+    type: 'libro',
+    title: 'Clinical Research · Guía práctica para científicos de la salud · LATAM y España',
+    description:
+      'Guía para roles de investigación clínica (CRA, coordinación de estudios): ICH-GCP, monitoreo basado en riesgo, manejo de SAEs, SDV, relación con sitios investigadores. Casos y preguntas típicas del sector.',
+    url: 'https://go.hotmart.com/U105724060O?dp=1',
+  },
+  Associate_Clinical_Scientist: {
+    type: 'libro',
+    title: 'Clinical Research · Guía práctica para científicos de la salud · LATAM y España',
+    description:
+      'Guía para roles clínicos y de investigación: protocolos, ICH-GCP, monitoreo, manejo de SAEs, relación con sitios. Preguntas típicas por área terapéutica.',
+    url: 'https://go.hotmart.com/U105724060O?dp=1',
+  },
+};
+
+/**
+ * Devuelve el CTA correcto según el rol del candidato.
+ * Roles con libro específico (MSL, Clinical_PM, CRA, Associate_Clinical_Scientist)
+ * → CTA del libro correspondiente.
+ * Roles sin libro específico (HEOR, Regulatory, Market Access, Medical Affairs, etc.)
+ * → CTA del curso CV/entrevistas (fallback con módulo de preparación).
+ */
+export function getRoleCta(role: string | undefined): RoleCta {
+  if (!role) return CV_COURSE_CTA;
+  return ROLE_CTA_CATALOG[role] ?? CV_COURSE_CTA;
+}
+
 export function isSeniorRole(roleTitle?: string, vacancyText?: string): boolean {
   const haystack = `${roleTitle ?? ''} ${vacancyText ?? ''}`.toLowerCase();
   return /(senior|sr\.|manager|director|lead\b|principal|head of)/i.test(haystack);

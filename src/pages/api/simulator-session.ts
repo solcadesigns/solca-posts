@@ -600,6 +600,10 @@ async function trySyncFinalReport(
     if (!parsed.finalReport.sessionId) {
       parsed.finalReport.sessionId = state.sessionId;
     }
+    // CTA override (9 sept 2026): forzar URLs Hotmart verificadas por rol.
+    // El modelo puede seguir generando su propuesta pero se descarta a favor
+    // del catálogo hardcoded. Ver `getRoleCta` en simulator-defaults.
+    parsed.finalReport.cta = getRoleCta(state.profile.role);
 
     // Escribir métricas a D1 si vinieron
     if (parsed.metricsAnonymous) {

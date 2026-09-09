@@ -31,6 +31,7 @@ import {
 import { parseFinalOutput } from '../../lib/simulator-metrics-parser';
 import { sendEmail, sendEmailWithTemplate, PostmarkError } from '../../lib/postmark';
 import { writeMetricsToD1 } from '../../lib/simulator-metrics-writer';
+import { getRoleCta } from '../../lib/simulator-defaults';
 import type { SessionState, ChatMessage, FinalReport } from '../../lib/simulator-types';
 
 export const prerender = false;
@@ -215,12 +216,11 @@ function mergeChunks(state: SessionState): FinalReport | null {
       recomendacionFinal: summaryData.summary?.recomendacion_final ?? '',
     },
     questionsBreakdown: breakdown,
-    cta: {
-      type: (summaryData.cta?.type as 'libro' | 'recurso_gratuito') ?? 'recurso_gratuito',
-      title: summaryData.cta?.title ?? 'Siguiente paso',
-      description: summaryData.cta?.description ?? '',
-      url: summaryData.cta?.url ?? '/revisar-cv',
-    },
+    // CTA override (9 sept 2026): usamos catálogo hardcoded por rol en vez de
+    // dejar que el modelo invente títulos/URLs. Los tres libros Solca (MSL,
+    // Clinical_PM, CRA) tienen URL Hotmart verificada. Otros roles caen al
+    // curso CV con módulo de entrevistas.
+    cta: getRoleCta(state.profile.role),
   };
 }
 
