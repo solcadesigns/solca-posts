@@ -577,21 +577,18 @@ async function trySyncFinalReport(
     const response = await retryableChatCompletion(
       {
         apiKey,
-        // Sonnet 4.5 para calidad del reporte en sync path (usuario paga por
-        // este análisis). Si el tiempo excede 25s, sync falla y el caller cae
-        // automáticamente al async por chunks (mismo prompt, Haiku).
-        model: 'claude-sonnet-4-5',
+        // Haiku 4.5 en sync 10q · más rápido que Sonnet, cabe mejor en el
+        // timeout de 25s. Sonnet no cabía consistentemente con 10q + contexto real.
+        model: 'claude-haiku-4-5',
         system: systemPrompt,
         messages,
         temperature: TEMPERATURE,
         maxTokens: finalReportMaxTokens(state.profile.questionCount),
         timeoutMs: 25000,
-        // Prompt caching: el system prompt (~5-8k tokens) se cachea. En el
-        // sync path el cache no ayuda tanto (una sola llamada) pero es defensivo.
         cacheSystem: true,
       },
       'sync_final_report',
-      1, // maxAttempts=1 · no reintentos internos (post-mortem 8 sept)
+      1,
     );
 
     const assistantText = extractText(response);
