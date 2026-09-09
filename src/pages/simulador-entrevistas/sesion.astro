@@ -2956,6 +2956,12 @@ const noIndex = true;
       flex-wrap: wrap;
     }
 
+    /* FIX (9 sept 2026): .loading tenía display:flex que anulaba el atributo
+       HTML5 [hidden] · el spinner se veía aunque el div tuviera hidden=true.
+       Con [hidden] explícito no aplicamos display, así el atributo funciona. */
+    .loading[hidden] {
+      display: none !important;
+    }
     .loading {
       display: flex;
       align-items: flex-start;
