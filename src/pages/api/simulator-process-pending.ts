@@ -48,12 +48,13 @@ const TEMPERATURE = 0.5;
 // del retryableChatCompletion (3 más), un solo pending fallido gasta 6+ requests.
 // Con single-shot: 1 chunk = 1 request = costo predecible.
 const MAX_ATTEMPTS = 1;
-// FIX (8 sept 2026): reducido de 5 → 3 preguntas por chunk. Con Haiku 4.5
-// un breakdown de 5 preguntas todavía tarda >30s. Con 3 preguntas bajamos
-// a <15s por chunk, cabe holgado en el timeout del cron externo (30s).
-// Trade-off: más chunks totales (15q = 1 summary + 5 breakdowns = 6 corridas
-// del cron × 2 min = 12 min al reporte listo). Aceptable.
-const CHUNK_BREAKDOWN_SIZE = 3;
+// FIX (9 sept 2026): reducido de 3 → 2 preguntas por chunk.
+// Post-mortem: con 3 preguntas + contexto real (~30-40k tokens de mensajes
+// acumulados de sesión de 15q), los chunks 4-5 todavía tardan >28s incluso
+// con prompt caching del system. El bottleneck son los mensajes, no el system.
+// Con 2 preguntas el output es más corto → menos tiempo total.
+// Trade-off: 15q = 1 summary + 8 breakdowns = 9 corridas × 2 min = ~18 min.
+const CHUNK_BREAKDOWN_SIZE = 2;
 
 interface PendingRecord {
   sessionId: string;
@@ -352,11 +353,27 @@ async function processOneChunk(
       });
       tokensUsedThisChunk = tokensUsed;
       const questionsData = (parsed as { questions_breakdown?: unknown[] }).questions_breakdown ?? [];
+      // FIX (9 sept 2026): mapear snake_case (Anthropic JSON) → camelCase
+      // (TS interfaces). El PDF renderer accede a `qb.questionNumber` pero
+      // Anthropic devuelve `question_number` → resultado: "Pregunta undefined".
+      const mappedQuestions = questionsData.map((q) => {
+        const src = q as Record<string, unknown>;
+        return {
+          questionNumber: src.question_number,
+          questionText: src.question_text,
+          userAnswer: src.user_answer,
+          scores: src.scores,
+          angleUsed: src.angle_used,
+          whatWorked: src.what_worked,
+          whatToImprove: src.what_to_improve,
+          modelPhrase: src.model_phrase,
+        };
+      });
       state.finalReportChunks.breakdowns = state.finalReportChunks.breakdowns ?? [];
       state.finalReportChunks.breakdowns.push({
         start: chunk.start,
         end: chunk.end,
-        questions: questionsData as FinalReport['questionsBreakdown'],
+        questions: mappedQuestions as FinalReport['questionsBreakdown'],
       });
     }
 
