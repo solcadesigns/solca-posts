@@ -148,11 +148,13 @@ async function generateChunk(
       system: systemPrompt,
       messages,
       temperature: TEMPERATURE,
-      // FIX (9 sept 2026): output reducido de 2500 → 1500 tokens. Sesión de
-      // 15q real tenía contexto ~25-50k input, chunk tardaba >25s y era abortado.
-      // Con maxTokens=1500 el modelo genera más rápido y cabe en el timeout.
-      maxTokens: 1500,
-      // 28s · margen apretado bajo el 30s del subrequest de Cloudflare.
+      // FIX (9 sept 2026): output ajustado a 2200 tokens.
+      // Iteración 1 (2500): tardaba >25s con contexto real → timeout.
+      // Iteración 2 (1500): rápido pero Haiku truncaba JSON del breakdown de 3q
+      //                     antes de cerrar el array → parse error position ~5022.
+      // Iteración 3 (2200): balance · suficiente para 3 preguntas con contenido
+      //                     completo, cabe en 28s con contexto grande.
+      maxTokens: 2200,
       timeoutMs: 28000,
     },
     `pending-chunk-${chunkType}${breakdownRange ? `-${breakdownRange.start}-${breakdownRange.end}` : ''}`,
