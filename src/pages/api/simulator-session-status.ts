@@ -79,7 +79,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
   const chunks = state.finalReportChunks ?? {};
   const summaryDone = !!chunks.summary;
   const breakdownsDone = chunks.breakdowns?.length ?? 0;
-  const totalBreakdowns = Math.ceil(state.profile.questionCount / 5);
+  // Debe coincidir con CHUNK_BREAKDOWN_SIZE de simulator-process-pending.ts
+  const totalBreakdowns = Math.ceil(state.profile.questionCount / 3);
   const progress = `${summaryDone ? 'summary ✓' : 'summary ⏳'} · breakdowns ${breakdownsDone}/${totalBreakdowns}`;
 
   return jsonResponse({
