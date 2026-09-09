@@ -28,6 +28,14 @@ export interface ChatCompletionOptions {
    * (retryable). Agregado 2 sept 2026 tras sesión 27d9355c.
    */
   timeoutMs?: number;
+  /**
+   * Si true, envía el system prompt con cache_control ephemeral (Anthropic
+   * prompt caching). El primer request cachea el system (+25% costo del write),
+   * llamadas subsecuentes en <5 min pagan 10% del costo del input Y se ahorran
+   * el tiempo de encoding. Ideal para chunks del reporte que comparten el
+   * mismo buildSystemPrompt gigante (~5-8k tokens). Agregado 9 sept 2026.
+   */
+  cacheSystem?: boolean;
 }
 
 export interface AnthropicResponse {
@@ -61,11 +69,20 @@ export async function chatCompletion(
     temperature = 0.3,
     maxTokens = 4000,
     timeoutMs = 85000, // 85s · deja margen contra el gateway timeout de Cloudflare (100s)
+    cacheSystem = false,
   } = options;
+
+  // Anthropic prompt caching: si cacheSystem=true, mandamos system como array
+  // con cache_control ephemeral. Anthropic cachea automáticamente y responde
+  // en llamadas subsecuentes con cache_read_input_tokens (10% del costo del
+  // input regular Y sin el tiempo de encoding).
+  const systemField = cacheSystem
+    ? [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }]
+    : system;
 
   const body = {
     model,
-    system,
+    system: systemField,
     messages,
     temperature,
     max_tokens: maxTokens,

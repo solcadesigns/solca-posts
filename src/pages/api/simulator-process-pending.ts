@@ -148,17 +148,17 @@ async function generateChunk(
       system: systemPrompt,
       messages,
       temperature: TEMPERATURE,
-      // FIX (9 sept 2026): output ajustado a 2200 tokens.
-      // Iteración 1 (2500): tardaba >25s con contexto real → timeout.
-      // Iteración 2 (1500): rápido pero Haiku truncaba JSON del breakdown de 3q
-      //                     antes de cerrar el array → parse error position ~5022.
-      // Iteración 3 (2200): balance · suficiente para 3 preguntas con contenido
-      //                     completo, cabe en 28s con contexto grande.
+      // maxTokens ajustado: 2200 permite breakdown de 3q sin truncado JSON.
       maxTokens: 2200,
       timeoutMs: 28000,
+      // Prompt caching (9 sept 2026): el system prompt (~5-8k tokens) se
+      // cachea. Chunks subsecuentes leen del cache: 90% descuento en costo Y
+      // se ahorran el tiempo de encoding. Antes: chunk 4-5 timeout a 28s
+      // porque encoding del system+messages tomaba >20s.
+      cacheSystem: true,
     },
     `pending-chunk-${chunkType}${breakdownRange ? `-${breakdownRange.start}-${breakdownRange.end}` : ''}`,
-    1, // maxAttempts=1 · single-shot, no reintentos internos silenciosos (post-mortem 8 sept)
+    1,
   );
 
   const text = extractText(response);
