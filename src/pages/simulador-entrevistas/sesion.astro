@@ -1413,26 +1413,32 @@ const noIndex = true;
           'Mientras tanto, si quieres dejarnos feedback lo encuentras al final de la página.';
       }
       if (summaryEl) {
+        // v0.9 (9 sept 2026): quitamos el spinner infinito. Ahora la promesa es
+        // clara: "llega por email". El polling silencioso sigue en background
+        // por si el usuario decide esperar; si llega antes de que cierre, el
+        // reporte se pinta y sustituye este bloque.
         summaryEl.innerHTML = `
-          <div id="polling-status" style="background:#fff;border:1px solid #E5E1D8;border-radius:8px;padding:24px;margin:16px 0;">
-            <div style="text-align:center;">
-              <div class="loading-spinner" style="margin:0 auto 16px;"></div>
-              <h3 style="margin:0 0 12px;color:#1F3A5F;">Tu sesión se completó</h3>
-              <p style="margin:0 0 12px;font-size:15px;color:#111827;">
-                Estamos generando tu reporte por partes para evitar timeouts. Puedes:
+          <div id="polling-status" style="background:#fff;border:1px solid #E5E1D8;border-radius:8px;padding:28px;margin:16px 0;">
+            <div style="max-width:520px;margin:0 auto;">
+              <h3 style="margin:0 0 12px;color:#1F3A5F;font-size:22px;">Tu reporte llega por email</h3>
+              <p style="margin:0 0 16px;font-size:15px;line-height:1.55;color:#111827;">
+                Tu sesión terminó. Estamos generando el análisis completo (fortalezas, áreas de mejora,
+                desglose por pregunta y recomendación) · toma entre 5 y 10 minutos.
               </p>
-              <ul style="text-align:left;max-width:420px;margin:12px auto;font-size:14px;color:#4B5563;line-height:1.55;">
-                <li><strong>Esperar aquí</strong> · el reporte aparecerá cuando esté listo (2-5 min).</li>
-                <li><strong>Cerrar la ventana</strong> · te llegará por email${email ? ' a ' + email : ''}.</li>
-              </ul>
+              <p style="margin:0 0 16px;font-size:15px;line-height:1.55;color:#111827;">
+                Llega a tu correo${email ? ' <strong>' + escapeHtml(email) + '</strong>' : ''} en cuanto esté listo.
+                <strong>Puedes cerrar esta ventana con tranquilidad.</strong>
+              </p>
               <p style="margin:16px 0 0;font-size:13px;color:#4B5563;">
-                <strong>Progreso:</strong> <span id="polling-progress">iniciando…</span>
+                Si prefieres esperar aquí, el reporte también aparecerá abajo cuando termine.
               </p>
-              <p style="margin:6px 0 0;font-size:11px;color:#4B5563;">
-                Tiempo transcurrido: <span id="polling-elapsed">0</span> seg
+              <hr style="border:none;border-top:1px solid #E5E1D8;margin:20px 0 12px;">
+              <p style="margin:0;font-size:12px;color:#4B5563;">
+                Progreso técnico: <span id="polling-progress" style="color:#111827;">iniciando…</span>
+                · <span id="polling-elapsed">0</span> seg
               </p>
-              <p style="margin:12px 0 0;font-size:11px;color:#4B5563;">
-                Session ID: <code>${escapeHtml(sessionId)}</code>
+              <p style="margin:6px 0 0;font-size:11px;color:#9CA3AF;">
+                ID de sesión (para soporte): <code style="background:#F5F5F0;padding:2px 6px;border-radius:3px;">${escapeHtml(sessionId)}</code>
               </p>
             </div>
           </div>
@@ -2500,6 +2506,18 @@ const noIndex = true;
           appState.sessionState = st;
           showView('report');
           renderFinalReport(st.finalReport);
+          // Auto-download del PDF si vinimos del email con ?autodownload=1.
+          // Damos un pequeño delay para que renderFinalReport termine de
+          // pintar y el botón download-pdf tenga los data attrs listos.
+          try {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('autodownload') === '1') {
+              setTimeout(() => {
+                const btn = document.getElementById('download-pdf') as HTMLButtonElement | null;
+                if (btn && !btn.disabled) btn.click();
+              }, 800);
+            }
+          } catch (_e) { /* best-effort */ }
           return;
         }
         // Si la sesión terminó con error de reporte → ofrecer reintento

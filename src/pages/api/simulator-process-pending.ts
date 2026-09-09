@@ -310,7 +310,10 @@ async function processOneChunk(
             estructura: finalReport.summary.scores.estructura.toFixed(1),
             especificidad: finalReport.summary.scores.especificidad.toFixed(1),
             recomendacion_final: finalReport.summary.recomendacionFinal,
-            report_url: `https://solcaciencia.com/simulador-entrevistas/sesion?sessionId=${state.sessionId}`,
+            // ?autodownload=1 hace que la landing dispare el download del PDF
+            // automáticamente al cargar (si el reporte está ready). Un solo click
+            // desde el email = PDF en tu disco.
+            report_url: `https://solcaciencia.com/simulador-entrevistas/sesion?sessionId=${state.sessionId}&autodownload=1`,
           },
         });
       } catch (err) {
