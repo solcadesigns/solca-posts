@@ -461,6 +461,10 @@ async function handleInit(
     // Auth por código paywall: usar el email_hash del beta record (fuente autoritativa
     // porque el usuario ya no envía email plano cuando entra con código).
     emailHash: paywallCodeRecord?.email_hash ?? (email ? await hashEmail(email) : undefined),
+    // 9 sept 2026: si el usuario entró con código (no email en URL) usamos el
+    // email plano guardado en el beta record. Permite que el cron async envíe
+    // el reporte por Postmark cuando el sync path falla.
+    userEmail: email || paywallCodeRecord?.email || undefined,
   };
 
   const messages = buildMessagesFromState(state);

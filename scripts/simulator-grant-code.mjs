@@ -70,6 +70,9 @@ const expiresAt = new Date(Date.now() + cfg.vigenciaDias * 24 * 3600 * 1000).toI
 
 const betaRecord = {
   nombre_pila: nombre,
+  email, // Guardamos el email plano para que el cron pueda enviar el reporte
+         // por Postmark cuando el async chunks completa. El email_hash sigue
+         // usándose para tracking/dedup, pero el plano es necesario para envío.
   email_hash: emailHash,
   max_sessions: cfg.sessions,
   sessions_used: 0,

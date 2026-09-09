@@ -281,6 +281,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (betaCodesKv) {
     const betaRecord = {
       nombre_pila: firstName || undefined,
+      email, // 9 sept 2026: guardamos email plano para que el cron async pueda
+             // enviar el reporte por Postmark cuando el sync path falla y cae
+             // a chunks. Antes solo teníamos email_hash (irreversible).
       email_hash: hash,
       max_sessions: cfg.sessionsIncluded,
       sessions_used: 0,
