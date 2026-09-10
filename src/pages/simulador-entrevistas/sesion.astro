@@ -372,9 +372,7 @@ const noIndex = true;
       <div class="container">
         <h1 id="report-heading">Reporte final de tu sesión</h1>
         <p class="intro" id="report-intro">
-          Tu sesión terminó. La generación del reporte puede tardar varios minutos.
-          Cuando esté listo aparece aquí abajo y también te llega por email.
-          Mientras esperas, si quieres dejarnos feedback lo encuentras al final de la página.
+          Tu sesión terminó. Estamos generando tu reporte.
         </p>
 
         <article class="report-summary">
@@ -1425,10 +1423,29 @@ const noIndex = true;
       console.log('[polling] START · sessionId=', sessionId);
       // Muestra pantalla intermedia dentro del contenedor del reporte
       showView('report');
-      const summaryEl = document.getElementById('report-summary') as HTMLDivElement | null;
-      const breakdownEl = document.getElementById('report-breakdown') as HTMLDivElement | null;
+      // FIX (10 sept 2026): antes buscaba 'report-summary' que no existe como id.
+      // El id real del contenedor del texto del summary es 'report-summary-text'
+      // (ver <article class="report-summary"><div id="report-summary-text">).
+      // Este bug latente impedía que el bloque polling-status se pintara.
+      const summaryEl = document.getElementById('report-summary-text') as HTMLDivElement | null;
+      const breakdownEl = document.getElementById('report-breakdown-text') as HTMLDivElement | null;
       if (breakdownEl) breakdownEl.innerHTML = '';
       const email = localStorage.getItem('solca_user_email') || '';
+
+      // FIX 11 (10 sept 2026): poblar el chip permanente #report-session-id con
+      // el sessionId real desde el arranque del polling. Antes solo se poblaba
+      // dentro de renderFinalReport, que no corre hasta que el reporte llega.
+      // Durante la espera el chip mostraba "—".
+      const chipSidEl = document.getElementById('report-session-id');
+      if (chipSidEl) chipSidEl.textContent = sessionId;
+
+      // FIX 13 (10 sept 2026): marcar la vista report como "esperando async" para
+      // ocultar bloques que no aportan durante la espera (details "Ver feedback
+      // por pregunta", botón Descargar PDF disabled, botón Nueva sesión, h2
+      // Resumen que queda encima del polling-status). renderFinalReport quita
+      // esta clase al llegar el reporte.
+      const viewReportEl = document.getElementById('view-report');
+      if (viewReportEl) viewReportEl.classList.add('report-async-waiting');
 
       // Ajustar heading + intro para reflejar el estado real (estamos esperando,
       // no hay reporte todavía). Se revierte cuando renderFinalReport arranca.
@@ -1445,7 +1462,7 @@ const noIndex = true;
           'Tu sesión terminó. El análisis puede tardar <strong>hasta 20 minutos</strong>. ' +
           'Te llega por email' +
           (email ? ' a <strong>' + escapeHtml(email) + '</strong>' : '') + '. ' +
-          '<br><br>Mientras esperas, si quieres puedes contestar el feedback opcional al final de esta página. ' +
+          '<br><br>Mientras esperas, ¿nos darías un feedback breve al final de esta página? ' +
           'Al enviarlo te llevamos a tu panel de reportes.';
       }
       if (summaryEl) {
@@ -1566,6 +1583,12 @@ const noIndex = true;
 
     function renderFinalReport(finalReport: FinalReport | null | undefined) {
       stopTimer();
+
+      // FIX 13 (10 sept 2026): quitar clase que ocultaba bloques durante la
+      // espera async. Al llegar el reporte, todos los bloques (breakdown,
+      // actions, chip permanente, h2 Resumen) vuelven a ser visibles.
+      const viewReportEl = document.getElementById('view-report');
+      if (viewReportEl) viewReportEl.classList.remove('report-async-waiting');
 
       // Restaurar heading + intro (el polling pudo haberlos cambiado a "Generando…").
       const headingEl = document.getElementById('report-heading');
@@ -2743,6 +2766,23 @@ const noIndex = true;
   <style>
     :root {
       --max-w: 720px;
+    }
+
+    /* FIX 13 (10 sept 2026) · durante la espera async del reporte,
+       ocultamos bloques que no aportan valor mientras el usuario espera
+       el email: details "Ver feedback por pregunta" (nunca se llena en
+       async, siempre va por mail), botón Descargar PDF (disabled),
+       botón Nueva sesión, chip permanente de sessionId (redundante con
+       el que sale dentro del polling-status) y h2 "Resumen" (queda
+       encima del polling-status). La micro-encuesta post-sesión SÍ se
+       mantiene visible porque es donde queremos que el usuario deje
+       feedback mientras espera. renderFinalReport quita la clase y
+       todo vuelve a mostrarse cuando el reporte llega. */
+    #view-report.report-async-waiting .report-breakdown,
+    #view-report.report-async-waiting .report-actions,
+    #view-report.report-async-waiting .session-id-chip,
+    #view-report.report-async-waiting .report-summary > h2 {
+      display: none !important;
     }
     .nav {
       position: sticky; top: 0; z-index: 50;
