@@ -32,9 +32,12 @@ import { execSync } from 'node:child_process';
 const DRY_RUN = process.argv.includes('--dry-run');
 const BINDING = 'SIMULATOR_SESSIONS';
 
-function run(cmd, opts = {}) {
+// FIX (9 sept 2026): usar el mismo patrón que simulator-health.mjs (validado
+// funcional). Antes usaba stdio: ['pipe', 'pipe', 'ignore'] que probablemente
+// interfería con encoding y devolvía buffer en vez de string.
+function run(cmd) {
   try {
-    return execSync(cmd, { encoding: 'utf8', ...opts });
+    return execSync(cmd, { encoding: 'utf8', stdio: 'pipe' });
   } catch (err) {
     return err.stdout ?? '';
   }
@@ -42,31 +45,34 @@ function run(cmd, opts = {}) {
 
 function listKeys(prefix) {
   const cmd = `npx wrangler kv key list --binding=${BINDING} --remote --prefix "${prefix}"`;
-  const raw = run(cmd, { stdio: ['pipe', 'pipe', 'ignore'] });
-  const jsonStart = raw.indexOf('[');
-  if (jsonStart < 0) return [];
+  const raw = run(cmd);
   try {
-    return JSON.parse(raw.slice(jsonStart));
+    return JSON.parse(raw);
   } catch {
-    return [];
+    const jsonStart = raw.indexOf('[');
+    if (jsonStart < 0) return [];
+    try {
+      return JSON.parse(raw.slice(jsonStart));
+    } catch {
+      return [];
+    }
   }
 }
 
 function getKey(key) {
   const cmd = `npx wrangler kv key get "${key}" --binding=${BINDING} --remote --text`;
-  const raw = run(cmd, { stdio: ['pipe', 'pipe', 'ignore'] });
+  const raw = run(cmd);
   return raw.trim();
 }
 
-function putKey(key, value, ttlSeconds) {
+function putKey(key, value) {
   if (DRY_RUN) {
-    console.log(`  [DRY-RUN] would PUT ${key} · ${value.length} bytes · TTL ${ttlSeconds}s`);
+    console.log(`  [DRY-RUN] would PUT ${key} · ${value.length} bytes`);
     return true;
   }
   // Wrangler 4.x usa --expiration en lugar de --expiration-ttl para put via CLI.
   // Aquí escribimos SIN TTL (permanent) porque el TTL puede o no ser soportado
   // según la versión. Los KV writes SIN TTL persisten hasta borrado manual.
-  // Si en el futuro Cloudflare cambia esto, ajustar aquí.
   const escaped = value.replace(/'/g, "'\\''");
   const cmd = `npx wrangler kv key put "${key}" '${escaped}' --binding=${BINDING} --remote`;
   try {
