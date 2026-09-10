@@ -51,6 +51,13 @@ const noIndex = true;
           </span>
         </div>
 
+        <!-- Link a panel de reportes · visible solo para pagados (Básico/Premium) -->
+        <p id="my-reports-link-wrap" class="my-reports-link-wrap" hidden>
+          <a href="/simulador-entrevistas/mis-reportes" class="my-reports-link">
+            → Ver mis reportes anteriores
+          </a>
+        </p>
+
         <p class="intro">
           Te voy a hacer unas preguntas rápidas para calibrar tu sesión. Verás
           algunas opciones preseleccionadas como recomendación basada en lo que
@@ -2227,9 +2234,16 @@ const noIndex = true;
 
         if (qb.scores.alertas && qb.scores.alertas !== 'sin alertas') {
           doc.setFont('helvetica', 'bold'); doc.setFontSize(9); setColor('text', ORANGE);
-          needBreak(5);
-          doc.text(sanitizePdfText(`Alertas: ${qb.scores.alertas}`), M_X, y);
-          y += 5;
+          // FIX (10 sept 2026): splitTextToSize para que el texto de alertas
+          // no se salga del marco derecho. Antes: doc.text single-line que
+          // cortaba el texto al final del ancho.
+          const alertLines = doc.splitTextToSize(
+            sanitizePdfText(`Alertas: ${qb.scores.alertas}`),
+            C_W,
+          );
+          needBreak(alertLines.length * 5);
+          alertLines.forEach((l: string) => { doc.text(l, M_X, y); y += 4.5; });
+          y += 0.5;
         }
 
         // Divider
@@ -2247,8 +2261,17 @@ const noIndex = true;
       if (fr.cta && (fr.cta.title || fr.cta.description)) {
         doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
         const descLines = doc.splitTextToSize(sanitizePdfText(fr.cta.description || ''), C_W - 12);
+        // FIX (10 sept 2026): también wrap del título del CTA. Los títulos
+        // de libros son largos ("Clinical Research · Guía práctica...") y
+        // se cortaban al final del box.
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
+        const titleText = sanitizePdfText(fr.cta.title || 'Siguiente paso');
+        const titleLines = doc.splitTextToSize(titleText, C_W - 12);
+        const titleHeight = titleLines.length * 6;
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+
         const boxPad = 6;
-        const boxH = boxPad * 2 + 9 + descLines.length * 5 + 3 + 8;
+        const boxH = boxPad * 2 + titleHeight + 3 + descLines.length * 5 + 3 + 8;
         needBreak(boxH + 4);
         const boxY = y;
         setColor('fill', NAVY_DEEP);
@@ -2256,11 +2279,14 @@ const noIndex = true;
 
         let cy = boxY + boxPad;
         doc.setFont('helvetica', 'bold'); doc.setFontSize(13); setColor('text', OFFW);
-        doc.text(sanitizePdfText(fr.cta.title || 'Siguiente paso'), M_X + boxPad, cy + 2);
+        titleLines.forEach((line: string, i: number) => {
+          doc.text(line, M_X + boxPad, cy + 2 + i * 6);
+        });
+        // Subrayado naranja solo bajo la primera línea (visual clean)
         setColor('stroke', ORANGE); doc.setLineWidth(0.7);
-        const ctaTw = doc.getTextWidth(sanitizePdfText(fr.cta.title || 'Siguiente paso'));
-        doc.line(M_X + boxPad, cy + 3.5, M_X + boxPad + ctaTw, cy + 3.5);
-        cy += 9;
+        const firstLineWidth = doc.getTextWidth(titleLines[0]);
+        doc.line(M_X + boxPad, cy + 3.5, M_X + boxPad + firstLineWidth, cy + 3.5);
+        cy += titleHeight + 3;
 
         doc.setFont('helvetica', 'normal'); doc.setFontSize(10); setColor('text', OFFW);
         descLines.forEach((l: string) => { doc.text(l, M_X + boxPad, cy); cy += 5; });
@@ -2693,6 +2719,13 @@ const noIndex = true;
           });
         }
         if (counterEl) counterEl.hidden = false;
+
+        // Mostrar link a "Mis reportes" solo si el plan es pagado
+        // (Básico o Premium) · freemium sigue sin acceso al panel.
+        if (j.plan === 'basico' || j.plan === 'premium') {
+          const linkWrap = document.getElementById('my-reports-link-wrap');
+          if (linkWrap) linkWrap.hidden = false;
+        }
       } catch (_err) {
         // Best-effort · si falla, el contador simplemente no se muestra
       }
@@ -3130,6 +3163,19 @@ const noIndex = true;
       font-size: 12px;
       color: var(--text-mute, #4B5563);
       margin-left: auto;
+    }
+    .my-reports-link-wrap[hidden] { display: none !important; }
+    .my-reports-link-wrap {
+      margin: 0 0 20px;
+    }
+    .my-reports-link {
+      color: var(--orange, #E77C3C);
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .my-reports-link:hover {
+      text-decoration: underline;
     }
 
     /* Session ID chip visible siempre en la vista report */

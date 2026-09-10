@@ -275,6 +275,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         <button type="submit" class="btn btn-primary">Validar y empezar</button>
         <p id="code-message" class="form-message" hidden></p>
       </form>
+
+      <!-- Acceso alternativo: ir directo a los reportes pasados (para usuarios pagados) -->
+      <p id="my-reports-link-landing" class="my-reports-link-landing" hidden>
+        ¿Solo quieres ver tus reportes anteriores?
+        <a href="/simulador-entrevistas/mis-reportes" id="go-to-my-reports">Ir a mis reportes →</a>
+      </p>
     </div>
   </section>
 
@@ -474,6 +480,22 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       }
     })();
 
+    // Mostrar link "Mis reportes" en la landing si el user ya tiene código
+    // pagado guardado (Básico/Premium). Consulta el endpoint code-info para
+    // saber el plan sin exponer info sensible.
+    (async function showMyReportsShortcut() {
+      const savedCode = sessionStorage.getItem('solca_beta_code');
+      if (!savedCode) return;
+      try {
+        const r = await fetch(`/api/simulator-code-info?codigo=${encodeURIComponent(savedCode)}`);
+        const j = await r.json();
+        if (j.ok && (j.plan === 'basico' || j.plan === 'premium')) {
+          const link = document.getElementById('my-reports-link-landing');
+          if (link) link.hidden = false;
+        }
+      } catch (_e) { /* best-effort */ }
+    })();
+
     if (codeForm && codeMsg && codeInput) {
       const params = new URLSearchParams(window.location.search);
       const codeFromUrl = (params.get('codigo') ?? params.get('code') ?? '').trim();
@@ -637,6 +659,18 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       font-family: 'Inter', sans-serif;
       font-size: 16px;
     }
+    .my-reports-link-landing[hidden] { display: none !important; }
+    .my-reports-link-landing {
+      margin: 20px 0 0;
+      font-size: 14px;
+      color: var(--text-mute);
+    }
+    .my-reports-link-landing a {
+      color: var(--orange, #E77C3C);
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .my-reports-link-landing a:hover { text-decoration: underline; }
     .field input:focus, .access-form input:focus {
       outline: 2px solid var(--orange);
       border-color: var(--orange);
