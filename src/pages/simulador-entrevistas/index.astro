@@ -457,6 +457,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         return false;
       }
       sessionStorage.setItem('solca_beta_code', code);
+      // 9 sept 2026: limpiar sessionId previo. Si el usuario está pegando un
+      // código para arrancar nueva sesión, no queremos que el resume automático
+      // de sesion.astro lo secuestre a un reporte anterior en polling.
+      try { localStorage.removeItem('solca_session_id'); } catch (_e) {}
       window.location.href = '/simulador-entrevistas/sesion';
       return true;
     }
