@@ -38,6 +38,19 @@ const noIndex = true;
     <section id="view-intake" class="view view-intake">
       <div class="container">
         <h1>Antes de empezar</h1>
+
+        <!-- Contador de sesiones · visible cuando el usuario entra con código válido -->
+        <div id="sessions-counter" class="sessions-counter" hidden>
+          <span class="sessions-counter-label">Plan <strong id="sessions-plan">—</strong></span>
+          <span class="sessions-counter-value">
+            Sesión <strong id="sessions-current">—</strong> de <strong id="sessions-total">—</strong>
+            · <strong id="sessions-remaining">—</strong> restante(s)
+          </span>
+          <span class="sessions-counter-expiry">
+            Vigencia hasta <strong id="sessions-expiry">—</strong>
+          </span>
+        </div>
+
         <p class="intro">
           Te voy a hacer unas preguntas rápidas para calibrar tu sesión. Verás
           algunas opciones preseleccionadas como recomendación basada en lo que
@@ -377,6 +390,19 @@ const noIndex = true;
             onclick="try { localStorage.removeItem('solca_session_id'); } catch (_) {}"
           >Nueva sesión</a>
         </div>
+
+        <!-- 9 sept 2026: sessionId visible SIEMPRE en la vista report para
+             soporte. Click copia al clipboard. -->
+        <p class="session-id-chip">
+          <span class="session-id-label">ID de sesión (para soporte):</span>
+          <code id="report-session-id" class="session-id-code" title="Click para copiar">—</code>
+          <button
+            type="button"
+            id="report-session-id-copy"
+            class="session-id-copy"
+            aria-label="Copiar ID de sesión"
+          >Copiar</button>
+        </p>
 
         <!-- Micro-encuesta post-sesión · visible para todos los planes pagados (post-paywall) -->
         <section id="paid-micro-survey" class="beta-survey" hidden>
@@ -1538,6 +1564,34 @@ const noIndex = true;
 
       appState.finalReport = finalReport;
       if (downloadBtn) downloadBtn.disabled = false;
+
+      // Poblar sessionId chip visible + copy button (9 sept 2026)
+      const sidEl = document.getElementById('report-session-id');
+      const copyBtn = document.getElementById('report-session-id-copy') as HTMLButtonElement | null;
+      const sid = finalReport.sessionId || appState.sessionState?.sessionId || '';
+      if (sidEl) sidEl.textContent = sid || '—';
+      if (copyBtn && sid) {
+        copyBtn.onclick = async () => {
+          try {
+            await navigator.clipboard.writeText(sid);
+            copyBtn.textContent = '✓ Copiado';
+            copyBtn.classList.add('copied');
+            setTimeout(() => {
+              copyBtn.textContent = 'Copiar';
+              copyBtn.classList.remove('copied');
+            }, 2000);
+          } catch (_e) {
+            // Fallback si clipboard API bloqueada
+            const range = document.createRange();
+            if (sidEl) {
+              range.selectNode(sidEl);
+              window.getSelection()?.removeAllRanges();
+              window.getSelection()?.addRange(range);
+            }
+          }
+        };
+      }
+
       // Fase 1.5.L · sesión cerrada exitosamente, limpiar marker de recovery
       try { localStorage.removeItem('solca_session_id'); } catch {}
 
@@ -2561,11 +2615,46 @@ const noIndex = true;
     }
 
     // ──────────────────────────────────────────────────────────────────
+    // Contador de sesiones · visible en el intake si hay código válido.
+    // ──────────────────────────────────────────────────────────────────
+    async function populateSessionsCounter() {
+      const betaCode = sessionStorage.getItem('solca_beta_code');
+      if (!betaCode) return;
+      try {
+        const r = await fetch(`/api/simulator-code-info?codigo=${encodeURIComponent(betaCode)}`);
+        const j = await r.json();
+        if (!j.ok) return;
+        const counterEl = document.getElementById('sessions-counter');
+        const planEl = document.getElementById('sessions-plan');
+        const currentEl = document.getElementById('sessions-current');
+        const totalEl = document.getElementById('sessions-total');
+        const remainingEl = document.getElementById('sessions-remaining');
+        const expiryEl = document.getElementById('sessions-expiry');
+        if (planEl) {
+          const planLabel = j.plan === 'premium' ? 'Premium' : j.plan === 'basico' ? 'Básico' : 'Freemium';
+          planEl.textContent = planLabel;
+        }
+        if (currentEl) currentEl.textContent = String(j.sessionsUsed + 1);
+        if (totalEl) totalEl.textContent = String(j.maxSessions);
+        if (remainingEl) remainingEl.textContent = String(j.remaining);
+        if (expiryEl && j.expiresAt) {
+          expiryEl.textContent = new Date(j.expiresAt).toLocaleDateString('es-MX', {
+            year: 'numeric', month: 'short', day: 'numeric',
+          });
+        }
+        if (counterEl) counterEl.hidden = false;
+      } catch (_err) {
+        // Best-effort · si falla, el contador simplemente no se muestra
+      }
+    }
+
+    // ──────────────────────────────────────────────────────────────────
     // Init
     // ──────────────────────────────────────────────────────────────────
     updateDefaultsFromIntake();
     initVoice();
     maybeResumeBrokenSession();
+    populateSessionsCounter();
   </script>
 
   <style>
@@ -2961,6 +3050,84 @@ const noIndex = true;
        Con [hidden] explícito no aplicamos display, así el atributo funciona. */
     .loading[hidden] {
       display: none !important;
+    }
+    /* Contador de sesiones en el intake */
+    .sessions-counter[hidden] { display: none !important; }
+    .sessions-counter {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+      padding: 12px 16px;
+      margin: 0 0 20px;
+      background: #FFF7ED;
+      border: 1px solid var(--orange, #E77C3C);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--text, #111827);
+    }
+    .sessions-counter-label {
+      font-weight: 600;
+    }
+    .sessions-counter-label strong {
+      color: var(--orange, #E77C3C);
+    }
+    .sessions-counter-value strong {
+      color: var(--navy, #1F3A5F);
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    .sessions-counter-expiry {
+      font-size: 12px;
+      color: var(--text-mute, #4B5563);
+      margin-left: auto;
+    }
+
+    /* Session ID chip visible siempre en la vista report */
+    .session-id-chip {
+      margin: 20px 0 0;
+      padding: 10px 14px;
+      background: #F5F5F0;
+      border: 1px solid var(--rule, #E5E1D8);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text-mute, #4B5563);
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .session-id-label {
+      font-weight: 600;
+    }
+    .session-id-code {
+      background: #FFF;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-family: 'SF Mono', Menlo, monospace;
+      font-size: 11px;
+      color: var(--navy, #1F3A5F);
+      user-select: all;
+      cursor: pointer;
+    }
+    .session-id-copy {
+      background: transparent;
+      border: 1px solid var(--rule, #E5E1D8);
+      border-radius: 4px;
+      padding: 3px 10px;
+      font-size: 11px;
+      cursor: pointer;
+      color: var(--navy, #1F3A5F);
+      font-family: inherit;
+    }
+    .session-id-copy:hover {
+      background: var(--orange, #E77C3C);
+      color: #FFF;
+      border-color: var(--orange, #E77C3C);
+    }
+    .session-id-copy.copied {
+      background: #2E7D32;
+      color: #FFF;
+      border-color: #2E7D32;
     }
     .loading {
       display: flex;

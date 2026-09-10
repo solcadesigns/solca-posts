@@ -752,6 +752,38 @@ async function handleNext(
         delete state.finalReportError;
         await persistSessionState(env, state);
 
+        // 9 sept 2026: enviar email con reporte listo también en sync path.
+        // Antes solo se enviaba desde el cron async. Ahora el usuario SIEMPRE
+        // recibe una copia por email además de ver el reporte en pantalla.
+        const postmarkToken = env.POSTMARK_SERVER_TOKEN as string | undefined;
+        const emailTo = state.userEmail;
+        if (postmarkToken && emailTo && syncResult.finalReport) {
+          const firstName = emailTo.split('@')[0];
+          try {
+            const { sendEmailWithTemplate: sendTpl } = await import('../../lib/postmark');
+            await sendTpl(postmarkToken, {
+              from: 'Oscar Solís <hola@solcaciencia.com>',
+              to: emailTo,
+              templateAlias: 'simulator-report-ready',
+              messageStream: 'outbound',
+              tag: 'simulator-report-ready',
+              templateModel: {
+                first_name: firstName,
+                rol: syncResult.finalReport.rol,
+                n_questions: syncResult.finalReport.nQuestions,
+                tecnico: syncResult.finalReport.summary.scores.tecnico.toFixed(1),
+                estructura: syncResult.finalReport.summary.scores.estructura.toFixed(1),
+                especificidad: syncResult.finalReport.summary.scores.especificidad.toFixed(1),
+                recomendacion_final: syncResult.finalReport.summary.recomendacionFinal,
+                report_url: `https://solcaciencia.com/simulador-entrevistas/sesion?sessionId=${state.sessionId}&autodownload=1`,
+                session_id: state.sessionId,
+              },
+            });
+          } catch (mailErr) {
+            console.error('[sync-path] email send failed (non-fatal):', mailErr);
+          }
+        }
+
         // Decrementar créditos + incrementar betaCode ya que el reporte se entregó
         if (state.emailHash) await decrementCredits(env, state.emailHash);
         if (state.betaCode) {
