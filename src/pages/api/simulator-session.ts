@@ -526,6 +526,47 @@ async function handleInit(
   // Fase 1.5.J · persistir state inicial para recovery
   await persistSessionState(env, state);
 
+  // 9 sept 2026: agregar sessionId al índice `user_sessions:{email_hash}` para
+  // que el panel "Mis reportes" pueda listar las sesiones del usuario.
+  // Mitigación de race condition: doble lectura tras escribir. Si el array
+  // final no incluye nuestro sessionId, reintentamos una vez. KV es eventual-
+  // consistente pero para el caso de 2 inits simultáneos del mismo usuario
+  // esto reduce el riesgo de perder una referencia.
+  if (state.emailHash) {
+    try {
+      const kv = env.SIMULATOR_SESSIONS as KVNamespace | undefined;
+      if (kv) {
+        const indexKey = `user_sessions:${state.emailHash}`;
+        const addSessionToIndex = async (): Promise<boolean> => {
+          const rawIndex = await kv.get(indexKey);
+          let sessionIds: string[] = [];
+          if (rawIndex) {
+            try { sessionIds = JSON.parse(rawIndex) as string[]; } catch { sessionIds = []; }
+          }
+          if (sessionIds.includes(state.sessionId)) return true;
+          sessionIds.push(state.sessionId);
+          await kv.put(indexKey, JSON.stringify(sessionIds), {
+            expirationTtl: 60 * 60 * 24 * 240,
+          });
+          return true;
+        };
+        await addSessionToIndex();
+        // Verificación · si por race no quedó, reintenta una vez
+        const verifyRaw = await kv.get(indexKey);
+        if (verifyRaw) {
+          try {
+            const verifyIds = JSON.parse(verifyRaw) as string[];
+            if (!verifyIds.includes(state.sessionId)) {
+              await addSessionToIndex();
+            }
+          } catch { /* ignore */ }
+        }
+      }
+    } catch (idxErr) {
+      console.error('[handleInit] user_sessions index write failed (non-fatal):', idxErr);
+    }
+  }
+
   return {
     ok: true,
     sessionState: state,

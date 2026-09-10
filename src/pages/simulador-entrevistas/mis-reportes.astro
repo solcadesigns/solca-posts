@@ -1,0 +1,430 @@
+---
+/**
+ * /simulador-entrevistas/mis-reportes · Panel de reportes del usuario pagado.
+ *
+ * Establecido: 9 sept 2026.
+ *
+ * Muestra:
+ *   - Header con contador de sesiones (Plan · Sesión X de Y · Vigencia hasta Z)
+ *   - Lista de PDFs disponibles (más reciente arriba) + badges "En proceso"
+ *   - Sección horizontal con productos (libros MSL/PM/CR + curso CV)
+ *
+ * Auth: sessionStorage.solca_beta_code. Sin código → redirect a landing.
+ * Freemium (plan='gratis') no debería llegar aquí — redirect a landing con planes.
+ * Toda la validación es client-side después del load (data se carga via fetch).
+ */
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Mis reportes · Solca Simulador">
+  <main class="panel-main">
+    <div class="container">
+      <a href="/simulador-entrevistas/" class="back-link" id="back-to-landing">← Volver al simulador</a>
+
+      <h1 id="panel-heading">Mis reportes</h1>
+      <p class="panel-lead" id="panel-lead">Cargando…</p>
+
+      <!-- Contador de sesiones (mismo estilo que el intake) -->
+      <div id="sessions-counter" class="sessions-counter" hidden>
+        <span class="sessions-counter-label">Plan <strong id="sessions-plan">—</strong></span>
+        <span class="sessions-counter-value">
+          <strong id="sessions-remaining">—</strong> de <strong id="sessions-total">—</strong> sesiones disponibles
+        </span>
+        <span class="sessions-counter-expiry">
+          Vigencia hasta <strong id="sessions-expiry">—</strong>
+        </span>
+      </div>
+
+      <div class="panel-actions">
+        <a href="/simulador-entrevistas/sesion" class="btn btn-primary" id="start-new-btn">
+          Empezar nueva sesión
+        </a>
+      </div>
+
+      <!-- Lista de reportes -->
+      <section class="reports-section">
+        <h2>Tus reportes</h2>
+        <div id="reports-list" class="reports-list">
+          <p class="reports-empty" id="reports-empty" hidden>
+            Aún no tienes reportes. Cuando termines tu primera sesión, aparecerán aquí.
+          </p>
+        </div>
+      </section>
+
+      <!-- Productos horizontales -->
+      <section class="products-section">
+        <h2>Continúa tu preparación</h2>
+        <div class="products-grid">
+          <a href="https://go.hotmart.com/R105710415P" target="_blank" rel="noopener" class="product-card">
+            <span class="product-label">Libro</span>
+            <h3>Project Management</h3>
+            <p>Guía práctica para científicos de la salud · LATAM y España</p>
+            <span class="product-cta">Ver en Hotmart →</span>
+          </a>
+          <a href="https://go.hotmart.com/Y105718405Y" target="_blank" rel="noopener" class="product-card">
+            <span class="product-label">Libro</span>
+            <h3>Medical Science Liaison</h3>
+            <p>Guía práctica para científicos de la salud · LATAM y España</p>
+            <span class="product-cta">Ver en Hotmart →</span>
+          </a>
+          <a href="https://go.hotmart.com/U105724060O?dp=1" target="_blank" rel="noopener" class="product-card">
+            <span class="product-label">Libro</span>
+            <h3>Clinical Research</h3>
+            <p>Guía práctica para científicos de la salud · LATAM y España</p>
+            <span class="product-cta">Ver en Hotmart →</span>
+          </a>
+          <a href="https://go.hotmart.com/B104495115T?dp=1" target="_blank" rel="noopener" class="product-card">
+            <span class="product-label">Curso</span>
+            <h3>CV y entrevistas pharma</h3>
+            <p>Aplicar de forma efectiva · módulo de simulación · ideal como base</p>
+            <span class="product-cta">Ver en Hotmart →</span>
+          </a>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    interface SessionEntry {
+      sessionId: string;
+      startedAt: string;
+      rol: string;
+      questionCount: number;
+      status: 'ready' | 'processing' | 'failed' | 'in_session';
+    }
+
+    function escapeHtml(s: string): string {
+      return s
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    async function init() {
+      const code = sessionStorage.getItem('solca_beta_code');
+      const leadEl = document.getElementById('panel-lead');
+
+      if (!code) {
+        // Sin código → landing
+        window.location.href = '/simulador-entrevistas/';
+        return;
+      }
+
+      // Fetch info del usuario + sesiones
+      try {
+        const res = await fetch(`/api/simulator-my-sessions?codigo=${encodeURIComponent(code)}`);
+        const data = await res.json();
+        if (!data.ok) {
+          if (leadEl) leadEl.textContent = 'No pudimos cargar tus reportes. Revisa tu código o escríbenos a hola@solcaciencia.com.';
+          return;
+        }
+
+        // Freemium (plan='gratis') → redirect a landing con planes
+        if (data.plan === 'gratis') {
+          window.location.href = '/simulador-entrevistas/#planes';
+          return;
+        }
+
+        // Poblar contador · null-safe
+        const planLabel = data.plan === 'premium' ? 'Premium' : 'Básico';
+        const sessionsArr: SessionEntry[] = Array.isArray(data.sessions) ? data.sessions : [];
+        const totalSessions = sessionsArr.length;
+        // Calcular sesiones disponibles restantes = maxSessions - sessionsCompleted
+        // Necesitamos el otro endpoint /api/simulator-code-info para maxSessions
+        const infoRes = await fetch(`/api/simulator-code-info?codigo=${encodeURIComponent(code)}`);
+        const info = await infoRes.json();
+        const planEl = document.getElementById('sessions-plan');
+        const remainingEl = document.getElementById('sessions-remaining');
+        const totalEl = document.getElementById('sessions-total');
+        const expiryEl = document.getElementById('sessions-expiry');
+        if (planEl) planEl.textContent = planLabel;
+        if (info.ok) {
+          if (remainingEl) remainingEl.textContent = String(info.remaining);
+          if (totalEl) totalEl.textContent = String(info.maxSessions);
+          if (expiryEl && info.expiresAt) {
+            expiryEl.textContent = new Date(info.expiresAt).toLocaleDateString('es-MX', {
+              year: 'numeric', month: 'short', day: 'numeric',
+            });
+          }
+        }
+        const counterEl = document.getElementById('sessions-counter');
+        if (counterEl) counterEl.hidden = false;
+
+        // Personalizar heading
+        const headingEl = document.getElementById('panel-heading');
+        if (data.nombrePila && headingEl) {
+          headingEl.textContent = `Mis reportes · ${data.nombrePila}`;
+        }
+        if (leadEl) {
+          leadEl.textContent = totalSessions === 0
+            ? 'Aún no has completado sesiones. Empieza la primera aquí.'
+            : `Tienes ${totalSessions} sesión(es) registrada(s).`;
+        }
+
+        // Poblar lista de reportes · null-safe
+        const listEl = document.getElementById('reports-list');
+        const emptyEl = document.getElementById('reports-empty');
+
+        if (sessionsArr.length === 0) {
+          if (emptyEl) emptyEl.hidden = false;
+          return;
+        }
+
+        if (!listEl) return;
+        listEl.innerHTML = sessionsArr.map((s: SessionEntry) => {
+          const fecha = new Date(s.startedAt).toLocaleDateString('es-MX', {
+            year: 'numeric', month: 'short', day: 'numeric',
+          });
+          const isReady = s.status === 'ready';
+          const isFailed = s.status === 'failed';
+          const rol = escapeHtml(s.rol);
+
+          if (isReady) {
+            return `
+              <a href="/simulador-entrevistas/sesion?sessionId=${s.sessionId}&autodownload=1"
+                 class="report-card report-card-ready">
+                <div class="report-card-main">
+                  <div class="report-card-rol">${rol}</div>
+                  <div class="report-card-meta">${s.questionCount} preguntas · ${fecha}</div>
+                </div>
+                <div class="report-card-badge report-card-badge-ready">PDF disponible</div>
+              </a>
+            `;
+          }
+          if (isFailed) {
+            return `
+              <div class="report-card report-card-failed">
+                <div class="report-card-main">
+                  <div class="report-card-rol">${rol}</div>
+                  <div class="report-card-meta">${s.questionCount} preguntas · ${fecha}</div>
+                </div>
+                <div class="report-card-badge report-card-badge-failed">Falló · contacta soporte</div>
+              </div>
+            `;
+          }
+          // processing / in_session
+          return `
+            <div class="report-card report-card-processing">
+              <div class="report-card-main">
+                <div class="report-card-rol">${rol}</div>
+                <div class="report-card-meta">${s.questionCount} preguntas · ${fecha}</div>
+              </div>
+              <div class="report-card-badge report-card-badge-processing">En proceso</div>
+            </div>
+          `;
+        }).join('');
+
+      } catch (err) {
+        console.error('[mis-reportes] load failed:', err);
+        if (leadEl) leadEl.textContent = 'Error de red. Recarga la página en un momento.';
+      }
+    }
+
+    init();
+  </script>
+
+  <style>
+    .panel-main {
+      padding: 48px 0 80px;
+      min-height: 60vh;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    .back-link {
+      display: inline-block;
+      margin: 0 0 20px;
+      font-size: 13px;
+      color: var(--text-mute, #4B5563);
+      text-decoration: none;
+    }
+    .back-link:hover { color: var(--navy, #1F3A5F); }
+    h1 {
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(28px, 4vw, 40px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin: 0 0 8px;
+      color: var(--text, #111827);
+    }
+    .panel-lead {
+      font-size: 15px;
+      color: var(--text-mute, #4B5563);
+      margin: 0 0 24px;
+    }
+    .sessions-counter[hidden] { display: none !important; }
+    .sessions-counter {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+      padding: 12px 16px;
+      margin: 0 0 24px;
+      background: #FFF7ED;
+      border: 1px solid var(--orange, #E77C3C);
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    .sessions-counter-label strong { color: var(--orange, #E77C3C); }
+    .sessions-counter-value strong {
+      color: var(--navy, #1F3A5F);
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    .sessions-counter-expiry {
+      font-size: 12px;
+      color: var(--text-mute, #4B5563);
+      margin-left: auto;
+    }
+    .panel-actions {
+      margin: 0 0 32px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 12px 24px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 15px;
+      border-radius: 8px;
+      text-decoration: none;
+      border: 2px solid transparent;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: var(--navy, #1F3A5F);
+      color: #FFF;
+    }
+    .btn-primary:hover { background: #162C48; }
+    .reports-section, .products-section {
+      margin: 0 0 40px;
+    }
+    .reports-section h2, .products-section h2 {
+      font-family: 'Inter', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      margin: 0 0 16px;
+      color: var(--text, #111827);
+    }
+    .reports-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .reports-empty {
+      padding: 24px;
+      background: #FBF9F3;
+      border: 1px solid var(--rule, #E5E1D8);
+      border-radius: 8px;
+      text-align: center;
+      color: var(--text-mute, #4B5563);
+      font-size: 14px;
+      margin: 0;
+    }
+    .report-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 18px;
+      background: #FFF;
+      border: 1px solid var(--rule, #E5E1D8);
+      border-radius: 8px;
+      text-decoration: none;
+      color: var(--text, #111827);
+      transition: border-color 0.15s, transform 0.05s;
+    }
+    .report-card-ready:hover {
+      border-color: var(--orange, #E77C3C);
+      transform: translateY(-1px);
+    }
+    .report-card-processing, .report-card-failed {
+      cursor: default;
+      opacity: 0.75;
+    }
+    .report-card-main {
+      flex: 1;
+      min-width: 0;
+    }
+    .report-card-rol {
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--navy, #1F3A5F);
+      margin: 0 0 3px;
+    }
+    .report-card-meta {
+      font-size: 12px;
+      color: var(--text-mute, #4B5563);
+    }
+    .report-card-badge {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 4px 10px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .report-card-badge-ready {
+      background: #DCFCE7;
+      color: #14532D;
+    }
+    .report-card-badge-processing {
+      background: #FEF3C7;
+      color: #78350F;
+    }
+    .report-card-badge-failed {
+      background: #FEE2E2;
+      color: #991B1B;
+    }
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+    }
+    .product-card {
+      display: block;
+      padding: 16px 18px;
+      background: #FBF9F3;
+      border: 1px solid var(--rule, #E5E1D8);
+      border-radius: 8px;
+      text-decoration: none;
+      color: var(--text, #111827);
+      transition: border-color 0.15s, transform 0.05s;
+    }
+    .product-card:hover {
+      border-color: var(--orange, #E77C3C);
+      transform: translateY(-1px);
+    }
+    .product-label {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--orange, #E77C3C);
+      margin: 0 0 6px;
+    }
+    .product-card h3 {
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      margin: 0 0 6px;
+      color: var(--navy, #1F3A5F);
+      line-height: 1.25;
+    }
+    .product-card p {
+      font-size: 12px;
+      color: var(--text-mute, #4B5563);
+      margin: 0 0 10px;
+      line-height: 1.45;
+    }
+    .product-cta {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--orange, #E77C3C);
+    }
+  </style>
+</BaseLayout>

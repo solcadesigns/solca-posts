@@ -1429,14 +1429,17 @@ const noIndex = true;
       const introEl = document.getElementById('report-intro');
       if (!headingEl) console.warn('[polling] #report-heading no encontrado · posible HTML cacheado viejo');
       if (!introEl) console.warn('[polling] #report-intro no encontrado · posible HTML cacheado viejo');
-      if (headingEl) headingEl.textContent = 'Generando tu reporte…';
+      if (headingEl) headingEl.textContent = 'Tu reporte llega por email';
       if (introEl) {
+        // 9 sept 2026: copy honesto · quitamos la mentira "aparece aquí abajo"
+        // (para 10q el reporte NO vuelve a esta ventana, se genera async y solo
+        // llega por email). No prometemos algo que no cumplimos.
         introEl.innerHTML =
-          'Tu sesión terminó. El reporte puede tardar <strong>varios minutos</strong> en generarse. ' +
-          'Cuando esté listo, aparece aquí abajo y también te llega por email' +
+          'Tu sesión terminó. El análisis puede tardar <strong>hasta 20 minutos</strong>. ' +
+          'Te llega por email' +
           (email ? ' a <strong>' + escapeHtml(email) + '</strong>' : '') + '. ' +
-          'Puedes cerrar esta ventana con tranquilidad, o esperar aquí. ' +
-          'Mientras tanto, si quieres dejarnos feedback lo encuentras al final de la página.';
+          '<br><br>Mientras esperas, si quieres puedes contestar el feedback opcional al final de esta página. ' +
+          'Al enviarlo te llevamos a tu panel de reportes.';
       }
       if (summaryEl) {
         // v0.9 (9 sept 2026): quitamos el spinner infinito. Ahora la promesa es
@@ -2384,6 +2387,19 @@ const noIndex = true;
       const microThanks = document.getElementById('paid-micro-thanks') as HTMLDivElement | null;
       const microMessage = document.getElementById('paid-micro-message') as HTMLParagraphElement | null;
 
+      // 9 sept 2026: redirect después de enviar feedback.
+      // Freemium → landing con planes (para upsell)
+      // Pagado → panel /mis-reportes (para ver histórico + productos)
+      function redirectPostFeedback() {
+        const code = sessionStorage.getItem('solca_beta_code');
+        const plan = (appState.sessionState as unknown as { plan?: string })?.plan;
+        if (plan === 'gratis' || !code) {
+          window.location.href = '/simulador-entrevistas/#planes';
+          return;
+        }
+        window.location.href = '/simulador-entrevistas/mis-reportes';
+      }
+
       function closeMicro() { if (microEl) microEl.hidden = true; }
       if (microSkip) microSkip.addEventListener('click', closeMicro);
       if (microClose) microClose.addEventListener('click', closeMicro);
@@ -2410,7 +2426,8 @@ const noIndex = true;
             if (!r.ok || !j.ok) throw new Error(j.error || `Error ${r.status}`);
             microForm.hidden = true;
             microThanks.hidden = false;
-            setTimeout(closeMicro, 2500);
+            // Redirigir a panel de reportes (pagado) o landing (freemium)
+            setTimeout(redirectPostFeedback, 1500);
           } catch (err) {
             microMessage.textContent = err instanceof Error ? err.message : 'Error inesperado';
             microMessage.hidden = false;
@@ -2471,6 +2488,8 @@ const noIndex = true;
             if (!r.ok || !j.ok) throw new Error(j.error || `Error ${r.status}`);
             finalForm.hidden = true;
             finalThanks.hidden = false;
+            // Redirigir a panel de reportes tras 1.5s
+            setTimeout(redirectPostFeedback, 1500);
           } catch (err) {
             finalMessage.textContent = err instanceof Error ? err.message : 'Error inesperado';
             finalMessage.hidden = false;
@@ -2556,7 +2575,21 @@ const noIndex = true;
     // ──────────────────────────────────────────────────────────────────
     async function maybeResumeBrokenSession() {
       let savedSessionId: string | null = null;
-      try { savedSessionId = localStorage.getItem('solca_session_id'); } catch {}
+      // FIX (9 sept 2026): priorizar URL param sobre localStorage. Cuando el
+      // usuario abre un reporte desde /mis-reportes o desde el link del email
+      // (?sessionId=xxx&autodownload=1), queremos cargar ESA sesión, no la que
+      // esté guardada en localStorage. Persistimos también en localStorage
+      // para que refresh o navegación posterior siga funcionando.
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const fromUrl = params.get('sessionId');
+        if (fromUrl && fromUrl.length >= 20) {
+          savedSessionId = fromUrl;
+          try { localStorage.setItem('solca_session_id', fromUrl); } catch (_e) {}
+        } else {
+          savedSessionId = localStorage.getItem('solca_session_id');
+        }
+      } catch {}
       if (!savedSessionId) return;
 
       try {
