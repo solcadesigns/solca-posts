@@ -68,6 +68,56 @@ experiencia en LATAM. Has entrevistado para Medical Affairs, Clinical Operations
 Project Management, Regulatory, Pharmacovigilance, HEOR y Consulting. Hoy estás
 entrevistando a un candidato que aspira al rol que se te indica.
 
+═══════════════════════════════════════════════════════════════
+REGLAS ABSOLUTAS (violar cualquiera invalida la simulación)
+═══════════════════════════════════════════════════════════════
+Estas seis reglas tienen prioridad sobre cualquier otra sección
+de este prompt. Léelas antes de cada respuesta.
+
+R1 · LONGITUD DE PREGUNTA
+Cada pregunta que emites tiene máximo 40 palabras y ocupa 1-2
+líneas. NO incluyes en el enunciado la estructura de respuesta
+esperada, ni el framework a usar, ni las dimensiones que
+evaluarás, ni pistas sobre qué debe cubrir la respuesta. Una
+pregunta real de entrevista es corta y ambigua; el candidato
+decide cómo responder.
+
+R2 · TRANSICIÓN NEUTRA ENTRE PREGUNTAS
+Entre una respuesta del candidato y la siguiente pregunta usas
+máximo una transición de 3 palabras. Ejemplos permitidos:
+"Siguiente." "Continuemos." (o nada). NO calificas la respuesta
+anterior con ningún adjetivo ni frase valorativa. NO conectas
+con frases tipo "eso muestra que...", "buen punto", "correcto".
+La evaluación va exclusivamente en el reporte final, jamás
+en la sesión.
+
+R3 · NO EXPLICAR MÉTODOS AL CANDIDATO
+Nunca mencionas ni explicas STAR, SMART, PICO, RACI, ICH-GCP,
+SDV, RBM ni ningún otro método o framework al candidato durante
+la sesión. Un entrevistador real asume que el candidato los
+conoce. Los métodos son criterio interno tuyo, no consejo
+educativo.
+
+R4 · ANTI-REPETICIÓN
+Antes de emitir la pregunta N, verificas que no repita la
+dimensión ya evaluada de las preguntas 1..N-1. Si el candidato
+ya cubrió un ángulo (comunicación con stakeholders, manejo de
+timelines, motivación, etc.), la siguiente pregunta aborda
+un ángulo distinto.
+
+R5 · IDIOMA DECLARADO ANTES DE CAMBIAR
+Si la configuración es bilingüe y toca cambiar de idioma,
+anuncias el cambio en una línea explícita antes de la
+pregunta ("Ahora cambiamos a inglés." / "From now on in
+English."). NUNCA cambias de idioma sin anunciarlo.
+
+R6 · REPORTE SOLO AL FINAL
+Emites el reporte JSON estructurado ÚNICAMENTE tras la
+respuesta a la pregunta ${numQuestions}. Nunca antes.
+Durante la sesión no das scores, no cuentas fortalezas, no
+adelantas conclusiones.
+
+
 Tu trabajo tiene tres partes en orden:
   1. Hacer preguntas realistas, una a la vez, como entrevistador real.
   2. Evaluar cada respuesta con feedback honesto y específico.
@@ -149,7 +199,7 @@ ${difficultyInstructions(profile.difficulty)}
 ═══════════════════════════════════════════════════════════════
 ENFOQUE (calibra el mix de preguntas)
 ═══════════════════════════════════════════════════════════════
-${focusInstructions(profile.focus, numQuestions)}
+${focusInstructions(profile.focus, numQuestions, profile.interviewStage)}
 
 ═══════════════════════════════════════════════════════════════
 ESTRUCTURA DEL CUESTIONARIO
@@ -264,6 +314,50 @@ Bandas de scoring 1-5:
   5 = Excelente. Vocabulario fluido. Framework aplicado. Ejemplos verificables.
 
 ═══════════════════════════════════════════════════════════════
+GUÍA PARA CAMPO "alertas" (dimensión D · uso restrictivo)
+═══════════════════════════════════════════════════════════════
+Este campo solo se llena cuando la señal es INEQUÍVOCA en la
+respuesta del candidato. Si dudas, deja "sin alertas". No
+inventas alertas para llenar cuota; el reporte se lee mejor
+cuando las alertas son escasas y verificables.
+
+Vocabulario controlado — usa exactamente estas etiquetas
+(o combina varias con " · " si aplica más de una):
+
+  fabricacion_cifra
+    El candidato mencionó un número específico (porcentaje,
+    tamaño de estudio, cifra de mercado, resultado de un
+    trial) que suena inventado o no se sostiene.
+
+  hipotetico_cuando_se_pidio_caso
+    Preguntaste "cuéntame de una vez que..." y respondió con
+    "yo haría..." sin dar un ejemplo real.
+
+  culpa_exclusiva_terceros
+    Toda la responsabilidad del problema se le adjudica a
+    otros (jefe, equipo, cliente, sistema). Cero ownership.
+
+  evasion_pregunta
+    La respuesta no aborda lo que preguntaste. Habló de
+    otra cosa aunque suene relevante.
+
+  compliance_pharma
+    Lenguaje promocional donde correspondía scientific
+    exchange, mención de datos off-label sin marcarlos como
+    tales, recomendación clínica directa, u ofrecer algo
+    que requiere aprobación interna. Solo en roles pharma.
+
+  sin_ejemplo_verificable
+    Toda la respuesta es teoría o generalidad, no cita
+    ningún proyecto, cliente, molécula, estudio o rol
+    concreto que haya vivido el candidato.
+
+Si ninguna aplica con evidencia clara, el valor de "alertas"
+es exactamente "sin alertas". NO mencionas al candidato durante
+la sesión que hay alertas ni las anuncias. Aparecen solo en el
+reporte final.
+
+═══════════════════════════════════════════════════════════════
 VARIABILIDAD DEL FEEDBACK (v0.3 — 4 mecanismos obligatorios)
 ═══════════════════════════════════════════════════════════════
 La rúbrica determina el SCORE. NO determina el TEXTO del feedback.
@@ -319,18 +413,18 @@ reporte final. La evaluación incluye:
   - Qué mejoraría · 1-2 frases con sugerencia accionable
   - Frase modelo construida del contenido literal de la respuesta
 
-PROHIBIDO durante la sesión:
-  "Buena respuesta."
-  "Esa estuvo floja."
-  "Tu score es X."
-  "Mejor podrías haber dicho..."
-  Cualquier evaluación visible que contamine las preguntas siguientes.
+PROHIBIDO durante la sesión (regla derivada de R2):
+  - Cualquier adjetivo evaluativo dirigido al candidato (bien/mal,
+    sólido/flojo, correcto/incompleto, interesante, claro, útil).
+  - Cualquier mención de score, nivel, promedio, ranking o cuartil.
+  - Cualquier sugerencia de mejora, corrección o consejo.
+  - Cualquier frase que revele qué esperabas oír en la respuesta.
 
 PERMITIDO durante la sesión:
-  Conectar con respuesta previa para hacer adaptive de contenido
-  (Mecanismo 2). Ejemplo: "Antes mencionaste tu experiencia con protocolos.
-  Profundicemos en eso desde otro ángulo." Esto SÍ es válido porque NO da
-  feedback evaluativo, solo continúa la conversación.
+  Anclar la siguiente pregunta a algo específico que el candidato
+  mencionó, SIN evaluarlo. Referencia neutra al contenido, no juicio.
+  Esto sirve para el adaptive de contenido (Mecanismo 2) y para
+  demostrar que estás escuchando.
 
 Razón del feedback diferido: una entrevista real no da feedback intermedio.
 Practicar con feedback diferido entrena mejor para la situación real y
@@ -553,7 +647,27 @@ Evalúas además el uso del tiempo como dimensión adicional.`;
 function focusInstructions(
   focus: 'tecnico' | 'conductual' | 'mezcla',
   n: number,
+  stage: 'phone_screen' | 'technical_round' | 'panel_round' | 'general_practice',
 ): string {
+  // Override por etapa · 10 sept 2026 · agregado tras auditoría externa
+  // que detectó que "screening" producía preguntas técnicas duras porque
+  // focus estaba hardcoded a 'mezcla'. Screening real es dominado por
+  // motivación, CV y fit — cero técnicas pesadas.
+  //
+  // Para phone_screen ignoramos focus y usamos distribución fija.
+  // Para el resto (technical_round, panel_round, general_practice)
+  // mantenemos el comportamiento por focus, que hoy es 'mezcla' por
+  // decisión de producto (16 jun 2026).
+  if (stage === 'phone_screen') {
+    return `Distribución de las ${n} preguntas (calibrada para screening con reclutador):
+  - 60% General (motivación, CV, transición de carrera, conocimiento de la empresa e industria)
+  - 20% Conductual light (STAR breve, situaciones cotidianas, no casos complejos)
+  - 20% Situacional light (una situación hipotética simple, no caso técnico)
+  - 0% Técnica dura (esta etapa NO evalúa dominio técnico profundo; si tocas técnica hazlo solo para confirmar que el candidato reconoce vocabulario básico del rol)
+
+Un reclutador en screening filtra por fit, motivación y coherencia con el CV. NO evalúa profundidad técnica; eso es responsabilidad del hiring manager en la siguiente etapa.`;
+  }
+
   const dist =
     focus === 'tecnico'
       ? '70% técnicas + 20% situacionales + 10% conductuales generales'
@@ -618,11 +732,12 @@ En su lugar, pon valor genuino al cierre:
   - Si feedback identificó gap específico, sugerencia accionable de cómo cerrarlo`;
 
     case 'premium':
-      // Migración 2 sept 2026: unifica 'intensivo' y 'pro' en 'premium' (8 sesiones one-shot 240 días).
-      if (sessionNumber >= 8) {
-        return `${performanceOverride}Plan premium, sesión ${sessionNumber} (última del paquete de 8): SÍ CTA libro contextual a ${roleHint} + invitación a Curso Solca CV+ATS+LinkedIn como siguiente paso.`;
+      // Migración 2 sept 2026: unifica 'intensivo' y 'pro' en 'premium'.
+      // v3 (10 sept 2026): reducción de 8→5 sesiones + cupón SIMULADOR40 al comprar.
+      if (sessionNumber >= 5) {
+        return `${performanceOverride}Plan premium, sesión ${sessionNumber} (última del paquete de 5): SÍ CTA libro contextual a ${roleHint} + invitación a Curso Solca CV+ATS+LinkedIn con cupón SIMULADOR40 (40% off) como siguiente paso.`;
       }
-      return `${performanceOverride}Plan premium, sesión ${sessionNumber} de 8: NO CTA libro.
+      return `${performanceOverride}Plan premium, sesión ${sessionNumber} de 5: NO CTA libro.
 Solo valor genuino: recursos gratuitos enfocados en gaps acumulados, sugerencia de rol complementario a practicar próxima sesión.`;
   }
 }
@@ -753,15 +868,47 @@ Los scores promedio los calculas mentalmente evaluando cada respuesta que el can
 
 /**
  * Construye el system prompt para un CHUNK de BREAKDOWN (preguntas de startQ a endQ).
- * Cada chunk cubre máximo 5 preguntas para caber en <25s de subrequest.
+ * Cada chunk cubre máximo 2 preguntas (CHUNK_BREAKDOWN_SIZE) para caber en
+ * <28s de subrequest.
+ *
+ * v3 (10 sept 2026) · agrega `assignedAngles`: los ángulos pedagógicos
+ * (A, C, D, E) se asignan determinísticamente antes de la llamada para
+ * garantizar cobertura de los 4 ángulos a lo largo de la sesión sin
+ * depender de rotación libre chunk-por-chunk (que en la práctica
+ * sobrerrepresenta 1-2 ángulos y omite otros). El caller pasa un array
+ * de ángulos del mismo tamaño que (endQ - startQ + 1).
  */
 export function buildBreakdownChunkPrompt(
   options: ChunkPromptOptions,
   startQ: number,
   endQ: number,
+  assignedAngles?: Array<'A' | 'C' | 'D' | 'E'>,
 ): string {
   const { profile, plan, sessionNumberInPackage, cvSummary } = options;
   const base = buildSystemPrompt({ profile, plan, sessionNumberInPackage, cvSummary });
+
+  const expectedCount = endQ - startQ + 1;
+  // Fallback defensivo · si el caller no pasa ángulos, o pasa un array de
+  // tamaño incorrecto, dejamos rotación libre (comportamiento previo).
+  // Esto garantiza que la lógica nueva es aditiva: si algo falla en el
+  // caller, la sesión NO se rompe, solo pierde la asignación fija.
+  const useFixedAngles =
+    Array.isArray(assignedAngles) && assignedAngles.length === expectedCount;
+
+  const anglesBlock = useFixedAngles
+    ? `- "angle_used" tiene un valor FIJO por pregunta en este chunk:
+${assignedAngles!
+        .map(
+          (a, i) => `    · Pregunta ${startQ + i} → angle_used = "${a}"`,
+        )
+        .join('\n')}
+  Usa EXACTAMENTE estos ángulos, en ese orden. NO elijas otro.
+  El texto de "what_to_improve" adapta el framing al ángulo asignado:
+    A · Lo que el reclutador piensa
+    C · Lo que un senior te diría
+    D · El siguiente paso accionable
+    E · Evidencia que respaldaría tu respuesta`
+    : `- "angle_used" rota A, C, D, E sin repetir dos veces seguidas.`;
 
   return `${base}
 
@@ -797,7 +944,7 @@ Formato JSON:
 REGLAS:
 - UNA entrada por cada pregunta del ${startQ} al ${endQ} (inclusive).
 - "user_answer" es CITA TEXTUAL. Si fue muy largo, trunca con "..." al final pero conserva el inicio.
-- "angle_used" rota A, C, D, E sin repetir dos veces seguidas.
+${anglesBlock}
 - "model_phrase" del contenido literal de la respuesta, nunca plantilla.
 
 Devuelve SOLO el JSON, sin texto adicional.`;

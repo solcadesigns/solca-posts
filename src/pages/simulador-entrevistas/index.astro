@@ -95,7 +95,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           </div>
           <div class="pain-col pain-col-highlight">
             <p class="pain-col-label">Solca</p>
-            <p class="pain-col-body">Empieza con 1 sesión gratis. Luego 3 a 8 sesiones desde $199 MXN, a tu ritmo, con frameworks pharma por rol.</p>
+            <p class="pain-col-body">Empieza con 1 sesión gratis. Luego 3 o 5 sesiones desde $199 MXN, a tu ritmo, con frameworks pharma por rol.</p>
           </div>
         </div>
       </div>
@@ -107,10 +107,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           <p class="plan-tagline">Prueba el formato con una sesión de llamada inicial.</p>
           <ul class="plan-features">
             <li><strong>1 sesión</strong> · llamada inicial con reclutador (5 preguntas)</li>
-            <li>Subir CV para personalizar preguntas</li>
+            <li>Sube tu CV para personalizar preguntas</li>
             <li>Título de la vacante (sin descripción)</li>
             <li>Español, inglés o bilingüe</li>
-            <li>Reporte final con leyenda estándar</li>
+            <li><strong>Reporte PDF enviado a tu email</strong> al terminar</li>
             <li>Vigencia 240 días</li>
           </ul>
           <button type="button" class="btn btn-secondary plan-cta" data-plan="gratis">Empezar sin costo</button>
@@ -119,31 +119,32 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         <article class="plan-card plan-card-highlight">
           <h3 class="plan-name">Básico</h3>
           <p class="plan-price"><span class="plan-price-num">$199</span> <span class="plan-price-unit">MXN</span></p>
-          <p class="plan-tagline">3 sesiones para practicar tu ronda antes de la entrevista real.</p>
+          <p class="plan-tagline">3 sesiones para preparar una vacante puntual.</p>
           <ul class="plan-features">
             <li><strong>3 sesiones</strong> · cualquier etapa (llamada, técnica o panel)</li>
-            <li>Subir CV distinto en cada sesión</li>
+            <li>Sube CV distinto en cada sesión</li>
             <li>Vacante completa (título + empresa + descripción)</li>
             <li>Español, inglés o bilingüe</li>
-            <li>Reporte final con leyenda estándar</li>
-            <li>Historial de tus últimas 3 sesiones</li>
-            <li>Vigencia 240 días · pago único</li>
+            <li><strong>Reporte PDF por email</strong> al terminar cada sesión</li>
+            <li>Panel "Mis reportes" para volver a descargar cuando quieras</li>
+            <li>Vigencia 240 días · pago único, sin suscripción</li>
           </ul>
           <button type="button" class="btn btn-primary plan-cta" data-plan="basico">Comprar Básico</button>
         </article>
 
         <article class="plan-card">
           <h3 class="plan-name">Premium</h3>
-          <p class="plan-price"><span class="plan-price-num">$449</span> <span class="plan-price-unit">MXN</span></p>
-          <p class="plan-tagline">8 sesiones + rúbrica extendida para preparación intensiva.</p>
+          <p class="plan-price"><span class="plan-price-num">$349</span> <span class="plan-price-unit">MXN</span></p>
+          <p class="plan-tagline">5 sesiones para tu temporada de búsqueda activa.</p>
           <ul class="plan-features">
-            <li><strong>8 sesiones</strong> · cualquier etapa</li>
-            <li>CV distinto por sesión con historial etiquetado</li>
+            <li><strong>5 sesiones</strong> · cualquier etapa</li>
+            <li>Sube CV distinto en cada sesión</li>
             <li>Vacante completa</li>
             <li>Español, inglés o bilingüe</li>
-            <li><strong>Leyenda extendida</strong> (rúbrica visible + tips por dimensión baja)</li>
-            <li>3 niveles de dificultad (moderado, exigente, muy exigente)</li>
-            <li>Vigencia 240 días · pago único</li>
+            <li><strong>Reporte PDF por email</strong> al terminar cada sesión</li>
+            <li>Panel "Mis reportes" con historial descargable</li>
+            <li><strong>Bonus:</strong> cupón <strong>40% off</strong> en el Curso Solca CV+ATS+LinkedIn (válido 90 días)</li>
+            <li>Vigencia 240 días · pago único, sin suscripción</li>
           </ul>
           <button type="button" class="btn btn-secondary plan-cta" data-plan="premium">Comprar Premium</button>
         </article>
@@ -203,12 +204,13 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           días. La sesión se cuenta únicamente cuando termines la entrevista y recibas tu reporte.
         </span>
         <span id="signup-lead-basico" hidden>
-          Al confirmar el pago recibes 3 sesiones por email. Pago único, sin suscripciones
-          automáticas. Vigencia 240 días.
+          Al confirmar el pago recibes por email tu código de acceso a 3 sesiones. Pago único,
+          sin suscripciones automáticas. Vigencia 240 días.
         </span>
         <span id="signup-lead-premium" hidden>
-          Al confirmar el pago recibes 8 sesiones por email + acceso al reporte con leyenda
-          extendida. Pago único, sin suscripciones automáticas. Vigencia 240 días.
+          Al confirmar el pago recibes por email tu código de acceso a 5 sesiones + cupón
+          <strong>SIMULADOR40</strong> con 40% off en el Curso Solca CV+ATS+LinkedIn.
+          Pago único, sin suscripciones automáticas. Vigencia 240 días.
         </span>
       </p>
       <form id="subscribe-form" class="signup-form" novalidate>
@@ -311,7 +313,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     const PLAN_LABELS: Record<string, { heading: string; button: string; lead: HTMLElement | null }> = {
       gratis: { heading: 'Confirma tu email para empezar sin costo', button: 'Empezar sin costo', lead: leadFree },
       basico: { heading: 'Confirma tu email para pagar el plan Básico ($199 MXN)', button: 'Continuar al pago · Básico', lead: leadBasico },
-      premium: { heading: 'Confirma tu email para pagar el plan Premium ($449 MXN)', button: 'Continuar al pago · Premium', lead: leadPremium },
+      premium: { heading: 'Confirma tu email para pagar el plan Premium ($349 MXN)', button: 'Continuar al pago · Premium', lead: leadPremium },
     };
 
     function selectPlan(plan: string) {

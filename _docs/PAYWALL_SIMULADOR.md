@@ -80,15 +80,19 @@ export const PLAN_CONFIG: Record<Plan, PlanConfig> = {
   },
   premium: {
     plan: 'premium',
-    sessionsIncluded: 8,
+    sessionsIncluded: 5, // v3 (10 sept 2026) · era 8
     allowedStages: ['phone_screen', 'technical_round', 'panel_round', 'general_practice'],
     allowsCv: true,
     allowsFullVacancy: true,
-    allowedDifficulties: ['moderado', 'dificil', 'experto'],
-    reportLegend: 'extended',
+    allowedDifficulties: ['moderado', 'exigente', 'muy_exigente'],
+    reportLegend: 'standard', // v3 (10 sept 2026) · era 'extended'; se eliminó por confusión
     ctaTarget: 'course_solca',
-    historyDepth: 8,
+    historyDepth: 5, // v3 (10 sept 2026) · era 8
     vigenciaDias: 240,
+    priceMxn: 349, // v3 · era 449
+    // v3 (10 sept 2026): cupón SIMULADOR40 (40% off Curso Solca CV+ATS+LinkedIn)
+    // se entrega solo a Premium al comprar (vía simulator-stripe-webhook.ts).
+    // El cron post-package skip a Premium para no canibalizar con FEEDBACK35.
   },
 };
 ```

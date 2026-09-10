@@ -57,6 +57,37 @@ const MAX_ATTEMPTS = 1;
 // Trade-off: 15q = 1 summary + 8 breakdowns = 9 corridas × 2 min = ~18 min.
 const CHUNK_BREAKDOWN_SIZE = 2;
 
+// Ángulos pedagógicos asignados determinísticamente por chunk breakdown.
+// v3 (10 sept 2026) · reemplaza rotación libre por asignación fija para
+// garantizar cobertura de los 4 ángulos (A, C, D, E) en 10 preguntas.
+// Antes: cada chunk elegía libremente sus ángulos y podía repetir uno 5
+// veces mientras omitía otros. Ahora: mapa determinístico por índice de
+// chunk. Cobertura para 10 preguntas: A×3, C×2, D×3, E×2.
+//
+// El mapa cubre hasta 8 chunks (16 preguntas), suficiente para el máximo
+// actual de 15q (7 chunks) más margen. Si un chunkIndex excede el mapa,
+// se cae a rotación libre en el prompt del chunk (fallback seguro).
+const ANGLES_BY_CHUNK: Array<Array<'A' | 'C' | 'D' | 'E'>> = [
+  ['A', 'C'], // pregs 1-2
+  ['D', 'E'], // pregs 3-4
+  ['C', 'A'], // pregs 5-6
+  ['E', 'D'], // pregs 7-8
+  ['A', 'D'], // pregs 9-10
+  ['C', 'E'], // pregs 11-12 (reserva)
+  ['D', 'A'], // pregs 13-14 (reserva)
+  ['E', 'C'], // pregs 15-16 (reserva)
+];
+
+/**
+ * Devuelve los ángulos pedagógicos asignados a un chunk breakdown, dado
+ * el índice del chunk (0-indexed). Fallback a undefined si el índice
+ * excede el mapa (dispara rotación libre en buildBreakdownChunkPrompt).
+ */
+function getAssignedAngles(chunkIndex: number): Array<'A' | 'C' | 'D' | 'E'> | undefined {
+  if (chunkIndex < 0 || chunkIndex >= ANGLES_BY_CHUNK.length) return undefined;
+  return ANGLES_BY_CHUNK[chunkIndex];
+}
+
 interface PendingRecord {
   sessionId: string;
   enqueuedAt: string;
@@ -129,10 +160,27 @@ async function generateChunk(
     sessionNumberInPackage: state.sessionNumberInPackage,
     cvSummary: state.cvSummary,
   };
+
+  // Asignación determinística de ángulos pedagógicos por chunk breakdown.
+  // Calcula chunkIndex a partir del rango: (start-1) / CHUNK_BREAKDOWN_SIZE.
+  // start=1 → índice 0, start=3 → índice 1, etc.
+  // Si CHUNK_BREAKDOWN_SIZE cambia, el mapa sigue funcionando porque el
+  // buildBreakdownChunkPrompt valida el tamaño esperado vs el array.
+  let assignedAngles: Array<'A' | 'C' | 'D' | 'E'> | undefined;
+  if (chunkType === 'breakdown' && breakdownRange) {
+    const chunkIndex = Math.floor((breakdownRange.start - 1) / CHUNK_BREAKDOWN_SIZE);
+    assignedAngles = getAssignedAngles(chunkIndex);
+  }
+
   const systemPrompt =
     chunkType === 'summary'
       ? buildSummaryChunkPrompt(promptOptions)
-      : buildBreakdownChunkPrompt(promptOptions, breakdownRange!.start, breakdownRange!.end);
+      : buildBreakdownChunkPrompt(
+          promptOptions,
+          breakdownRange!.start,
+          breakdownRange!.end,
+          assignedAngles,
+        );
 
   const messages = buildMessagesFromState(state);
   messages.push({

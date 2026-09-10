@@ -66,16 +66,16 @@ export const PLAN_CONFIG: Record<Plan, PlanConfig> = {
   },
   premium: {
     plan: 'premium',
-    sessionsIncluded: 8,
+    sessionsIncluded: 5,
     allowedStages: ['phone_screen', 'technical_round', 'panel_round', 'general_practice'],
     allowsCv: true,
     allowsFullVacancy: true,
     allowedDifficulties: ['moderado', 'exigente', 'muy_exigente'],
-    reportLegend: 'extended',
+    reportLegend: 'standard',
     ctaTarget: 'course_solca',
-    historyDepth: 8,
+    historyDepth: 5,
     vigenciaDias: 240,
-    priceMxn: 449, // v2 (8 sept 2026) · era 349
+    priceMxn: 349, // v3 (10 sept 2026) · 5 sesiones + cupón SIMULADOR40 · historial: v1=349 (8x), v2=449 (8x), v3=349 (5x)
   },
 };
 

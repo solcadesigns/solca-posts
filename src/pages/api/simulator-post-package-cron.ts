@@ -114,6 +114,15 @@ export const GET: APIRoute = async ({ request, locals }) => {
       continue;
     }
 
+    // Skip Premium: 10 sept 2026 · Premium ya recibe cupón SIMULADOR40 al
+    // comprar (mejor descuento que FEEDBACK35). Enviar el 35% después sería
+    // canibalización y confusión para el usuario. Solo Básico recibe este email.
+    if (target.plan === 'premium') {
+      results.push({ sessionId, status: 'premium_skip · already got SIMULADOR40 · deleted' });
+      await kv.delete(k.name);
+      continue;
+    }
+
     // Enviar email
     if (!postmarkToken) {
       results.push({ sessionId, status: 'postmark_missing' });

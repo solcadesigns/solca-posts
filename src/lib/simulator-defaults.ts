@@ -400,9 +400,9 @@ export function getStageInfo(stage: InterviewStage): InterviewStageInfo {
     case 'phone_screen':
       return {
         questionCount: 5,
-        label: 'Llamada inicial con reclutador',
+        label: 'Screening inicial con reclutador',
         description:
-          'Phone screen típica con HR o talent acquisition. Foco en motivación, fit cultural y contexto del CV.',
+          'Contacto inicial con HR o talent acquisition. Foco en motivación, fit cultural y contexto del CV. Ritmo rápido, poca profundidad técnica.',
         expectedRealDurationMin: 15,
         expectedRealDurationMax: 30,
         expectedSimulatorDuration: 20,
@@ -410,19 +410,21 @@ export function getStageInfo(stage: InterviewStage): InterviewStageInfo {
     case 'technical_round':
       return {
         questionCount: 10,
-        label: 'Ronda técnica con hiring manager',
+        label: 'Entrevista con hiring manager',
         description:
-          'Entrevista con el manager que te contrata. Foco en vocabulario pharma, frameworks y casos básicos del rol.',
+          'Entrevista con el manager que te contrata. Mezcla de motivación, experiencia relevante, vocabulario pharma y casos básicos del rol.',
         expectedRealDurationMin: 45,
         expectedRealDurationMax: 60,
         expectedSimulatorDuration: 40,
       };
     case 'panel_round':
+      // Deshabilitada en UI desde sept 2026 (never worked reliably a 15q).
+      // El schema se conserva para no romper sesiones legacy en KV.
       return {
         questionCount: 15,
-        label: 'Final round o panel completo',
+        label: 'Panel completo (deshabilitado)',
         description:
-          'Panel final con varios entrevistadores. Profundidad técnica + comportamiento + casos complejos.',
+          'Panel final con varios entrevistadores. Deshabilitado en la UI actual — mantener aquí para compatibilidad de sesiones antiguas.',
         expectedRealDurationMin: 60,
         expectedRealDurationMax: 90,
         expectedSimulatorDuration: 60,
@@ -430,9 +432,9 @@ export function getStageInfo(stage: InterviewStage): InterviewStageInfo {
     case 'general_practice':
       return {
         questionCount: 10,
-        label: 'Práctica general',
+        label: 'Práctica general (mix de preguntas)',
         description:
-          'No tienes una fecha o etapa específica todavía. Sesión balanceada equivalente a una ronda técnica.',
+          'No tienes una fecha o etapa específica todavía. Sesión balanceada equivalente a una ronda con hiring manager.',
         expectedRealDurationMin: 45,
         expectedRealDurationMax: 60,
         expectedSimulatorDuration: 40,

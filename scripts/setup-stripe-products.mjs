@@ -7,9 +7,12 @@
  * quedan inactivos por sí solos (deja de usarlos el checkout).
  *
  * Historial de precios (MXN one-shot):
- *   v1 (2 sept 2026): Básico $179 · Premium $349
- *   v2 (8 sept 2026): Básico $199 · Premium $449 · target margen $149+ por paquete
+ *   v1 (2 sept 2026): Básico $179 · Premium $349 (8 sesiones)
+ *   v2 (8 sept 2026): Básico $199 · Premium $449 (8 sesiones) · target margen $149+ por paquete
  *                     post-mortem del incidente de tokens del 7-8 sept.
+ *   v3 (10 sept 2026): Básico $199 · Premium $349 (5 sesiones) + cupón SIMULADOR40 (40% off curso CV)
+ *                     razones: reducir riesgo de fatiga a 8 sesiones · diferenciar Premium por
+ *                     cupón (valor tangible) en vez de leyenda extendida (confusa).
  * Ver `_docs/PAYWALL_SIMULADOR.md` para el schema completo.
  *
  * Ver `_docs/PAYWALL_SIMULADOR.md` para el schema completo.
@@ -53,7 +56,7 @@ const PLANS = [
     id: 'solca_simulator_basico_v1',
     name: 'Simulador de Entrevistas Pharma · Básico',
     description:
-      '3 sesiones de simulador de entrevistas pharma. Elige cualquier etapa (llamada inicial, técnica o panel). Sube tu CV y practica con feedback estructurado. Vigencia 240 días desde la compra.',
+      '3 sesiones de simulador de entrevistas pharma para preparar una vacante puntual. Elige cualquier etapa (llamada inicial, técnica o panel) · sube CV distinto por sesión · vacante completa · español, inglés o bilingüe. Reporte PDF por email al terminar cada sesión + panel personal con historial descargable. Vigencia 240 días desde la compra. Pago único, sin suscripción.',
     priceMxnCents: 19900, // v2 (8 sept 2026) · era 17900 en v1
     envVarName: 'STRIPE_PRICE_ID_BASICO',
   },
@@ -61,8 +64,8 @@ const PLANS = [
     id: 'solca_simulator_premium_v1',
     name: 'Simulador de Entrevistas Pharma · Premium',
     description:
-      '8 sesiones de simulador de entrevistas pharma. Todas las etapas + 3 niveles de dificultad. Historial personal para practicar diferentes CVs y vacantes en paralelo. Reporte final con leyenda extendida (rúbrica visible + tips por dimensión). Vigencia 240 días desde la compra.',
-    priceMxnCents: 44900, // v2 (8 sept 2026) · era 34900 en v1
+      '5 sesiones de simulador de entrevistas pharma para tu temporada de búsqueda activa. Cualquier etapa (llamada inicial, técnica o panel) · sube CV distinto por sesión · vacante completa · español, inglés o bilingüe. Reporte PDF por email al terminar cada sesión + panel personal con historial descargable. Incluye cupón 40% off en el Curso Solca CV+ATS+LinkedIn (código SIMULADOR40). Vigencia 240 días desde la compra. Pago único, sin suscripción.',
+    priceMxnCents: 34900, // v3 (10 sept 2026) · 5 sesiones + cupón · historial: 34900 (v1 8x), 44900 (v2 8x), 34900 (v3 5x)
     envVarName: 'STRIPE_PRICE_ID_PREMIUM',
   },
 ];

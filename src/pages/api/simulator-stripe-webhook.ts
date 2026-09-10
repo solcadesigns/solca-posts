@@ -308,6 +308,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (postmarkToken) {
     try {
       const planLabel = plan === 'premium' ? 'Premium' : 'Básico';
+      // Cupón Premium: 10 sept 2026 · 40% off Curso Solca CV+ATS+LinkedIn.
+      // Se entrega solo a Premium al comprar. Override con env HOTMART_COUPON_PREMIUM.
+      // El template Postmark simulator-purchase-confirmation usa condicionales
+      // Mustache: {{#coupon_code}}...{{/coupon_code}} para mostrar la sección
+      // solo cuando existe el cupón. Básico recibe strings vacíos.
+      const premiumCoupon =
+        plan === 'premium'
+          ? (env.HOTMART_COUPON_PREMIUM as string | undefined) ?? 'SIMULADOR40'
+          : '';
+      const courseUrl =
+        plan === 'premium'
+          ? 'https://solcadesigns.hotmart.host/cv-en-ciencias-biologicas-y-de-de-la-salud-ats-linkedin-e78259bd-c882-4b61-b496-9d3da84d06b2'
+          : '';
       await sendEmailWithTemplate(postmarkToken, {
         from: 'Oscar Solís <hola@solcaciencia.com>',
         to: email,
@@ -326,6 +339,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
           }),
           access_code: accessCode,
           access_url: `https://solcaciencia.com/simulador-entrevistas/?codigo=${accessCode}`,
+          coupon_code: premiumCoupon,
+          course_url: courseUrl,
         },
         metadata: {
           source: 'stripe-webhook',
