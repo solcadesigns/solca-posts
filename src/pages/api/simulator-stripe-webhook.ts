@@ -301,6 +301,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
   }
 
+  // v3 (11 sept 2026): índice inverso `stripe_session:{sessionId}` → SIM-XXX
+  // para que la página /gracias pueda hacer polling con el session_id del URL
+  // y mostrar el código en pantalla inmediatamente después del pago.
+  // TTL 7 días: suficiente para que el user recupere el código; expira solo
+  // porque el session_id ya no debe usarse para nada tras el pago.
+  try {
+    await dedupKv.put(`stripe_session:${session.id}`, accessCode, {
+      expirationTtl: 60 * 60 * 24 * 7,
+    });
+  } catch (err) {
+    console.error('[stripe-webhook] stripe_session index write failed:', err);
+  }
+
   // Marcar dedup ANTES de enviar email (si el email falla no queremos duplicar créditos).
   await dedupKv.put(dedupKey, '1', { expirationTtl: 60 * 60 * 24 * 7 });
 
