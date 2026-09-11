@@ -60,6 +60,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         <div class="cta-row">
           <a id="start-btn" href="/simulador-entrevistas/sesion" class="btn btn-primary" hidden>Empezar mi primera sesión</a>
           <a href="/simulador-entrevistas/#codigo" class="btn btn-secondary" id="ingresar-btn">Ir a ingresar mi código</a>
+          <a id="panel-btn" href="/simulador-entrevistas/mis-reportes" class="btn btn-secondary" hidden>Ver mis reportes</a>
           <a href="/simulador-entrevistas/" class="btn btn-secondary">Volver al inicio</a>
         </div>
 
@@ -128,6 +129,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         document.getElementById('waiting-block')?.setAttribute('hidden', '');
         document.getElementById('start-btn')?.removeAttribute('hidden');
         document.getElementById('ingresar-btn')?.setAttribute('hidden', '');
+        // v3.1 (11 sept 2026): mostrar link a Mis reportes tras la compra
+        // para que el user pueda navegar al panel sin fricción adicional.
+        document.getElementById('panel-btn')?.removeAttribute('hidden');
 
         const copyBtn = document.getElementById('copy-code-btn') as HTMLButtonElement | null;
         if (copyBtn) {
