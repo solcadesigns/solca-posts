@@ -48,7 +48,12 @@ export const PLAN_CONFIG: Record<Plan, PlanConfig> = {
     reportLegend: 'standard',
     ctaTarget: 'upsell_basico',
     historyDepth: 1,
-    vigenciaDias: 240,
+    // v3 (11 sept 2026): reducido de 240 a 10 días · genera urgencia real para
+    // convertir a plan pagado en la primera semana tras registro. Alineado con
+    // el CTA post-reporte que empuja a upgrade. Panel Mis reportes persiste
+    // la sesión más allá de expirar el beta code (el índice user_sessions vive
+    // por sí solo con TTL propio).
+    vigenciaDias: 10,
     priceMxn: 0,
   },
   basico: {

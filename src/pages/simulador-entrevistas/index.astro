@@ -483,15 +483,18 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     })();
 
     // Mostrar link "Mis reportes" en la landing si el user ya tiene código
-    // pagado guardado (Básico/Premium). Consulta el endpoint code-info para
-    // saber el plan sin exponer info sensible.
+    // guardado (freemium, Básico o Premium). Consulta el endpoint code-info
+    // solo para verificar que el código es válido; el panel muestra la
+    // sesión histórica sin importar el plan.
+    // v3 (11 sept 2026): freemium también tiene acceso al panel para recovery
+    // si el email rebota (antes solo Básico/Premium).
     (async function showMyReportsShortcut() {
       const savedCode = sessionStorage.getItem('solca_beta_code');
       if (!savedCode) return;
       try {
         const r = await fetch(`/api/simulator-code-info?codigo=${encodeURIComponent(savedCode)}`);
         const j = await r.json();
-        if (j.ok && (j.plan === 'basico' || j.plan === 'premium')) {
+        if (j.ok && (j.plan === 'gratis' || j.plan === 'basico' || j.plan === 'premium')) {
           const link = document.getElementById('my-reports-link-landing');
           if (link) link.hidden = false;
         }

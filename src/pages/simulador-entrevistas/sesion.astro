@@ -372,7 +372,7 @@ const noIndex = true;
       <div class="container">
         <h1 id="report-heading">Reporte final de tu sesión</h1>
         <p class="intro" id="report-intro">
-          Tu sesión terminó. Estamos generando tu reporte.
+          Tu sesión terminó. Tu reporte llega por email en hasta 20 minutos. Puedes cerrar esta ventana.
         </p>
 
         <article class="report-summary">
@@ -1476,14 +1476,11 @@ const noIndex = true;
               <h3 style="margin:0 0 12px;color:#1F3A5F;font-size:22px;">Tu reporte llega por email</h3>
               <p style="margin:0 0 16px;font-size:15px;line-height:1.55;color:#111827;">
                 Tu sesión terminó. Estamos generando el análisis completo (fortalezas, áreas de mejora,
-                desglose por pregunta y recomendación) · toma entre 5 y 10 minutos.
+                desglose por pregunta y recomendación) · toma hasta 20 minutos.
               </p>
               <p style="margin:0 0 16px;font-size:15px;line-height:1.55;color:#111827;">
                 Llega a tu correo${email ? ' <strong>' + escapeHtml(email) + '</strong>' : ''} en cuanto esté listo.
                 <strong>Puedes cerrar esta ventana con tranquilidad.</strong>
-              </p>
-              <p style="margin:16px 0 0;font-size:13px;color:#4B5563;">
-                Si prefieres esperar aquí, el reporte también aparecerá abajo cuando termine.
               </p>
               <div style="margin:20px 0 0;display:flex;gap:10px;flex-wrap:wrap;">
                 <button
@@ -2733,9 +2730,19 @@ const noIndex = true;
           const planLabel = j.plan === 'premium' ? 'Premium' : j.plan === 'basico' ? 'Básico' : 'Freemium';
           planEl.textContent = planLabel;
         }
-        if (currentEl) currentEl.textContent = String(j.sessionsUsed + 1);
-        if (totalEl) totalEl.textContent = String(j.maxSessions);
-        if (remainingEl) remainingEl.textContent = String(j.remaining);
+        // v3 (11 sept 2026): clamp visual del contador cuando remaining=0.
+        // Antes mostraba "Sesión 9 de 8" (overflow del sessions_used sobre
+        // max_sessions). Ahora "Sesiones agotadas · N de N" hasta que compre.
+        if (j.remaining === 0) {
+          if (currentEl) currentEl.textContent = String(j.maxSessions);
+          if (totalEl) totalEl.textContent = String(j.maxSessions);
+          if (remainingEl) remainingEl.textContent = '0 · sesiones agotadas';
+        } else {
+          const displayedCurrent = Math.min(j.sessionsUsed + 1, j.maxSessions);
+          if (currentEl) currentEl.textContent = String(displayedCurrent);
+          if (totalEl) totalEl.textContent = String(j.maxSessions);
+          if (remainingEl) remainingEl.textContent = String(j.remaining);
+        }
         if (expiryEl && j.expiresAt) {
           expiryEl.textContent = new Date(j.expiresAt).toLocaleDateString('es-MX', {
             year: 'numeric', month: 'short', day: 'numeric',
@@ -2743,20 +2750,43 @@ const noIndex = true;
         }
         if (counterEl) counterEl.hidden = false;
 
-        // Mostrar link a "Mis reportes" solo si el plan es pagado
-        // (Básico o Premium) · freemium sigue sin acceso al panel.
-        if (j.plan === 'basico' || j.plan === 'premium') {
-          const linkWrap = document.getElementById('my-reports-link-wrap');
-          if (linkWrap) linkWrap.hidden = false;
-        }
+        // v3 (11 sept 2026): link "Mis reportes" visible para TODOS los planes,
+        // incluido freemium. Freemium tiene su 1 sesión listada para recovery
+        // si el email rebota o va a spam. El panel usa el mismo email_hash
+        // que agrupa sesiones freemium + pagadas del mismo email.
+        const linkWrap = document.getElementById('my-reports-link-wrap');
+        if (linkWrap) linkWrap.hidden = false;
       } catch (_err) {
         // Best-effort · si falla, el contador simplemente no se muestra
       }
     }
 
     // ──────────────────────────────────────────────────────────────────
+    // Auto-login desde URL con ?codigo=SIM-XXX (v3 · 11 sept 2026)
+    // ──────────────────────────────────────────────────────────────────
+    // El email de reporte listo trae links tipo:
+    //   /sesion?sessionId=UUID&codigo=SIM-XXX&autodownload=1
+    // Este helper guarda el código en sessionStorage automáticamente para
+    // que el user no tenga que copy-pastear al llegar. Después limpia el
+    // URL de la barra para no exponer el código en history/copy/referrers.
+    // Solo aplica si NO hay ya un código guardado (respeta sesión activa).
+    function absorbCodeFromUrl() {
+      try {
+        const u = new URL(window.location.href);
+        const code = u.searchParams.get('codigo');
+        if (!code) return;
+        if (!sessionStorage.getItem('solca_beta_code')) {
+          sessionStorage.setItem('solca_beta_code', code);
+        }
+        u.searchParams.delete('codigo');
+        window.history.replaceState({}, '', u.toString());
+      } catch (_e) { /* best-effort */ }
+    }
+
+    // ──────────────────────────────────────────────────────────────────
     // Init
     // ──────────────────────────────────────────────────────────────────
+    absorbCodeFromUrl();
     updateDefaultsFromIntake();
     initVoice();
     maybeResumeBrokenSession();

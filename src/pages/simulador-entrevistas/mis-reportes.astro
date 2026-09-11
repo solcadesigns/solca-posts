@@ -10,7 +10,9 @@
  *   - Sección horizontal con productos (libros MSL/PM/CR + curso CV)
  *
  * Auth: sessionStorage.solca_beta_code. Sin código → redirect a landing.
- * Freemium (plan='gratis') no debería llegar aquí — redirect a landing con planes.
+ * Freemium (plan='gratis') YA tiene acceso al panel desde v3 (11 sept 2026)
+ * para recovery si el email rebota. Ve su 1 sesión histórica.
+ * También acepta ?codigo=SIM-XXX en URL para auto-login desde email links.
  * Toda la validación es client-side después del load (data se carga via fetch).
  */
 
@@ -103,6 +105,22 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     }
 
     async function init() {
+      // v3 (11 sept 2026): auto-absorción del código desde ?codigo=SIM-XXX
+      // en URL (viene de los links del email de reporte-listo). Guarda en
+      // sessionStorage si aún no hay uno y limpia la URL para no exponer el
+      // código en history/copy/referrers.
+      try {
+        const u = new URL(window.location.href);
+        const codeFromUrl = u.searchParams.get('codigo');
+        if (codeFromUrl && !sessionStorage.getItem('solca_beta_code')) {
+          sessionStorage.setItem('solca_beta_code', codeFromUrl);
+        }
+        if (codeFromUrl) {
+          u.searchParams.delete('codigo');
+          window.history.replaceState({}, '', u.toString());
+        }
+      } catch (_e) { /* best-effort */ }
+
       const code = sessionStorage.getItem('solca_beta_code');
       const leadEl = document.getElementById('panel-lead');
 
@@ -121,14 +139,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           return;
         }
 
-        // Freemium (plan='gratis') → redirect a landing con planes
-        if (data.plan === 'gratis') {
-          window.location.href = '/simulador-entrevistas/#planes';
-          return;
-        }
+        // v3 (11 sept 2026): freemium YA tiene acceso al panel (recovery si
+        // el email rebota o va a spam). Muestra su 1 sesión. Antes: redirect
+        // a /#planes que rompía UX si el user clic desde email.
 
         // Poblar contador · null-safe
-        const planLabel = data.plan === 'premium' ? 'Premium' : 'Básico';
+        const planLabel = data.plan === 'premium' ? 'Premium' : data.plan === 'basico' ? 'Básico' : 'Freemium';
         const sessionsArr: SessionEntry[] = Array.isArray(data.sessions) ? data.sessions : [];
         const totalSessions = sessionsArr.length;
         // Calcular sesiones disponibles restantes = maxSessions - sessionsCompleted

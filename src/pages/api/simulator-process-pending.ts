@@ -88,6 +88,68 @@ function getAssignedAngles(chunkIndex: number): Array<'A' | 'C' | 'D' | 'E'> | u
   return ANGLES_BY_CHUNK[chunkIndex];
 }
 
+// ──────────────────────────────────────────────────────────────────
+// CTA rotante A/B/C para email de reporte listo (v3 · 11 sept 2026)
+// ──────────────────────────────────────────────────────────────────
+// Duplicado del helper en simulator-session.ts (path sync) para evitar ciclo
+// de import entre endpoints. Si ambos crecen, refactorizar a src/lib/.
+type CtaVariant = 'a' | 'b' | 'c';
+
+interface CtaContent {
+  variant: CtaVariant;
+  bodyHtml: string;
+  bodyText: string;
+  buttonLabel: string;
+  ctaUrl: string;
+}
+
+function pickCtaVariant(): CtaVariant {
+  const r = Math.random();
+  if (r < 1 / 3) return 'a';
+  if (r < 2 / 3) return 'b';
+  return 'c';
+}
+
+function buildCtaContent(): CtaContent {
+  const variant = pickCtaVariant();
+  const base = 'https://solcaciencia.com/simulador-entrevistas/#planes';
+  const ctaUrl = `${base}?utm_source=report_email&utm_medium=email&utm_campaign=freemium_upsell&utm_content=cta_${variant}`;
+
+  if (variant === 'a') {
+    return {
+      variant,
+      buttonLabel: 'Ver planes',
+      ctaUrl,
+      bodyHtml:
+        '¿Cómo te sentiste con tu desempeño? Sea cual sea tu respuesta, hay margen para mejorar — y ese margen se cierra con más práctica bajo condiciones parecidas a la entrevista real. Nuestros planes te dan más sesiones para llegar al día real sin sorpresas.',
+      bodyText:
+        '¿Cómo te sentiste con tu desempeño? Sea cual sea tu respuesta, hay margen para mejorar — y ese margen se cierra con más práctica bajo condiciones parecidas a la entrevista real. Nuestros planes te dan más sesiones para llegar al día real sin sorpresas.',
+    };
+  }
+
+  if (variant === 'b') {
+    return {
+      variant,
+      buttonLabel: 'Prepárate más · ver planes',
+      ctaUrl,
+      bodyHtml:
+        'Una entrevista bien preparada es un multiplicador silencioso. Si sientes que necesitas más rondas antes de la real, con nuestros planes tienes de 3 a 5 sesiones adicionales para calibrar tu narrativa y respuestas.',
+      bodyText:
+        'Una entrevista bien preparada es un multiplicador silencioso. Si sientes que necesitas más rondas antes de la real, con nuestros planes tienes de 3 a 5 sesiones adicionales para calibrar tu narrativa y respuestas.',
+    };
+  }
+
+  return {
+    variant: 'c',
+    buttonLabel: 'Toma lo que sí controlas · ver planes',
+    ctaUrl,
+    bodyHtml:
+      'En una entrevista hay cosas que no vas a poder controlar. Tu preparación sí la controlas. Los planes te dan más sesiones bajo las mismas condiciones para que llegues sin sorpresas.',
+    bodyText:
+      'En una entrevista hay cosas que no vas a poder controlar. Tu preparación sí la controlas. Los planes te dan más sesiones bajo las mismas condiciones para que llegues sin sorpresas.',
+  };
+}
+
 interface PendingRecord {
   sessionId: string;
   enqueuedAt: string;
@@ -340,16 +402,23 @@ async function processOneChunk(
     // Se omite por brevedad — puede agregarse después.
 
     // Enviar email al usuario
+    // v3 (11 sept 2026):
+    //  - access_code embebido en URL (auto-login al panel · limpia URL en JS)
+    //  - access_code visible en el body para copy-paste manual
+    //  - CTA rotante A/B/C con UTMs para tracking en Stripe
     const email = pending.userEmail || state.userEmail;
     const firstName = pending.userFirstName || (email ? email.split('@')[0] : 'ahí');
     if (postmarkToken && email) {
+      const cta = buildCtaContent();
+      const code = state.betaCode ?? '';
+      const codeQuery = code ? `&codigo=${encodeURIComponent(code)}` : '';
       try {
         await sendEmailWithTemplate(postmarkToken, {
           from: 'Oscar Solís <hola@solcaciencia.com>',
           to: email,
           templateAlias: 'simulator-report-ready',
           messageStream: 'outbound',
-          tag: 'simulator-report-ready',
+          tag: `simulator-report-ready-cta-${cta.variant}`,
           templateModel: {
             first_name: firstName,
             rol: finalReport.rol,
@@ -359,9 +428,20 @@ async function processOneChunk(
             especificidad: finalReport.summary.scores.especificidad.toFixed(1),
             recomendacion_final: finalReport.summary.recomendacionFinal,
             // ?autodownload=1 hace que la landing dispare el download del PDF
-            // automáticamente al cargar (si el reporte está ready). Un solo click
-            // desde el email = PDF en tu disco.
-            report_url: `https://solcaciencia.com/simulador-entrevistas/sesion?sessionId=${state.sessionId}&autodownload=1`,
+            // automáticamente al cargar. Un solo click desde el email = PDF.
+            // ?codigo=SIM-XXX guarda el código en sessionStorage al abrir → el
+            // usuario puede navegar a /mis-reportes sin re-login.
+            report_url: `https://solcaciencia.com/simulador-entrevistas/sesion?sessionId=${state.sessionId}${codeQuery}&autodownload=1`,
+            panel_url: code
+              ? `https://solcaciencia.com/simulador-entrevistas/mis-reportes?codigo=${encodeURIComponent(code)}`
+              : 'https://solcaciencia.com/simulador-entrevistas/',
+            session_id: state.sessionId,
+            access_code: code,
+            cta_body: cta.bodyHtml,
+            cta_body_text: cta.bodyText,
+            cta_url: cta.ctaUrl,
+            cta_button_label: cta.buttonLabel,
+            cta_variant: cta.variant,
           },
         });
       } catch (err) {

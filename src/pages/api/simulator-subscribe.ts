@@ -65,7 +65,11 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PREPAYWALL_EXPIRES_ISO = '2026-09-08T05:59:59.000Z'; // 23:59 CDMX del 7 sept
 const PREPAYWALL_MAX_SESSIONS = 1;
 const PREPAYWALL_COHORT = 'pre-paywall';
-const FREEMIUM_VIGENCIA_DIAS = 240;
+// v3 (11 sept 2026): freemium vigencia reducida de 240 a 10 días para generar
+// urgencia real y alinear con el CTA post-reporte que empuja a upgrade. La
+// sesión histórica sigue accesible desde el panel Mis reportes (índice
+// user_sessions:{email_hash} tiene TTL propio más largo).
+const FREEMIUM_VIGENCIA_DIAS = 10;
 const FREEMIUM_MAX_SESSIONS = 1;
 const FREEMIUM_COHORT = 'freemium';
 
