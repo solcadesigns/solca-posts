@@ -11,10 +11,10 @@
  *   node scripts/simulator-grant-code.mjs solcadesigns@gmail.com premium Oscar
  *   node scripts/simulator-grant-code.mjs test@example.com basico
  *
- * Planes:
+ * Planes (v3 · 11 sept 2026 · sincronizado con src/lib/simulator-types.ts):
  *   basico   → 3 sesiones · vigencia 240 días
- *   premium  → 8 sesiones · vigencia 240 días
- *   gratis   → 1 sesión   · vigencia 240 días (para pruebas de freemium)
+ *   premium  → 5 sesiones · vigencia 240 días (era 8 en v2)
+ *   gratis   → 1 sesión   · vigencia 10 días (era 240 en v2)
  *
  * Escribe en dos KV:
  *   SIMULATOR_BETA_CODES · beta:SIM-XXX  (auth y plan)
@@ -38,10 +38,12 @@ const email = emailArg.trim().toLowerCase();
 const plan = planArg.trim().toLowerCase();
 const nombre = nombreArg?.trim();
 
+// v3 (11 sept 2026): sincronizado con PLAN_CONFIG en src/lib/simulator-types.ts.
+// Si cambias planes en el schema, actualiza también este archivo.
 const PLAN_CONFIG = {
-  gratis: { sessions: 1, vigenciaDias: 240 },
+  gratis: { sessions: 1, vigenciaDias: 10 },
   basico: { sessions: 3, vigenciaDias: 240 },
-  premium: { sessions: 8, vigenciaDias: 240 },
+  premium: { sessions: 5, vigenciaDias: 240 },
 };
 
 if (!PLAN_CONFIG[plan]) {

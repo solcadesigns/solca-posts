@@ -140,6 +140,10 @@ function finalReportMaxTokens(questionCount: number): number {
 interface BetaCodeRecord {
   nombre_pila?: string;
   email_hash?: string;
+  // 9 sept 2026: email plano guardado para que el cron async pueda enviar
+  // el reporte por Postmark cuando el sync path cae a chunks.
+  // 11 sept 2026 (v3): también aplica para freemium (cohort='freemium').
+  email?: string;
   max_sessions: number;
   sessions_used: number;
   granted_at: string;
@@ -147,6 +151,7 @@ interface BetaCodeRecord {
   cohort?: string;
   // Post-paywall (3 sept 2026): cuando cohort='paywall' este campo trae el plan
   // que fue comprado. handleInit lo usa para override del plan default.
+  // 11 sept 2026 (v3): también freemium (cohort='freemium') trae plan='gratis'.
   plan?: Plan;
 }
 
@@ -311,7 +316,15 @@ async function handleInit(
         errorCode: check.reason === 'exhausted' ? 'beta_code_exhausted' : 'beta_code_invalid',
       };
     }
-    if (check.record?.cohort === 'paywall' && check.record.plan) {
+    // v3 (11 sept 2026): aceptar cohort 'freemium' además de 'paywall' como
+    // fuente autoritativa. Antes solo procesaba 'paywall' → freemium quedaba
+    // sin state.emailHash ni state.userEmail → user_sessions index vacío y
+    // cron async sin destinatario del email de reporte. Requiere que el
+    // record freemium tenga `plan` (fix aplicado en simulator-subscribe.ts).
+    if (
+      check.record?.plan &&
+      (check.record.cohort === 'paywall' || check.record.cohort === 'freemium')
+    ) {
       paywallCodeRecord = check.record;
     }
   }

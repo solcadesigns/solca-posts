@@ -50,6 +50,11 @@ interface SubscribeRequest {
 interface BetaCodeRecord {
   nombre_pila?: string;
   email_hash?: string;
+  // v3 (11 sept 2026) · email plano y plan agregados para que handleInit
+  // pueda popular state.emailHash/userEmail y activar user_sessions index +
+  // envío correcto del email de reporte para freemium (no solo paywall).
+  email?: string;
+  plan?: 'gratis' | 'basico' | 'premium';
   max_sessions: number;
   sessions_used: number;
   granted_at: string;
@@ -141,6 +146,7 @@ async function storeAccessCode(
   code: string,
   nombrePila: string,
   emailHash: string,
+  emailPlain: string,
 ): Promise<void> {
   const kv = env.SIMULATOR_BETA_CODES as KVNamespace | undefined;
   if (!kv || typeof kv.put !== 'function') {
@@ -159,6 +165,13 @@ async function storeAccessCode(
   const record: BetaCodeRecord = {
     nombre_pila: nombrePila,
     email_hash: emailHash,
+    // v3 (11 sept 2026): fix crítico · guardar email plano + plan para que
+    // handleInit pueda popular state.emailHash/userEmail correctamente.
+    // Antes: freemium record no tenía email plano ni plan → handleInit no
+    // reconocía el cohort 'freemium' como fuente autoritativa → user_sessions
+    // index no se poblaba y el cron async no tenía destinatario del reporte.
+    email: postPaywall ? emailPlain.trim().toLowerCase() : undefined,
+    plan: postPaywall ? ('gratis' as const) : undefined,
     max_sessions: maxSessions,
     sessions_used: 0,
     granted_at: new Date().toISOString(),
@@ -276,7 +289,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
 
   // Escritura del código al KV (bloqueante: si falla, no seguimos).
   try {
-    await storeAccessCode(env, code, firstName, emailHash);
+    await storeAccessCode(env, code, firstName, emailHash, email);
   } catch (err) {
     console.error('simulator-subscribe:code write critical failure:', err);
     return jsonResponse(
