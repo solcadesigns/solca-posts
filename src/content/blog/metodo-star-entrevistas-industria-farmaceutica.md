@@ -1,6 +1,6 @@
 ---
 title: "Método STAR para candidatos de academia: del registro tesis al registro HR"
-description: "Por qué el registro académico falla en HR corporativo pharma cuando toca responder STAR, y cómo reescribir cinco historias reales de tu doctorado o postdoc para pasar el filtro conductual."
+description: "Por qué el registro académico falla en HR corporativo pharma al responder STAR. Guía para reescribir cinco historias de tesis en formato ganador para el filtro conductual."
 pubDate: 2026-07-13
 updatedDate: 2026-09-14
 heroImage: "/blog/metodo-star-entrevistas-industria-farmaceutica.png"
