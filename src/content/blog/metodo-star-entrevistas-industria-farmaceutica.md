@@ -1,105 +1,151 @@
 ---
-title: "Método STAR en entrevistas farmacéuticas: por qué te descoloca"
-description: "Cómo funciona el método STAR que usan las farmacéuticas LATAM en entrevistas y por qué a candidatos de academia les descoloca. Ejemplos operativos 2026."
+title: "Método STAR para candidatos de academia: del registro tesis al registro HR"
+description: "Por qué el registro académico falla en HR corporativo pharma cuando toca responder STAR, y cómo reescribir cinco historias reales de tu doctorado o postdoc para pasar el filtro conductual."
 pubDate: 2026-07-13
+updatedDate: 2026-09-14
 heroImage: "/blog/metodo-star-entrevistas-industria-farmaceutica.png"
 category: "carreras-pharma"
-tags: ["Método STAR", "Entrevista Pharma", "Preparación Entrevista", "Transición Académica", "HR Corporativo", "Industria Farmacéutica"]
+tags: ["Método STAR", "Entrevista Pharma", "PhD Industria", "Postdoc", "Transición Académica", "HR Corporativo"]
 series: "entrevistas-pharma"
 seriesIndex: 2
 readingMinutes: 8
 ---
 
-STAR no es una técnica de negociación ni una moda de coach de LinkedIn. Es el marco estandarizado que usa HR corporativo de las farmacéuticas top LATAM para evaluar respuestas a preguntas de comportamiento en entrevistas laborales. Un candidato que no conoce el marco entrega respuestas técnicamente correctas pero mal estructuradas y queda fuera en la segunda ronda. Un candidato que domina el marco responde con precisión operativa y avanza. Esta guía cubre qué es STAR, por qué a candidatos de academia les descoloca, y cómo estructurar respuestas STAR con ejemplos reales pharma.
+> **Respuesta corta.** El método STAR (Situación, Tarea, Acción, Resultado) no falla a candidatos de academia por falta de material — falla por **registro comunicativo**. Un doctorando o postdoc está entrenado en narrativa tesis → evidencia → conclusión, de 3 minutos hacia arriba, en primera persona plural. HR corporativo pharma espera narrativa operativa de 60-90 segundos, primera persona singular, con verbo activo y resultado cuantificado. Esta guía enseña a reescribir cinco historias reales de tu doctorado o postdoc en el registro que sí evalúa positivo el HR.
 
-## Qué significa STAR y por qué existe
+Esta pieza asume que ya sabes qué es STAR y cómo se compone la respuesta ideal. Si no, empieza por el hub general [Método STAR en entrevistas pharma: qué significa y cómo aplicarlo](/blog/metodo-star-entrevistas-pharma/) — ahí está la sigla, la proporción 10-10-60-20 y los tres errores que descalifican. Este post asume ese piso y aborda el problema específico del candidato que viene de academia.
 
-STAR es acrónimo de **Situación, Tarea, Acción, Resultado**. Cada respuesta a una pregunta situacional se estructura siguiendo esa secuencia. El evaluador tiene una plantilla mental (a veces literal en el HR de multinacional grande) donde puntúa cada componente por separado. Una respuesta que cubre los cuatro con precisión gana más puntos que una respuesta larga y detallada que solo cubre uno o dos.
+## Por qué el registro académico no rinde en HR corporativo
 
-El método existe porque el HR corporativo necesita evaluación comparativa entre candidatos con criterios reproducibles. Sin marco estructurado, cada evaluador puntúa distinto según intuición. Con STAR, dos evaluadores independientes puntúan la misma respuesta con desviación mínima. Es control de calidad del proceso, no arbitrariedad.
+Cuatro razones convergen. No es falta de talento — es choque de registros comunicativos.
 
-STAR se estandarizó en los años 70 en Estados Unidos y hoy es la referencia dominante en entrevistas conductuales de multinacionales pharma en todo el mundo. En LATAM lo usan Roche, Novartis, MSD, Pfizer, GSK, Sanofi, AstraZeneca, Bayer, J&J y las principales CROs (IQVIA, Parexel, ICON, PPD).
+**Razón uno · La narrativa académica va de contexto a conclusión, la narrativa HR va de acción a resultado.** Un investigador defiende un hallazgo estructurando: aquí está el contexto teórico, aquí la hipótesis, aquí el diseño experimental, aquí los datos, aquí la interpretación. STAR pide lo opuesto: aquí está la situación mínima necesaria, aquí lo que tenía que hacer, aquí lo que hice, aquí el resultado. Cuando un doctorando responde con la primera estructura a una pregunta que pide la segunda, el evaluador HR pierde el hilo antes del minuto uno.
 
-## Por qué descoloca a candidatos de academia
+**Razón dos · La longitud esperada está mal calibrada.** En una defensa de tesis o en un congreso, una respuesta de tres minutos es corta. En STAR, la respuesta ideal dura 60-90 segundos. Un candidato de academia frecuentemente da respuestas de 3-4 minutos que se sienten interminables al evaluador HR — y penalizan puntaje aunque el contenido sea correcto.
 
-Cuatro razones convergen.
+**Razón tres · Faltan historias narradas previamente en formato estructurado.** Un investigador tiene 100 momentos de su carrera que podrían ser respuesta STAR, pero rara vez los ha narrado en formato operativo. Al momento de la entrevista tiene que estructurar la historia mientras la cuenta, y eso genera tropiezos, divagaciones y omisiones de componentes clave (típicamente la Acción individual y el Resultado cuantificado).
 
-**Razón uno · En academia se enseña a comunicar de manera opuesta.** Un investigador académico comunica hallazgos científicos con estructura tesis → evidencia → conclusión. La narrativa es analítica, larga y contextualizada. STAR pide narrativa operativa: qué había, qué te tocaba, qué hiciste, qué pasó. El registro es distinto.
+**Razón cuatro · No se enseña en el sistema formativo LATAM.** STAR no aparece en carreras de biomedicina, farmacia, medicina, biología o química en LATAM. Aparece en programas MBA, en formación interna de HR corporativo y en cursos de coaching profesional. En el feedback de la primera participante beta de nuestro simulador (doctora en biomedicina con cuatro a diez años de experiencia, Argentina) ella escribió literal: "Yo desconocía el método STAR como tal, y lo analiza todo en base a eso". No es un caso aislado; es el patrón dominante entre candidatos LATAM que vienen de academia.
 
-**Razón dos · La expectativa de longitud está mal calibrada.** En academia, una respuesta técnica de tres minutos es normal. En STAR, la respuesta ideal es de 60-90 segundos. Un candidato de academia frecuentemente da respuestas de 3-4 minutos que se sienten interminables al evaluador HR y penalizan puntaje aunque el contenido sea correcto.
+## De "nosotros" a "yo": el trap más común del registro académico
 
-**Razón tres · Falta de historias narradas previamente.** Un investigador tiene 100 momentos de su carrera que podrían ser respuesta STAR, pero rara vez los ha narrado en formato estructurado. Al momento de la entrevista tiene que estructurar la historia mientras la cuenta, y eso genera tropiezos, divagaciones y omisiones de componentes.
+En academia se enseña a distribuir el crédito. Los papers se firman con múltiples autores, los proyectos se describen como esfuerzo del grupo, las decisiones se reportan en pasiva impersonal ("se decidió comparar…"). Ese hábito colisiona directo con STAR, que evalúa **contribución individual verificable**.
 
-**Razón cuatro · No se enseña en el sistema formativo LATAM.** STAR no aparece en carreras de biomedicina, farmacia o medicina en LATAM. Aparece en programas de MBA, en cursos de coaching profesional, y en la formación interna de HR corporativo. Un candidato que viene de academia probablemente escuchó del método por primera vez cuando ya estaba en el proceso de entrevista.
+Cuando un candidato de academia dice "nuestro equipo tenía que resolver…", el evaluador HR no sabe cuál era su rol específico. Cuando dice "se decidió ajustar el protocolo…", el evaluador no sabe si lo decidiste tú o si te enteraste después. La regla operativa: **cada frase de la Acción empieza con verbo en primera persona del singular**. Analicé, coordiné, decidí, ajusté, escalé. Si la decisión fue colectiva, di explícitamente cuál fue tu voto y por qué. La modestia académica se lee en HR como falta de contribución.
 
-En el feedback textual de la primera participante beta de nuestro simulador de entrevistas (doctora en biomedicina con cuatro a diez años de experiencia, Argentina), ella escribió: "Yo desconocía el método STAR como tal, y lo analiza todo en base a eso". Su feedback es la señal más clara del gap: personas técnicamente muy capaces llegan a la entrevista sin conocer el marco que las va a evaluar.
+## Reescribir una historia académica en formato STAR
 
-## Estructura STAR en detalle
+Un ejemplo. Historia académica original, formato tesis:
 
-**S · Situación (10-15 segundos).** Contexto breve del escenario. Qué era el proyecto, qué equipo, qué momento. No es introducción exhaustiva; es el mínimo necesario para que la siguiente parte tenga sentido.
+*"Durante mi tesis doctoral trabajé en un proyecto de citometría de flujo aplicado a caracterización de subpoblaciones linfocíticas en modelos murinos de asma alérgica. El proyecto formaba parte de una colaboración con un grupo francés que aportaba una cohorte animal específica. La metodología original tenía limitaciones que nosotros habíamos identificado desde el diseño, y tuvimos que hacer varios ajustes al protocolo original en función de resultados preliminares que sugerían inconsistencia entre lotes de reactivos. Después de varias iteraciones logramos estabilizar el ensayo y sometimos el manuscrito a Journal of Immunology, que finalmente lo aceptó tras una ronda de revisiones."*
 
-**T · Tarea (10-15 segundos).** Qué te tocaba resolver específicamente a ti. La tarea es individual, no del equipo. Si dices "nuestro equipo tenía que…", el evaluador no sabe cuál era tu rol específico. Reformula a "yo tenía que…".
+Ciento sesenta palabras. Registro tesis. Dos minutos y medio hablado. Sin acción individual clara. Sin resultado cuantificado.
 
-**A · Acción (30-45 segundos).** Qué acciones concretas tomaste. Dos o tres acciones específicas, no una lista larga. Cada acción con verbo activo: analicé, coordiné, decidí, ajusté, escalé. Evita voz pasiva ("se decidió que…") — comunica que no ejecutaste tú.
+La misma historia en formato STAR:
 
-**R · Resultado (10-15 segundos).** Qué pasó. Preferentemente cuantificado. Si no puedes cuantificar, describe el impacto con precisión operativa. Cierra con qué aprendiste si es una historia con giro.
+*"Durante mi doctorado un ensayo de citometría crítico para un manuscrito comenzó a dar resultados inconsistentes tres semanas antes del cierre del sometimiento. Yo era responsable del ensayo y del análisis: tenía que identificar la fuente de la variabilidad y estabilizar el ensayo sin retrasar el sometimiento. Revisé el histórico de calibración del citómetro con el técnico responsable, aislé la variable en el buffer de tinción usando controles conocidos, y ajusté el protocolo con lote de anticuerpo nuevo. El ensayo se estabilizó en cinco días, el manuscrito se sometió en tiempo, y el ajuste al protocolo quedó incorporado como SOP interno del laboratorio."*
 
-Total 60-90 segundos. Cronometra con reloj real las primeras veces que practiques.
+Ciento diez palabras. Setenta y cinco segundos hablado. Cuatro componentes STAR claros. Verbos en primera persona singular. Vocabulario operativo que un evaluador industria reconoce (SOP, protocolo, controles, calibración). Resultado con tres elementos concretos.
 
-## Ejemplo real pharma · pregunta técnica
+Es la misma vivencia. Es la misma persona. Es solo cambio de registro.
 
-**Pregunta del evaluador:** "Cuéntame de una vez que tuviste que resolver un problema técnico bajo presión de tiempo."
+## Las cinco historias que debes tener listas
 
-**Respuesta STAR estructurada:**
+No sirve preparar una sola historia y esperar la pregunta correcta. Preparas cinco historias reales de tu doctorado o postdoc, en formato STAR, cronometradas en voz alta. Con esas cinco cubres el grueso del banco de preguntas conductuales del HR pharma.
 
-*"Durante mi doctorado (Situación), un ensayo de citometría crítico para un manuscrito comenzó a dar resultados inconsistentes tres semanas antes del cierre del sometimiento a la revista. Yo era responsable del ensayo y del análisis (Tarea): tenía que identificar la fuente de la variabilidad y estabilizar el ensayo sin retrasar el sometimiento. Revisé el histórico de calibración del citómetro con el técnico responsable, aislé la variable en el buffer de tinción usando controles conocidos, y ajusté el protocolo con lote de anticuerpo nuevo (Acción). El ensayo se estabilizó en cinco días, el manuscrito se sometió en tiempo, y el ajuste al protocolo quedó incorporado como SOP interno del laboratorio (Resultado)."*
+**Historia 1 · Resolver un problema técnico bajo presión de tiempo.** Un momento donde el reloj corría y tú resolviste algo específico. Ejemplos académicos posibles: ensayo que fallaba antes de un sometimiento, revisión con deadline corto, reactivo agotado tres días antes de un experimento crítico, equipamiento que dejó de calibrar.
 
-Setenta y cinco segundos. Cuatro componentes claros. Vocabulario que un evaluador industria reconoce (SOP, protocolo, controles, calibración). Verbos activos. Resultado con tres elementos concretos.
+**Historia 2 · Trabajar con alguien difícil sin dramatizar.** Un conflicto interpersonal profesional gestionado con madurez. En academia esto suele ser: colaborador que priorizaba distinto, técnico con quien discrepabas en flujo de trabajo, coautor que quería ángulo diferente para el manuscrito. Describe a la persona en términos operativos, no personales. La colaboradora aparece como "priorizaba análisis distintos", no como "conflictiva".
 
-## Ejemplo real pharma · pregunta interpersonal
+**Historia 3 · Decidir con información incompleta.** Un momento donde tuviste que actuar sin certeza total. En academia esto es incómodo porque el hábito es esperar más data. La respuesta HR gana cuando dice "prioricé X sobre Y porque el costo de esperar era mayor que el riesgo del error", no "esperé a tener más data".
 
-**Pregunta del evaluador:** "Cuéntame de una vez que tuviste que trabajar con alguien difícil."
+**Historia 4 · Liderar sin autoridad formal.** Un momento donde alineaste a un grupo sin ser el jefe. Ejemplos académicos: coordinar dos tesistas con enfoques distintos, alinear a técnicos de dos laboratorios en un protocolo compartido, organizar la logística de un curso o workshop, sostener a un becario más junior en un proyecto crítico.
 
-**Respuesta STAR estructurada:**
+**Historia 5 · Aprender de un error propio.** Un error real tuyo, qué hiciste después, qué cambiaste. Esta es la historia más difícil para academia porque la cultura académica premia demostrar competencia y penaliza reconocer errores. En HR corporativo, el evaluador **quiere** oír el error — es la prueba de que puedes autocorregir. Un error genuino y bien contado gana puntos.
 
-*"En un proyecto colaborativo con otro grupo de investigación (Situación), la colaboradora principal priorizaba análisis distintos a los que nuestro equipo consideraba críticos para el manuscrito. Yo tenía que coordinar el análisis final y alinear los criterios de inclusión de figuras (Tarea). Convoqué una reunión bilateral con ella para entender el motivo de la priorización distinta, identifiqué que había un componente que ninguno de los dos había comunicado con claridad, y propuse una división del manuscrito en dos figuras principales — una liderada por su ángulo, otra por el nuestro (Acción). El manuscrito se completó en el timing objetivo, ella quedó como coautora en posición reconocida, y la relación quedó abierta para colaboración futura (Resultado)."*
+Escribe las cinco en formato STAR completo con cronómetro corriendo. Practica cada una en voz alta hasta que fluyan sin tropiezos.
 
-Sesenta y cinco segundos. Sin dramatización. Sin culpabilización. La colaboradora aparece descrita en términos operativos, no personales. La solución muestra pensamiento estratégico y gestión política madura.
+## Práctica hablada, no mental
 
-## Ejemplo real pharma · pregunta de motivación
+Practicar mentalmente no rinde. STAR requiere práctica con voz alta, cronometrada. La razón: mentalmente todos somos elocuentes; en voz alta se descubre dónde tropiezas, dónde te falta vocabulario operativo, cuánto te alargas de más, dónde saltas la Acción individual, dónde te comes el Resultado.
 
-**Pregunta del evaluador:** "¿Por qué quieres cambiar de academia a industria pharma?"
+**Ejercicio mínimo**: graba las cinco historias con el celular la primera vez que las practiques. Escúchalas al día siguiente sin editar. Ese ejercicio calibra tu nivel real. Vas a escuchar cosas que no notaste al hablar — "eh", muletillas, pausas largas, tres versiones distintas de la misma Situación, olvido del Resultado.
 
-**Respuesta afirmativa hacia industria** (no negativa hacia academia):
+Si además del cronómetro y la grabación quieres feedback estructurado por respuesta (scores separados de Técnico, Estructura y Especificidad, más los tres errores STAR más comunes detectados en tus respuestas reales), el [Simulador Solca](https://solcaciencia.com/simulador-entrevistas/#planes) hace exactamente eso con el CV y la vacante que le des. La primera sesión es gratuita.
 
-*"Durante mi doctorado desarrollé foco fuerte en oncología torácica (Situación). En los últimos dos años dediqué tiempo a leer literatura clínica más que preclínica y a participar en seminarios de investigación traslacional (Tarea autoimpuesta). Contacté a dos MSL de oncología para entender el día a día del rol y confirmé que la intersección entre comunicación científica con especialistas y trabajo con evidencia clínica reciente es exactamente lo que me energiza (Acción). Estoy aplicando específicamente a MSL en oncología porque encuentro más valor en ese tipo de trabajo que en continuar bench académico (Resultado)."*
+## Preguntas frecuentes de candidatos de academia sobre STAR
 
-Cero queja sobre academia. Foco en el rol específico. Conexión entre experiencia previa y perfil objetivo. Muestra que la decisión no es impulsiva.
+### ¿STAR aplica a preguntas que no son de comportamiento?
 
-## Preparación operativa antes de la entrevista
+No de forma directa. STAR sirve para preguntas conductuales del tipo "cuéntame de una vez que…". Para preguntas de conocimiento técnico (mecanismo de acción, ICH-GCP, definición de un endpoint) la respuesta es distinta — más corta y sin estructura STAR. Para preguntas hipotéticas ("¿qué harías si…?") puedes anclar la respuesta a un caso real corto y usar solo la Acción y el Resultado, sin forzar Situación completa.
 
-Cinco historias en formato STAR listas para usar. Ni más, ni menos.
+### ¿Cuántas historias STAR necesito preparar realmente?
 
-**Historia 1 · Resolver problema técnico bajo presión.** Un momento donde el reloj corría y tú resolviste algo específico.
+Cinco cubre el grueso. Con menos, hay preguntas conductuales que te toman sin ejemplo. Con más, no las alcanzas a interiorizar en voz alta y llegas a la entrevista con material poco practicado. Cinco historias bien practicadas ganan a diez memorizadas.
 
-**Historia 2 · Trabajar con alguien difícil sin drama.** Un conflicto interpersonal profesional gestionado con madurez.
+### ¿Puedo usar historias de mi tesis en formato STAR o suena "muy académico"?
 
-**Historia 3 · Decidir con información incompleta.** Un momento donde tuviste que actuar sin certeza total.
+Sí puedes, y de hecho es lo esperable si vienes de doctorado. La clave no es el origen académico de la historia — es el registro con el que la cuentas. La reescritura en formato STAR con verbos en primera persona singular y resultado cuantificado convierte una historia de tesis en una historia industria-listenable.
 
-**Historia 4 · Liderar sin autoridad formal.** Un momento donde alineaste a un grupo sin ser el jefe.
+### ¿Qué hago si en mi historia el resultado fue negativo?
 
-**Historia 5 · Aprender de un error propio.** Un error real tuyo, qué hiciste después, qué cambiaste.
+Cuéntalo. HR corporativo valora candidatos que pueden narrar un error propio con lucidez. La estructura ganadora es: Situación, Tarea, Acción, Resultado negativo, qué aprendiste, qué cambiaste después. Cerrar con "aprendí que…" es señal de madurez, no de debilidad.
 
-Escribe las cinco en formato STAR completo con cronómetro corriendo. Practica cada una en voz alta hasta que fluyan sin tropiezos. Con cinco historias interiorizadas llegas cubierto a la mayor parte de lo que van a preguntarte.
+### ¿Necesito practicar en inglés si el rol pide inglés?
 
-## Un error frecuente al practicar
+Sí. Las historias en inglés no son traducción directa. El vocabulario técnico y el registro conversacional cambian. Prepara al menos tres de las cinco historias también en inglés y practícalas cronometradas.
 
-Practicar mentalmente no rinde. STAR requiere práctica hablada con voz alta. La razón: mentalmente todos somos elocuentes; en voz alta se descubre dónde tropezás, dónde te falta vocabulario, cuánto te alargas de más. Grábate la primera vez que practiques cada historia. Escúchalo al día siguiente sin editar. Ese ejercicio es el que calibra el nivel real.
-
-## Resumen operativo
-
-STAR (Situación, Tarea, Acción, Resultado) es el marco estandarizado que usa HR corporativo pharma LATAM para evaluar respuestas de comportamiento en entrevistas. A candidatos de academia les descoloca porque el registro comunicativo es opuesto al académico, la longitud esperada (60-90 segundos) es menor a la académica, faltan historias narradas previamente en formato estructurado, y el método no se enseña en formación biomédica. La preparación operativa es cinco historias en formato STAR practicadas en voz alta con cronómetro. Esas cinco historias cubren el grueso de las preguntas de comportamiento típicas.
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "¿STAR aplica a preguntas que no son de comportamiento?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No de forma directa. STAR sirve para preguntas conductuales. Para preguntas de conocimiento técnico la respuesta es distinta. Para preguntas hipotéticas puedes anclar la respuesta a un caso real corto y usar solo Acción y Resultado."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Cuántas historias STAR necesito preparar?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Cinco cubre el grueso del banco de preguntas conductuales. Con menos, hay preguntas que te toman sin ejemplo. Con más, no las alcanzas a interiorizar. Cinco historias bien practicadas ganan a diez memorizadas."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Puedo usar historias de mi tesis en formato STAR?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Sí. La clave no es el origen académico de la historia sino el registro con el que la cuentas. La reescritura en formato STAR con verbos en primera persona singular y resultado cuantificado convierte una historia de tesis en una historia industria-listenable."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Qué hago si mi historia terminó en un resultado negativo?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Cuéntalo. HR corporativo valora candidatos que pueden narrar un error propio con lucidez. La estructura ganadora es Situación, Tarea, Acción, Resultado negativo, qué aprendiste, qué cambiaste después."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Necesito practicar historias STAR en inglés?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Sí si el rol lo pide. Las historias en inglés no son traducción directa: el vocabulario técnico y el registro conversacional cambian. Prepara al menos tres de las cinco historias también en inglés y practícalas cronometradas."
+      }
+    }
+  ]
+}
+</script>
 
 ---
 
-**Estamos preparando el lanzamiento de Solca Interview Simulator**, la herramienta abierta que te da retroalimentación puntual sobre tus respuestas de entrevista pharma en formato STAR. Suscríbete al newsletter de Solca Ciencia respondiendo al Quiz Match y te avisamos cuando abra al público. [Pruébalo en solcaciencia.com/quiz-rol](https://solcaciencia.com/quiz-rol).
+**¿Ya reescribiste tus cinco historias de tesis en formato STAR y quieres feedback estructurado?** El [Simulador Solca](https://solcaciencia.com/simulador-entrevistas/#planes) te hace preguntas conductuales con el CV y la vacante que le des, y te devuelve un reporte con scores separados por Técnico, Estructura y Especificidad — más los tres errores STAR más comunes que detecte en tus respuestas. La primera sesión es gratuita, sin tarjeta.
+
+Para el marco general del método (sigla, proporción 10-10-60-20, tres errores que descalifican), revisa el hub [Método STAR en entrevistas pharma: qué significa y cómo aplicarlo](/blog/metodo-star-entrevistas-pharma/).

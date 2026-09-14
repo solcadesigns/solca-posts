@@ -14,7 +14,7 @@ Tienes 30 días entre la primera aplicación y la posible entrevista para un rol
 
 ## Semana 1 · Vocabulario y contexto del rol
 
-Objetivo: dominar el vocabulario técnico y regulatorio específico del rol y la compañía. Sin este piso, la entrevista técnica te descoloca en menos de 10 minutos.
+Objetivo: dominar el vocabulario técnico y regulatorio específico del rol y la compañía. Sin este piso, la entrevista técnica te deja fuera en menos de 10 minutos.
 
 **Día 1-2 · Estudia el rol específico en la compañía específica.** Busca la vacante original en LinkedIn Jobs. Lee la descripción completa, no solo el título. Anota las 20 palabras técnicas que aparecen. Si la vacante es MSL en oncología, esas 20 palabras son tu glosario base.
 

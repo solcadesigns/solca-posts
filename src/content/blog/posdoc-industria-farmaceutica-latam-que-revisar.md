@@ -40,7 +40,7 @@ El posdoc habla con vocabulario de laboratorio: transfección, purificación, se
 
 Un posdoc está acostumbrado a procesos de aplicación académicos: convocatorias abiertas con deadline claro, evaluación por comité con criterio publicado, seminario público como parte del proceso, negociación colegiada. El proceso pharma industrial es distinto: reclutamiento continuo con timing dependiente del pipeline interno, evaluación estructurada con métricas HR estandarizadas, entrevistas de comportamiento con método STAR, decisiones tomadas por gerentes con lógica comercial además de técnica.
 
-Lo que descoloca más al posdoc es el **timing** y el **feedback opaco**. Aplicar y no recibir respuesta durante seis semanas es normal en industria; en academia se lee como rechazo silencioso. Recibir "seguimos en proceso" durante dos meses es normal; en academia se interpreta como falta de decisión. Prepararse para ese ritmo evita frustración y decisiones precipitadas.
+Lo que más confunde al posdoc es el **timing** y el **feedback opaco**. Aplicar y no recibir respuesta durante seis semanas es normal en industria; en academia se lee como rechazo silencioso. Recibir "seguimos en proceso" durante dos meses es normal; en academia se interpreta como falta de decisión. Prepararse para ese ritmo evita frustración y decisiones precipitadas.
 
 ## Desventaja tres · Autoevaluación imprecisa del inglés operativo
 

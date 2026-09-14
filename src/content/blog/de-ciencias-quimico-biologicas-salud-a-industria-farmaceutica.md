@@ -51,7 +51,7 @@ Para más contexto sobre estas áreas y otras rutas, revisa el análisis de las 
 
 **Aplicar sin adaptar la narrativa al rol.** El postulante que manda el mismo CV a farmacovigilancia, a un rol de MSL y a un puesto regulatorio suele quedar fuera de los tres. Cada rol pide una traducción distinta de la misma formación. Un PhD con perfil médico o de ciencia clínica sólida puede entrar directamente a MSL si adapta bien el CV y prepara la conversación; un QFB recién egresado difícilmente lo hará y le rinde más apuntar primero a farmacovigilancia o calidad. La trampa no es el rol, es aplicar sin ajustar.
 
-**Ignorar el inglés operativo hablado.** Puedes leer papers en inglés a diario y aun así descolocarte en la primera ronda con manager regional. El filtro real no es la comprensión, es la producción hablada.
+**Ignorar el inglés operativo hablado.** Puedes leer papers en inglés a diario y aun así quedar fuera en la primera ronda con manager regional. El filtro real no es la comprensión, es la producción hablada.
 
 **Vender el título académico como argumento principal.** Un PhD, maestría o título profesional no vende por sí solo. Lo que vende es qué sabes hacer con ese título aplicado al problema del rol.
 

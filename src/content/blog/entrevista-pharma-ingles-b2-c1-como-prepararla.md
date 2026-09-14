@@ -1,6 +1,6 @@
 ---
 title: "Entrevista pharma en inglés: cómo prepararla de B2 a C1"
-description: "Por qué la ronda en inglés descoloca a perfiles técnicos sólidos en pharma LATAM, cómo calibrar tu nivel operativo en 10 minutos y qué preparar antes."
+description: "Por qué la ronda en inglés deja fuera a perfiles técnicos sólidos en pharma LATAM, cómo calibrar tu nivel operativo en 10 minutos y qué preparar antes."
 pubDate: 2026-07-31
 heroImage: "/blog/entrevista-pharma-ingles-b2-c1-como-prepararla.png"
 category: "carreras-pharma"
@@ -10,9 +10,9 @@ seriesIndex: 13
 readingMinutes: 7
 ---
 
-La entrevista en inglés es el momento más predecible y menos preparado del proceso de selección pharma en LATAM. Si eres recién egresado o profesional de biomedicina, QFB o un área afín, y ya pasaste el filtro técnico en español, la siguiente llamada — con un manager regional o global — se hace en inglés. Ahí se descolocan candidatos con perfil técnico sólido. No por falta de conocimiento: por falta de producción hablada. Esta guía explica por qué ocurre, cómo calibrar tu nivel operativo real en diez minutos y cómo preparar la ronda cuando el rol pide C1 y tú estás en B2.
+La entrevista en inglés es el momento más predecible y menos preparado del proceso de selección pharma en LATAM. Si eres recién egresado o profesional de biomedicina, QFB o un área afín, y ya pasaste el filtro técnico en español, la siguiente llamada — con un manager regional o global — se hace en inglés. Ahí quedan fuera candidatos con perfil técnico sólido. No por falta de conocimiento: por falta de producción hablada. Esta guía explica por qué ocurre, cómo calibrar tu nivel operativo real en diez minutos y cómo preparar la ronda cuando el rol pide C1 y tú estás en B2.
 
-## Por qué la ronda en inglés descoloca a perfiles técnicos sólidos
+## Por qué la ronda en inglés deja fuera a perfiles técnicos sólidos
 
 En biomedicina, química farmacéutica y áreas afines, la mayoría lee papers en inglés todos los días desde la carrera. La comprensión lectora se ejercita a diario. La producción hablada, en cambio, rara vez sale de conferencias esporádicas o clases de posgrado.
 
@@ -62,7 +62,7 @@ Y mientras entrenas, sigue aplicando. La calibración honesta más un plan de pr
 
 ## Resumen operativo
 
-La ronda en inglés descoloca porque evalúa producción hablada en perfiles que ejercitan comprensión lectora — la asimetría que el EF EPI 2025 documenta para México: lectura 455, expresión oral 413. Tres pruebas de calibración (proyecto en tres minutos, respuesta STAR en 90 segundos, webinar sin subtítulos) devuelven tu nivel operativo real en el MCER. La preparación efectiva combina estructura y producción: seis a ocho historias STAR en inglés de 90 segundos, glosario técnico propio, y ocho semanas de conversación y simulacros grabados si el rol pide C1 y estás en B2. En el CV, nivel MCER específico y honesto — la autodeclaración inflada se desarma en la primera llamada.
+La ronda en inglés deja fuera a perfiles técnicos porque evalúa producción hablada en candidatos que ejercitan comprensión lectora — la asimetría que el EF EPI 2025 documenta para México: lectura 455, expresión oral 413. Tres pruebas de calibración (proyecto en tres minutos, respuesta STAR en 90 segundos, webinar sin subtítulos) devuelven tu nivel operativo real en el MCER. La preparación efectiva combina estructura y producción: seis a ocho historias STAR en inglés de 90 segundos, glosario técnico propio, y ocho semanas de conversación y simulacros grabados si el rol pide C1 y estás en B2. En el CV, nivel MCER específico y honesto — la autodeclaración inflada se desarma en la primera llamada.
 
 ---
 
