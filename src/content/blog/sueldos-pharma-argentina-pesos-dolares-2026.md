@@ -166,6 +166,4 @@ Las multinacionales atan la revisión a IPC del INDEC o a paritaria del sector, 
 
 ---
 
-**¿Sabes negociar tu sueldo pharma en Argentina con marco?** El [Simulador Solca](https://solcaciencia.com/simulador-entrevistas/#planes) te practica la conversación de banda salarial con reclutador y te devuelve un reporte con lo que sí conviene decir y lo que conviene reservar para siguientes rondas. La primera sesión es gratuita — 5 preguntas de screening con reclutador, sin tarjeta.
-
-Antes de la conversación de negociación, revisa que tu CV sostenga la banda que vas a declarar con [revisar-cv](https://solcaciencia.com/revisar-cv).
+**¿Sabes negociar tu sueldo pharma en Argentina con marco?** El [Simulador Solca](https://solcaciencia.com/simulador-entrevistas/#planes) te practica la conversación de banda salarial con reclutador y te devuelve un reporte con lo que sí conviene decir y lo que conviene reservar para siguientes rondas. La primera sesión es gratuita — 5 preguntas de screening con reclutador, sin tarjeta. [Empieza aquí](https://solcaciencia.com/simulador-entrevistas/#planes).

@@ -168,6 +168,4 @@ No de forma directa. Preguntas hipotéticas piden un marco de razonamiento, no u
 
 ---
 
-**¿Tu STAR aguanta a un reclutador real en pharma?** El [Simulador Solca](https://solcaciencia.com/simulador-entrevistas/#planes) te hace preguntas behavioral con el CV y la vacante que le des, y te devuelve un reporte con scores de Técnico, Estructura y Especificidad — más los tres errores STAR que detecte en tus respuestas. La primera sesión es gratuita, sin tarjeta.
-
-Si además quieres revisar que tu CV sostenga los ejemplos que vas a contar, la herramienta gratuita [revisar-cv](https://solcaciencia.com/revisar-cv) te da diagnóstico en menos de un minuto.
+**¿Tu STAR aguanta a un reclutador real en pharma?** El [Simulador Solca](https://solcaciencia.com/simulador-entrevistas/#planes) te hace preguntas behavioral con el CV y la vacante que le des, y te devuelve un reporte con scores de Técnico, Estructura y Especificidad — más los tres errores STAR que detecte en tus respuestas. La primera sesión (5 preguntas de screening con reclutador) es gratuita, sin tarjeta. [Empieza aquí](https://solcaciencia.com/simulador-entrevistas/#planes).

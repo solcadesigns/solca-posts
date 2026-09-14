@@ -149,6 +149,4 @@ El screening (10-15 min) filtra por criterios operativos: años exactos, ubicaci
 
 ---
 
-**¿Tu screening aguanta un reclutador pharma real?** El [Simulador Solca](https://solcaciencia.com/simulador-entrevistas/#planes) tiene una etapa dedicada de **Screening inicial con reclutador (5 preguntas)** que replica exactamente este formato: motivación, fit, CV, banda salarial y disponibilidad. Recibes un reporte con scores de Técnico, Estructura y Especificidad, más los errores comunes que detecte en tus respuestas. La primera sesión es gratuita, sin tarjeta.
-
-Si tu CV aún no refleja el nivel de la banda salarial que quieres declarar, revisa que sostenga el diagnóstico con [revisar-cv](https://solcaciencia.com/revisar-cv) antes del screening.
+**¿Tu screening aguanta un reclutador pharma real?** El [Simulador Solca](https://solcaciencia.com/simulador-entrevistas/#planes) tiene una etapa dedicada de **Screening inicial con reclutador (5 preguntas)** que replica exactamente este formato: motivación, fit, CV, banda salarial y disponibilidad. Recibes un reporte con scores de Técnico, Estructura y Especificidad, más los errores comunes que detecte en tus respuestas. La primera sesión es gratuita, sin tarjeta. [Empieza aquí](https://solcaciencia.com/simulador-entrevistas/#planes).
