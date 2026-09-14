@@ -1,7 +1,7 @@
 ---
 title: "Sueldos pharma en Argentina 2026: cómo leerlos en pesos y en dólares"
 description: "Cómo calcular un sueldo pharma real en Argentina: base + bono + variable + beneficios + inflación + tipo de cambio (oficial, MEP, CCL). Marco por rol MSL, CRA, Regulatory."
-pubDate: 2026-09-17
+pubDate: 2026-09-14
 heroImage: "/blog/sueldos-pharma-argentina-pesos-dolares-2026.png"
 category: "carreras-pharma"
 tags: ["Salarios", "Argentina", "MSL", "CRA", "Regulatory", "Pharma LATAM", "Compensación"]

@@ -1,7 +1,7 @@
 ---
 title: "Screening con reclutador pharma: qué preguntar y qué NO revelar"
 description: "Guía para el screening telefónico de 10-15 min con recruiter pharma. Preguntas típicas, qué te evalúa, tres errores que descalifican y qué no revelar en la primera llamada."
-pubDate: 2026-09-16
+pubDate: 2026-09-14
 heroImage: "/blog/screening-reclutador-pharma-primeros-15-minutos.png"
 category: "carreras-pharma"
 tags: ["Entrevistas", "Screening", "Reclutador", "CRA", "MSL", "Pharma LATAM"]
