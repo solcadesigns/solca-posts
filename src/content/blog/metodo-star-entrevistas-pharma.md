@@ -8,6 +8,7 @@ category: "carreras-pharma"
 tags: ["Entrevistas", "STAR", "Behavioral", "CRA", "MSL", "Pharma LATAM", "Clinical Research"]
 series: "guia-seo"
 readingMinutes: 7
+cta: "simulador"
 ---
 
 > **Respuesta corta.** STAR es la sigla de **Situación, Tarea, Acción, Resultado**: el patrón que espera el entrevistador behavioral en pharma. Reparte tu respuesta 10 % Situación, 10 % Tarea, 60 % Acción y 20 % Resultado, en 90 segundos a 2 minutos hablados. Sin cifra o consecuencia al cierre, la respuesta queda incompleta.

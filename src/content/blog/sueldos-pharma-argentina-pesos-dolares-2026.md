@@ -7,6 +7,7 @@ category: "carreras-pharma"
 tags: ["Salarios", "Argentina", "MSL", "CRA", "Regulatory", "Pharma LATAM", "Compensación"]
 series: "guia-seo"
 readingMinutes: 8
+cta: "simulador"
 ---
 
 > **Respuesta corta.** Un sueldo pharma en Argentina 2026 no se lee bien en un solo número. Se descompone en cinco piezas — **base bruta + bono anual + variable + beneficios (prepaga, auto, comida, home office) + ajuste por inflación** — y se convierte al tipo de cambio que corresponda al gasto del empleado (oficial para servicios locales, MEP o CCL para ahorro en dólares). Un rol MSL sponsor multinacional suele quedar por encima de un CRA senior de CRO grande, pero la brecha se define más por el paquete total que por la base. Las encuestas globales del sector no publican breakout granular para LATAM, así que las cifras absolutas hay que leerlas siempre con fecha y con tipo de cambio del día.

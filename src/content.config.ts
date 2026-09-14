@@ -33,6 +33,12 @@ const blog = defineCollection({
     canonical: z.string().url().optional(),
     // Estimated reading time in minutes — overridable; templates compute fallback if missing.
     readingMinutes: z.number().int().positive().optional(),
+    // CTA global del post (aside al pie que renderiza BlogPostLayout).
+    // Se elige por eje editorial (14 sept 2026):
+    //   'simulador'  → posts sobre entrevistas, preparación, preguntas por rol, salarios que llevan a negociación
+    //   'quiz-rol'   → posts que comparan PM (clínico) / MSL / Clinical Research sin ancla a entrevistas
+    //   'revisar-cv' → posts sobre CV en sí (default legacy · fallback conservador)
+    cta: z.enum(['simulador', 'revisar-cv', 'quiz-rol']).optional().default('revisar-cv'),
   }),
 });
 

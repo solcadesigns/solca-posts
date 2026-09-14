@@ -9,6 +9,7 @@ tags: ["Entrevista Pharma", "Método STAR", "Transición Académica", "Industria
 series: "entrevistas-pharma"
 seriesIndex: 1
 readingMinutes: 7
+cta: "simulador"
 ---
 
 Una entrevista para industria farmacéutica seria en LATAM no se parece a una entrevista de posdoc, ni a una defensa de tesis, ni a una charla de congreso. Sigue una lógica distinta y espera un formato de respuesta específico. Los candidatos que vienen de academia y no han estudiado esa lógica llegan con respuestas correctas técnicamente pero mal calibradas al formato esperado, y quedan fuera antes de la segunda ronda. Esta guía revisa seis preguntas prototípicas del proceso pharma industrial LATAM, por qué dejan fuera a quien viene de academia, y cómo abordarlas con el marco que sí funciona.

@@ -9,6 +9,7 @@ tags: ["Método STAR", "Entrevista Pharma", "PhD Industria", "Postdoc", "Transic
 series: "entrevistas-pharma"
 seriesIndex: 2
 readingMinutes: 8
+cta: "simulador"
 ---
 
 > **Respuesta corta.** El método STAR (Situación, Tarea, Acción, Resultado) no falla a candidatos de academia por falta de material — falla por **registro comunicativo**. Un doctorando o postdoc está entrenado en narrativa tesis → evidencia → conclusión, de 3 minutos hacia arriba, en primera persona plural. HR corporativo pharma espera narrativa operativa de 60-90 segundos, primera persona singular, con verbo activo y resultado cuantificado. Esta guía enseña a reescribir cinco historias reales de tu doctorado o postdoc en el registro que sí evalúa positivo el HR.

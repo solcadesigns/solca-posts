@@ -129,11 +129,31 @@ const articleSchema = {
             <span class="dot"></span>
             <span>¿Listo para el siguiente paso?</span>
           </div>
-          <h2>Analiza tu CV gratis con Solca</h2>
-          <p>
-            Subes tu CV, respondes 4 preguntas y recibes feedback estructurado por la lente de un reclutador pharma LATAM. Sin email obligatorio, sin redirecciones.
-          </p>
-          <a href="/revisar-cv" class="btn btn-primary">Revisar mi CV →</a>
+          {data.cta === 'simulador' ? (
+            <>
+              <h2>Practica tu entrevista pharma con feedback objetivo</h2>
+              <p>
+                El Simulador Solca te hace preguntas con el CV y la vacante que le des, y te devuelve un reporte con scores de Técnico, Estructura y Especificidad. La primera sesión (5 preguntas de screening con reclutador) es gratuita, sin tarjeta.
+              </p>
+              <a href="/simulador-entrevistas/#planes" class="btn btn-primary">Empezar simulador →</a>
+            </>
+          ) : data.cta === 'quiz-rol' ? (
+            <>
+              <h2>¿Qué rol pharma encaja con tu perfil?</h2>
+              <p>
+                8 preguntas · te mapea a Project Manager clínico, MSL o Clinical Research con la ruta de preparación recomendada.
+              </p>
+              <a href="/quiz-rol" class="btn btn-primary">Empezar quiz →</a>
+            </>
+          ) : (
+            <>
+              <h2>Analiza tu CV gratis con Solca</h2>
+              <p>
+                Subes tu CV, respondes 4 preguntas y recibes feedback estructurado por la lente de un reclutador pharma LATAM. Sin email obligatorio, sin redirecciones.
+              </p>
+              <a href="/revisar-cv" class="btn btn-primary">Revisar mi CV →</a>
+            </>
+          )}
         </aside>
 
         {data.updatedDate && (

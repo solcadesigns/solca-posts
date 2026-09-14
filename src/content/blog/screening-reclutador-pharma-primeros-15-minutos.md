@@ -7,6 +7,7 @@ category: "carreras-pharma"
 tags: ["Entrevistas", "Screening", "Reclutador", "CRA", "MSL", "Pharma LATAM"]
 series: "guia-seo"
 readingMinutes: 7
+cta: "simulador"
 ---
 
 > **Respuesta corta.** El screening con reclutador pharma dura entre 10 y 15 minutos y **no evalúa tu ciencia**: valida que tu experiencia declarada, tu ubicación, tu disponibilidad de viaje y tus pretensiones salariales encajen con el brief que le dio el sponsor o el CRO. La regla operativa: responder específico en las cinco cosas que sí evalúa, y **no revelar** número exacto de pretensión salarial ni razones negativas de salida en la primera llamada.
