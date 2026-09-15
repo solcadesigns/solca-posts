@@ -17,11 +17,9 @@ _Refrescado 14 sep 2026 (tarde)._ **Nuevo eje editorial: CTA principal → simul
 
 | # | Fecha objetivo | Origen | Keyword primary tentativa | Slug propuesto | Cluster | CTA |
 |---|---|---|---|---|---|---|
-| ~~1~~ | Jue 17 sept 2026 | GSC "msl tipo de cambio" 16 imp + país #1 Argentina | sueldo msl argentina en dolares | sueldos-pharma-argentina-pesos-dolares-2026 | B (salarios) | simulador | **→ En review (pieza extra Cowork 14 sept)** |
 | 2 | Vie 16 oct 2026 | GSC "¿qué innovación ich gcp e6(r3)...?" 3 imp pos 4 + entry cra | preguntas entrevista tecnica cra ich gcp | preguntas-entrevista-tecnica-cra-ich-gcp-e6-r3 | E (técnicas) | simulador |
-| ~~3~~ | Mié 16 sept 2026 | feedback 4c48cd1d + 0e40323e (dolor: mismatch etapa + qué averiguar antes) | screening reclutador pharma que preguntar | screening-reclutador-pharma-primeros-15-minutos | D (etapa) | simulador | **→ En review (pieza extra Cowork 14 sept)** |
 | 4 | Vie 30 oct 2026 | GSC "star respuestas" 14 imp + "respuesta star" 13 imp + feedback interno | metodo star entrevista msl ejemplos | metodo-star-entrevista-msl-cinco-ejemplos | A (STAR) | simulador |
-| 5 | Vie 6 nov 2026 | GSC vertical ganador salarios + hueco PM | salario product manager pharma latam | salario-product-manager-pharma-latam-2026 | B (salarios) | simulador |
+| 5 | Vie 6 nov 2026 | GSC vertical ganador salarios + hueco PM clínico | salario project manager pharma latam | salario-project-manager-clinico-pharma-latam-2026 | B (salarios) | simulador |
 | 6 | Vie 13 nov 2026 | feedback 4c48cd1d (dolor: "respuesta vaga" vs "tesis") | detalle respuesta entrevista pharma | cuanto-detalle-dar-respuestas-entrevista-pharma | F (comunicación) | simulador |
 | 7 | Vie 20 nov 2026 | intent hiring manager pharma + baja natural a Básico | entrevista hiring manager pharma preguntas | entrevista-hiring-manager-pharma-ocho-preguntas | D (etapa) | simulador |
 | 8 | Vie 27 nov 2026 | dolor 3 · transición academia | phd sin experiencia pharma tres rutas | phd-sin-experiencia-industria-pharma-tres-rutas | C (entrar) | simulador |
@@ -170,7 +168,13 @@ Nota (27 jul 2026): la fecha objetivo del backlog decía "Vie 8 ago 2026", pero 
 
 ## Publicados
 
-_ninguno aún_
+| Slug | pubDate | Cluster | CTA aside | Origen |
+|---|---|---|---|---|
+| metodo-star-entrevistas-pharma (fix P0) | 2026-06-24 (updated 14 sept) | A (STAR) | simulador | Fix P0 corpus existente GSC 194 imp / 1 click |
+| screening-reclutador-pharma-primeros-15-minutos | 2026-09-14 | D (etapa) | simulador | Pieza extra Cowork · dolor feedback interno |
+| sueldos-pharma-argentina-pesos-dolares-2026 | 2026-09-14 | B (salarios) | simulador | Pieza extra Cowork · país #1 ARG |
+| metodo-star-entrevistas-industria-farmaceutica (rewrite ángulo academia) | 2026-07-13 (updated 14 sept) | A (STAR · PhD/postdoc) | simulador | Diferenciar hub STAR duplicado |
+| preguntas-entrevista-industria-farmaceutica-descolocan (updated title + CTA) | 2026-07-13 (updated 14 sept) | Preguntas académicas | simulador | Retirar "descolocar" + CTA simulador |
 
 ---
 

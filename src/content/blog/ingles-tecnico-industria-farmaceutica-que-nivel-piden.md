@@ -32,7 +32,7 @@ Los niveles del Marco Común Europeo de Referencia (MCER) — A1, A2, B1, B2, C1
 
 **Senior CRA y Lead CRA.** C1 en la práctica por exposición a estudios regionales LATAM donde el idioma común de trabajo interno es inglés.
 
-**Product Manager y Brand Assistant.** B2 mínimo. Menor exposición internacional que MSL o CRA, pero presentaciones a headquarters requieren inglés fluido. Directores de Marketing usan C1.
+**Project Manager clínico.** C1 en la práctica. Comunicación permanente con sponsor global, calls semanales o quincenales con project lead global, reportes en inglés. B2 alcanza para roles regionales locales pero limita crecimiento a posiciones que reportan a headquarters.
 
 **HEOR y Market Access.** C1 mínimo, con muchos senior en C2 funcional. La producción escrita (manuscritos, dossiers de valor, presentaciones a pagadores globales) exige precisión técnica avanzada.
 

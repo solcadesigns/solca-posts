@@ -32,7 +32,7 @@ Lo que aparece consistentemente en el gap entre academia e industria pharma es q
 
 ## Brecha 3 · Qué rol específico atacar
 
-Un doctor en biomedicina llega a industria y descubre que hay al menos ocho roles distintos donde su perfil podría encajar: Medical Science Liaison (MSL), Clinical Research Associate (CRA), Product Manager, Medical Affairs, Regulatory Affairs, Market Access, Health Economics Outcomes Research (HEOR), Clinical Research Manager. Cada uno con requisitos, salarios y trayectorias distintas.
+Un doctor en biomedicina llega a industria y descubre que hay al menos ocho roles distintos donde su perfil podría encajar: Medical Science Liaison (MSL), Clinical Research Associate (CRA), Project Manager clínico, Medical Affairs, Regulatory Affairs, Market Access, Health Economics Outcomes Research (HEOR), Clinical Research Manager. Cada uno con requisitos, salarios y trayectorias distintas.
 
 La respuesta natural es "aplico a todos y veo cuál me responde". Ese enfoque tiene el peor rendimiento posible. Es el arquetipo que aplica a diez posiciones distintas con el mismo CV y no recibe respuesta de ninguna.
 

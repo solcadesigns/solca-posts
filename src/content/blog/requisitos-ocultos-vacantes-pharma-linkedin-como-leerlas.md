@@ -35,7 +35,7 @@ Un mapa rápido por rol:
 | CRA (Clinical Research Associate) | GCP, ICH-E6 | Good Clinical Practice; guía internacional para conducir ensayos clínicos. |
 | Regulatory Affairs | COFEPRIS, INVIMA, ANMAT, ANVISA, EMA | Agencias regulatorias de México, Colombia, Argentina, Brasil y Europa. |
 | Medical Writing | ICH-E3, ICMJE | Estructura de informes de estudios clínicos; recomendaciones editoriales para publicaciones biomédicas. |
-| Product Manager pharma | brand plan, launch, forecast | Vocabulario del ciclo comercial de un producto farmacéutico. |
+| Project Manager clínico | monitoring plan, enrollment, milestones, sponsor, budget del estudio | Vocabulario de coordinación operativa de ensayos clínicos multi-sitio. |
 | Pharmacovigilance | ICSR, MedDRA, PSUR | Reporte individual de eventos adversos; diccionario médico regulatorio; informe periódico de seguridad. |
 
 La lectura útil: antes de aplicar, abre tres vacantes similares y anota las siglas que aparecen en las tres. Esas siglas tienen que aparecer en tu CV en el primer bloque —rol actual y experiencia inmediata—, no enterradas al final. Si vienes de academia y aún no las tienes, la [guía de cinco puertas reales de entrada a pharma en LATAM](https://solcaciencia.com/blog/trabajar-industria-farmaceutica-sin-experiencia-latam) explica cómo sumar certificaciones cortas verificables (GCP, ICH-E6) antes de aplicar.

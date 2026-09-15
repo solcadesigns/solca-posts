@@ -54,7 +54,7 @@ En pharma industrial serio, muchas posiciones se evalúan con entrevista complet
 
 Ocho semanas antes de la primera aplicación real.
 
-**Semanas 1-2 · Mapeo de rol.** Con la matriz de ocho roles pharma (MSL, CRA, Product Manager, HEOR, Clinical Research Manager, Regulatory Affairs, Medical Affairs, Market Access), evalúa cuáles se ajustan a tu perfil de posdoc según formación, área terapéutica de tu experiencia, tolerancia a viajar y comodidad con presentación pública. Descarta explícitamente cinco o seis roles. Quedan dos o tres candidatos reales.
+**Semanas 1-2 · Mapeo de rol.** Con la matriz de ocho roles pharma (MSL, CRA, Project Manager clínico, HEOR, Clinical Research Manager, Regulatory Affairs, Medical Affairs, Market Access), evalúa cuáles se ajustan a tu perfil de posdoc según formación, área terapéutica de tu experiencia, tolerancia a viajar y comodidad con presentación pública. Descarta explícitamente cinco o seis roles. Quedan dos o tres candidatos reales.
 
 **Semanas 3-4 · Extracción de vocabulario.** Cinco vacantes reales por rol candidato. Veinte palabras técnicas por rol. Glosario personal escrito.
 

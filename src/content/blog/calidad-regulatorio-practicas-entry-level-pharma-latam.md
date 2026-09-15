@@ -60,7 +60,7 @@ Cuatro cosas concretas, derivadas de lo que estos postings pidieron por escrito.
 
 **Sube prácticas y servicio social a la sección de experiencia.** Con empresa, fechas y funciones, no como línea suelta al final. Cuando el posting pide un año, esa sección es tu argumento.
 
-Estas tres rutas no tienen el estatus social de MSL (Medical Science Liaison) o Product Manager, y por eso rara vez se recomiendan. Tienen procesos formales, convenio o contrato documentable, y una trayectoria que se describe con nombres de puestos reales. Para alguien en primer año post-graduación o en semestres avanzados, eso pesa más que el título del rol.
+Estas tres rutas no tienen el estatus social de MSL (Medical Science Liaison) o Project Manager clínico, y por eso rara vez se recomiendan. Tienen procesos formales, convenio o contrato documentable, y una trayectoria que se describe con nombres de puestos reales. Para alguien en primer año post-graduación o en semestres avanzados, eso pesa más que el título del rol.
 
 ---
 

@@ -39,7 +39,7 @@ En orden de impacto.
 
 **Medical Affairs y MSL.** Impacto medio. Más estudios implican más publicaciones y más advisory boards científicos que MSL apoyan.
 
-**Product Manager, Market Access, HEOR.** Impacto bajo directamente por el anuncio; medio en el mediano plazo (2028+) cuando los productos investigados lleguen a aprobación y lanzamiento comercial.
+**Project Manager clínico, Market Access, HEOR.** Impacto directo alto para Project Manager clínico (más ensayos = más posiciones de coordinación); medio en el mediano plazo (2028+) para Market Access y HEOR cuando los productos investigados lleguen a aprobación y lanzamiento comercial.
 
 ## Ruta operativa para candidatos que quieran capitalizar
 

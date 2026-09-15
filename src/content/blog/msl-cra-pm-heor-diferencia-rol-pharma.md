@@ -2,15 +2,19 @@
 title: "MSL, CRA, PM y HEOR: qué hace cada rol pharma y cuál te conviene"
 description: "Comparación operativa de los cuatro roles más buscados en pharma industrial LATAM: día típico, requisitos reales y ruta de entrada 2026."
 pubDate: 2026-07-13
+updatedDate: 2026-09-15
 heroImage: "/blog/msl-cra-pm-heor-diferencia-rol-pharma.png"
 category: "carreras-pharma"
-tags: ["MSL", "CRA", "Product Manager", "HEOR", "Roles Pharma", "Carrera Farmacéutica"]
+tags: ["MSL", "CRA", "Project Manager clínico", "HEOR", "Roles Pharma", "Clinical Operations"]
 series: "roles-pharma"
 seriesIndex: 1
 readingMinutes: 8
+cta: "quiz-rol"
 ---
 
-Cuatro roles concentran la mayoría de las vacantes de entrada y crecimiento en industria pharma LATAM: Medical Science Liaison (MSL), Clinical Research Associate (CRA), Product Manager (PM) y Health Economics Outcomes Research (HEOR). Los cuatro atraen candidatos con formación biomédica o farmacéutica, y los cuatro son territorio distinto en cuanto a día típico, requisitos, salario y trayectoria. Esta guía compara los cuatro con criterio operativo para que puedas descartar rápido dos o tres y enfocar tu preparación en el que sí encaja.
+Cuatro roles concentran la mayoría de las vacantes de entrada y crecimiento en industria pharma LATAM: Medical Science Liaison (MSL), Clinical Research Associate (CRA), Project Manager clínico (PM) y Health Economics Outcomes Research (HEOR). Los cuatro atraen candidatos con formación biomédica o farmacéutica, y los cuatro son territorio distinto en cuanto a día típico, requisitos, salario y trayectoria. Esta guía compara los cuatro con criterio operativo para que puedas descartar rápido dos o tres y enfocar tu preparación en el que sí encaja.
+
+> **Nota sobre el rol "PM".** En pharma coexisten dos roles que se abrevian PM: **Project Manager clínico** (clinical operations, coordinación de ensayos, cercano a CRA) y **Product Manager** (marketing farmacéutico, brand plan, comercial). Esta guía cubre el primero — el Project Manager clínico — que es el rol que Solca acompaña con contenido y simulador. Si buscas Product Manager comercial, es un rol distinto con formación y trayectoria diferentes.
 
 ## MSL · Medical Science Liaison
 
@@ -44,19 +48,21 @@ Cuatro roles concentran la mayoría de las vacantes de entrada y crecimiento en 
 
 **A quién le conviene.** Alguien meticuloso, con tolerancia al detalle documental repetitivo, disposición a viajar dentro del país o región, y comodidad con trabajo estructurado con checklists. La atención al detalle es la habilidad crítica; sin ella, no se sobrevive. Rol frecuentemente home-based, con viajes cuya carga depende de la CRO y del estudio.
 
-## Product Manager · pharma
+## PM · Project Manager clínico
 
-**Qué hace en el día.** El PM es responsable del plan estratégico de una marca (o portafolio de marcas) dentro de la farmacéutica. Diseña el brand plan anual, gestiona el ciclo de vida del producto, coordina con Medical Affairs, Access, Regulatory y Sales, mide el desempeño comercial (unidades vendidas, market share, P&L), y prepara los lanzamientos de productos nuevos. Día típico con reuniones estratégicas, análisis de mercado, revisión de material promocional, y toma de decisiones sobre inversión de marketing.
+**Qué hace en el día.** El Project Manager clínico (también llamado Clinical Project Manager · CPM, o Clinical Trial Manager · CTM en algunas CROs) coordina la ejecución operativa de un estudio clínico de principio a fin. Es el punto único de contacto entre el sponsor y el equipo de campo, y responde por timelines, budget, enrollment y calidad regulatoria del estudio. Coordina un equipo de CRAs (2 a 8 según tamaño del estudio), define el monitoring plan, revisa los reportes de monitoreo, escala desviaciones de protocolo, gestiona la interacción con investigadores principales y con las autoridades regulatorias (COFEPRIS, ANMAT, INVIMA) para las submissions relevantes. Día típico con reuniones internas con el equipo del estudio, revisión de KPIs de enrollment y de query resolution, calls con sponsor global, escalation de riesgos, y planning de próximos milestones.
 
-**Formación pedida.** Marketing, administración, ingeniería industrial, medicina o química farmacéutica con MBA o especialización en marketing. Hay dos rutas de entrada: formación en marketing con luego aprender el sector, o formación científica con luego aprender marketing. La primera ruta domina en la industria hoy.
+**Formación pedida.** Ciencias de la salud: medicina, química farmacéutica, biología, biotecnología, farmacia, enfermería. Título profesional obligatorio. Certificación en gestión de proyectos (PMP, Prince2) suma pero no sustituye la experiencia en clinical operations. Perfiles con MBA en salud entran ocasionalmente, pero la ruta dominante es científica.
 
-**Experiencia previa aceptada.** Frecuentemente se pide 2-5 años en un rol de brand assistant, marketing junior o incluso ventas médicas. El paso directo de un doctorado a PM sin experiencia comercial previa es raro pero no imposible; requiere justificación fuerte del pivote.
+**Experiencia previa aceptada.** La ruta más frecuente es 3-5 años como CRA con promoción interna a Lead CRA y luego a Project Manager clínico. Entrada directa sin experiencia CRA existe pero es rara — típicamente PhD/PharmD con experiencia previa como coordinador de estudios hospitalarios o investigador principal. CROs multinacionales (IQVIA, ICON, Parexel, Syneos, PPD) tienen la mayoría de las vacantes; sponsor directo (Roche, MSD, Bayer, Novartis) tiene menos posiciones pero paga mejor.
 
-**Inglés.** Intermedio-avanzado. Menor exposición internacional que MSL o CRA, pero presentaciones a headquarters requieren inglés fluido.
+**Inglés.** C1 en la práctica. Comunicación permanente con sponsor global, reportes en inglés, calls semanales o quincenales con project lead global. B2 alcanza para roles regionales locales pero limita crecimiento.
 
-**Trayectoria natural.** PM Junior / Brand Assistant → PM → Senior PM → Marketing Manager → Marketing Director.
+**Salario referencia.** No hay banda pública verificable en LATAM. Referencia orientativa: PM clínico queda por encima de Senior CRA y por debajo de MSL sponsor multinacional; las multinacionales pharma pagan más que las CROs para el mismo nivel de seniority.
 
-**A quién le conviene.** Alguien con pensamiento estratégico, comodidad con datos comerciales, capacidad de gestionar múltiples stakeholders internos, y tolerancia a la presión por resultados de venta. Rol con más responsabilidad de negocio que de contenido técnico. Perfiles muy técnicos que quieren seguir hablando de ciencia no rinden aquí.
+**Trayectoria natural.** CRA → Sr CRA → Lead CRA → Project Manager clínico (Jr) → Sr Project Manager → Clinical Operations Manager → Head of Clinical Operations.
+
+**A quién le conviene.** Alguien que ya conoce el detalle CRA y quiere pasar de ejecutar a coordinar, tiene comodidad con budget y timelines, capacidad de gestionar stakeholders internos y externos con criterios distintos (sponsor, investigador, CRO interna), y tolerancia a la presión por milestones. Menos viaje que CRA senior — la mayoría del trabajo es home-office con visitas puntuales a sitios estratégicos. Perfiles a los que les gusta ejecutar el detalle hands-on frecuentemente extrañan el rol CRA; perfiles a los que les gusta el rol de coordinación y visión de conjunto encajan.
 
 ## HEOR · Health Economics Outcomes Research
 
@@ -76,34 +82,34 @@ Cuatro roles concentran la mayoría de las vacantes de entrada y crecimiento en 
 
 ## Cuadro comparativo rápido
 
-| Dimensión | MSL | CRA | PM | HEOR |
+| Dimensión | MSL | CRA | PM clínico | HEOR |
 |---|---|---|---|---|
-| Contacto médico directo | Alto | Medio | Bajo | Bajo |
-| Foco técnico-científico | Alto | Medio | Bajo | Muy alto |
-| Foco comercial | Bajo | Bajo | Alto | Bajo |
-| Viajes esperados | Muy alto | Alto | Medio | Bajo |
-| Inglés mínimo | B2/C1 | B2 | B2 | C1 |
-| Entrada desde doctorado | Directa | Directa vía CRO | Vía MBA | Vía posgrado cuantitativo |
-| Escasez del perfil LATAM | Media | Media-alta | Baja | Muy alta |
+| Contacto médico directo | Alto | Medio | Bajo-medio | Bajo |
+| Foco técnico-científico | Alto | Medio-alto | Medio-alto | Muy alto |
+| Foco coordinación operativa | Bajo | Medio | Muy alto | Bajo |
+| Viajes esperados | Muy alto | Alto | Bajo-medio | Bajo |
+| Inglés mínimo | B2/C1 | B2 | C1 | C1 |
+| Entrada desde doctorado | Directa | Directa vía CRO | Vía CRA senior | Vía posgrado cuantitativo |
+| Escasez del perfil LATAM | Media | Media-alta | Media | Muy alta |
 
 **Referencias concretas de viajes esperados.** Postings públicos rara vez cuantifican el viaje en porcentaje, pero cuando lo hacen, ayudan a calibrar. Para CRA de campo: ICON Senior CRA México City (JR150438, [careers.iconplc.com](https://careers.iconplc.com/job/senior-clinical-research-associate-in-mexico-mexico-city-jid-50315), vacante expirada al momento de esta actualización) pedía "Willingness to travel as required (approximately 60%)". Para PM: ICON Clinical Project Manager México City (JR148851, [careers.iconplc.com](https://careers.iconplc.com/job/clinical-project-manager-in-mexico-mexico-city-jid-50056), también expirada, descripción publicada) se declara híbrido con "on-site presence required once per week" — el patrón típico del rol de coordinación, sin viaje sustancial. Para MSL y HEOR no encontré postings de México con porcentaje declarado en la revisión que hicimos; el texto cualitativo de la tabla es lo mejor que tenemos hoy.
 
 ## Cómo elegir el que te conviene
 
-Tres preguntas ordenadas en orden.
+Tres preguntas ordenadas.
 
-Primero, **¿cuánto contacto humano diario quieres?** Si es alto, MSL o PM. Si es bajo, CRA o HEOR.
+Primero, **¿cuánto contacto humano diario quieres?** Si es alto, MSL. Si es medio, CRA o PM clínico. Si es bajo, HEOR.
 
-Segundo, **¿qué peso quieres para lo técnico-científico versus lo comercial?** Científico dominante, HEOR o MSL. Comercial dominante, PM. Balanceado con foco operativo, CRA.
+Segundo, **¿prefieres ejecutar el detalle hands-on o coordinar visión de conjunto?** Ejecutar detalle: CRA. Coordinar y planear con múltiples stakeholders: PM clínico. Ciencia dominante con evidencia y publicación: MSL o HEOR.
 
-Tercero, **¿cuál es tu tolerancia real a viajar?** Si viajar seguido te desgasta, descarta MSL. Si lo toleras, CRA sigue en la lista. Si prefieres oficina o home stable, PM o HEOR.
+Tercero, **¿cuál es tu tolerancia real a viajar?** Si viajar seguido te desgasta, descarta MSL. Si lo toleras, CRA sigue en la lista. Si prefieres home-office estable con visitas puntuales, PM clínico o HEOR.
 
 Con esas tres preguntas, dos roles suelen sobrar como candidatos reales para cualquier perfil. A esos dos aplicas con preparación específica. Los otros dos los descartas explícitamente.
 
 ## Resumen operativo
 
-Los cuatro roles principales de pharma industrial LATAM son MSL (contacto médico + ciencia), CRA (monitoreo de estudios clínicos), PM (estrategia comercial de marca) y HEOR (evidencia económica y clínica). Cada uno tiene perfil distinto de día típico, formación, experiencia, inglés y trayectoria. La decisión operativa se toma con tres preguntas: cuánto contacto humano quieres, qué peso das a lo científico versus lo comercial, y cuánto estás dispuesto a viajar. Dos roles suelen quedar como candidatos reales; los otros dos se descartan y no reciben aplicación.
+Los cuatro roles principales de pharma industrial LATAM son MSL (contacto médico + ciencia), CRA (monitoreo de estudios clínicos), PM clínico (coordinación operativa de ensayos clínicos completos) y HEOR (evidencia económica y clínica). Cada uno tiene perfil distinto de día típico, formación, experiencia, inglés y trayectoria. La decisión operativa se toma con tres preguntas: cuánto contacto humano quieres, si prefieres ejecutar o coordinar, y cuánto estás dispuesto a viajar. Dos roles suelen quedar como candidatos reales; los otros dos se descartan y no reciben aplicación. Nota importante: en esta guía "PM" es Project Manager clínico (coordinación de ensayos), no Product Manager comercial (marketing farmacéutico) — son roles distintos con formación y trayectoria diferentes.
 
 ---
 
-**¿No sabes cuál de los cuatro roles se ajusta a tu perfil?** Nuestra herramienta Quiz Match son ocho preguntas que en dos minutos te ubican entre las tres rutas que cubrimos: Project Manager, Medical Science Liaison y Clinical Research. [Pruébalo en solcaciencia.com/quiz-rol](https://solcaciencia.com/quiz-rol).
+**¿No sabes cuál de los cuatro roles se ajusta a tu perfil?** Nuestra herramienta Quiz Match son ocho preguntas que en dos minutos te ubican entre las tres rutas que cubrimos: Project Manager clínico, Medical Science Liaison y Clinical Research. [Pruébalo en solcaciencia.com/quiz-rol](https://solcaciencia.com/quiz-rol).
