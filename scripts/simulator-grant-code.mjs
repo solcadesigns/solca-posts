@@ -124,6 +124,62 @@ console.log(`  código:      ${accessCode}`);
 wranglerPut('SIMULATOR_BETA_CODES', `beta:${accessCode}`, JSON.stringify(betaRecord));
 wranglerPut('SIMULATOR_CREDITS', `credits:${emailHash}`, JSON.stringify(creditsRecord));
 
+// 14 sept 2026: envío opcional del welcome email via Postmark si se pasa
+// POSTMARK_SERVER_TOKEN en env. Si no está, imprime la URL y termina.
+// Template alias: welcome-simulator-code (mismo que usa simulator-subscribe.ts).
+async function sendWelcomeEmail() {
+  const token = process.env.POSTMARK_SERVER_TOKEN;
+  if (!token) {
+    console.log('\n[email] POSTMARK_SERVER_TOKEN no está en env · se omite envío.');
+    console.log('        Para enviar automáticamente, exporta el token antes:');
+    console.log('        export POSTMARK_SERVER_TOKEN=... && node scripts/simulator-grant-code.mjs ...');
+    return;
+  }
+
+  const accessUrl = `https://solcaciencia.com/simulador-entrevistas/sesion?codigo=${accessCode}`;
+  const firstName = nombre || email.split('@')[0];
+  const expiresAtHuman = new Date(expiresAt).toLocaleDateString('es-MX', {
+    year: 'numeric', month: 'long', day: 'numeric',
+  });
+
+  const body = {
+    From: 'Oscar Solís <hola@solcaciencia.com>',
+    To: email,
+    TemplateAlias: 'welcome-simulator-code',
+    TemplateModel: {
+      first_name: firstName,
+      access_code: accessCode,
+      access_url: accessUrl,
+      expires_at_human: expiresAtHuman,
+    },
+    MessageStream: 'outbound',
+    Tag: 'welcome-simulator-code',
+    Metadata: { source: 'grant-code-cli', plan },
+  };
+
+  try {
+    const res = await fetch('https://api.postmarkapp.com/email/withTemplate', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-Postmark-Server-Token': token,
+      },
+      body: JSON.stringify(body),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      console.error(`\n[email] Postmark falló: ${res.status} ${JSON.stringify(json)}`);
+      return;
+    }
+    console.log(`\n[email] Enviado a ${email} · messageId ${json.MessageID}`);
+  } catch (err) {
+    console.error('\n[email] Error inesperado:', err.message);
+  }
+}
+
+await sendWelcomeEmail();
+
 console.log('\n== LISTO ==');
 console.log(`\nURL para el usuario:`);
 console.log(`  https://solcaciencia.com/simulador-entrevistas/?codigo=${accessCode}\n`);

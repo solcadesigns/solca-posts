@@ -76,10 +76,19 @@ interface WeeklyReport {
     repeat_gates: number;
   };
   cv_review: {
-    analisis_acumulados: number;
+    // NOTA · monotonicidad: estas dos métricas leen CV_LIMITS que tiene TTL
+    // de 30 días (rate-limit.ts:7). NO son acumulados históricos; representan
+    // los análisis y emails únicos de los últimos 30 días. Pueden BAJAR
+    // semana a semana cuando entradas viejas expiran. Ver los campos
+    // `_ultimos_30d` y `emails_unicos_true_acumulado` abajo para números
+    // que sí son monotónicos (fuente: KV EMAILS, sin TTL).
+    analisis_acumulados: number;              // = analisis_ultimos_30d (nombre legacy)
     esta_semana: number;
     semana_anterior: number;
-    emails_unicos_acumulado: number;
+    emails_unicos_acumulado: number;          // = emails_unicos_ultimos_30d (nombre legacy)
+    analisis_ultimos_30d: number;             // alias explícito (CV_LIMITS, ventana 30d)
+    emails_unicos_ultimos_30d: number;        // alias explícito (CV_LIMITS, ventana 30d)
+    emails_unicos_true_acumulado: number;     // KV EMAILS `email:` prefix, sin TTL → monotónico
   };
   // Atribución por campaña UTM (P1 sprint 2026-08-18). Solo cuenta records
   // que llegaron con utm_campaign definido — los que aterrizaron sin campaña
@@ -114,6 +123,30 @@ interface WeeklyReport {
     avg_realismo: number | null;
     avg_utilidad: number | null;
     avg_facilidad: number | null;
+  };
+  // Funnel de la landing del simulador · fire-and-forget desde el cliente vía
+  // /api/simulator-events → SIMULATOR_METRICS KV prefix `evt:`. Añadido
+  // 28-sept-2026 en respuesta al reporte semanal que documentó 2 semanas con
+  // pico de tráfico a la landing (51 views) y 0 sesiones iniciadas.
+  //
+  // Interpretación:
+  //   paywall_viewed = usuario cargó la landing (dedup por sessionStorage)
+  //   code_submitted = usuario ya tiene código y va a /sesion (freemium/pago)
+  //   checkout_started = usuario básico/premium abrió Stripe Checkout
+  //   checkout_abandoned = Stripe rechazó o el usuario no completó
+  //
+  // Bounce rate landing→acción = 1 − (code_submitted + checkout_started) / paywall_viewed
+  simulator_funnel: {
+    disponible: boolean;
+    ventana_dias: number;
+    paywall_viewed: number;
+    code_submitted: number;
+    checkout_started: number;
+    checkout_abandoned: number;
+    // % de vistas que hicieron alguna acción (código o checkout).
+    action_rate_pct: number | null;
+    // Breakdown por utm_source (top 5) para ver qué canal convierte mejor.
+    top_sources: Array<{ source: string; paywall_viewed: number; actions: number }>;
   };
   // Postmark Analytics — se llena si POSTMARK_SERVER_TOKEN está presente.
   // Datos de últimos 30 días por tag. Requiere Open + Link tracking activo
@@ -876,6 +909,47 @@ export const GET: APIRoute = async ({ url, locals }) => {
           : undefined,
     };
 
+    // ── 4c. Simulator funnel events (KV SIMULATOR_METRICS, prefix `evt:`)
+    // Added 2026-09-28. Fuente client-side vía /api/simulator-events.
+    // Records tienen TTL 90 días; contamos solo los de la ventana actual (7 días).
+    const funnel = {
+      disponible: false,
+      paywall_viewed: 0,
+      code_submitted: 0,
+      checkout_started: 0,
+      checkout_abandoned: 0,
+      by_source: new Map<string, { paywall_viewed: number; actions: number }>(),
+    };
+
+    const simMetricsKv = env.SIMULATOR_METRICS as KVNamespace | undefined;
+    if (simMetricsKv) {
+      try {
+        await walkKv<{
+          event: string;
+          ts?: string;
+          utm_source?: string;
+        }>(simMetricsKv, 'evt:', (rec) => {
+          const tsMs = rec.ts ? Date.parse(rec.ts) : NaN;
+          if (isNaN(tsMs) || tsMs < weekAgo || tsMs > now) return;
+          funnel.disponible = true;
+          if (rec.event === 'paywall_viewed') funnel.paywall_viewed++;
+          else if (rec.event === 'code_submitted') funnel.code_submitted++;
+          else if (rec.event === 'checkout_started') funnel.checkout_started++;
+          else if (rec.event === 'checkout_abandoned') funnel.checkout_abandoned++;
+
+          const src = rec.utm_source ?? 'sin_utm';
+          const bucket = funnel.by_source.get(src) ?? { paywall_viewed: 0, actions: 0 };
+          if (rec.event === 'paywall_viewed') bucket.paywall_viewed++;
+          if (rec.event === 'code_submitted' || rec.event === 'checkout_started') {
+            bucket.actions++;
+          }
+          funnel.by_source.set(src, bucket);
+        });
+      } catch (err) {
+        console.warn('weekly-report: funnel walk failed', err);
+      }
+    }
+
     // ── 4. Simulator (D1) ─────────────────────────────────────────
     const sim = {
       total: 0,
@@ -1104,10 +1178,17 @@ export const GET: APIRoute = async ({ url, locals }) => {
         repeat_gates,
       },
       cv_review: {
+        // Legacy names — sourcean CV_LIMITS con TTL 30 días. Ver comentario
+        // del type CvReviewStats: no son monotónicos, son ventana 30d.
         analisis_acumulados: cv.total_analisis,
         esta_semana: cv.cur,
         semana_anterior: cv.prev,
         emails_unicos_acumulado: cv.emails_unicos,
+        // Aliases explícitos — para que herramientas nuevas usen los nombres correctos.
+        analisis_ultimos_30d: cv.total_analisis,
+        emails_unicos_ultimos_30d: cv.emails_unicos,
+        // Acumulado real desde KV EMAILS (sin TTL, monotónico).
+        emails_unicos_true_acumulado: subs.cv_review_emails_unique.size,
       },
       utm_attribution: {
         disponible: subs.total_records_con_utm > 0,
@@ -1125,6 +1206,22 @@ export const GET: APIRoute = async ({ url, locals }) => {
         avg_realismo: sim.avg_realismo,
         avg_utilidad: sim.avg_utilidad,
         avg_facilidad: sim.avg_facilidad,
+      },
+      simulator_funnel: {
+        disponible: funnel.disponible,
+        ventana_dias: 7,
+        paywall_viewed: funnel.paywall_viewed,
+        code_submitted: funnel.code_submitted,
+        checkout_started: funnel.checkout_started,
+        checkout_abandoned: funnel.checkout_abandoned,
+        action_rate_pct:
+          funnel.paywall_viewed > 0
+            ? +(((funnel.code_submitted + funnel.checkout_started) / funnel.paywall_viewed) * 100).toFixed(1)
+            : null,
+        top_sources: Array.from(funnel.by_source.entries())
+          .sort((a, b) => b[1].paywall_viewed - a[1].paywall_viewed)
+          .slice(0, 5)
+          .map(([source, v]) => ({ source, paywall_viewed: v.paywall_viewed, actions: v.actions })),
       },
       email_health,
       traffic,

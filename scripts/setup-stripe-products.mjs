@@ -40,12 +40,15 @@ if (!STRIPE_KEY) {
   process.exit(1);
 }
 
-if (IS_LIVE && !STRIPE_KEY.startsWith('sk_live_')) {
-  console.error('ERROR: --live requiere STRIPE_SECRET_KEY que empiece con sk_live_');
+// 11 sept 2026: aceptamos también restricted keys (rk_live_ / rk_test_).
+// Best practice: usar restricted key con solo Products + Prices + Checkout
+// + Coupons en Escritura, en vez de la Standard secret con acceso total.
+if (IS_LIVE && !STRIPE_KEY.startsWith('sk_live_') && !STRIPE_KEY.startsWith('rk_live_')) {
+  console.error('ERROR: --live requiere STRIPE_SECRET_KEY que empiece con sk_live_ o rk_live_');
   process.exit(1);
 }
-if (!IS_LIVE && !STRIPE_KEY.startsWith('sk_test_')) {
-  console.error('ERROR: sin --live la key debe empezar con sk_test_');
+if (!IS_LIVE && !STRIPE_KEY.startsWith('sk_test_') && !STRIPE_KEY.startsWith('rk_test_')) {
+  console.error('ERROR: sin --live la key debe empezar con sk_test_ o rk_test_');
   console.error('Si quieres correr en modo live, pasa --live explícitamente.');
   process.exit(1);
 }
