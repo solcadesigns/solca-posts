@@ -13,7 +13,7 @@
 
 _Refrescado 1 sep 2026._ El sprint LinkedIn sept 2026 aporta 3 items derivados de los newsletters #18, #19 y #20 (viernes 4, 11 y 18 sept). Se transforman a blog con optimización GEO/AEO (TL;DR blockquote, FAQ estructurada con preguntas naturales, tabla comparativa, definiciones inline de siglas). Rotación de CTAs: revisar-cv, simulador, libro PM + revisar-cv.
 
-_Refrescado 14 sep 2026 (tarde)._ **Nuevo eje editorial: CTA principal → simulador de entrevistas (freemium).** Fuente de este backlog: informe de dolores en `/Users/oscar/Downloads/informe-dolores-simulador-14sept2026.md`, cruzando 4 respuestas de `beta_feedback` (D1 del simulador) con 3 meses de GSC de solcaciencia.com. Argentina es el mercado #1 real (26 clicks / 4.69% CTR vs México 17 / 2.44%). Los 3 comodines editoriales de fondo (salarios reales, diferencias CRA/MSL/Regulatory, entrevistas técnicas laboratorio) quedan absorbidos por los clusters B, D y E de este backlog.
+_Refrescado 14 sep 2026 (tarde)._ **Nuevo eje editorial: CTA principal → simulador de entrevistas (freemium).** Fuente de este backlog: informe de dolores del 14 sep (el archivo ya no existe en Downloads; su contenido queda resumido aquí), cruzando 4 respuestas de `beta_feedback` (D1 del simulador) con 3 meses de GSC de solcaciencia.com. Argentina es el mercado #1 real (26 clicks / 4.69% CTR vs México 17 / 2.44%). Los 3 comodines editoriales de fondo (salarios reales, diferencias CRA/MSL/Regulatory, entrevistas técnicas laboratorio) quedan absorbidos por los clusters B, D y E de este backlog.
 
 | # | Fecha objetivo | Origen | Keyword primary tentativa | Slug propuesto | Cluster | CTA |
 |---|---|---|---|---|---|---|
@@ -24,7 +24,7 @@ _Refrescado 14 sep 2026 (tarde)._ **Nuevo eje editorial: CTA principal → simul
 | 9 | Vie 4 dic 2026 | GSC vertical salarios | salario regulatory affairs mexico argentina | salario-regulatory-affairs-mexico-argentina-espana-2026 | B (salarios) | simulador |
 | 10 | Vie 11 dic 2026 | dolor STAR cluster + hueco CRA junior | star cra junior sin tres anos | metodo-star-cra-junior-sin-tres-anos-experiencia | A (STAR) | simulador |
 | 11 | pipeline | GSC MSL LATAM 20 imp cero clicks + Roche cross-therapy | preguntas entrevista msl cross therapeutic | preguntas-entrevista-msl-oncologia-cardio-immuno | E (técnicas) | simulador |
-| 12 | pipeline | GSC "market access latam" 53 imp cero clicks | salario market access latam por ciudad | salario-market-access-latam-rol-ciudad-2026 | B (salarios) | simulador |
+| 12 | pipeline | GSC "market access latam" 53 imp cero clicks · **revisar canibalización (28 sep): la intención "market access latam" la atiende el fix P1 de `/blog/market-access-industria-farmaceutica-latam-como-entrar/`; este item solo procede si la keyword queda en salario/compensación, sin competir con esa página** | salario market access latam por ciudad | salario-market-access-latam-rol-ciudad-2026 | B (salarios) | simulador |
 | 13 | pipeline | LLMs citation-friendly (intent negativo) | errores comunes metodo star entrevista pharma | errores-comunes-star-entrevista-pharma-reclutador-detecta | A (STAR) | simulador |
 | 14 | pipeline | hueco cluster D · panel | panel interview pharma cuatro entrevistadores | panel-interview-pharma-cuatro-entrevistadores-sesenta-min | D (etapa) | simulador |
 | 15 | pipeline | GSC "heor" 21 imp cero clicks | salario heor evidencia real world latam | salario-heor-evidencia-real-world-latam-2026 | B (salarios) | simulador |
@@ -73,6 +73,7 @@ Estos son ediciones a piezas ya publicadas. Se pueden agendar como items del sch
 | Prioridad | URL actual | Diagnóstico GSC | Acción |
 |---|---|---|---|
 | **P0** | `/blog/metodo-star-entrevistas-pharma` | 194 imp, 1 click, CTR 0.52%, pos 7.04 | Rewrite title/meta/TL;DR/H2 anclados a queries "star respuestas", "respuesta star", "que es el metodo star"; FAQ schema; CTA simulador |
+| P1 | `/blog/market-access-industria-farmaceutica-latam-como-entrar/` | 133 imp, 2 clicks, CTR 1.5%, pos 16.09 · query "market access latam" 58 imp / 0 clicks (ventana GSC 20 jun → 18 sep 2026) | Rewrite title/meta/TL;DR anclados a "market access latam" para subir de pos 16; FAQ schema; CTA simulador. Es la query sin clicks más fuerte de la ventana. **No crear post nuevo con esa keyword**: la página está en `ganadoras` y se canibalizaría. Agregado 28 sep 2026 (aprobado por Oscar). |
 | P1 | `/blog/cro-vs-big-pharma-vs-farma-local-primer-rol/` | 95 imp, 0 clicks | Rewrite title + TL;DR comparativo + tabla scannable + FAQ schema + CTA simulador |
 | P1 | `/blog/como-ser-cra-en-mexico-perfil-formacion-ruta/` | 52 imp, 0 clicks (con slash) | Igual + resolver duplicado con/sin slash |
 | P1 | `/blog/farmacovigilancia-mexico-empezar-sin-experiencia/` | 30 imp, 0 clicks (con slash) | Igual + resolver duplicado (versión sin slash tiene 1 click) |
