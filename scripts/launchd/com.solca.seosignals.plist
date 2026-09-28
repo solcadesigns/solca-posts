@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  com.solca.seosignals · refresca _docs/GSC_SIGNALS_LATEST.json cada lunes 7:00
+  (hora local), una hora antes de la tarea agendada solca-blog-weekly-lunes.
+
+  Creado 28 sep 2026. Instalación y desinstalación: ver scripts/launchd/README.md.
+  Si la Mac está dormida a las 7:00, launchd lo corre al despertar.
+  Si está apagada, ese lunes no corre (la tarea usa el JSON anterior si tiene
+  menos de 14 días).
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.solca.seosignals</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/oscar/Downloads/solca/website/scripts/seo-signals.sh</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/oscar/Downloads/solca/website</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Weekday</key>
+    <integer>1</integer>
+    <key>Hour</key>
+    <integer>7</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>/Users/oscar/Library/Logs/solca-seosignals.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/oscar/Library/Logs/solca-seosignals.log</string>
+
+  <key>RunAtLoad</key>
+  <false/>
+</dict>
+</plist>
