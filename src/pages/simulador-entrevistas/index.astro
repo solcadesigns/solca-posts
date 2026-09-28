@@ -153,6 +153,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         Los pagos se procesan con Stripe (checkout seguro). El acceso llega al correo que ingreses
         en un par de minutos. Sin suscripciones automáticas.
       </p>
+      <p class="plans-note plans-note-refund">
+        <strong>Reembolsos:</strong> puedes solicitar reembolso completo si no has iniciado ninguna
+        sesión y no han pasado más de 7 días desde la compra. Escríbenos a
+        <a href="mailto:hola@solcaciencia.com">hola@solcaciencia.com</a> con el email de tu compra.
+      </p>
     </div>
   </section>
 
@@ -302,6 +307,54 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     // Selector de plan · los botones .plan-cta actualizan el hidden input y hacen scroll
     // al formulario. El form dispara /api/simulator-subscribe (freemium) o
     // /api/simulator-checkout (básico/premium) según plan seleccionado.
+
+    // Instrumentación funnel · fire-and-forget (no bloquea UX)
+    // Contexto: reporte semanal 2026-09-28 documentó 2 semanas seguidas con
+    // pico de tráfico a esta landing (51 views) y 0 sesiones iniciadas.
+    // Estos eventos separan "vio muro precio" de "abandonó checkout".
+    function trackEvent(event: string, extra: Record<string, unknown> = {}) {
+      try {
+        const utm = (window as unknown as { __utm?: Record<string, string> }).__utm ?? {};
+        const payload = {
+          event,
+          ...extra,
+          utm_source: utm.utm_source,
+          utm_medium: utm.utm_medium,
+          utm_campaign: utm.utm_campaign,
+          utm_content: utm.utm_content,
+          utm_term: utm.utm_term,
+          referrer: document.referrer || undefined,
+        };
+        const body = JSON.stringify(payload);
+        // sendBeacon si está disponible (mejor para eventos al descargar página)
+        if (navigator.sendBeacon) {
+          const blob = new Blob([body], { type: 'application/json' });
+          navigator.sendBeacon('/api/simulator-events', blob);
+        } else {
+          fetch('/api/simulator-events', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body,
+            keepalive: true,
+          }).catch(() => {});
+        }
+      } catch {
+        // Analytics nunca debe romper el flow del usuario.
+      }
+    }
+
+    // Dispara paywall_viewed una sola vez por sesión de navegación (sessionStorage evita
+    // que un refresh o un scroll-to-anchor dispare múltiples eventos por la misma visita).
+    try {
+      if (!sessionStorage.getItem('sim_paywall_viewed')) {
+        sessionStorage.setItem('sim_paywall_viewed', '1');
+        trackEvent('paywall_viewed');
+      }
+    } catch {
+      // sessionStorage bloqueado (Safari private mode). Registramos siempre.
+      trackEvent('paywall_viewed');
+    }
+
     const planCards = document.querySelectorAll<HTMLButtonElement>('.plan-cta');
     const planHidden = document.getElementById('selected-plan') as HTMLInputElement | null;
     const signupHeading = document.getElementById('signup-heading') as HTMLHeadingElement | null;
@@ -425,6 +478,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
               subMsg.hidden = false;
               return;
             }
+            trackEvent('checkout_started', { plan });
             const res = await fetch('/api/simulator-checkout', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -435,6 +489,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
               window.location.href = data.url;
               return; // redirect toma el control
             }
+            trackEvent('checkout_abandoned', { plan, reason: 'checkout_api_error' });
             subMsg.textContent = data.error ?? 'No pudimos abrir el pago. Reintenta o escribe a hola@solcaciencia.com';
             subMsg.classList.add('err');
             subMsg.hidden = false;
@@ -469,6 +524,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       // código para arrancar nueva sesión, no queremos que el resume automático
       // de sesion.astro lo secuestre a un reporte anterior en polling.
       try { localStorage.removeItem('solca_session_id'); } catch (_e) {}
+      trackEvent('code_submitted');
       window.location.href = '/simulador-entrevistas/sesion';
       return true;
     }

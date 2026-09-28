@@ -11,6 +11,92 @@ Disallow: /simulador-entrevistas-beta/
 # API endpoints (no son páginas indexables)
 Disallow: /api/
 
+# ---------------------------------------------------------------------------
+# NO agregar Disallow para /admin/ ni para las rutas de app del simulador
+# (/sesion, /gracias, /mis-reportes) todavía. Razón (21 sep 2026):
+#
+# Disallow y noindex se anulan. Si Googlebot no puede rastrear la URL, nunca
+# lee el meta robots, y la URL se queda en el índice como entrada sin
+# descripción. Esas cuatro rutas acaban de recibir noindex y necesitan ser
+# rastreadas para que Google lo vea y las saque.
+#
+# Secuencia correcta:
+#   1. noindex servido + fuera del sitemap  ← hecho el 21 sep 2026
+#   2. esperar a que GSC las reporte como "Excluida por etiqueta noindex"
+#   3. recién entonces agregar Disallow aquí, para ahorrar crawl budget
+#
+# Revisar el paso 2 a partir de finales de octubre 2026.
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Crawlers de IA · permiso explícito (21 sep 2026)
+#
+# El bloque "User-agent: *" de arriba ya los permite, pero varios de estos bots
+# buscan su propio user-agent antes de caer al comodín, y algunos operadores de
+# CDN aplican reglas distintas cuando no hay mención explícita. Declararlos
+# evita quedar fuera de las respuestas de los asistentes por omisión.
+#
+# Decisión editorial: Solca QUIERE ser citada por asistentes de IA. El blog
+# rankea en posición ~7 con CTR bajo; buena parte de ese intent se resuelve hoy
+# dentro de un chat. Preferimos aparecer bien citados a no aparecer.
+#
+# Si algún día se decide lo contrario, cambiar Allow por Disallow aquí —
+# no en el comodín, que rompería Google y Bing.
+# ---------------------------------------------------------------------------
+
+# OpenAI · rastreo para entrenamiento y para búsqueda en ChatGPT
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+# Anthropic · Claude
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+# Perplexity
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+# Google · Gemini y AI Overviews (independiente de Googlebot)
+User-agent: Google-Extended
+Allow: /
+
+# Apple Intelligence
+User-agent: Applebot-Extended
+Allow: /
+
+# Microsoft Copilot
+User-agent: bingbot
+Allow: /
+
+# Meta AI
+User-agent: meta-externalagent
+Allow: /
+
+# Common Crawl (alimenta datasets de varios modelos)
+User-agent: CCBot
+Allow: /
+
+# Índice legible por máquina del corpus completo (generado en build)
+# https://solcaciencia.com/llms.txt
+
 # Sitemaps
 Sitemap: https://solcaciencia.com/sitemap-index.xml
 Sitemap: https://solcaciencia.com/sitemap-blog.xml

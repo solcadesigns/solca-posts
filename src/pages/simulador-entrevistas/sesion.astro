@@ -8,16 +8,12 @@
 // Reusable defaults vienen embebidos del cliente porque el endpoint los aplica
 // también. El frontend muestra los defaults para que el usuario los vea y pueda cambiar.
 import BaseLayout from '../../layouts/BaseLayout.astro';
-
-const noIndex = true;
 ---
 <BaseLayout
   title="Sesión · Simulador de Entrevistas · Solca"
   description="Sesión interactiva del simulador de entrevistas pharma · beta cerrada."
+  noindex={true}
 >
-  <head slot="head">
-    {noIndex && <meta name="robots" content="noindex, nofollow" />}
-  </head>
 
   <nav class="nav">
     <div class="nav-inner">
@@ -584,17 +580,14 @@ const noIndex = true;
                 <textarea name="mejora" maxlength="280" rows="3" placeholder="Lo que se sintió incompleto, frustrante, o que harías distinto."></textarea>
               </label>
 
-              <fieldset class="survey-field">
-                <legend>6 · Si esto siguiera disponible después de la beta, ¿pagarías por más sesiones?</legend>
-                <label class="choice"><input type="radio" name="pago" value="intensivo_349" /><span>Sí, hasta $349 por 10 sesiones (Intensivo)</span></label>
-                <label class="choice"><input type="radio" name="pago" value="basico_149" /><span>Sí, hasta $149 por 3 sesiones (Básico)</span></label>
-                <label class="choice"><input type="radio" name="pago" value="menos_de_99" /><span>Solo si fuera $99 o menos</span></label>
-                <label class="choice"><input type="radio" name="pago" value="solo_gratis" /><span>No, prefiero el formato gratuito que viste hoy</span></label>
-                <label class="choice"><input type="radio" name="pago" value="no_pagaria" /><span>No, no me interesa pagar</span></label>
-              </fieldset>
+              <!-- (11 sept 2026) Retirada la pregunta de disposición-de-pago del
+                   cuestionario post-freemium. Con planes activos y precios
+                   públicos, preguntar "cuánto pagarías" introducía sesgo y las
+                   opciones ya no reflejaban el pricing v3. El endpoint sigue
+                   aceptando pagoDisposicion=null (mantiene compat schema D1). -->
 
               <fieldset class="survey-field">
-                <legend>7 · Demográficos opcionales</legend>
+                <legend>6 · Demográficos opcionales</legend>
                 <p class="survey-hint">Para entender mejor a quién atiende el simulador. Siempre puedes "prefiero no decir".</p>
                 <label class="inline-field">
                   <span>Rango de edad</span>

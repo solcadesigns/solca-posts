@@ -35,7 +35,19 @@ export default defineConfig({
         !page.includes('/_') &&
         !page.includes('/blog') &&
         !page.includes('/simulador-entrevistas-beta') &&
-        !page.includes('/ddm'),
+        !page.includes('/ddm') &&
+        // Añadido 21 sep 2026. sitemap-0.xml estaba publicando los paneles de
+        // admin (/admin/beta-codes, /admin/simulator-metrics) y tres rutas de
+        // la app del simulador. Los admin ya traen noindex en su propio <head>,
+        // así que no había fuga de datos, pero una URL con noindex dentro de un
+        // sitemap es señal contradictoria y gasta crawl budget. Las tres del
+        // simulador sí se servían indexables (ver BaseLayout: la prop noindex
+        // no existía). La landing /simulador-entrevistas/ NO se excluye: esa sí
+        // es página de marketing y tiene que seguir en el sitemap.
+        !page.includes('/admin') &&
+        !page.includes('/simulador-entrevistas/sesion') &&
+        !page.includes('/simulador-entrevistas/gracias') &&
+        !page.includes('/simulador-entrevistas/mis-reportes'),
     }),
   ],
   vite: {

@@ -9,6 +9,16 @@ interface Props {
   canonicalOverride?: string;
   // Override the og:type — defaults to "website"; blog posts pass "article".
   ogType?: string;
+  // Excluye la página del índice de buscadores (agregado 21 sep 2026).
+  //
+  // Por qué no existía y por qué importa: gracias.astro ya pasaba
+  // `noindex={true}` y sesion.astro intentaba un `<head slot="head">`, pero
+  // esta interface no declaraba la prop y el layout no tiene slot nombrado.
+  // Astro descartaba la primera en silencio y renderizaba el segundo dentro
+  // del body, donde Google ignora el meta robots. Resultado verificado en
+  // producción el 21 sep 2026: las dos páginas se servían indexables, y
+  // además estaban listadas en sitemap-0.xml.
+  noindex?: boolean;
 }
 
 const {
@@ -17,10 +27,33 @@ const {
   ogImage = '/og-image.png',
   canonicalOverride,
   ogType = 'website',
+  noindex = false,
 } = Astro.props;
 
 const siteUrl = Astro.site?.toString() ?? 'https://solcaciencia.com/';
-const canonicalURL = canonicalOverride ?? new URL(Astro.url.pathname, siteUrl).toString();
+
+// Normalización del canonical (21 sep 2026). `trailingSlash: 'ignore'` en
+// astro.config hace que /revisar-cv y /revisar-cv/ devuelvan 200 con el mismo
+// contenido. Sin normalizar, cada variante se auto-canonicaliza a sí misma y
+// Google las indexa como dos páginas: ocho pares duplicados detectados en GSC,
+// con los clicks repartidos entre ambas.
+//
+// Canonical elegido: CON slash final. Es la forma que emite sitemap-blog.xml.ts
+// y la que matchea las páginas que hoy ganan tráfico. Los posts del blog ya
+// pasaban canonicalOverride con slash; esto arregla el resto del sitio.
+//
+// Excepciones sin slash: la raíz (ya lo trae) y las rutas con extensión de
+// archivo (/rss.xml, /llms.txt), donde un slash rompería la URL.
+const normalizePath = (pathname: string) => {
+  if (pathname === '/') return pathname;
+  if (pathname.endsWith('/')) return pathname;
+  // Última porción con punto = archivo, no directorio.
+  if (pathname.split('/').pop()?.includes('.')) return pathname;
+  return `${pathname}/`;
+};
+
+const canonicalURL =
+  canonicalOverride ?? new URL(normalizePath(Astro.url.pathname), siteUrl).toString();
 const ogImageURL = new URL(ogImage, siteUrl).toString();
 ---
 <!DOCTYPE html>
@@ -32,6 +65,7 @@ const ogImageURL = new URL(ogImage, siteUrl).toString();
 <meta name="description" content={description} />
 <meta name="author" content="Oscar Omar Solís Castro" />
 <link rel="canonical" href={canonicalURL} />
+{noindex && <meta name="robots" content="noindex, nofollow" />}
 
 <!-- Open Graph for LinkedIn / Facebook / WhatsApp previews -->
 <meta property="og:title" content={title} />

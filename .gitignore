@@ -15,6 +15,12 @@ pnpm-debug.log*
 .env
 .env.production
 .env.*.local
+# Secrets locales de wrangler (STATS_KEY, GSC_*, Stripe, Postmark…).
+# Agregado 21 sep 2026 al crear scripts/seo-signals.sh, que lee STATS_KEY de
+# aquí. Sin esta línea, el primer `git add -A` después de crear el archivo
+# subiría la llave al repo.
+.dev.vars
+.dev.vars.*
 
 # macOS
 .DS_Store
@@ -50,3 +56,9 @@ _docs/*-privado*.csv
 deploy.log
 .wrangler/
 _docs/~$*
+
+# Snapshot de señales de Search Console que escribe scripts/seo-signals.sh.
+# Se regenera con un comando y es data de negocio (queries, CTR por página),
+# así que no se versiona. Si prefieres conservar la serie histórica para ver
+# cómo evolucionan las queries, borra esta línea.
+_docs/GSC_SIGNALS_LATEST.json

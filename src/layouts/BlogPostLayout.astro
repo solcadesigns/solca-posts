@@ -54,9 +54,41 @@ const articleSchema = {
     '@type': 'WebPage',
     '@id': postUrl,
   },
-  inLanguage: 'es-ES',
+  inLanguage: 'es-419',
   articleSection: categoryLabel,
   keywords: data.tags.join(', '),
+};
+
+// BreadcrumbList (21 sep 2026). Dos motivos: Google sustituye la URL cruda por
+// la miga en el resultado de búsqueda, y los asistentes de IA la usan para
+// ubicar la pieza dentro del sitio al citarla. Va aparte del Article schema —
+// son dos bloques JSON-LD independientes, que es lo que Google espera.
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'Inicio',
+      item: new URL('/', siteUrl).toString(),
+    },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: 'Blog',
+      item: new URL('/blog/', siteUrl).toString(),
+    },
+    // Sin nivel de categoría: /blog no filtra por query param, así que un
+    // item "Carreras pharma" apuntaría a la misma lista completa. Miga de
+    // tres niveles, que es lo que el sitio realmente tiene.
+    {
+      '@type': 'ListItem',
+      position: 3,
+      name: data.title,
+      item: postUrl,
+    },
+  ],
 };
 ---
 <BaseLayout
@@ -67,6 +99,7 @@ const articleSchema = {
   canonicalOverride={data.canonical ?? postUrl}
 >
   <script type="application/ld+json" set:html={JSON.stringify(articleSchema)} />
+  <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
 
   <!-- ==================== NAV ==================== -->
   <nav class="nav">

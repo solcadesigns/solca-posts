@@ -1,6 +1,6 @@
 ---
-title: "Método STAR en entrevistas pharma: qué significa y cómo aplicarlo"
-description: "STAR: Situación, Tarea, Acción, Resultado. Proporción 10-10-60-20, tres errores que descalifican y un ejemplo por rol pharma (CRA, MSL, Clinical Ops)."
+title: "Método STAR entrevista pharma: proporción, ejemplos por rol y errores"
+description: "Método STAR paso a paso para entrevistas CRA, MSL y Clinical Ops en pharma LATAM. Proporción 10-10-60-20, tres errores que descalifican y un ejemplo real por rol."
 pubDate: 2026-06-24
 updatedDate: 2026-09-14
 heroImage: "/blog/metodo-star-entrevistas-pharma.png"
