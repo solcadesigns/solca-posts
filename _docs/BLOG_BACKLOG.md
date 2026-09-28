@@ -17,6 +17,7 @@ _Refrescado 14 sep 2026 (tarde)._ **Nuevo eje editorial: CTA principal → simul
 
 | # | Fecha objetivo | Origen | Keyword primary tentativa | Slug propuesto | Cluster | CTA |
 |---|---|---|---|---|---|---|
+| 0 | Lun 5 oct 2026 (slot de fix, sin pubDate nuevo) | **Fix P1 → slot de la semana, decidido por Oscar 28 sep 2026.** GSC ventana 27 jun → 25 sep 2026: "market access latam" 66 imp / 0 clicks (query sin clicks más fuerte); la página es #2 en `fixes_pagina` (147 imp, 2 clicks, CTR 1.36%, pos 15.79) | market access latam | `/blog/market-access-industria-farmaceutica-latam-como-entrar/` (rewrite, **no crear slug nuevo**) | fix · market access | simulador |
 | 5 | Vie 6 nov 2026 | GSC vertical ganador salarios + hueco PM clínico | salario project manager pharma latam | salario-project-manager-clinico-pharma-latam-2026 | B (salarios) | simulador |
 | 6 | Vie 13 nov 2026 | feedback 4c48cd1d (dolor: "respuesta vaga" vs "tesis") | detalle respuesta entrevista pharma | cuanto-detalle-dar-respuestas-entrevista-pharma | F (comunicación) | simulador |
 | 7 | Vie 20 nov 2026 | intent hiring manager pharma + baja natural a Básico | entrevista hiring manager pharma preguntas | entrevista-hiring-manager-pharma-ocho-preguntas | D (etapa) | simulador |
