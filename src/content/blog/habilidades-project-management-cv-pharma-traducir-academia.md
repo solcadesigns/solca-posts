@@ -79,7 +79,7 @@ Traducir tu experiencia al lenguaje de industria no es exagerar. Es escoger las 
 
 Y sobre las metodologías específicas: cuando el rol al que aplicas menciona un framework que no has usado, ponerle el nombre correcto a lo que sí hiciste te acerca al 80% del vocabulario. El 20% restante —los tres o cuatro conceptos técnicos que no manejas aún— se cubre con formación específica antes de la entrevista, no en el CV.
 
-Si vienes de academia y aún no tienes claro qué rol pharma te queda mejor, el [quiz de 8 preguntas de Solca](https://solcaciencia.com/quiz-rol) ubica en dos minutos entre tres rutas: Project Manager, Medical Science Liaison o Clinical Research. Y para el detalle específico del CV, la [guía de cinco ajustes al CV desde PhD](https://solcaciencia.com/blog/cv-pharma-cinco-ajustes-desde-phd) y las [13 siglas pharma para incluir en el CV PhD](https://solcaciencia.com/blog/13-acronimos-pharma-cv-phd) complementan lo que este blog cubre para habilidades PM en particular.
+Si vienes de academia y aún no tienes claro qué rol pharma te queda mejor, el [quiz de 11 preguntas de Solca](https://solcaciencia.com/quiz-rol) ubica en tres minutos entre cinco rutas pharma LATAM: Project Manager clínico, Medical Science Liaison, Clinical Research, Farmacovigilancia o Life Sciences Consulting. Y para el detalle específico del CV, la [guía de cinco ajustes al CV desde PhD](https://solcaciencia.com/blog/cv-pharma-cinco-ajustes-desde-phd) y las [13 siglas pharma para incluir en el CV PhD](https://solcaciencia.com/blog/13-acronimos-pharma-cv-phd) complementan lo que este blog cubre para habilidades PM en particular.
 
 ## Preguntas frecuentes
 

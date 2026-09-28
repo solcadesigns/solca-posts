@@ -355,6 +355,41 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       trackEvent('paywall_viewed');
     }
 
+    // Capturar ?modulo= del URL para pre-seleccionar el rol en /sesion.
+    // El mapeo alinea con `roleGeneric` <select> en sesion.astro. Añadido
+    // 2026-09-28 junto con la ampliación del quiz-rol a 5 roles (FV y
+    // Consulting salen del quiz al Simulador con módulo pre-seleccionado
+    // mientras se publican sus libros).
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const modulo = params.get('modulo');
+      if (modulo) {
+        // Mapa modulo → valor exacto del <option> en sesion.astro roleGeneric.
+        const MODULE_TO_ROLE: Record<string, string> = {
+          pm: 'Clinical Project Manager',
+          msl: 'Medical Science Liaison',
+          cr: 'Clinical Research Associate',
+          fv: 'Pharmacovigilance Associate',
+          farmacovigilancia: 'Pharmacovigilance Associate',
+          'strategy-consulting': 'Healthcare Consultant · Strategy Consulting',
+          consulting: 'Healthcare Consultant · Strategy Consulting',
+          ra: 'Regulatory Affairs Specialist',
+          regulatory: 'Regulatory Affairs Specialist',
+          ma: 'Medical Affairs',
+          'medical-affairs': 'Medical Affairs',
+          heor: 'Healthcare Analyst · HEOR',
+          sales: 'Visitador medico · Pharma Sales Representative',
+          visita: 'Visitador medico · Pharma Sales Representative',
+        };
+        const roleValue = MODULE_TO_ROLE[modulo.toLowerCase()];
+        if (roleValue) {
+          sessionStorage.setItem('sim_preselected_role', roleValue);
+        }
+      }
+    } catch {
+      // sessionStorage bloqueado o URL inválido. No pasa nada.
+    }
+
     const planCards = document.querySelectorAll<HTMLButtonElement>('.plan-cta');
     const planHidden = document.getElementById('selected-plan') as HTMLInputElement | null;
     const signupHeading = document.getElementById('signup-heading') as HTMLHeadingElement | null;

@@ -951,6 +951,39 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     intakeForm.addEventListener('change', updateDefaultsFromIntake);
     intakeForm.addEventListener('input', updateDefaultsFromIntake);
 
+    // Pre-selección del rol vía `sessionStorage.sim_preselected_role` — lo
+    // graba la landing (index.astro) cuando el URL trae `?modulo=<clave>`.
+    // Cuando hay valor, cambiamos a Modo B (selector de rol genérico), pre-
+    // seleccionamos el <option> y hacemos scroll suave al formulario para
+    // que el usuario vea que ya viene enfocado en su rol.
+    // Añadido 2026-09-28 con la ampliación del quiz-rol a 5 roles (FV y
+    // Consulting salen del quiz al Simulador con módulo pre-seleccionado).
+    try {
+      const preselected = sessionStorage.getItem('sim_preselected_role');
+      if (preselected) {
+        const modeBRadio = intakeForm.querySelector<HTMLInputElement>('input[name="mode"][value="B"]');
+        const roleGenericSelect = intakeForm.querySelector<HTMLSelectElement>('select[name="roleGeneric"]');
+        if (modeBRadio && roleGenericSelect) {
+          // Verificamos que el valor exista como <option> antes de asignar.
+          const optionExists = Array.from(roleGenericSelect.options).some(
+            (o) => o.value === preselected,
+          );
+          if (optionExists) {
+            modeBRadio.checked = true;
+            roleGenericSelect.value = preselected;
+            // Dispara change para que updateDefaultsFromIntake alinee visibilidad.
+            modeBRadio.dispatchEvent(new Event('change', { bubbles: true }));
+            roleGenericSelect.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }
+        // Consumimos la pre-selección para que un refresh manual no la reaplique
+        // (el usuario puede haber cambiado de opinión durante la carga).
+        sessionStorage.removeItem('sim_preselected_role');
+      }
+    } catch {
+      // sessionStorage bloqueado. Sigue el flujo normal.
+    }
+
     // ──────────────────────────────────────────────────────────────────
     // Intake · submit
     // ──────────────────────────────────────────────────────────────────

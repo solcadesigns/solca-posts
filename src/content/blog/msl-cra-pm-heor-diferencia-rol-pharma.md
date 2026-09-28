@@ -112,4 +112,4 @@ Los cuatro roles principales de pharma industrial LATAM son MSL (contacto médic
 
 ---
 
-**¿No sabes cuál de los cuatro roles se ajusta a tu perfil?** Nuestra herramienta Quiz Match son ocho preguntas que en dos minutos te ubican entre las tres rutas que cubrimos: Project Manager clínico, Medical Science Liaison y Clinical Research. [Pruébalo en solcaciencia.com/quiz-rol](https://solcaciencia.com/quiz-rol).
+**¿No sabes cuál de los roles se ajusta a tu perfil?** Nuestra herramienta Quiz Match son once preguntas que en tres minutos te ubican entre las cinco rutas pharma LATAM que cubrimos: Project Manager clínico, Medical Science Liaison, Clinical Research, Farmacovigilancia y Life Sciences Consulting. [Pruébalo en solcaciencia.com/quiz-rol](https://solcaciencia.com/quiz-rol).

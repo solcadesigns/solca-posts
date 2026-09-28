@@ -1,27 +1,41 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 
-const hotmart = {
+// CTAs por rol. Los 3 roles con libro publicado van a Hotmart. FV y Consulting
+// van al simulador con módulo pre-seleccionado mientras se publican sus libros
+// (sept 2026 · FV en borrador, Consulting en investigación editorial). Cuando
+// salgan los libros, cambiar aquí la URL a Hotmart es un edit puntual.
+const cta = {
   libroPM: 'https://go.hotmart.com/R105710415P',
   libroMSL: 'https://go.hotmart.com/Y105718405Y',
   libroCR: 'https://go.hotmart.com/U105724060O',
+  cursoFV:
+    'https://solcaciencia.com/simulador-entrevistas/?modulo=fv&utm_source=quiz-rol&utm_medium=result&utm_campaign=quiz-rol-fv&utm_content=cta-fv',
+  cursoConsulting:
+    'https://solcaciencia.com/simulador-entrevistas/?modulo=strategy-consulting&utm_source=quiz-rol&utm_medium=result&utm_campaign=quiz-rol-consulting&utm_content=cta-consulting',
 };
 
-// Definidas server-side para que tanto Astro como JS las usen.
+// Ampliado 2026-09-28: quiz pasa de 3 a 5 roles. Añadidos Farmacovigilancia
+// (puerta ancha en el pipeline curado + libro en borrador) y Life Sciences /
+// Strategy Consulting (rol solicitado por audiencia + módulo del simulador
+// activo). Se añaden 3 preguntas nuevas (P9-P11) para discriminar los 5 roles
+// en ejes de ambigüedad, variedad temática y deliverable natural. Preguntas
+// existentes reciben opciones adicionales sin quitar las originales.
 const QUESTIONS = [
   {
     text: 'Cuando me piden organizar un proyecto complejo con varios involucrados, me siento:',
     options: [
       { label: 'Energizado — coordinar gente, plazos y entregables es mi zona', scores: { PM: 3 } },
       { label: 'Cómodo — lo hago bien aunque no es lo que más me llena', scores: { PM: 1, MSL: 1 } },
-      { label: 'Estresado — prefiero ejecutar mi parte y que otro coordine el equipo', scores: { CR: 2 } },
+      { label: 'Estresado — prefiero ejecutar mi parte y que otro coordine el equipo', scores: { CR: 2, FV: 2 } },
+      { label: 'Me sirve si tengo autonomía para redefinir el problema y proponer marco', scores: { Consulting: 2 } },
     ],
   },
   {
     text: 'Mi fortaleza académica principal durante el PhD fue:',
     options: [
       { label: 'Lectura crítica de literatura, integración de evidencia, escribir y presentar discusión', scores: { MSL: 3 } },
-      { label: 'Diseño experimental riguroso y ejecución disciplinada de protocolos', scores: { CR: 2, PM: 1 } },
+      { label: 'Diseño experimental riguroso y ejecución disciplinada de protocolos', scores: { CR: 2, PM: 1, FV: 1 } },
       { label: 'Coordinar el equipo del laboratorio, los recursos y los avances del proyecto', scores: { PM: 3 } },
       { label: 'Generar data limpia con instrumentación compleja', scores: { CR: 3 } },
     ],
@@ -32,22 +46,26 @@ const QUESTIONS = [
       { label: 'Discutir a profundidad la metodología y los hallazgos científicos', scores: { MSL: 3 } },
       { label: 'Entender qué necesita para conducir bien un ensayo clínico', scores: { CR: 2 } },
       { label: 'Mapear qué necesita para mover el proyecto adelante operativamente', scores: { PM: 2 } },
+      { label: 'Escuchar el problema estratégico detrás de su pregunta y ofrecer un marco de respuesta', scores: { Consulting: 2 } },
     ],
   },
   {
     text: 'Mi tolerancia para SOPs, procesos estrictos y compliance regulatorio es:',
     options: [
-      { label: 'Alta — el rigor le da credibilidad al trabajo', scores: { CR: 3 } },
+      { label: 'Alta — el rigor le da credibilidad al trabajo', scores: { CR: 3, FV: 3 } },
       { label: 'Media — los respeto pero busco eficiencia donde se pueda', scores: { PM: 2 } },
-      { label: 'Variable — depende del contexto y propósito', scores: { MSL: 1 } },
+      { label: 'Variable — depende del contexto y propósito', scores: { MSL: 1, Consulting: 2 } },
+      { label: 'Prefiero ambientes donde el marco no está predefinido y hay que inventarlo', scores: { Consulting: 2 } },
     ],
   },
   {
-    text: 'Si me dejaras elegir entre estas tres responsabilidades, agarro:',
+    text: 'Si me dejaras elegir entre estas cinco responsabilidades, agarro:',
     options: [
       { label: 'Visitar 6-8 sitios clínicos al mes, revisar source documents, asegurar calidad de data', scores: { CR: 3 } },
       { label: 'Liderar un equipo cross-functional para lanzar un producto o estudio nuevo', scores: { PM: 3 } },
       { label: 'Construir relaciones científicas con 20-30 KOLs en mi área terapéutica', scores: { MSL: 3 } },
+      { label: 'Procesar 20-30 casos de seguridad por semana con MedDRA y narrativa estandarizada', scores: { FV: 3 } },
+      { label: 'Entrevistar 8 payers en 2 semanas y armar un modelo de acceso al mercado para el cliente', scores: { Consulting: 3 } },
     ],
   },
   {
@@ -55,7 +73,8 @@ const QUESTIONS = [
     options: [
       { label: 'Disfruto — me sale natural, me gusta el intercambio con la audiencia', scores: { MSL: 2 } },
       { label: 'Lo hago bien si es interno con equipo, no tan cómodo con audiencia externa de KOLs', scores: { PM: 2 } },
-      { label: 'Prefiero generar la data y dejar que otros la presenten', scores: { CR: 2 } },
+      { label: 'Prefiero generar la data y dejar que otros la presenten', scores: { CR: 2, FV: 2 } },
+      { label: 'Presento decks a C-suite del cliente con recomendación concreta', scores: { Consulting: 2 } },
     ],
   },
   {
@@ -63,23 +82,55 @@ const QUESTIONS = [
     options: [
       { label: 'Variedad de tareas: gestión, finanzas, equipo, decisiones estratégicas', scores: { PM: 3 } },
       { label: 'Profundidad científica continua: leer, traducir, defender evidencia', scores: { MSL: 3 } },
-      { label: 'Estructura operativa clara: protocolos, plazos, calidad, auditoría', scores: { CR: 3 } },
+      { label: 'Estructura operativa clara: protocolos, plazos, calidad, auditoría', scores: { CR: 3, FV: 2 } },
+      { label: 'Especialización profunda en un dominio regulatorio estable', scores: { FV: 3 } },
+      { label: 'Aprendizaje acelerado en muchas industrias adyacentes de pharma', scores: { Consulting: 3 } },
     ],
   },
   {
     text: 'Mi formación incluyó trabajo principalmente con:',
     options: [
       { label: 'Modelos animales, biología molecular, técnicas de bench', scores: { CR: 1, MSL: 1 } },
-      { label: 'Análisis estadístico, gestión de bases de datos, papers cuantitativos', scores: { PM: 1, MSL: 2 } },
-      { label: 'Trabajo clínico directo con pacientes o muestras humanas', scores: { CR: 2, MSL: 1 } },
-      { label: 'Gestión de proyectos académicos, redacción de propuestas, fundraising', scores: { PM: 2 } },
+      { label: 'Análisis estadístico, gestión de bases de datos, papers cuantitativos', scores: { PM: 1, MSL: 2, Consulting: 2 } },
+      { label: 'Trabajo clínico directo con pacientes o muestras humanas', scores: { CR: 2, MSL: 1, FV: 1 } },
+      { label: 'Gestión de proyectos académicos, redacción de propuestas, fundraising', scores: { PM: 2, Consulting: 1 } },
+    ],
+  },
+  // P9 · Ambigüedad y reencuadre — nueva 2026-09-28
+  {
+    text: 'Cuando alguien te da un problema mal definido con datos parciales:',
+    options: [
+      { label: 'Me energiza — encuentro la forma de estructurarlo y proponer un marco', scores: { Consulting: 3 } },
+      { label: 'Prefiero pedir más data y criterios claros antes de arrancar', scores: { CR: 2, FV: 2 } },
+      { label: 'Lo mapeo como proyecto: entregables, timeline, equipos', scores: { PM: 2 } },
+      { label: 'Busco la evidencia científica pertinente y desde ahí armo la respuesta', scores: { MSL: 2 } },
+    ],
+  },
+  // P10 · Rotación temática vs profundidad — nueva 2026-09-28
+  {
+    text: 'En 12 meses de trabajo prefiero:',
+    options: [
+      { label: 'Un mismo tema o producto a fondo, dominarlo', scores: { MSL: 3 } },
+      { label: 'Un mismo proceso repetido con excelencia — calidad por volumen', scores: { CR: 3, FV: 3 } },
+      { label: '4-6 proyectos distintos, cada uno con su tema y stakeholders', scores: { Consulting: 3 } },
+      { label: 'Un proyecto grande con muchas piezas móviles', scores: { PM: 3 } },
+    ],
+  },
+  // P11 · Deliverable natural — nueva 2026-09-28
+  {
+    text: 'Cuando terminas algo bien hecho, lo que sale es:',
+    options: [
+      { label: 'Un documento estructurado con evidencia (paper, review, discusión clínica)', scores: { MSL: 3 } },
+      { label: 'Un caso completo cerrado a tiempo (ICSR, monitoring visit, checklist regulatorio)', scores: { FV: 3, CR: 3 } },
+      { label: 'Un cronograma cumplido con equipo alineado y stakeholders informados', scores: { PM: 3 } },
+      { label: 'Un deck que cambia la decisión del que lo lee', scores: { Consulting: 3 } },
     ],
   },
 ];
 ---
 <BaseLayout
-  title="¿Qué rol en pharma te queda? · Quiz de 2 minutos · Solca"
-  description="Quiz interactivo de 8 preguntas que te dice cuál rol pharma (PM, MSL o Clinical Research) es tu mejor match basado en cómo trabajas y qué te energiza."
+  title="¿Qué rol en pharma te queda? · Quiz de 3 minutos · Solca"
+  description="Quiz interactivo de 11 preguntas que te dice cuál rol pharma LATAM (PM clínico, MSL, Clinical Research, Farmacovigilancia o Life Sciences Consulting) es tu mejor match basado en cómo trabajas y qué te energiza."
 >
 
 <nav class="nav">
@@ -102,8 +153,8 @@ const QUESTIONS = [
   <div class="container quiz-app-container">
     <div class="progress-wrap" id="progress-wrap" hidden>
       <div class="progress-meta">
-        <span id="progress-text">Pregunta 1 de 8</span>
-        <span id="progress-pct">12%</span>
+        <span id="progress-text">Pregunta 1 de 11</span>
+        <span id="progress-pct">9%</span>
       </div>
       <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
     </div>
@@ -116,12 +167,12 @@ const QUESTIONS = [
       </div>
       <h1 class="quiz-h1">¿Qué rol en pharma <em>te queda mejor</em>?</h1>
       <p class="quiz-lead">
-        Ocho preguntas sobre cómo trabajas, qué te energiza y qué prefieres. Al final te recomiendo cuál de los tres roles más comunes para PhDs en industria es tu mejor match: <strong>Project Manager</strong>, <strong>Medical Science Liaison</strong>, o <strong>Clinical Research</strong>.
+        Once preguntas sobre cómo trabajas, qué te energiza y qué prefieres. Al final te digo cuál de los cinco roles pharma LATAM más comunes es tu mejor match: <strong>Project Manager clínico</strong>, <strong>Medical Science Liaison</strong>, <strong>Clinical Research</strong>, <strong>Farmacovigilancia</strong> o <strong>Life Sciences Consulting</strong>.
       </p>
       <ul class="quiz-features">
         <li>Resultado inmediato basado en tus respuestas</li>
         <li>Explicación del por qué ese rol te conviene</li>
-        <li>Recomendación del libro Solca correspondiente</li>
+        <li>Recomendación de libro o curso Solca según el match</li>
       </ul>
 
       <form id="gate-form" class="gate-form" novalidate>
@@ -169,7 +220,7 @@ const QUESTIONS = [
       <p class="self-match-helper">Esto no afecta el resultado del quiz — es solo para entender mejor cómo se perciben los PhDs en transición. Vamos a comparar tu respuesta con el resultado del quiz al final.</p>
       <div class="options">
         <button type="button" class="option-btn" data-self-match="PM">
-          <span class="option-btn-name">Project Manager (PM)</span>
+          <span class="option-btn-name">Project Manager clínico (PM)</span>
           <span class="option-btn-sub">Coordino proyectos, plazos y equipos cross-funcionales</span>
         </button>
         <button type="button" class="option-btn" data-self-match="MSL">
@@ -179,6 +230,14 @@ const QUESTIONS = [
         <button type="button" class="option-btn" data-self-match="CR">
           <span class="option-btn-name">Clinical Research (CRA / CTM)</span>
           <span class="option-btn-sub">Monitoreo de ensayos clínicos bajo ICH/GCP</span>
+        </button>
+        <button type="button" class="option-btn" data-self-match="FV">
+          <span class="option-btn-name">Farmacovigilancia (DSA / FV)</span>
+          <span class="option-btn-sub">Procesamiento de casos de seguridad, MedDRA, ICSR</span>
+        </button>
+        <button type="button" class="option-btn" data-self-match="Consulting">
+          <span class="option-btn-name">Life Sciences Consulting</span>
+          <span class="option-btn-sub">Proyectos rotativos de estrategia para pharma/biotech</span>
         </button>
         <button type="button" class="option-btn" data-self-match="NS">
           <span class="option-btn-name">No tengo idea / no estoy seguro</span>
@@ -235,7 +294,7 @@ const QUESTIONS = [
 
       <div class="share-strip"
            data-share-url="https://solcaciencia.com/quiz-rol"
-           data-share-text="Tomé este quiz de 2 min para PhDs explorando industria farmacéutica — te dice si tu match es PM, MSL o Clinical Research.">
+           data-share-text="Tomé este quiz de 3 min para gente explorando industria farmacéutica LATAM — te dice si tu match es PM clínico, MSL, Clinical Research, Farmacovigilancia o Life Sciences Consulting.">
         <span class="share-strip-label">Compartir el quiz</span>
         <div class="share-strip-buttons">
           <button type="button" class="share-btn" data-share="linkedin" aria-label="Compartir en LinkedIn" title="LinkedIn">
@@ -810,37 +869,73 @@ const QUESTIONS = [
   }
 </style>
 
-<script define:vars={{ QUESTIONS, hotmart }}>
+<script define:vars={{ QUESTIONS, cta }}>
+  // ROLE_DATA · usa `ctaTitle`, `ctaDesc`, `ctaURL`, `ctaLabel` de forma
+  // unificada. Los 3 roles con libro publicado apuntan a Hotmart; FV y
+  // Consulting apuntan al simulador con módulo pre-seleccionado mientras se
+  // publican sus libros (roadmap editorial 2026Q4-2027Q1). Cuando salga cada
+  // libro, actualizar aquí el ctaURL, ctaTitle y ctaDesc, y el flujo del
+  // quiz sigue igual.
   const ROLE_DATA = {
     PM: {
-      name: 'Project Manager',
+      name: 'Project Manager clínico',
       short: 'PM',
       explanation:
-        'Tu perfil indica que prosperas coordinando recursos, personas y tiempos para que las cosas pasen. Project Manager en pharma es la traducción natural de un PhD donde tu fortaleza fue la disciplina de planificación, gestión de stakeholders y entrega de resultados a plazo. PMs en industria mueven proyectos de investigación clínica, registros regulatorios, lanzamientos de producto. Es un rol cross-functional con alta visibilidad ejecutiva.',
-      bookTitle: 'De Doctorado a Project Manager',
-      bookDesc:
+        'Tu perfil indica que prosperas coordinando recursos, personas y tiempos para que las cosas pasen. Project Manager clínico en pharma LATAM es la traducción natural de una formación en ciencias de la vida cuya fortaleza fue la disciplina de planificación, gestión de stakeholders y entrega de resultados a plazo. Los PMs clínicos coordinan ensayos, lanzamientos, submissions regulatorias y programas de post-market. Rol cross-functional con alta visibilidad ejecutiva.',
+      ctaEyebrow: 'Libro recomendado',
+      ctaTitle: 'De Doctorado a Project Manager',
+      ctaDesc:
         '116 páginas · 24 figuras. Cubre metodologías Waterfall, Agile, Scrum, Kanban traducidas al lenguaje pharma. Salarios LATAM por país. Módulo de IA para PMs.',
-      bookURL: hotmart.libroPM,
+      ctaLabel: 'Ver en Hotmart →',
+      ctaURL: cta.libroPM,
     },
     MSL: {
       name: 'Medical Science Liaison',
       short: 'MSL',
       explanation:
-        'Tu perfil apunta hacia MSL: rol científico-estratégico, no comercial. Es el match natural para PhDs cuya fortaleza académica fue la lectura crítica de literatura, la traducción de evidencia compleja en decisiones, y el diálogo con expertos médicos. Un MSL construye relaciones con KOLs, traduce data clínica a contexto terapéutico, no vende productos pero sí informa decisiones médicas con rigor científico.',
-      bookTitle: 'De Doctorado a MSL',
-      bookDesc:
+        'Tu perfil apunta hacia MSL: rol científico-estratégico, no comercial. Es el match natural para perfiles cuya fortaleza es la lectura crítica de literatura, la traducción de evidencia compleja en decisiones y el diálogo con expertos médicos. Un MSL construye relaciones con KOLs, traduce data clínica a contexto terapéutico, no vende productos pero sí informa decisiones médicas con rigor científico.',
+      ctaEyebrow: 'Libro recomendado',
+      ctaTitle: 'De Doctorado a MSL',
+      ctaDesc:
         '193 páginas · 35 figuras. Cubre compliance LATAM por país (5), preparación para certificaciones (BCMAS, MAPS, MSL Society) y el reverse-engineering del rol que necesitas en entrevista.',
-      bookURL: hotmart.libroMSL,
+      ctaLabel: 'Ver en Hotmart →',
+      ctaURL: cta.libroMSL,
     },
     CR: {
       name: 'Clinical Research',
       short: 'CR',
       explanation:
-        'Tu perfil encaja con investigación clínica: rigor operativo, ejecución de protocolos exigentes, atención al detalle bajo presión regulatoria. Es el match natural para PhDs disciplinados que disfrutan procesos estrictos y trabajo cercano a sitios, datos y pacientes. Los roles típicos son CRA (Clinical Research Associate), CRS (Clinical Research Specialist), CTM (Clinical Trial Manager).',
-      bookTitle: 'De Doctorado a Clinical Research',
-      bookDesc:
+        'Tu perfil encaja con investigación clínica: rigor operativo, ejecución de protocolos exigentes, atención al detalle bajo presión regulatoria. Es el match natural para perfiles disciplinados que disfrutan procesos estrictos y trabajo cercano a sitios, datos y pacientes. Roles típicos: CRA (Clinical Research Associate), CRS (Clinical Research Specialist), CTM (Clinical Trial Manager).',
+      ctaEyebrow: 'Libro recomendado',
+      ctaTitle: 'De Doctorado a Clinical Research',
+      ctaDesc:
         '198 páginas · 33 figuras. Incluye ICH E6(R3) actualizado a 2025, compliance LATAM por 5 países y módulo nuevo de IA en clinical research.',
-      bookURL: hotmart.libroCR,
+      ctaLabel: 'Ver en Hotmart →',
+      ctaURL: cta.libroCR,
+    },
+    FV: {
+      name: 'Farmacovigilancia',
+      short: 'FV',
+      explanation:
+        'Tu perfil encaja con farmacovigilancia: rol reactivo, altamente documentado, con reglas regulatorias claras. Es la puerta de entrada más ancha a pharma LATAM en CRO y BPO (Thermo Fisher, IQVIA, PPD, Cognizant, Wipro). Como Drug Safety Associate procesas casos individuales (ICSR) con MedDRA coding, narrativa estandarizada y plazos regulatorios estrictos. Requiere licenciatura en ciencias de la vida, inglés B2 real y disciplina para volumen alto de casos por semana.',
+      ctaEyebrow: 'Próximo paso (mientras se publica el libro)',
+      ctaTitle: 'Practica el rol con el Simulador de Entrevistas Pharma',
+      ctaDesc:
+        'El módulo Farmacovigilancia del Simulador tiene preguntas basadas en patrones reales de entrevistas DSA en CRO/BPO LATAM. Freemium sin costo. El libro "De Ciencias a Farmacovigilancia" está en borrador editorial (roadmap 2026Q4).',
+      ctaLabel: 'Practicar módulo FV →',
+      ctaURL: cta.cursoFV,
+    },
+    Consulting: {
+      name: 'Life Sciences Consulting',
+      short: 'Consulting',
+      explanation:
+        'Tu perfil encaja con consultoría de life sciences / strategy consulting para pharma: alta tolerancia a ambigüedad, rotación temática, deliverable ejecutivo, comunicación concisa. Firmas típicas: IQVIA Consulting, ZS Associates, Deloitte Life Sciences, Accenture, McKinsey/Bain/BCG con práctica pharma. Cada 6-12 semanas cambias de proyecto y de industria adyacente. Pide inglés C1 real y pensamiento estructurado bajo presión.',
+      ctaEyebrow: 'Próximo paso (mientras se publica el libro)',
+      ctaTitle: 'Practica el rol con el Simulador de Entrevistas Pharma',
+      ctaDesc:
+        'El módulo Strategy Consulting del Simulador tiene preguntas basadas en patrones reales de entrevistas de consulting pharma LATAM (case interviews, PEI, fit). Freemium sin costo. El libro sobre carrera en Life Sciences Consulting está en investigación editorial (roadmap 2027Q1).',
+      ctaLabel: 'Practicar módulo Consulting →',
+      ctaURL: cta.cursoConsulting,
     },
   };
 
@@ -850,7 +945,7 @@ const QUESTIONS = [
     topRole: null,
     scores: null,
     gateData: null,   // { name, email, country }
-    selfMatch: null,  // 'PM' | 'MSL' | 'CR' | 'NS' — el rol que cree que le queda
+    selfMatch: null,  // 'PM' | 'MSL' | 'CR' | 'FV' | 'Consulting' | 'NS'
   };
 
   const $ = (id) => document.getElementById(id);
@@ -988,12 +1083,12 @@ const QUESTIONS = [
   });
 
   function computeScores() {
-    const scores = { PM: 0, MSL: 0, CR: 0 };
+    const scores = { PM: 0, MSL: 0, CR: 0, FV: 0, Consulting: 0 };
     state.answers.forEach((aIdx, qIdx) => {
       if (aIdx === null) return;
       const opt = QUESTIONS[qIdx].options[aIdx];
       Object.entries(opt.scores).forEach(([role, pts]) => {
-        scores[role] += pts;
+        if (role in scores) scores[role] += pts;
       });
     });
     return scores;
@@ -1040,9 +1135,9 @@ const QUESTIONS = [
     const margin = topScore - secondScore;
     const subtitleEl = $('result-subtitle');
     if (margin === 0) {
-      subtitleEl.textContent = `Empate técnico entre ${ROLE_DATA[topRole].short} y ${ROLE_DATA[secondRole].short}. Te conviene leer el módulo 1 de ambos libros antes de decidir.`;
+      subtitleEl.textContent = `Empate técnico entre ${ROLE_DATA[topRole].short} y ${ROLE_DATA[secondRole].short}. Explora la recomendación de ambos antes de decidir.`;
     } else if (margin <= 2) {
-      subtitleEl.textContent = `Tu segundo match es ${ROLE_DATA[secondRole].name} — está cerca. Considera el libro de ${ROLE_DATA[topRole].short} como prioritario y el de ${ROLE_DATA[secondRole].short} en segunda etapa.`;
+      subtitleEl.textContent = `Tu segundo match es ${ROLE_DATA[secondRole].name} — está cerca. Prioriza ${ROLE_DATA[topRole].short} y considera ${ROLE_DATA[secondRole].short} como segunda opción.`;
     } else {
       subtitleEl.textContent = `Match claro: ${ROLE_DATA[topRole].short} con ventaja de ${margin} puntos sobre ${ROLE_DATA[secondRole].short}.`;
     }
@@ -1067,20 +1162,28 @@ const QUESTIONS = [
 
     const bookRecs = $('book-recommendations');
     bookRecs.innerHTML = '';
-    const renderBook = (role, isPrimary) => {
+    const renderRec = (role, isPrimary) => {
       const data = ROLE_DATA[role];
       const card = document.createElement('div');
       card.className = `book-rec ${isPrimary ? '' : 'secondary'}`;
+      // Escape básico para el HTML dinámico (evitar &, <, > sin encodear).
+      const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const eyebrow = isPrimary
+        ? esc(data.ctaEyebrow || 'Recomendado')
+        : 'Segunda opción a considerar';
+      const label = isPrimary
+        ? esc(data.ctaLabel || 'Ver recomendación →')
+        : 'Ver opción secundaria →';
       card.innerHTML = `
-        <div class="book-rec-eyebrow">${isPrimary ? 'Libro recomendado' : 'Segunda lectura recomendada'}</div>
-        <h4>${data.bookTitle}</h4>
-        <p>${data.bookDesc}</p>
-        <a href="${data.bookURL}" target="_blank" rel="noopener">${isPrimary ? 'Ver en Hotmart →' : 'Ver libro secundario →'}</a>
+        <div class="book-rec-eyebrow">${eyebrow}</div>
+        <h4>${esc(data.ctaTitle)}</h4>
+        <p>${esc(data.ctaDesc)}</p>
+        <a href="${esc(data.ctaURL)}" target="_blank" rel="noopener">${label}</a>
       `;
       bookRecs.appendChild(card);
     };
-    renderBook(topRole, true);
-    if (margin <= 2 && margin > 0) renderBook(secondRole, false);
+    renderRec(topRole, true);
+    if (margin <= 2 && margin > 0) renderRec(secondRole, false);
 
     showScreen('result');
     progressWrap.hidden = true;

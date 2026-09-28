@@ -70,4 +70,4 @@ Cruzar de academia a industria pharma requiere resolver cuatro brechas antes de 
 
 ---
 
-**¿Sabes qué rol pharma se ajusta a tu perfil?** Antes de reescribir el CV, dedica dos minutos a nuestro Quiz Match, la herramienta abierta que te ubica entre las tres rutas que cubrimos: Project Manager, MSL y Clinical Research. [Pruébalo en solcaciencia.com/quiz-rol](https://solcaciencia.com/quiz-rol).
+**¿Sabes qué rol pharma se ajusta a tu perfil?** Antes de reescribir el CV, dedica tres minutos a nuestro Quiz Match, la herramienta abierta que te ubica entre las cinco rutas pharma LATAM que cubrimos: Project Manager clínico, MSL, Clinical Research, Farmacovigilancia y Life Sciences Consulting. [Pruébalo en solcaciencia.com/quiz-rol](https://solcaciencia.com/quiz-rol).

@@ -2,27 +2,36 @@ import type { APIRoute } from 'astro';
 import { sendEmailWithTemplate, PostmarkError } from '../../lib/postmark';
 import { extractUtms, UTM_KEYS } from '../../lib/utm';
 // Postmark reemplaza a Brevo (jul 2026). Ver _docs/que-rompimos-brevo-mailerlite.md.
-// El opt-in vive en KV EMAILS. La segmentación por rol (PM/MSL/CR) vive en el record
+// El opt-in vive en KV EMAILS. La segmentación por rol (PM/MSL/CR/FV/Consulting) vive en el record
 // del KV — Postmark no maneja listas.
 
 export const prerender = false;
 
+// Roles del quiz. Ampliado 2026-09-28: se añaden Farmacovigilancia (FV) y
+// Life Sciences Consulting (Consulting) al quiz-rol. Los 3 primeros tienen
+// libro publicado en Hotmart; FV y Consulting apuntan al Simulador con
+// módulo pre-seleccionado mientras se publican sus libros (roadmap editorial
+// 2026Q4-2027Q1).
+type QuizRole = 'PM' | 'MSL' | 'CR' | 'FV' | 'Consulting';
+
 // Etiquetas humanas para el rol que resulta del quiz. Usadas en el template welcome.
-const ROLE_LABELS: Record<'PM' | 'MSL' | 'CR', string> = {
-  PM: 'Project Manager',
+const ROLE_LABELS: Record<QuizRole, string> = {
+  PM: 'Project Manager clínico',
   MSL: 'Medical Science Liaison',
   CR: 'Clinical Research',
+  FV: 'Farmacovigilancia',
+  Consulting: 'Life Sciences Consulting',
 };
 
 interface QuizSubscribeRequest {
   email: string;
   name?: string;
-  role?: 'PM' | 'MSL' | 'CR';
-  scores?: { PM: number; MSL: number; CR: number };
+  role?: QuizRole;
+  scores?: Partial<Record<QuizRole, number>>;
   country?: string;
   consent?: boolean;
   stage?: 'gate' | 'complete';
-  selfMatch?: 'PM' | 'MSL' | 'CR' | 'NS';
+  selfMatch?: QuizRole | 'NS';
   // UTMs opcionales: los agrega el cliente desde window.__utm (P1 sprint 2026-08-18).
   utm_source?: string;
   utm_medium?: string;
@@ -32,8 +41,8 @@ interface QuizSubscribeRequest {
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const VALID_ROLES = new Set(['PM', 'MSL', 'CR']);
-const VALID_SELF_MATCH = new Set(['PM', 'MSL', 'CR', 'NS']);
+const VALID_ROLES = new Set<string>(['PM', 'MSL', 'CR', 'FV', 'Consulting']);
+const VALID_SELF_MATCH = new Set<string>(['PM', 'MSL', 'CR', 'FV', 'Consulting', 'NS']);
 
 function jsonResponse(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -68,13 +77,55 @@ async function sendWelcomeQuiz(
   runtime: { env?: Record<string, unknown> } | undefined,
   email: string,
   firstName: string | undefined,
-  role: 'PM' | 'MSL' | 'CR',
+  role: QuizRole,
 ): Promise<void> {
   const token = runtime?.env?.POSTMARK_SERVER_TOKEN as string | undefined;
   if (!token) {
     console.log('quiz-subscribe:postmark-skipped (no POSTMARK_SERVER_TOKEN)');
     return;
   }
+
+  // CTA · próximo paso concreto según rol. Añadido 2026-09-28.
+  // Contexto: reporte semanal mostró welcome-quiz con 12.5% CTR vs
+  // welcome-cv con 78.6%. El welcome-cv tiene CTA claro; el de quiz no.
+  // Le pasamos al template una URL del simulador (o del libro) con
+  // pre-selección del rol y UTM para atribuir el clic.
+  //
+  // El template `welcome-solca-insight` en Postmark debe usar estos
+  // campos nuevos: {{cta_url}}, {{cta_label}}, {{role_next_step}}.
+  const CTA_BY_ROLE: Record<QuizRole, { label: string; next: string; module: string }> = {
+    PM: {
+      label: 'Practica preguntas de Project Manager clínico',
+      next: 'Simulador con módulo PM clínico: 5 preguntas de screening (freemium, sin costo).',
+      module: 'pm',
+    },
+    MSL: {
+      label: 'Practica preguntas de MSL',
+      next: 'Simulador con módulo MSL: 5 preguntas de screening (freemium, sin costo).',
+      module: 'msl',
+    },
+    CR: {
+      label: 'Practica preguntas de Clinical Research',
+      next: 'Simulador con módulo Clinical Research: 5 preguntas de screening (freemium, sin costo).',
+      module: 'cr',
+    },
+    FV: {
+      label: 'Practica preguntas de Farmacovigilancia',
+      next: 'Simulador con módulo Farmacovigilancia: 5 preguntas de screening en CRO/BPO (freemium, sin costo).',
+      module: 'fv',
+    },
+    Consulting: {
+      label: 'Practica preguntas de Life Sciences Consulting',
+      next: 'Simulador con módulo Strategy Consulting: preguntas de case interview + fit típicas en pharma consulting (freemium, sin costo).',
+      module: 'strategy-consulting',
+    },
+  };
+  const ctaCfg = CTA_BY_ROLE[role];
+  const ctaUrl =
+    `https://solcaciencia.com/simulador-entrevistas/` +
+    `?modulo=${ctaCfg.module}` +
+    `&utm_source=email&utm_medium=welcome-quiz` +
+    `&utm_campaign=welcome-quiz-cta&utm_content=rol-${ctaCfg.module}`;
 
   try {
     const result = await sendEmailWithTemplate(token, {
@@ -86,6 +137,10 @@ async function sendWelcomeQuiz(
         is_cv: false,
         is_quiz: true,
         role_label: ROLE_LABELS[role],
+        // Nuevos campos para el CTA — el template de Postmark debe usarlos.
+        cta_url: ctaUrl,
+        cta_label: ctaCfg.label,
+        role_next_step: ctaCfg.next,
       },
       tag: 'welcome-quiz',
       metadata: { source: 'quiz-subscribe', role },

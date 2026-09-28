@@ -245,8 +245,12 @@ interface EmailRec {
 
 interface QuizRec {
   ts: string;
-  role?: 'PM' | 'MSL' | 'CR';
-  selfMatch?: 'PM' | 'MSL' | 'CR' | 'NS';
+  // Roles del quiz. Ampliado 2026-09-28: añadidos FV (Farmacovigilancia) y
+  // Consulting (Life Sciences / Strategy Consulting) al quiz-rol. Los records
+  // históricos con solo PM/MSL/CR siguen siendo válidos (distribucion_rol
+  // usa Record<string, number> genérico).
+  role?: 'PM' | 'MSL' | 'CR' | 'FV' | 'Consulting';
+  selfMatch?: 'PM' | 'MSL' | 'CR' | 'FV' | 'Consulting' | 'NS';
 }
 
 // KV CV_METRICS · schema escrito por src/pages/api/cv-survey.ts
@@ -764,7 +768,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
       total: 0,
       cur: 0,
       prev: 0,
-      rol: { PM: 0, MSL: 0, CR: 0 } as Record<string, number>,
+      rol: { PM: 0, MSL: 0, CR: 0, FV: 0, Consulting: 0 } as Record<string, number>,
       agree_hits: 0,
       agree_total: 0,
     };
