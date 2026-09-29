@@ -10,7 +10,18 @@
 
 **Última edición cerrada:** Vie 12 jun 2026 (#06 · MSL roles disambiguation)
 **Próxima edición pendiente:** Vie 19 jun 2026 (#07 · MSL salaries + vacantes #2)
-**Cadencia vacantes:** cada 4 semanas a partir de Vie 22 may → Vie 19 jun → Vie 17 jul → Vie 14 ago → ...
+
+**Cadencia vacantes — RESET 2026-09-29:**
+El ciclo original (Vie 22 may → 19 jun → 17 jul → 14 ago → 11 sept) se rompió: ago 14 y sept 11 no salieron por conflicto entre sprint LinkedIn y ciclo mensual del newsletter. Se recuperó con la edición del **Vie 25 sept 2026** dentro del sprint W38-W41 ("Vacantes pharma LATAM sept 2026 · 69 postings, 7 países, 7 patrones"). A partir de acá **la marca de tiempo es Vie 25 sept 2026** y la cadencia se sincroniza con los sprints LinkedIn.
+
+Fechas próximas (viernes cada 4 semanas desde 25 sept):
+- Vie 23 oct 2026 · Vacantes post-reset #1 · dueño: siguiente sprint LinkedIn (W42-W45)
+- Vie 20 nov 2026 · Vacantes post-reset #2
+- Vie 18 dic 2026 · Vacantes post-reset #3
+- Vie 15 ene 2027 · Vacantes post-reset #4
+
+Regla operativa: cada sprint LinkedIn nuevo asigna explícitamente su edición vacantes al viernes que corresponda por cadencia (no la puede saltar sin decisión editorial documentada). Si el sprint no contiene un viernes de vacantes, se coordina como envío independiente.
+
 **Nueva cadencia miércoles:** "Lo que dicen las vacantes" — serie mensual de 4 artículos de inteligencia de mercado derivados del dataset de vacantes curado ese mes. Cada miércoles a las 12:00 CDMX. Refuerza pero no sustituye la edición vacantes del viernes.
 
 ---
