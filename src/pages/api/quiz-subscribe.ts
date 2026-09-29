@@ -128,6 +128,12 @@ async function sendWelcomeQuiz(
     `&utm_campaign=welcome-quiz-cta&utm_content=rol-${ctaCfg.module}`;
 
   try {
+    // NOTA templateModel: Postmark Mustachio interpreta variables dentro de
+    // secciones {{#is_quiz}}...{{/is_quiz}} como propiedades ANIDADAS de
+    // is_quiz, no como globales. Por eso role_label, cta_url, cta_label y
+    // role_next_step van dentro del objeto is_quiz — así el template puede
+    // referenciarlas como {{role_label}} dentro del {{#is_quiz}}. Bug
+    // encontrado 2026-09-29 tras smoke test que rendereó campos vacíos.
     const result = await sendEmailWithTemplate(token, {
       from: 'Oscar Solís <hola@solcaciencia.com>',
       to: email,
@@ -135,12 +141,12 @@ async function sendWelcomeQuiz(
       templateModel: {
         first_name: firstName ?? '',
         is_cv: false,
-        is_quiz: true,
-        role_label: ROLE_LABELS[role],
-        // Nuevos campos para el CTA — el template de Postmark debe usarlos.
-        cta_url: ctaUrl,
-        cta_label: ctaCfg.label,
-        role_next_step: ctaCfg.next,
+        is_quiz: {
+          role_label: ROLE_LABELS[role],
+          cta_url: ctaUrl,
+          cta_label: ctaCfg.label,
+          role_next_step: ctaCfg.next,
+        },
       },
       tag: 'welcome-quiz',
       metadata: { source: 'quiz-subscribe', role },
