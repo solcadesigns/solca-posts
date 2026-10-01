@@ -717,7 +717,8 @@ Mapeo de rol a libro:
   PM, Clinical PM → Libro 1 (https://go.hotmart.com/R105710415P)
   MSL, Medical Affairs → Libro 2 (https://go.hotmart.com/Y105718405Y)
   CRA, Clinical Research, ACS → Libro 3 (https://go.hotmart.com/U105724060O)
-  Regulatory, PV, HEOR, Otro → Rotar + sugerir /revisar-cv
+  PV, Drug Safety, Farmacovigilancia, DSA → Libro 4 (https://pay.hotmart.com/E107847432I)
+  Regulatory, HEOR, Otro → Rotar + sugerir /revisar-cv
 
 El CTA libro debe estar justificado por el feedback acumulado, no ser banner.`;
 

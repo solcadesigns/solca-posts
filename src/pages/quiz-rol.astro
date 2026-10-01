@@ -1,16 +1,16 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 
-// CTAs por rol. Los 3 roles con libro publicado van a Hotmart. FV y Consulting
-// van al simulador con módulo pre-seleccionado mientras se publican sus libros
-// (sept 2026 · FV en borrador, Consulting en investigación editorial). Cuando
-// salgan los libros, cambiar aquí la URL a Hotmart es un edit puntual.
+// CTAs por rol. Los 4 roles con libro publicado van a Hotmart. Consulting
+// aún va al simulador con módulo pre-seleccionado mientras se publica su
+// libro (oct 2026 · Consulting en investigación editorial, roadmap 2027Q1).
+// Cuando salga el libro de Consulting, cambiar aquí la URL a Hotmart es un
+// edit puntual.
 const cta = {
   libroPM: 'https://go.hotmart.com/R105710415P',
   libroMSL: 'https://go.hotmart.com/Y105718405Y',
   libroCR: 'https://go.hotmart.com/U105724060O',
-  cursoFV:
-    'https://solcaciencia.com/simulador-entrevistas/?modulo=fv&utm_source=quiz-rol&utm_medium=result&utm_campaign=quiz-rol-fv&utm_content=cta-fv',
+  libroFV: 'https://pay.hotmart.com/E107847432I',
   cursoConsulting:
     'https://solcaciencia.com/simulador-entrevistas/?modulo=strategy-consulting&utm_source=quiz-rol&utm_medium=result&utm_campaign=quiz-rol-consulting&utm_content=cta-consulting',
 };
@@ -871,11 +871,11 @@ const QUESTIONS = [
 
 <script define:vars={{ QUESTIONS, cta }}>
   // ROLE_DATA · usa `ctaTitle`, `ctaDesc`, `ctaURL`, `ctaLabel` de forma
-  // unificada. Los 3 roles con libro publicado apuntan a Hotmart; FV y
-  // Consulting apuntan al simulador con módulo pre-seleccionado mientras se
-  // publican sus libros (roadmap editorial 2026Q4-2027Q1). Cuando salga cada
-  // libro, actualizar aquí el ctaURL, ctaTitle y ctaDesc, y el flujo del
-  // quiz sigue igual.
+  // unificada. Los 4 roles con libro publicado apuntan a Hotmart; Consulting
+  // sigue apuntando al simulador con módulo pre-seleccionado mientras se
+  // publica su libro (roadmap editorial 2027Q1). Cuando salga el libro de
+  // Consulting, actualizar aquí el ctaURL, ctaTitle y ctaDesc, y el flujo
+  // del quiz sigue igual.
   const ROLE_DATA = {
     PM: {
       name: 'Project Manager clínico',
@@ -917,13 +917,13 @@ const QUESTIONS = [
       name: 'Farmacovigilancia',
       short: 'FV',
       explanation:
-        'Tu perfil encaja con farmacovigilancia: rol reactivo, altamente documentado, con reglas regulatorias claras. Es la puerta de entrada más ancha a pharma LATAM en CRO y BPO (Thermo Fisher, IQVIA, PPD, Cognizant, Wipro). Como Drug Safety Associate procesas casos individuales (ICSR) con MedDRA coding, narrativa estandarizada y plazos regulatorios estrictos. Requiere licenciatura en ciencias de la vida, inglés B2 real y disciplina para volumen alto de casos por semana.',
-      ctaEyebrow: 'Próximo paso (mientras se publica el libro)',
-      ctaTitle: 'Practica el rol con el Simulador de Entrevistas Pharma',
+        'Tu perfil encaja con farmacovigilancia: rol reactivo, altamente documentado, con reglas regulatorias claras. Es la puerta de entrada más ancha a pharma LATAM en CRO y BPO (ICON, IQVIA, Parexel, Syneos, Labcorp, Accenture, Cognizant, Genpact, Wipro). Como Drug Safety Associate procesas casos individuales (ICSR) con MedDRA coding, narrativa estandarizada y plazos regulatorios estrictos. Requiere licenciatura en ciencias de la vida, inglés B2 real y disciplina para volumen alto de casos por semana.',
+      ctaEyebrow: 'Libro recomendado',
+      ctaTitle: 'Farmacovigilancia · Guía práctica',
       ctaDesc:
-        'El módulo Farmacovigilancia del Simulador tiene preguntas basadas en patrones reales de entrevistas DSA en CRO/BPO LATAM. Freemium sin costo. El libro "De Ciencias a Farmacovigilancia" está en borrador editorial (roadmap 2026Q4).',
-      ctaLabel: 'Practicar módulo FV →',
-      ctaURL: cta.cursoFV,
+        '~79 páginas · 8 figuras. Cubre ICSR y MedDRA, agencias LATAM (COFEPRIS, ANMAT, INVIMA, ISP, ANVISA) + España, salarios por país con fuentes (DataMéxico, SalaryExpert, Glassdoor), 15 preguntas de entrevista con respuestas modelo, y módulo de IA para FV con marco FDA/EMA enero 2026.',
+      ctaLabel: 'Ver en Hotmart →',
+      ctaURL: cta.libroFV,
     },
     Consulting: {
       name: 'Life Sciences Consulting',

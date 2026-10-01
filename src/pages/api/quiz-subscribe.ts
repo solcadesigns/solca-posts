@@ -8,10 +8,10 @@ import { extractUtms, UTM_KEYS } from '../../lib/utm';
 export const prerender = false;
 
 // Roles del quiz. Ampliado 2026-09-28: se añaden Farmacovigilancia (FV) y
-// Life Sciences Consulting (Consulting) al quiz-rol. Los 3 primeros tienen
-// libro publicado en Hotmart; FV y Consulting apuntan al Simulador con
-// módulo pre-seleccionado mientras se publican sus libros (roadmap editorial
-// 2026Q4-2027Q1).
+// Life Sciences Consulting (Consulting) al quiz-rol. Los 4 primeros tienen
+// libro publicado en Hotmart (FV publicado oct 2026); Consulting apunta al
+// Simulador con módulo pre-seleccionado mientras se publica su libro
+// (roadmap editorial 2027Q1).
 type QuizRole = 'PM' | 'MSL' | 'CR' | 'FV' | 'Consulting';
 
 // Etiquetas humanas para el rol que resulta del quiz. Usadas en el template welcome.
@@ -93,28 +93,39 @@ async function sendWelcomeQuiz(
   //
   // El template `welcome-solca-insight` en Postmark debe usar estos
   // campos nuevos: {{cta_url}}, {{cta_label}}, {{role_next_step}}.
-  const CTA_BY_ROLE: Record<QuizRole, { label: string; next: string; module: string }> = {
+  // Para roles con libro publicado en Hotmart (PM/MSL/CR/FV), el CTA del
+  // welcome apunta directo al libro. Consulting sigue al simulador hasta que
+  // salga su libro (roadmap 2027Q1).
+  type CTAConfig =
+    | { kind: 'book'; label: string; next: string; url: string }
+    | { kind: 'simulator'; label: string; next: string; module: string };
+  const CTA_BY_ROLE: Record<QuizRole, CTAConfig> = {
     PM: {
-      label: 'Practica preguntas de Project Manager clínico',
-      next: 'Simulador con módulo PM clínico: 5 preguntas de screening (freemium, sin costo).',
-      module: 'pm',
+      kind: 'book',
+      label: 'Ver el libro De Doctorado a Project Manager',
+      next: 'Libro "De Doctorado a Project Manager" — guía práctica del rol de PM clínico en pharma LATAM y España.',
+      url: 'https://go.hotmart.com/R105710415P',
     },
     MSL: {
-      label: 'Practica preguntas de MSL',
-      next: 'Simulador con módulo MSL: 5 preguntas de screening (freemium, sin costo).',
-      module: 'msl',
+      kind: 'book',
+      label: 'Ver el libro De Doctorado a MSL',
+      next: 'Libro "De Doctorado a MSL" — guía práctica del rol de Medical Science Liaison en pharma LATAM y España.',
+      url: 'https://go.hotmart.com/Y105718405Y',
     },
     CR: {
-      label: 'Practica preguntas de Clinical Research',
-      next: 'Simulador con módulo Clinical Research: 5 preguntas de screening (freemium, sin costo).',
-      module: 'cr',
+      kind: 'book',
+      label: 'Ver el libro De Doctorado a Clinical Research',
+      next: 'Libro "De Doctorado a Clinical Research" — guía práctica del rol de CRA/CRS en pharma LATAM y España.',
+      url: 'https://go.hotmart.com/U105724060O',
     },
     FV: {
-      label: 'Practica preguntas de Farmacovigilancia',
-      next: 'Simulador con módulo Farmacovigilancia: 5 preguntas de screening en CRO/BPO (freemium, sin costo).',
-      module: 'fv',
+      kind: 'book',
+      label: 'Ver el libro Farmacovigilancia',
+      next: 'Libro "Farmacovigilancia · Guía práctica" — ICSR, MedDRA, agencias LATAM y España, 15 preguntas de entrevista modelo y un módulo de IA para FV.',
+      url: 'https://pay.hotmart.com/E107847432I',
     },
     Consulting: {
+      kind: 'simulator',
       label: 'Practica preguntas de Life Sciences Consulting',
       next: 'Simulador con módulo Strategy Consulting: preguntas de case interview + fit típicas en pharma consulting (freemium, sin costo).',
       module: 'strategy-consulting',
@@ -122,10 +133,13 @@ async function sendWelcomeQuiz(
   };
   const ctaCfg = CTA_BY_ROLE[role];
   const ctaUrl =
-    `https://solcaciencia.com/simulador-entrevistas/` +
-    `?modulo=${ctaCfg.module}` +
-    `&utm_source=email&utm_medium=welcome-quiz` +
-    `&utm_campaign=welcome-quiz-cta&utm_content=rol-${ctaCfg.module}`;
+    ctaCfg.kind === 'book'
+      ? `${ctaCfg.url}?utm_source=email&utm_medium=welcome-quiz` +
+        `&utm_campaign=welcome-quiz-cta&utm_content=libro-${role.toLowerCase()}`
+      : `https://solcaciencia.com/simulador-entrevistas/` +
+        `?modulo=${ctaCfg.module}` +
+        `&utm_source=email&utm_medium=welcome-quiz` +
+        `&utm_campaign=welcome-quiz-cta&utm_content=rol-${ctaCfg.module}`;
 
   try {
     // NOTA templateModel: Postmark Mustachio interpreta variables dentro de
