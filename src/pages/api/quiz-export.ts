@@ -2,12 +2,19 @@ import type { APIRoute } from 'astro';
 
 export const prerender = false;
 
+// Ampliado 2026-10-01: FV y Consulting agregados al quiz-rol el 2026-09-28.
+const ROLES = ['PM', 'MSL', 'CR', 'FV', 'Consulting'] as const;
+type Role = (typeof ROLES)[number];
+type ScoreMap = Partial<Record<Role, number>>;
+
 interface MetricRecord {
   ts: string;
-  role: 'PM' | 'MSL' | 'CR';
-  scores?: { PM: number; MSL: number; CR: number };
-  selfMatch?: 'PM' | 'MSL' | 'CR' | 'NS';
+  role: Role;
+  scores?: ScoreMap;
+  selfMatch?: Role | 'NS';
   country?: string;
+  utm_source?: string;
+  utm_campaign?: string;
 }
 
 /** RFC4180 CSV escaping: wrap in quotes if contains comma/quote/newline; double internal quotes. */
@@ -64,7 +71,19 @@ export const GET: APIRoute = async ({ url, locals }) => {
     // Sort chronologically for cleaner Sheet view
     records.sort((a, b) => a.ts.localeCompare(b.ts));
 
-    const header = ['ts', 'role', 'self_match', 'country', 'score_pm', 'score_msl', 'score_cr'];
+    const header = [
+      'ts',
+      'role',
+      'self_match',
+      'country',
+      'score_pm',
+      'score_msl',
+      'score_cr',
+      'score_fv',
+      'score_consulting',
+      'utm_source',
+      'utm_campaign',
+    ];
     const rows = [toCsvRow(header)];
     for (const r of records) {
       rows.push(
@@ -76,6 +95,10 @@ export const GET: APIRoute = async ({ url, locals }) => {
           r.scores?.PM ?? '',
           r.scores?.MSL ?? '',
           r.scores?.CR ?? '',
+          r.scores?.FV ?? '',
+          r.scores?.Consulting ?? '',
+          r.utm_source ?? '',
+          r.utm_campaign ?? '',
         ]),
       );
     }
