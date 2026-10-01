@@ -81,3 +81,5 @@ Farmacovigilancia en México es la puerta de entrada más consistente a industri
 ---
 
 **¿Tu CV usa el vocabulario con el que las vacantes de farmacovigilancia describen el trabajo?** La herramienta de Solca revisa tu CV en menos de un minuto y devuelve diagnóstico por sección. [Pruébala en solcaciencia.com/revisar-cv](https://solcaciencia.com/revisar-cv).
+
+El libro 4 de Solca (*Farmacovigilancia · Guía práctica*) cubre el reverse-engineering completo del rol de Drug Safety Associate, el marco regulatorio diario (ICH E2, EMA GVP, FDA 21 CFR, COFEPRIS, ANMAT, INVIMA, ISP, ANVISA), rangos salariales por país con fuentes (DataMéxico/INEGI, SalaryExpert, Glassdoor), un plan de onboarding 30/60/90 días, quince preguntas técnicas de entrevista con respuestas modelo y un módulo de IA para FV con marco regulatorio FDA/EMA enero 2026. Disponible en [Hotmart](https://pay.hotmart.com/E107847432I).

@@ -199,10 +199,47 @@ Oscar Omar Solís Castro. Doctor en ciencias y consultor en industria farmacéut
 
 ---
 
+## SKU 4 · Libro Farmacovigilancia (añadido oct 2026)
+
+**Título en Hotmart:** Farmacovigilancia
+
+**Subtítulo:** Guía práctica para científicos de la salud · LATAM y España
+
+**Precio de lanzamiento sugerido:** MXN $599 · Regular $799
+
+**URL corta:** https://pay.hotmart.com/E107847432I
+
+**Descripción corta (≤2000 caracteres · para campo de descripción Hotmart):**
+
+```
+Guía práctica de entrada a la carrera de Drug Safety Associate (DSA) y farmacovigilancia en industria pharma. Para quien inicia desde ciencias de la salud, sin doctorado ni experiencia previa en industria.
+
+Para quién es: QFB, biólogo, químico, biotecnólogo, enfermería, médico, farmacéutico, PhD o PharmD que considera entrar como DSA I en CROs (ICON, IQVIA, Parexel, Syneos, Labcorp), BPOs (Accenture, Cognizant, Genpact, Wipro) o sponsors en LATAM o España.
+
+No es: enciclopedia regulatoria avanzada ni atajo de 30 días. Transición típica: 2 a 6 meses de preparación seria.
+
+Cinco módulos:
+1. Fundamentos del rol. Por qué encajas, qué es y qué no es FV, ecosistema, cinco escalones DSA I a Manager, diez habilidades transferibles.
+2. Operación y compliance. Día del DSA I, ICSR y sus cuatro criterios, MedDRA, causalidad WHO-UMC y Naranjo, narrativa, regla del tres, ICH E2 completo + EMA GVP + FDA 21 CFR, agencias LATAM (COFEPRIS, ANMAT, INVIMA, ISP, ANVISA), signal detection, PBRER, DSUR, RMP, los cuatro sistemas (Argus, Vault Safety, LifeSphere).
+3. Mercado laboral. Seis factores personales, tres mundos (CRO/BPO/sponsor), empresas activas LATAM, salarios por país con fuentes (SalaryExpert, LinkedIn, Glassdoor, DataMéxico/INEGI), España, CV, ATS, 15 preguntas técnicas con respuestas modelo y 5 conductuales STAR.
+4. Primeros 90 días y carrera. Plan 30/60/90, trayectoria 5 años, cuándo saltar, patrones de fracaso, siete movimientos laterales, certificaciones (formación sin costo, vendor, DIA, RAPS, Eu2P).
+5. IA para FV. Qué cambia y qué no, adopción real (Deloitte, TransCelerate, IQVIA), diez prompts con compliance (GDPR, LGPD, LFPDPPP), cinco riesgos, marco FDA/EMA Ten Principles enero 2026.
+
+Cada módulo cierra con cuaderno de ejercicios.
+
+Formato: PDF descargable · ~25 mil palabras · ~79 páginas · 8 figuras · español neutral · cobertura LATAM + España · referencias verificables con URL · actualizado septiembre 2026.
+
+Autor: Dr. Oscar Omar Solís Castro, fundador de Solca · Ciencia y Consultoría.
+
+Entrega inmediata vía Hotmart. Garantía de 7 días.
+```
+
+---
+
 ## Notas para Oscar antes de subir a Hotmart
 
 1. **Verificar que las portadas nuevas estén subidas** en Hotmart antes de actualizar títulos (el orden importa: cover primero, título después evita periodo con mismatch).
 2. **Los precios están hardcoded** en las descripciones. Si vas a hacer una promoción distinta, ajusta antes de pegar.
-3. **La extensión en páginas** es aproximada según los DOCX regenerados 11 ago 2026 (PM ~116p, MSL ~193p, CR ~198p). Verifica el conteo final en el PDF exportado antes de subir.
+3. **La extensión en páginas** es aproximada según los DOCX regenerados 11 ago 2026 (PM ~116p, MSL ~193p, CR ~198p, FV ~79p). Verifica el conteo final en el PDF exportado antes de subir.
 4. **Los links a Hotmart URL cortas** los pega Hotmart automáticamente; solo se listan aquí como referencia interna.
-5. **Sobre el "Sobre el autor"**: si en algún momento cambias la biografía institucional (por ejemplo agregas más credenciales), actualiza en los tres SKUs simultáneamente para consistencia.
+5. **Sobre el "Sobre el autor"**: si en algún momento cambias la biografía institucional (por ejemplo agregas más credenciales), actualiza en los cuatro SKUs simultáneamente para consistencia.
