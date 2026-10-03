@@ -532,7 +532,7 @@ TEXT. Landscape 3:2 minimum 1600px wide.
 
 ## Convención de archivos que espera el script de texto (solo para versión B)
 
-Cuando descargues las imágenes solo-arte (versión B), guárdalas con este naming en `/Users/oscar/Downloads/solca/libro3/images/`:
+Cuando descargues las imágenes solo-arte (versión B), guárdalas con este naming en `/Users/oscar/proyectos/solca-ciencia/solca/libro3/images/`:
 
 - `bg_figura_1_1.png`, `bg_figura_1_2.png`, etc.
 
@@ -543,4 +543,4 @@ Yo te dejo listo un script `add_labels_figuras.py` que toma cada `bg_figura_X_Y.
 1. Empieza con **1-2 figuras piloto** (por ejemplo 1.1 y 2.6). Genera ambas versiones (A y B) para comparar. Elige el approach que quede mejor.
 2. Si eliges **A embed**: verifica manualmente cada texto embebido (ojo con acentos y verbos). Guarda como `figure_X_Y.png` directo en `libro3/images/`.
 3. Si eliges **B solo arte**: guarda como `bg_figura_X_Y.png`. Cuando tengas ~5 acumuladas, me avisas y corro el script de labels.
-4. Rebuild final: `cd /Users/oscar/Downloads/solca/libro3 && python3 build_docx.py`.
+4. Rebuild final: `cd /Users/oscar/proyectos/solca-ciencia/solca/libro3 && python3 build_docx.py`.

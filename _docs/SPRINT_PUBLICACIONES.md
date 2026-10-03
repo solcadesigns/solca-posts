@@ -1,14 +1,14 @@
 # Sprint de publicaciones · 26 jun – 24 jul 2026
 
 > Compilado listo para copiar-pegar a LinkedIn.
-> Imágenes: carpeta `/Users/oscar/Downloads/solca/website/_docs/` (miércoles) o `/Users/oscar/Downloads/solca/website/_docs/covers/` (viernes newsletter).
+> Imágenes: carpeta `/Users/oscar/proyectos/solca-ciencia/solca/website/_docs/` (miércoles) o `/Users/oscar/proyectos/solca-ciencia/solca/website/_docs/covers/` (viernes newsletter).
 > Lunes ya programados (29 jun, 6 jul, 13 jul, 20 jul) — se incluyen igual por referencia.
 
 ---
 
 ## 1. Vie 26 jun · Solca Insight #8 (newsletter con vacantes)
 
-**Imagen de portada:** `/Users/oscar/Downloads/solca/website/_docs/covers/newsletter_2026_06_26.png`
+**Imagen de portada:** `/Users/oscar/proyectos/solca-ciencia/solca/website/_docs/covers/newsletter_2026_06_26.png`
 
 ### Título del newsletter
 
@@ -162,7 +162,7 @@ Si todavía no estás suscrito a Solca Insight, suscríbete desde mi perfil. Sal
 
 ## 3. Mié 1 jul · Lo que dicen las vacantes #5
 
-**Imagen de portada:** `/Users/oscar/Downloads/solca/website/_docs/mier_2026_07_01.png`
+**Imagen de portada:** `/Users/oscar/proyectos/solca-ciencia/solca/website/_docs/mier_2026_07_01.png`
 
 ### Título / hook
 
@@ -194,7 +194,7 @@ Si quieres retroalimentación gratuita de tu CV antes de aplicar a cualquiera de
 
 ## 4. Vie 3 jul · Solca Insight #9 (newsletter regular)
 
-**Imagen de portada:** `/Users/oscar/Downloads/solca/website/_docs/covers/newsletter_2026_07_03.png`
+**Imagen de portada:** `/Users/oscar/proyectos/solca-ciencia/solca/website/_docs/covers/newsletter_2026_07_03.png`
 
 ### Título del newsletter
 
@@ -268,7 +268,7 @@ Si todavía no estás suscrito a Solca Insight, suscríbete desde mi perfil.
 
 ## 6. Mié 8 jul · Lo que dicen las vacantes #6
 
-**Imagen de portada:** `/Users/oscar/Downloads/solca/website/_docs/mier_2026_07_08.png`
+**Imagen de portada:** `/Users/oscar/proyectos/solca-ciencia/solca/website/_docs/mier_2026_07_08.png`
 
 ### Título / hook
 
@@ -306,7 +306,7 @@ Si quieres retroalimentación gratuita de tu CV antes de aplicar a cualquiera de
 
 ## 7. Vie 10 jul · Solca Insight #10 (newsletter regular)
 
-**Imagen de portada:** `/Users/oscar/Downloads/solca/website/_docs/covers/newsletter_2026_07_10.png`
+**Imagen de portada:** `/Users/oscar/proyectos/solca-ciencia/solca/website/_docs/covers/newsletter_2026_07_10.png`
 
 ### Título del newsletter
 
@@ -385,7 +385,7 @@ Si todavía no estás suscrito a Solca Insight, suscríbete desde mi perfil.
 
 ## 9. Mié 15 jul · Lo que dicen las vacantes #7
 
-**Imagen de portada:** `/Users/oscar/Downloads/solca/website/_docs/mier_2026_07_15.png`
+**Imagen de portada:** `/Users/oscar/proyectos/solca-ciencia/solca/website/_docs/mier_2026_07_15.png`
 
 ### Título / hook
 
@@ -421,7 +421,7 @@ Si quieres retroalimentación gratuita de tu CV antes de aplicar, la herramienta
 
 ## 10. Vie 17 jul · Solca Insight #11 (newsletter regular)
 
-**Imagen de portada:** `/Users/oscar/Downloads/solca/website/_docs/covers/newsletter_2026_07_17.png`
+**Imagen de portada:** `/Users/oscar/proyectos/solca-ciencia/solca/website/_docs/covers/newsletter_2026_07_17.png`
 
 ### Título del newsletter
 
@@ -501,7 +501,7 @@ Si todavía no estás suscrito a Solca Insight, suscríbete desde mi perfil. Sal
 
 ## 12. Mié 22 jul · Lo que dicen las vacantes #8
 
-**Imagen de portada:** `/Users/oscar/Downloads/solca/website/_docs/mier_2026_07_22.png`
+**Imagen de portada:** `/Users/oscar/proyectos/solca-ciencia/solca/website/_docs/mier_2026_07_22.png`
 
 ### Título / hook
 
@@ -540,7 +540,7 @@ Si quieres retroalimentación gratuita de tu CV antes de aplicar a entry pharma,
 
 ## 13. Vie 24 jul · Solca Insight #12 (newsletter con vacantes)
 
-**Imagen de portada:** `/Users/oscar/Downloads/solca/website/_docs/covers/newsletter_2026_07_24.png`
+**Imagen de portada:** `/Users/oscar/proyectos/solca-ciencia/solca/website/_docs/covers/newsletter_2026_07_24.png`
 
 ### Título del newsletter
 
@@ -599,14 +599,14 @@ Si todavía no estás suscrito a Solca Insight, suscríbete desde mi perfil.
 
 | Pieza | Path absoluto |
 |---|---|
-| Vie 26 jun cover newsletter #8 | `/Users/oscar/Downloads/solca/website/_docs/covers/newsletter_2026_06_26.png` |
-| Mié 1 jul cover serie miércoles #5 | `/Users/oscar/Downloads/solca/website/_docs/mier_2026_07_01.png` |
-| Vie 3 jul cover newsletter #9 | `/Users/oscar/Downloads/solca/website/_docs/covers/newsletter_2026_07_03.png` |
-| Mié 8 jul cover serie miércoles #6 | `/Users/oscar/Downloads/solca/website/_docs/mier_2026_07_08.png` |
-| Vie 10 jul cover newsletter #10 | `/Users/oscar/Downloads/solca/website/_docs/covers/newsletter_2026_07_10.png` |
-| Mié 15 jul cover serie miércoles #7 | `/Users/oscar/Downloads/solca/website/_docs/mier_2026_07_15.png` |
-| Vie 17 jul cover newsletter #11 | `/Users/oscar/Downloads/solca/website/_docs/covers/newsletter_2026_07_17.png` |
-| Mié 22 jul cover serie miércoles #8 | `/Users/oscar/Downloads/solca/website/_docs/mier_2026_07_22.png` |
-| Vie 24 jul cover newsletter #12 | `/Users/oscar/Downloads/solca/website/_docs/covers/newsletter_2026_07_24.png` |
+| Vie 26 jun cover newsletter #8 | `/Users/oscar/proyectos/solca-ciencia/solca/website/_docs/covers/newsletter_2026_06_26.png` |
+| Mié 1 jul cover serie miércoles #5 | `/Users/oscar/proyectos/solca-ciencia/solca/website/_docs/mier_2026_07_01.png` |
+| Vie 3 jul cover newsletter #9 | `/Users/oscar/proyectos/solca-ciencia/solca/website/_docs/covers/newsletter_2026_07_03.png` |
+| Mié 8 jul cover serie miércoles #6 | `/Users/oscar/proyectos/solca-ciencia/solca/website/_docs/mier_2026_07_08.png` |
+| Vie 10 jul cover newsletter #10 | `/Users/oscar/proyectos/solca-ciencia/solca/website/_docs/covers/newsletter_2026_07_10.png` |
+| Mié 15 jul cover serie miércoles #7 | `/Users/oscar/proyectos/solca-ciencia/solca/website/_docs/mier_2026_07_15.png` |
+| Vie 17 jul cover newsletter #11 | `/Users/oscar/proyectos/solca-ciencia/solca/website/_docs/covers/newsletter_2026_07_17.png` |
+| Mié 22 jul cover serie miércoles #8 | `/Users/oscar/proyectos/solca-ciencia/solca/website/_docs/mier_2026_07_22.png` |
+| Vie 24 jul cover newsletter #12 | `/Users/oscar/proyectos/solca-ciencia/solca/website/_docs/covers/newsletter_2026_07_24.png` |
 
 Lunes (29 jun, 6 jul, 13 jul, 20 jul) no llevan imagen — son posts de feed con texto solo.

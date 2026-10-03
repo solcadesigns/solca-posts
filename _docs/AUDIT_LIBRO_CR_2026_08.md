@@ -1,6 +1,6 @@
 # Auditoría editorial · libro CR (Clinical Research) · agosto 2026
 
-**Alcance:** archivos fuente `.md` en `/Users/oscar/Downloads/solca/libro3/` (frontmatter, modulo_01–05, backmatter).
+**Alcance:** archivos fuente `.md` en `/Users/oscar/proyectos/solca-ciencia/solca/libro3/` (frontmatter, modulo_01–05, backmatter).
 **Metodología:** revisión línea por línea de los 7 archivos; extracción de las 84 URLs únicas; verificación con WebFetch de las URLs regulatorias críticas (FDA E6(R3), FDA AI draft, EMA E6(R3), EMA Reflection Paper, Invest in Spain/AEMPS, FDA PCCP, McKinsey-Merck).
 **No auditado:** el `.docx` compilado (artefacto derivado), ni los `.md` de trabajo `00_transformation_plan.md`, `01_ai_clinical_research_dossier.md`, `_combined.md`, `README.md`, `STYLE_BRIEF.md`.
 

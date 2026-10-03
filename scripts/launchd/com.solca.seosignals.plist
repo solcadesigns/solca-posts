@@ -17,11 +17,11 @@
   <key>ProgramArguments</key>
   <array>
     <string>/bin/bash</string>
-    <string>/Users/oscar/Downloads/solca/website/scripts/seo-signals.sh</string>
+    <string>/Users/oscar/proyectos/solca-ciencia/solca/website/scripts/seo-signals.sh</string>
   </array>
 
   <key>WorkingDirectory</key>
-  <string>/Users/oscar/Downloads/solca/website</string>
+  <string>/Users/oscar/proyectos/solca-ciencia/solca/website</string>
 
   <key>EnvironmentVariables</key>
   <dict>

@@ -50,7 +50,7 @@ La web no compite con SEO; concentra tu CTA. LinkedIn hace el trabajo de descubr
 # o un repo cualquiera con:
 #   solca-web                   (URL: https://oscarsolca.github.io/solca-web)
 
-cd /Users/oscar/Downloads/solca/website
+cd /Users/oscar/proyectos/solca-ciencia/solca/website
 git init
 git add .
 git commit -m "Initial Solca marketing site"
@@ -88,16 +88,16 @@ Hay seis cosas que reemplazar antes de que el sitio sea funcional. Búscalas con
 El sitio espera tres imágenes en `covers/`:
 
 ```
-covers/portada_pm.png   (de /Users/oscar/Downloads/solca/libro/images/portada.png)
-covers/portada_msl.png  (de /Users/oscar/Downloads/solca/libro2/images/portada.png)
-covers/portada_cr.png   (de /Users/oscar/Downloads/solca/libro3/images/portada.png)
+covers/portada_pm.png   (de /Users/oscar/proyectos/solca-ciencia/solca/libro/images/portada.png)
+covers/portada_msl.png  (de /Users/oscar/proyectos/solca-ciencia/solca/libro2/images/portada.png)
+covers/portada_cr.png   (de /Users/oscar/proyectos/solca-ciencia/solca/libro3/images/portada.png)
 ```
 
 ```bash
 mkdir -p covers
-cp ~/Downloads/solca/libro/images/portada.png covers/portada_pm.png
-cp ~/Downloads/solca/libro2/images/portada.png covers/portada_msl.png
-cp ~/Downloads/solca/libro3/images/portada.png covers/portada_cr.png
+cp ~/proyectos/solca-ciencia/solca/libro/images/portada.png covers/portada_pm.png
+cp ~/proyectos/solca-ciencia/solca/libro2/images/portada.png covers/portada_msl.png
+cp ~/proyectos/solca-ciencia/solca/libro3/images/portada.png covers/portada_cr.png
 git add covers/
 git commit -m "Add book covers"
 git push

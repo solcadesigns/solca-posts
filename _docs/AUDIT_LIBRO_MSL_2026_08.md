@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-08-12
 **Auditor:** Claude (Opus 4.7) para Oscar Solís Castro
-**Alcance:** archivos `.md` fuente en `/Users/oscar/Downloads/solca/libro2/` (frontmatter, backmatter, modulo_01 a modulo_05).
+**Alcance:** archivos `.md` fuente en `/Users/oscar/proyectos/solca-ciencia/solca/libro2/` (frontmatter, backmatter, modulo_01 a modulo_05).
 **Método:** lectura completa + grep dirigido + verificación de URLs críticas vía WebFetch.
 
 Nota de proceso: PubMed / PMC bloqueó las verificaciones vía captcha, por lo que las cifras atribuidas a PMC 12030051, PMC 13081017 y PMC 11473552 no pudieron confirmarse contra la fuente primaria. Quedan como pendientes de verificación manual — no como bloqueantes por defecto, pero cualquiera de ellas puede pasar a bloqueante si al abrir el paper el porcentaje no coincide.
@@ -448,4 +448,4 @@ Fix: consistencia.
 - **IMPORTANTES:** 18 (EPM Scientific mal-usado como fuente permanente MSL; co-chairs MAPS con dato 2022 tratado como presente; MAPS Americas 2025 sin ancla futura; ratios de bonus sin caveat; sample MSL Society sin caveat; "resumes"/"hiring manager" spanglish evitable; referencias PMC sin URL inline; discrepancia 14 vs 15 multinacionales; framing McKinsey a limpiar tras B2; tres referencias huérfanas en backmatter; tipos de cambio sin fecha; claims específicos en 5.6 sin fuente por tendencia; Chiesi TA verificar; BCMAS en 4.5 vs 4.7; duplicidad Farmaindustria).
 - **MENORES:** 20 (spanglish suave, formato, estilo, verificaciones opcionales).
 
-**Reporte guardado en /Users/oscar/Downloads/solca/website/_docs/AUDIT_LIBRO_MSL_2026_08.md, 9 bloqueantes, 18 importantes, 20 menores.**
+**Reporte guardado en /Users/oscar/proyectos/solca-ciencia/solca/website/_docs/AUDIT_LIBRO_MSL_2026_08.md, 9 bloqueantes, 18 importantes, 20 menores.**

@@ -137,7 +137,7 @@ python3 -c "import yaml; ... validar title 8-120, desc 40-180, category enum, he
 
 **Comandos:**
 ```bash
-cd /Users/oscar/Downloads/solca/website
+cd /Users/oscar/proyectos/solca-ciencia/solca/website
 npx astro check        # validación full en macOS (no funciona en sandbox por rollup ARM)
 git add src/content/blog/*.md public/blog/*.png scripts/generate-blog-cover.py _docs/PLAN_BLOGS.md _docs/KEYWORD_RESEARCH_<MES>.md _docs/RESEARCH_*.md
 git commit -m "feat(blog): sprint <mes> · <N> blogs SEO pharma LATAM"

@@ -410,7 +410,7 @@ def build_carousel(slug: str, slides: Sequence[dict], out_dir: Path | None = Non
     Genera PNG por slide + PDF final.
     """
     if out_dir is None:
-        out_dir = Path('/Users/oscar/Downloads/solca/website/_docs/linkedin-visuales') / slug
+        out_dir = Path('/Users/oscar/proyectos/solca-ciencia/solca/website/_docs/linkedin-visuales') / slug
     out_dir.mkdir(parents=True, exist_ok=True)
 
     n = len(slides)

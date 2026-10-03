@@ -11,7 +11,7 @@
  *
  * Uso:
  *   1. Extrae el state del KV (ojo: prefix "session:", no "state:"):
- *        cd ~/Downloads/solca/website
+ *        cd ~/proyectos/solca-ciencia/solca/website
  *        npx wrangler kv key get "session:<sessionId>" \
  *          --binding=SIMULATOR_SESSIONS --remote > state.json
  *

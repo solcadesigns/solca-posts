@@ -22,7 +22,7 @@
 
 ## 1 · Herramientas web públicas (solcaciencia.com)
 
-Sitio en Astro 5 + Cloudflare Workers. Código en `/Users/oscar/Downloads/solca/website/`.
+Sitio en Astro 5 + Cloudflare Workers. Código en `/Users/oscar/proyectos/solca-ciencia/solca/website/`.
 
 ### 1.1 · `/revisar-cv` · Revisión de CV gratuita
 
@@ -143,7 +143,7 @@ Sitio en Astro 5 + Cloudflare Workers. Código en `/Users/oscar/Downloads/solca/
 
 ## 2 · App interna (app.solcalegal.com · solca_app 2)
 
-Repo en `/Users/oscar/Downloads/solca_app 2/`. Next.js 14 App Router + NextAuth Google sign-in. Sirve a la operación legal/inmobiliaria de la familia.
+Repo en `/Users/oscar/proyectos/solca-legal-sol-y-puerto/app/`. Next.js 14 App Router + NextAuth Google sign-in. Sirve a la operación legal/inmobiliaria de la familia.
 
 ### 2.1 · `/registro` · Formulario de leads y propiedades
 

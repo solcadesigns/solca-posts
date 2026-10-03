@@ -117,7 +117,7 @@ Nada más que hacer en Postmark. El código ya está listo:
 Solo faltan dos secretos en Cloudflare (los pone Oscar):
 
 ```
-cd /Users/oscar/Downloads/solca/website
+cd /Users/oscar/proyectos/solca-ciencia/solca/website
 openssl rand -hex 32
 npx wrangler secret put BROADCAST_SECRET   # pega el valor generado
 npx wrangler deploy

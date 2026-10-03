@@ -23,7 +23,7 @@
 #
 # Para automatizarlo del todo, agrégalo a launchd o a un cron local los lunes
 # temprano, antes de que corra la tarea del blog:
-#   0 7 * * 1 cd /Users/oscar/Downloads/solca/website && ./scripts/seo-signals.sh
+#   0 7 * * 1 cd /Users/oscar/proyectos/solca-ciencia/solca/website && ./scripts/seo-signals.sh
 
 set -euo pipefail
 

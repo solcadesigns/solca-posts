@@ -31,7 +31,7 @@ Ver `src/pages/api/drip-tick.ts` (endpoint principal) y `src/lib/drip.ts`
 
 1. **Secret HMAC para links de baja:**
    ```
-   cd /Users/oscar/Downloads/solca/website
+   cd /Users/oscar/proyectos/solca-ciencia/solca/website
    npx wrangler secret put DRIP_UNSUB_SECRET
    # Pega un valor random, e.g. `openssl rand -base64 32`
    ```

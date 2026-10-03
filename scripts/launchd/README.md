@@ -9,7 +9,7 @@
 ## Instalar
 
 ```
-cp ~/Downloads/solca/website/scripts/launchd/com.solca.seosignals.plist ~/Library/LaunchAgents/
+cp ~/proyectos/solca-ciencia/solca/website/scripts/launchd/com.solca.seosignals.plist ~/Library/LaunchAgents/
 launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.solca.seosignals.plist
 ```
 

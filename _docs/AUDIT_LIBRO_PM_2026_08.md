@@ -1,6 +1,6 @@
 # Auditoría editorial · Libro Project Management (agosto 2026)
 
-**Fuente auditada:** `/Users/oscar/Downloads/solca/libro/` — `frontmatter.md`, `modulo_01_draft.md`, `modulo_02_draft.md`, `modulo_03_draft.md`, `modulo_04_draft.md`, `modulo_05_draft.md`, `backmatter.md`. El `.docx` compilado no se auditó.
+**Fuente auditada:** `/Users/oscar/proyectos/solca-ciencia/solca/libro/` — `frontmatter.md`, `modulo_01_draft.md`, `modulo_02_draft.md`, `modulo_03_draft.md`, `modulo_04_draft.md`, `modulo_05_draft.md`, `backmatter.md`. El `.docx` compilado no se auditó.
 
 **Reglas aplicadas:** OSCAR_PROFILE.md · sin emoji, español LATAM, terminología pharma correcta (regla 16), no inventar cifras, sin palabras "genuinamente/honestamente/straightforward", sin placeholders, branding navy `#1B3A6B` / naranja `#E8743A` / off-white `#F7F5EE` / azul medio `#2A6BAC`.
 
