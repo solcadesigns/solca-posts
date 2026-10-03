@@ -141,7 +141,7 @@ Sitio en Astro 5 + Cloudflare Workers. Código en `/Users/oscar/proyectos/solca-
 
 ---
 
-## 2 · App interna (app.solcalegal.com · solca_app 2)
+## 2 · App interna (app.solcalegal.com · ~/proyectos/solca-legal-sol-y-puerto/app)
 
 Repo en `/Users/oscar/proyectos/solca-legal-sol-y-puerto/app/`. Next.js 14 App Router + NextAuth Google sign-in. Sirve a la operación legal/inmobiliaria de la familia.
 

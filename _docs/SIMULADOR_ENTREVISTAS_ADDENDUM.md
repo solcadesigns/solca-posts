@@ -164,7 +164,7 @@ El PDF descargable al cerrar la sesión incluye:
 | API | **Cloudflare Worker** vía `src/pages/api/simulator-*.ts` | Patrón ya establecido en cv-review. |
 | LLM | **Claude Sonnet** via API de Anthropic | Helper `src/lib/anthropic.ts` ya existe. Reusar. |
 | Voz | **Web Speech API** (Chrome/Edge desktop) | Tratar como progressive enhancement. Fallback texto siempre disponible. Detectar ausencia y ocultar botón de voz. |
-| Auth | **Magic link via Postmark** o **Google OAuth** | Evitar Supabase. NextAuth ya está en `solca_app 2`; portable. Magic link con Postmark = generar token en KV + `sendEmail` con URL firmada. Simple si solo necesitamos verificar identidad. |
+| Auth | **Magic link via Postmark** o **Google OAuth** | Evitar Supabase. NextAuth ya está en `~/proyectos/solca-legal-sol-y-puerto/app`; portable. Magic link con Postmark = generar token en KV + `sendEmail` con URL firmada. Simple si solo necesitamos verificar identidad. |
 | DB sesiones | **Cloudflare KV** para metadata + `sesiones_restantes` por user | Mismo patrón que CV_LIMITS. Si necesitamos historial completo de sesiones, agregar Cloudflare D1 (SQLite serverless). |
 | Métricas anónimas | **Cloudflare KV** `SIMULATOR_METRICS` | Para análisis agregado tipo cv-stats. |
 | Pagos | **Hotmart primero, Conekta después** | Hotmart cobra ~10% pero ya está integrado y maneja LATAM completo. Conekta solo cuando validemos demanda y queramos margen extra + OXXO directo. |

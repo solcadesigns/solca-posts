@@ -14,7 +14,7 @@ Opera tres frentes simultáneamente:
 
 1. **Solca · Ciencia y Consultoría** (`solcaciencia.com`) — su proyecto editorial y comercial principal. Acompaña a profesionales de ciencias biológicas, biomédicas y de la salud (con o en camino a doctorado) en su transición a industria farmacéutica LATAM. Tres libros publicados en Hotmart (Project Management, MSL, Clinical Research). Newsletter Solca Insight semanal en LinkedIn. Herramientas web propias: `/revisar-cv`, `/quiz-rol`, blog SEO. Audiencia ampliada (decisión 25 may 2026): *"Carreras en la industria farmacéutica para profesionales en ciencias biológicas y afines"* — abierto más allá del PhD estricto.
 
-2. **Solca Legal / Inmobiliaria** (`app.solcalegal.com`) — operación familiar gestionada vía Next.js 14 app (`solca_app 2`). Captura de leads, fichas técnicas de inmuebles, recibos, opiniones de valor. CRM en Google Sheets (`CRM_Solca`) consolidado con Apps Script. Equipo familiar: Clara Vázquez, Suemi Canul, Ernesto Solís Puerto, Ramón Sansores, Raúl Mendez.
+2. **Solca Legal / Inmobiliaria** (`app.solcalegal.com`) — operación familiar gestionada vía Next.js 14 app (`~/proyectos/solca-legal-sol-y-puerto/app`). Captura de leads, fichas técnicas de inmuebles, recibos, opiniones de valor. CRM en Google Sheets (`CRM_Solca`) consolidado con Apps Script. Equipo familiar: Clara Vázquez, Suemi Canul, Ernesto Solís Puerto, Ramón Sansores, Raúl Mendez.
 
 3. **Otros sitios** que aparecen en su cuenta de Cloudflare: `rebeauty.mx`, `reemplaza.app`. No los hemos trabajado activamente — si los menciona, no asumir contexto.
 
@@ -51,7 +51,7 @@ Opera tres frentes simultáneamente:
 
 - Usa Chrome MCP para automatizar trabajo en LinkedIn, Search Console, etc. **Pero algunas interfaces admin están bloqueadas** (ver gotchas abajo).
 - Trabaja en macOS (Apple Silicon, zsh).
-- Sus archivos viven en `/Users/oscar/Downloads/`. Files importantes están en `solca/` (sitio principal) y `solca_app 2/` (app legal).
+- Los proyectos viven en `~/proyectos/<proyecto>/`: el sitio principal en `~/proyectos/solca-ciencia/solca/` y la app legal en `~/proyectos/solca-legal-sol-y-puerto/app/`. Documentos personales en `~/privado/`. Downloads es solo bandeja de entrada.
 
 ---
 
@@ -99,7 +99,7 @@ Aplican a TODO contenido público que sale bajo la marca Solca.
 |---|---|---|
 | Sitio público `solcaciencia.com` | **Astro 5** (SSR) + **Cloudflare Workers** | Adapter `@astrojs/cloudflare`. KV bindings: CV_LIMITS, EMAILS, CONTACTS, QUIZ_METRICS, CV_METRICS. |
 | Blog | **Astro Content Collections** (Zod schema) | Posts en `src/content/blog/*.md`. Layout: `BlogPostLayout.astro`. Build: `npm run build`. Deploy: `npm run deploy`. |
-| App interna `app.solcalegal.com` | **Next.js 14 App Router** + **NextAuth (Google)** | Repo: `solca_app 2/`. Escribe a Google Sheets vía service account. |
+| App interna `app.solcalegal.com` | **Next.js 14 App Router** + **NextAuth (Google)** | Repo: `~/proyectos/solca-legal-sol-y-puerto/app/`. Escribe a Google Sheets vía service account. |
 | Email | **Cloudflare Email Routing** | MX cloudflare. Catch-all `*@solcaciencia.com` → `solcadesigns@gmail.com`. SPF + DKIM + DMARC (modo monitor) publicados. |
 | CRM | **Google Apps Script** sobre Sheet `CRM_Solca` | Sheet ID `1r9yBN5xLHASkwiwxxc0CoU8IWP4pyFp8eUQX3dvHSOU`. |
 | Email marketing | **Postmark** (jul 2026, reemplazó a Brevo/MailerLite) | Transactional puro. Opt-in vive en KV EMAILS. Tags activos: `welcome-cv`, `welcome-quiz`, `blog-broadcast`. |
