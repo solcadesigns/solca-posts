@@ -326,10 +326,12 @@ async function handleInit(
       (check.record.cohort === 'paywall' || check.record.cohort === 'freemium')
     ) {
       paywallCodeRecord = check.record;
-    } else if (check.record) {
+    } else if (check.record && check.record.cohort !== 'freemium') {
       // 5 oct 2026: códigos de la beta (sin plan guardado, cohort beta-1 /
       // pre-paywall) revocados. Antes caían a body.plan y un usuario con CV
       // obtenía etapas de pago. El panel Mis reportes sigue funcionando.
+      // Freemium del 8-11 sept sin `plan` (antes del fix 1664eeb, vigencia
+      // 240 d) NO se revoca: sigue el flujo de siempre y queda en 'gratis'.
       return {
         ok: false,
         error:
@@ -864,7 +866,7 @@ async function handleNext(
   // Subido de 5 → 10 el 9 sept 2026. 15q deshabilitado en la UI (ver
   // sesion.astro). Con Sonnet 4.5 + prompt caching, 10q debería caber en
   // <25s del sync path. Si Sonnet no cabe, fallback automático a async.
-  // 5 oct 2026: path sync APAGADO. Desde el 7 sept fallaba siempre con
+  // 5 oct 2026: path sync APAGADO. Desde el 9 sept (e3004fe) fallaba siempre con
   // ReferenceError (getRoleCta sin importar) DESPUÉS de pagar la llamada a
   // Haiku, así que cada sesión pagaba el reporte dos veces y el usuario
   // esperaba hasta 25 s de más. La promesa vigente es reporte por email en

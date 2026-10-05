@@ -58,9 +58,11 @@ export const GET: APIRoute = async ({ request, locals }) => {
   const remaining = Math.max(0, record.max_sessions - record.sessions_used);
   const expired = new Date(record.expires_at).getTime() < Date.now();
 
-  // 5 oct 2026: códigos de la beta (sin plan o fuera de paywall/freemium)
+  // 5 oct 2026: códigos de la beta (sin plan, fuera de paywall/freemium)
   // están revocados para sesiones nuevas; simulator-session los rechaza.
-  const revoked = !(record.plan && (record.cohort === 'paywall' || record.cohort === 'freemium'));
+  // Freemium sin plan (8-11 sept) sigue válido.
+  const revoked =
+    record.cohort !== 'freemium' && !(record.plan && record.cohort === 'paywall');
 
   return jsonResponse({
     ok: true,

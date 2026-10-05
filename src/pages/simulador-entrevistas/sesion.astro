@@ -2829,7 +2829,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         errorEl.hidden = false;
       }
       if (startBtn) startBtn.disabled = true;
-      try { sessionStorage.removeItem('solca_beta_code'); } catch (_e) {}
+      // No se borra el código: sigue sirviendo para ver reportes y Mis reportes.
     }
 
     // ──────────────────────────────────────────────────────────────────
@@ -3013,7 +3013,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     .is-locked textarea { opacity: 0.5; }
     .is-locked input,
     .is-locked textarea { cursor: not-allowed; }
-    .paid-note {
+    /* :global porque el <a> se crea por JS y no lleva el atributo scoped. */
+    :global(.paid-note) {
       font-size: 13px;
       font-weight: 600;
       color: var(--orange);
