@@ -6,6 +6,7 @@ const hotmart = {
   libroPM: 'https://go.hotmart.com/R105710415P',
   libroMSL: 'https://go.hotmart.com/Y105718405Y',
   libroCR: 'https://go.hotmart.com/U105724060O',
+  libroFV: 'https://pay.hotmart.com/E107847432I',
   cursoCV: 'https://go.hotmart.com/B104495115T',
   hotmartProfile: 'https://hotmart.com/es/profile/oscarsolca', // ajustar al perfil real
 };
@@ -21,7 +22,7 @@ const youtube = {
 ---
 <BaseLayout
   title="Carrera en industria farmacéutica LATAM · CV, entrevistas y roles · Solca Ciencia"
-  description="Acompaño a profesionales de ciencias biológicas, biomédicas y de la salud (PhD, MD, PharmD, QFB, biólogos, químicos, biotecnólogos) en su transición a industria farmacéutica en LATAM y España. Tres libros, curso CV+LinkedIn y análisis gratis de CV."
+  description="Acompaño a profesionales de ciencias biológicas, biomédicas y de la salud (PhD, MD, PharmD, QFB, biólogos, químicos, biotecnólogos) en su transición a industria farmacéutica en LATAM y España. Cuatro libros, curso CV+LinkedIn y análisis gratis de CV."
 >
 
 <!-- ==================== NAV ==================== -->
@@ -55,7 +56,7 @@ const youtube = {
       </div>
       <h1 class="hero-title">Tu carrera en <em>industria farmacéutica</em>.</h1>
       <p class="hero-lead">
-        Guía práctica para profesionales de ciencias de la salud —PhD, MD, PharmD, QFB, biólogos, químicos, biotecnólogos y afines— que quieren entrar a industria pharma en LATAM y España. Tres libros que traducen tu formación al lenguaje de la industria: Project Manager, Medical Science Liaison y Clinical Research.
+        Guía práctica para profesionales de ciencias de la salud —PhD, MD, PharmD, QFB, biólogos, químicos, biotecnólogos y afines— que quieren entrar a industria pharma en LATAM y España. Cuatro libros que traducen tu formación al lenguaje de la industria: Project Manager, Medical Science Liaison, Clinical Research y Farmacovigilancia.
       </p>
       <div class="hero-ctas">
         <a href="/quiz-rol" class="btn btn-primary">Quiz · ¿Qué rol te queda?</a>
@@ -93,7 +94,7 @@ const youtube = {
 <section class="trust-strip">
   <div class="container trust-grid">
     <div class="trust-item">
-      <div class="trust-num">3</div>
+      <div class="trust-num">4</div>
       <div class="trust-label">Libros publicados</div>
     </div>
     <div class="trust-item">
@@ -144,11 +145,11 @@ const youtube = {
     <div class="section-header">
       <div class="eyebrow">
         <span class="dot"></span>
-        <span>La trilogía</span>
+        <span>La colección</span>
       </div>
-      <h2 class="section-title">Tres puertas a la industria farmacéutica</h2>
+      <h2 class="section-title">Cuatro puertas a la industria farmacéutica</h2>
       <p class="section-lead">
-        Cada libro funciona por separado; los tres juntos forman un mapa del ecosistema. Cinco módulos por libro, cuadernos de trabajo, glosario inglés-español y referencias verificables. Sin promesas vacías.
+        Cada libro funciona por separado; juntos forman un mapa del ecosistema. Cinco módulos por libro, cuadernos de trabajo, glosario inglés-español y referencias verificables. Sin promesas vacías.
       </p>
     </div>
 
@@ -172,8 +173,7 @@ const youtube = {
       </article>
 
       <!-- LIBRO 2 -->
-      <article class="libro-card libro-featured">
-        <div class="libro-flag">Más reciente</div>
+      <article class="libro-card">
         <div class="libro-cover-wrap">
           <img src="/covers/portada_msl.png" alt="Portada · Medical Science Liaison" class="libro-cover" loading="lazy" />
         </div>
@@ -205,6 +205,25 @@ const youtube = {
             <li>Introductorio · ideal para quienes inician carrera en pharma</li>
           </ul>
           <a href={hotmart.libroCR} class="btn btn-primary btn-block" target="_blank" rel="noopener">Comprar en Hotmart</a>
+        </div>
+      </article>
+
+      <!-- LIBRO 4 · publicado en Hotmart oct 2026 -->
+      <article class="libro-card libro-featured">
+        <div class="libro-flag">Más reciente</div>
+        <div class="libro-cover-wrap">
+          <img src="/covers/portada_fv.png" alt="Portada · Farmacovigilancia" class="libro-cover" loading="lazy" />
+        </div>
+        <div class="libro-body">
+          <h3 class="libro-title">Farmacovigilancia</h3>
+          <p class="libro-sub">Guía práctica para científicos de la salud · LATAM y España.</p>
+          <ul class="libro-meta">
+            <li>ICSR, MedDRA y causalidad · ICH E2, EMA GVP y FDA</li>
+            <li>Salarios por país LATAM + España como referencia</li>
+            <li>Módulo de IA para farmacovigilancia</li>
+            <li>Introductorio · ideal para quienes inician carrera en pharma</li>
+          </ul>
+          <a href={hotmart.libroFV} class="btn btn-primary btn-block" target="_blank" rel="noopener">Comprar en Hotmart</a>
         </div>
       </article>
     </div>
@@ -239,7 +258,7 @@ const youtube = {
           <div class="tier-arrow">↓</div>
           <div class="tier tier-mid tier-current"><span>2</span><div><strong>Curso CV + LinkedIn</strong><small>Video · plantillas</small></div></div>
           <div class="tier-arrow">↓</div>
-          <div class="tier tier-top"><span>3</span><div><strong>Libros · trilogía</strong><small>Profundidad por rol</small></div></div>
+          <div class="tier tier-top"><span>3</span><div><strong>Libros · por rol</strong><small>Profundidad por rol</small></div></div>
         </div>
       </div>
     </div>
@@ -315,8 +334,8 @@ const youtube = {
     </div>
     <div class="faq-grid">
       <details class="faq-item">
-        <summary>¿En qué se diferencian los tres libros?</summary>
-        <p>Cada libro cubre un rol distinto en la industria farmacéutica: Project Manager (gestión), Medical Science Liaison (intercambio científico con KOLs) y Clinical Research (operación de ensayos). La estructura de cinco módulos es paralela, pero el contenido es completamente distinto. Si no decides cuál camino seguir, lee el Módulo 1 de cada uno.</p>
+        <summary>¿En qué se diferencian los cuatro libros?</summary>
+        <p>Cada libro cubre un rol distinto en la industria farmacéutica: Project Manager (gestión), Medical Science Liaison (intercambio científico con KOLs), Clinical Research (operación de ensayos) y Farmacovigilancia (seguridad de medicamentos y reporte de eventos adversos). La estructura de cinco módulos es paralela, pero el contenido es completamente distinto. Si no decides cuál camino seguir, lee el Módulo 1 de cada uno.</p>
       </details>
       <details class="faq-item">
         <summary>¿Sirven si vivo en España y no en LATAM?</summary>
@@ -332,7 +351,7 @@ const youtube = {
       </details>
       <details class="faq-item">
         <summary>¿Cuál compro primero si tengo solo presupuesto para uno?</summary>
-        <p>Depende de tu perfil. Si vienes de biología molecular o farmacología y tu fortaleza es la lectura crítica de literatura, MSL es probablemente el match más natural. Si tu fortaleza es organización y gestión de equipos, Project Manager. Si quieres operación clínica directa con sitios, pacientes y protocolos, Clinical Research.</p>
+        <p>Depende de tu perfil. Si vienes de biología molecular o farmacología y tu fortaleza es la lectura crítica de literatura, MSL es probablemente el match más natural. Si tu fortaleza es organización y gestión de equipos, Project Manager. Si quieres operación clínica directa con sitios, pacientes y protocolos, Clinical Research. Si te interesa la seguridad de medicamentos y buscas un primer puesto de entrada, Farmacovigilancia.</p>
       </details>
       <details class="faq-item">
         <summary>¿Hay reembolso si no me sirve?</summary>
@@ -372,6 +391,7 @@ const youtube = {
       <a href="#libros">Project Manager</a>
       <a href="#libros">MSL</a>
       <a href="#libros">Clinical Research</a>
+      <a href="#libros">Farmacovigilancia</a>
     </div>
     <div class="footer-links">
       <h4>Recursos</h4>
