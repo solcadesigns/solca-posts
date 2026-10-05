@@ -1,85 +1,139 @@
 ---
-title: "Market Access en industria farmacéutica LATAM: cómo entrar 2026"
-description: "Qué hace un Market Access en pharma industrial LATAM y cómo entrar al rol desde perfiles clínicos, comerciales o de investigación. Ruta operativa 2026."
+title: "Market Access en pharma LATAM: qué hace y cómo entrar en 2026"
+description: "Market Access en LATAM: qué piden el Compendio en México y la CONETEC en Argentina, desde qué puestos se llega y cómo preparar la entrevista."
 pubDate: 2026-07-13
+updatedDate: 2026-10-05
 heroImage: "/blog/market-access-industria-farmaceutica-latam-como-entrar.png"
 category: "carreras-pharma"
-tags: ["Market Access", "Industria Farmacéutica", "LATAM", "Pagadores", "Carrera Pharma", "KAM Access"]
+tags: ["Market Access", "Industria Farmacéutica", "LATAM", "Evaluación de Tecnologías Sanitarias", "Pagadores", "Entrevistas"]
 series: "roles-pharma"
 seriesIndex: 5
-readingMinutes: 8
+readingMinutes: 7
+cta: "simulador"
 ---
 
-Market Access en industria farmacéutica LATAM es el rol responsable de conseguir que los medicamentos aprobados por la autoridad regulatoria realmente lleguen a los pacientes vía sistemas de salud públicos, aseguradoras privadas y hospitales. Sin acceso conseguido, un registro sanitario aprobado no genera venta. El rol combina componente científico (dossier de valor), componente financiero (pricing, budget impact) y componente político (relación con pagadores institucionales). Esta guía cubre qué hace realmente, qué te piden, y cómo entrar al rol desde perfiles clínicos, comerciales o de investigación.
+> **Respuesta corta.** Market Access (acceso al mercado) es el área de una farmacéutica que consigue que un medicamento aprobado sea financiado por los sistemas de salud. En LATAM eso significa armar la evidencia clínica y económica que piden comisiones como el Compendio Nacional en México o la CONETEC (comisión nacional de evaluación de tecnologías sanitarias) en Argentina, y negociar con quien paga.
+
+Esta guía es para quien estudió o trabaja en ciencias de la salud y ve vacantes de Market Access en LATAM sin saber bien qué hace el puesto. Un registro sanitario de COFEPRIS (la autoridad sanitaria de México) o de ANMAT (la de Argentina) autoriza a vender un medicamento. No obliga a nadie a comprarlo. El tramo entre esa aprobación y el paciente que lo recibe pagado por su sistema de salud es el trabajo de Market Access.
+
+## Qué es Market Access en LATAM: del registro sanitario al pagador
+
+Quien decide si un medicamento se financia es una institución pública, una obra social (el seguro de salud sindical en Argentina) o una aseguradora, no el paciente. México, Argentina y Colombia tienen además un organismo técnico que evalúa antes de esa decisión:
+
+**México.** El Compendio Nacional de Insumos para la Salud es, según sus [Normas de Organización y Funcionamiento publicadas en el Diario Oficial](https://sidof.segob.gob.mx/notas/docFuente/5722808) en marzo de 2024, el documento al que "se ajustarán las instituciones públicas del Sistema Nacional de Salud". Para pedir que un medicamento entre, esas normas exigen un estudio de evaluación económica que incluya una revisión sistemática de la evidencia clínica y un análisis de impacto presupuestal. Los proveedores, es decir, las farmacéuticas, están entre quienes pueden presentar la solicitud.
+
+**Argentina.** La [CONETEC](https://www.argentina.gob.ar/salud/conetec) (Comisión Nacional de Evaluación de Tecnologías Sanitarias y Excelencia Clínica) es un organismo desconcentrado del Ministerio de Salud, creado por el Decreto 344/23. Emite recomendaciones sobre incorporación, desinversión, financiamiento y cobertura de tecnologías sanitarias, con criterios éticos, médicos, económicos y sociales. Sus informes son públicos.
+
+**Colombia.** El [IETS](https://www.iets.org.co/) (Instituto de Evaluación Tecnológica en Salud) produce evaluaciones de tecnologías, evaluaciones económicas y análisis de impacto presupuestal para apoyar las decisiones del sistema de seguridad social en salud.
+
+El patrón se repite: el pagador pide evidencia de que el medicamento funciona, de cuánto cuesta frente a la alternativa y de cuánto pesa en su presupuesto. Market Access es quien la arma, la presenta y la defiende. A esa evaluación se le llama HTA (Health Technology Assessment, evaluación de tecnologías sanitarias).
 
 ## Qué hace Market Access en el día a día
 
-El trabajo se organiza en cinco tipos de actividad recurrente.
+El trabajo se ordena en cuatro bloques.
 
-**Estrategia de acceso.** Antes del lanzamiento de un producto, Market Access diseña la estrategia de introducción a los sistemas de salud del país. Identifica cuáles pagadores institucionales (en México: IMSS, ISSSTE, INSABI en su momento y hoy Compendio Nacional de Insumos para la Salud; en Argentina: PAMI, obras sociales; en Chile: FONASA; en Colombia: sistema con EPS) y privados (aseguradoras, cadenas de farmacia) son críticos para la venta del producto.
+**Estrategia de acceso.** Antes del lanzamiento, define a qué pagadores entrar primero, con qué indicación y con qué precio. En México eso pasa por el Compendio. En Argentina, por lo que recomiende la CONETEC y por cada financiador.
 
-**Construcción del dossier de valor.** Coordinación con HEOR, Medical Affairs y Regulatory para producir el dossier que sustenta el valor clínico y económico del producto ante pagadores. Incluye estudios de costo-efectividad, budget impact, comparación con estándar de atención actual y evidencia clínica de eficacia y seguridad.
+**Dossier de valor.** Es el expediente que sostiene la solicitud. Junta la evidencia clínica, el modelo de costo-efectividad (cuánto cuesta cada resultado en salud frente al tratamiento actual) y el impacto presupuestal (cuánto gasta el pagador en los próximos años si lo incluye). Lo construye con HEOR (Health Economics and Outcomes Research, el equipo que hace los modelos económicos), Medical Affairs y Regulatory. Lo que piden las normas del Compendio coincide con esos componentes.
 
-**Negociación con pagadores.** Reuniones con Directores Médicos de aseguradoras, con comités de compras de instituciones públicas, con Compendio Nacional de Insumos para la Salud en México, con comisiones de evaluación de tecnologías sanitarias (HTA) donde existen. El objetivo es incluir el producto en el listado (formulario) del pagador y negociar condiciones comerciales.
+**Negociación con pagadores.** Reuniones con comités institucionales, directores médicos de aseguradoras y equipos de compras. El objetivo es la inclusión en el listado del pagador y las condiciones comerciales.
 
-**Gestión de licitaciones y tenders.** En LATAM, gran parte de la venta de medicamentos innovadores pasa por licitaciones públicas o tenders institucionales. Market Access prepara la documentación, coordina precio final con Sales, y da seguimiento a la ejecución del contrato.
+**Coordinación interna.** Market Access traduce lo que pide el pagador al resto de la compañía: a Ventas, a Medical Affairs y al equipo regional o global que produjo el dossier original, que hay que adaptar al país.
 
-**Coordinación con Key Account Managers (KAM) de Access**. Muchas farmacéuticas top tienen KAM específicos para cuentas críticas de acceso. Market Access los coordina, da soporte técnico, y participa en visitas de alto nivel a Directores Médicos institucionales.
+## Qué habilidades pide Market Access y desde qué puestos se llega
 
-Es rol con horizonte largo (los procesos toman meses o años), gran componente político y relacional, y peso alto en resultados de venta.
+Lo que tiene que saber hacer quien ocupa el puesto se lee en lo que piden los pagadores:
 
-## Perfil pedido
+- **Leer evidencia clínica con criterio.** Una revisión sistemática es requisito literal del Compendio.
+- **Entender un modelo económico.** No hace falta construirlo desde cero, pero sí explicar qué supone, qué compara y qué pasa si cambia una variable.
+- **Conocer el sistema de salud del país.** Quién paga, quién evalúa y cómo se decide.
+- **Escribir y presentar en español e inglés.** En una compañía global, el dossier de origen puede venir en inglés; la defensa ante el pagador es local.
 
-**Formación.** Ciencias de la salud (Medicina, QFB, Farmacia, Biología) O administración con especialización en salud O economía de la salud. En LATAM la ruta más frecuente es ciencias de la salud con MBA o especialización posterior. Directores de Market Access con formación en administración pura sin componente de salud son menos frecuentes.
+Por eso Market Access se piensa como segundo paso: cada habilidad de esa lista se aprende primero en otro rol. Las rutas laterales que se desprenden de ella son estas.
 
-**Experiencia previa.** Ideal 5-8 años en industria pharma con exposición a estrategia comercial, HEOR, Regulatory o Medical Affairs. Roles junior de Access son raros; la entrada frecuente es lateral desde otros roles pharma con 3-5 años de experiencia. No hay puerta clara "de recién egresado" a Market Access.
+**Desde HEOR.** Ya construye la parte económica del dossier. Le falta la negociación y el contacto con el pagador. El blog de [HEOR en pharma LATAM](https://solcaciencia.com/blog/heor-carrera-latam-perfil-emergente-2026/) cubre cómo se entra ahí.
 
-**Inglés.** Avanzado (C1). El componente de coordinación regional o global es significativo. Muchos dossieres de valor globales vienen en inglés y se adaptan localmente. Reuniones con headquarters son en inglés.
+**Desde Medical Affairs.** Domina la evidencia clínica y el área terapéutica. Le falta el lado económico.
 
-**Habilidades clave.** Comodidad con datos financieros y análisis costo-efectividad, capacidad de negociación con contrapartes senior, comprensión profunda del sistema de salud del país, redacción técnica en español e inglés, presentación ejecutiva.
+**Desde Marketing farmacéutico.** Conoce el producto y la estrategia comercial. Le falta el rigor de la evidencia y el sistema de evaluación.
 
-## Salario referencia LATAM
+**Desde Regulatory Affairs.** Conoce el trato con autoridades y el armado de expedientes. El perfil de [Regulatory Affairs con COFEPRIS](https://solcaciencia.com/blog/regulatory-affairs-cofepris-perfil-real-declarado/) muestra esa base.
 
-No hay banda salarial pública verificable con desglose 2025-2026 sin descarga con formulario en las principales guías. Como referencia orientativa: Market Access Manager en México es uno de los roles pharma con salario más alto en el segmento medio (por encima de MSL y CRA de mismo seniority, alineado con Marketing Manager). Directores de Market Access en compañías top están en segmento alto ejecutivo.
+**Desde consultoría en salud o desde el sector público.** Las consultoras que elaboran evaluaciones económicas y quien trabajó en una agencia de evaluación conocen el proceso desde el otro lado de la mesa.
 
-El mercado se está tensionando. Según análisis sectorial (AdQualis Human Results, 2025-10), Market Access, Pricing y HEOR concentran la mayor tensión de talento en pharma, con escasez estructural de perfiles mid-level (Manager, Associate Director) y competencia intensa por especialistas en oncología e inmunología ([enlace al análisis](https://www.adqualis.com/market-access-pricing-y-heor-las-areas-del-sector-farmaceutico-donde-escasea-el-talento-clave/)). Esa escasez presiona salarios al alza y crea oportunidad para candidatos que se preparan específicamente.
+Si todavía no decides entre estas áreas, la comparación de [MSL, CRA, PM y HEOR](https://solcaciencia.com/blog/msl-cra-pm-heor-diferencia-rol-pharma/) ubica las diferencias entre esos cuatro roles.
 
-## Rutas de entrada más viables
+## Cómo preparar una entrevista de Market Access
 
-Cinco puertas ordenadas por frecuencia real.
+Las preguntas exactas dependen de cada compañía y de cada vacante. Lo que se puede preparar con certeza es el material que el puesto maneja todos los días. Tres ejercicios:
 
-**Puerta uno · Desde HEOR o Medical Affairs interno**. Perfiles con 3-5 años en HEOR o Medical Affairs con exposición a construcción de dossiers de valor pueden moverse a Access con el mismo salario o ligeramente superior. Es la ruta lateral más común.
+**Lee un informe público de evaluación.** La CONETEC publica los suyos. Elige uno de un área terapéutica que conozcas y resúmelo en voz alta en dos minutos: qué se evaluó, contra qué alternativa, qué concluyó y por qué. Si puedes hacer eso, puedes hablar de HTA en una entrevista sin repetir definiciones.
 
-**Puerta dos · Desde Marketing / Product Management**. Perfiles con 3-5 años en Marketing farmacéutico que conocen bien un área terapéutica y quieren especializarse en pagadores. La ruta requiere estudiar el sistema de salud a fondo si el candidato no lo hizo antes.
+**Explica un impacto presupuestal sin números inventados.** Practica decir qué variables entran (población elegible, precio, tratamiento que se desplaza, horizonte de años) y qué pregunta responde para el pagador. Es el lenguaje del impacto presupuestal que exige el Compendio.
 
-**Puerta tres · Desde Regulatory Affairs senior**. Menos frecuente pero real. Regulatory Affairs con exposición a autoridades locales y con años de experiencia tiene familiaridad con procesos institucionales que Access aprovecha. Suele requerir capacitación adicional en pricing y HEOR.
+**Traduce tu experiencia al vocabulario del área.** Si vienes de HEOR, tu historia es la de un modelo que alguien usó para decidir. Si vienes de Medical Affairs, la de evidencia que presentaste a alguien que no era médico. Si vienes de Marketing, la de una estrategia que tuvo que justificar su costo. Arma cada historia con el [método STAR](https://solcaciencia.com/blog/metodo-star-entrevistas-pharma/) (Situación, Tarea, Acción, Resultado) y ensáyala en voz alta antes del día.
 
-**Puerta cuatro · Desde consultoría en salud**. Consultoras especializadas en acceso al mercado (IQVIA Consulting, Everis Salud, Ipsos Health, empresas de HTA) forman perfiles Access que luego pasan a industria. Ruta de dos a cuatro años que construye vocabulario Access rápido.
+Si la vacante está en Argentina, revisa además cómo se lee la oferta salarial en pesos y en dólares en [sueldos pharma en Argentina 2026](https://solcaciencia.com/blog/sueldos-pharma-argentina-pesos-dolares-2026/) antes de llegar a la conversación de compensación.
 
-**Puerta cinco · Desde autoridades sanitarias o pagador institucional**. Ex-funcionarios de COFEPRIS, IMSS, Ministerio de Salud o aseguradoras top con años de experiencia son perfiles altamente valorados por industria pharma. La ruta invertida (autoridad → industria) es infrecuente pero rinde salarios ejecutivos altos por conocimiento inside del sistema.
+## Preguntas frecuentes sobre Market Access en LATAM
 
-## Cómo saber si Market Access se ajusta a tu perfil
+### ¿Qué es Market Access en la industria farmacéutica?
 
-Cinco chequeos.
+Es el área que consigue que un medicamento aprobado sea financiado por los sistemas de salud. Arma la evidencia clínica y económica que pide cada pagador y negocia la inclusión del medicamento en su listado.
 
-Uno, **cinco años de experiencia previa en industria pharma o consultoría de salud**. Sin ese piso, aplicar a roles Access rinde poco. Trabajar primero en HEOR, Medical Affairs, Marketing o Regulatory por dos a tres años.
+### ¿Qué diferencia hay entre Market Access y HEOR?
 
-Dos, **comodidad con datos financieros y modelos económicos**. Si trabajar con Excel avanzado, análisis de sensibilidad y presupuestos multianuales te desgasta, el rol no es realista.
+HEOR construye los modelos económicos y la evidencia de resultados en salud. Market Access usa esa evidencia para conseguir el financiamiento: define la estrategia, presenta el dossier y negocia con el pagador.
 
-Tres, **capacidad de negociación con contrapartes senior**. Directores Médicos de aseguradoras, líderes de licitación institucional, comités de evaluación. Sin comodidad ante ese tipo de audiencia, el rol pierde efectividad.
+### ¿Qué pide México para incluir un medicamento en el Compendio Nacional?
 
-Cuatro, **inglés C1 conversacional**. Sin fluidez avanzada, coordinación con regionales o globales se dificulta.
+Según las Normas de Organización y Funcionamiento de la Comisión del Compendio, la solicitud lleva un estudio de evaluación económica que incluye una revisión sistemática de la evidencia clínica y un análisis de impacto presupuestal.
 
-Cinco, **conocimiento profundo del sistema de salud de tu país**. Sin ese conocimiento como piso, la conversación con pagadores no arranca desde el primer día.
+### ¿Se puede entrar a Market Access sin experiencia en la industria?
 
-## Un dato de contexto reciente
+Es difícil, porque cada habilidad del puesto se aprende antes en otro rol. Las rutas que se desprenden del contenido del trabajo son laterales: desde HEOR, Medical Affairs, Marketing, Regulatory, consultoría en salud o una agencia pública de evaluación.
 
-México anunció en mayo 2026 inversión de MXN 21 mil millones en siete proyectos productivos farmacéuticos bajo Plan México, incluyendo Abbott con 1.200 empleos directos hacia 2030 ([Milenio](https://www.milenio.com/negocios/industria-farmaceutica-invertira-miles-millones-pesos-mexico)). Esa inversión reactiva presión sobre equipos comerciales, incluyendo Market Access. Un candidato que empiece hoy la ruta de preparación con timing correcto puede posicionarse para las contrataciones ejecutivas de 2027-2028.
-
-## Resumen operativo
-
-Market Access en industria farmacéutica LATAM requiere formación en ciencias de la salud o administración con especialización en salud, 5-8 años de experiencia previa en industria, inglés C1, comodidad con datos financieros y análisis costo-efectividad, y capacidad de negociación con contrapartes senior. La entrada más común es lateral desde HEOR, Medical Affairs o Marketing después de 3-5 años en ese rol previo. El mercado LATAM presenta escasez estructural de perfiles mid-level, lo que crea oportunidad para candidatos que se preparan específicamente. México acaba de anunciar inversión de MXN 21 mil millones que sostiene presión sobre equipos comerciales pharma en el mediano plazo.
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "¿Qué es Market Access en la industria farmacéutica?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Es el área que consigue que un medicamento aprobado sea financiado por los sistemas de salud. Arma la evidencia clínica y económica que pide cada pagador y negocia la inclusión del medicamento en su listado."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Qué diferencia hay entre Market Access y HEOR?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "HEOR construye los modelos económicos y la evidencia de resultados en salud. Market Access usa esa evidencia para conseguir el financiamiento: define la estrategia, presenta el dossier y negocia con el pagador."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Qué pide México para incluir un medicamento en el Compendio Nacional?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Según las Normas de Organización y Funcionamiento de la Comisión del Compendio, la solicitud lleva un estudio de evaluación económica que incluye una revisión sistemática de la evidencia clínica y un análisis de impacto presupuestal."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Se puede entrar a Market Access sin experiencia en la industria?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Es difícil, porque cada habilidad del puesto se aprende antes en otro rol. Las rutas que se desprenden del contenido del trabajo son laterales: desde HEOR, Medical Affairs, Marketing, Regulatory, consultoría en salud o una agencia pública de evaluación."
+      }
+    }
+  ]
+}
+</script>
 
 ---
 
-**¿Tu CV traduce tu experiencia al vocabulario que Market Access usa?** La herramienta de Solca revisa tu CV en menos de un minuto y devuelve diagnóstico por sección. [Pruébala en solcaciencia.com/revisar-cv](https://solcaciencia.com/revisar-cv).
+**Ensaya la primera llamada antes de la real.** El [Simulador de Entrevistas Solca](https://solcaciencia.com/simulador-entrevistas/?utm_source=blog&utm_medium=post&utm_campaign=market-access-latam#planes) toma tu CV y el título de la vacante a la que apuntas y te hace la llamada inicial con reclutador: 5 preguntas de screening, con reporte PDF a tu email al terminar. La primera sesión es gratis y no pide tarjeta. [Empieza aquí](https://solcaciencia.com/simulador-entrevistas/?utm_source=blog&utm_medium=post&utm_campaign=market-access-latam#planes).
