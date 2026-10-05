@@ -20,7 +20,7 @@ import {
   AnthropicError,
 } from '../../lib/anthropic';
 import { buildSystemPrompt } from '../../lib/simulator-prompt';
-import { inferRole, getStageInfo } from '../../lib/simulator-defaults';
+import { inferRole, getStageInfo, getRoleCta } from '../../lib/simulator-defaults';
 import { parseFinalOutput } from '../../lib/simulator-metrics-parser';
 import { writeMetricsToD1, writeSessionInitialToD1 } from '../../lib/simulator-metrics-writer';
 import { sendEmail, PostmarkError } from '../../lib/postmark';
@@ -864,7 +864,13 @@ async function handleNext(
   // Subido de 5 → 10 el 9 sept 2026. 15q deshabilitado en la UI (ver
   // sesion.astro). Con Sonnet 4.5 + prompt caching, 10q debería caber en
   // <25s del sync path. Si Sonnet no cabe, fallback automático a async.
-  const SYNC_MAX_QUESTIONS = 10;
+  // 5 oct 2026: path sync APAGADO. Desde el 7 sept fallaba siempre con
+  // ReferenceError (getRoleCta sin importar) DESPUÉS de pagar la llamada a
+  // Haiku, así que cada sesión pagaba el reporte dos veces y el usuario
+  // esperaba hasta 25 s de más. La promesa vigente es reporte por email en
+  // 10-20 min vía cron. El import ya está corregido; para reactivar el sync
+  // subir este valor y probar end to end con costo controlado.
+  const SYNC_MAX_QUESTIONS = 0;
   if (isLastQuestion) {
     // Guardar userEmail en state para que el cron envíe email al terminar.
     if (body.email) {
