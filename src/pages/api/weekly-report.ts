@@ -143,6 +143,11 @@ interface WeeklyReport {
     code_submitted: number;
     checkout_started: number;
     checkout_abandoned: number;
+    // 5 oct 2026: clics en "probar gratis" (hero o tarjeta) y registros
+    // freemium completados. No entran en action_rate_pct para no romper la
+    // serie histórica.
+    freemium_cta_clicked: number;
+    freemium_signup: number;
     // % de vistas que hicieron alguna acción (código o checkout).
     action_rate_pct: number | null;
     // Breakdown por utm_source (top 5) para ver qué canal convierte mejor.
@@ -922,6 +927,8 @@ export const GET: APIRoute = async ({ url, locals }) => {
       code_submitted: 0,
       checkout_started: 0,
       checkout_abandoned: 0,
+      freemium_cta_clicked: 0,
+      freemium_signup: 0,
       by_source: new Map<string, { paywall_viewed: number; actions: number }>(),
     };
 
@@ -932,6 +939,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
           event: string;
           ts?: string;
           utm_source?: string;
+          plan?: string;
         }>(simMetricsKv, 'evt:', (rec) => {
           const tsMs = rec.ts ? Date.parse(rec.ts) : NaN;
           if (isNaN(tsMs) || tsMs < weekAgo || tsMs > now) return;
@@ -940,6 +948,8 @@ export const GET: APIRoute = async ({ url, locals }) => {
           else if (rec.event === 'code_submitted') funnel.code_submitted++;
           else if (rec.event === 'checkout_started') funnel.checkout_started++;
           else if (rec.event === 'checkout_abandoned') funnel.checkout_abandoned++;
+          else if (rec.event === 'plan_cta_clicked' && rec.plan === 'gratis') funnel.freemium_cta_clicked++;
+          else if (rec.event === 'freemium_signup') funnel.freemium_signup++;
 
           const src = rec.utm_source ?? 'sin_utm';
           const bucket = funnel.by_source.get(src) ?? { paywall_viewed: 0, actions: 0 };
@@ -1218,6 +1228,8 @@ export const GET: APIRoute = async ({ url, locals }) => {
         code_submitted: funnel.code_submitted,
         checkout_started: funnel.checkout_started,
         checkout_abandoned: funnel.checkout_abandoned,
+        freemium_cta_clicked: funnel.freemium_cta_clicked,
+        freemium_signup: funnel.freemium_signup,
         action_rate_pct:
           funnel.paywall_viewed > 0
             ? +(((funnel.code_submitted + funnel.checkout_started) / funnel.paywall_viewed) * 100).toFixed(1)

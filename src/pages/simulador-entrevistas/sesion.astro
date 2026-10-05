@@ -81,12 +81,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
               <input type="text" name="roleTitle" placeholder="Ej. Clinical Research Associate" />
             </label>
 
-            <label class="field">
+            <label class="field" data-paid-only>
               <span class="field-label">Empresa <span class="optional">(opcional)</span></span>
               <input type="text" name="company" placeholder="Ej. IQVIA" />
             </label>
 
-            <label class="field">
+            <label class="field" data-paid-only>
               <span class="field-label">Descripción de la vacante <span class="optional">(opcional)</span></span>
               <textarea name="vacancyText" rows="4" placeholder="Pega aquí la descripción si la tienes a mano. Me ayuda a calibrar mejor."></textarea>
             </label>
@@ -211,7 +211,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
                 <em>5 preguntas · 15-30 min · motivación, fit y CV</em>
               </span>
             </label>
-            <label class="radio">
+            <label class="radio" data-paid-only>
               <input type="radio" name="interviewStage" value="technical_round" />
               <span>
                 <strong>Entrevista con hiring manager</strong>
@@ -231,7 +231,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
               </span>
             </label>
             */}
-            <label class="radio">
+            <label class="radio" data-paid-only>
               <input type="radio" name="interviewStage" value="general_practice" />
               <span>
                 <strong>Práctica general (mix de preguntas)</strong>
@@ -1058,9 +1058,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'init',
-            // Si viene email, el backend hace lookup en SIMULATOR_CREDITS y sobreescribe
-            // el plan según el paquete comprado. Este 'plan' es solo fallback si no hay email.
-            plan: parsedCvSummary ? 'basico' : 'gratis',
+            // El plan lo decide el backend (código o créditos en KV); no se manda.
             sessionNumberInPackage: 1,
             profile,
             cvSummary: parsedCvSummary || undefined,
@@ -2756,10 +2754,16 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         const totalEl = document.getElementById('sessions-total');
         const remainingEl = document.getElementById('sessions-remaining');
         const expiryEl = document.getElementById('sessions-expiry');
+        // 5 oct 2026: código de la beta revocado → avisar antes de llenar el form.
+        if (j.revoked) {
+          showRevokedCodeNotice();
+          return;
+        }
         if (planEl) {
           const planLabel = j.plan === 'premium' ? 'Premium' : j.plan === 'basico' ? 'Básico' : 'Freemium';
           planEl.textContent = planLabel;
         }
+        if (j.plan === 'gratis') applyFreePlanLimits();
         // v3 (11 sept 2026): clamp visual del contador cuando remaining=0.
         // Antes mostraba "Sesión 9 de 8" (overflow del sessions_used sobre
         // max_sessions). Ahora "Sesiones agotadas · N de N" hasta que compre.
@@ -2789,6 +2793,43 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       } catch (_err) {
         // Best-effort · si falla, el contador simplemente no se muestra
       }
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // Límites visibles del plan gratis (5 oct 2026)
+    // ──────────────────────────────────────────────────────────────────
+    // El backend ya fuerza phone_screen y recorta empresa/descripción
+    // (applyPlanGating). Esto solo evita que el form ofrezca lo que el plan
+    // no incluye: deshabilita los [data-paid-only] y enlaza a los planes.
+    function applyFreePlanLimits() {
+      document.querySelectorAll<HTMLElement>('[data-paid-only]').forEach((el) => {
+        el.classList.add('is-locked');
+        el.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea').forEach((input) => {
+          input.disabled = true;
+          if (input.type !== 'radio') input.value = '';
+        });
+        if (el.querySelector('.paid-note')) return;
+        const note = document.createElement('a');
+        note.className = 'paid-note';
+        note.href = '/simulador-entrevistas/#planes';
+        note.textContent = 'Disponible en los planes Básico y Premium';
+        const target = el.classList.contains('radio') ? el.querySelector('span') : el;
+        (target ?? el).appendChild(note);
+      });
+      const phone = document.querySelector<HTMLInputElement>('input[name="interviewStage"][value="phone_screen"]');
+      if (phone) phone.checked = true;
+    }
+
+    function showRevokedCodeNotice() {
+      const errorEl = document.getElementById('intake-error') as HTMLParagraphElement | null;
+      const startBtn = document.getElementById('start-btn') as HTMLButtonElement | null;
+      if (errorEl) {
+        errorEl.innerHTML =
+          'Este código de la edición beta ya no está activo. <a href="/simulador-entrevistas/#planes">Regístrate aquí</a> para tu sesión sin costo.';
+        errorEl.hidden = false;
+      }
+      if (startBtn) startBtn.disabled = true;
+      try { sessionStorage.removeItem('solca_beta_code'); } catch (_e) {}
     }
 
     // ──────────────────────────────────────────────────────────────────
@@ -2962,6 +3003,20 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     .radio:has(input:checked) {
       border-color: var(--orange);
       background: var(--orange-light);
+    }
+    .radio.is-locked { cursor: not-allowed; }
+    .radio.is-locked:hover { background: transparent; }
+    .is-locked strong,
+    .is-locked em,
+    .is-locked .field-label,
+    .is-locked input,
+    .is-locked textarea { opacity: 0.5; }
+    .is-locked input,
+    .is-locked textarea { cursor: not-allowed; }
+    .paid-note {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--orange);
     }
 
     .form-actions { margin-top: 16px; }

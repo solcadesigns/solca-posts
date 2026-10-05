@@ -27,8 +27,15 @@ import type { APIRoute } from 'astro';
 export const prerender = false;
 
 interface EventBody {
-  event: 'paywall_viewed' | 'checkout_started' | 'checkout_abandoned' | 'code_submitted';
+  event:
+    | 'paywall_viewed'
+    | 'checkout_started'
+    | 'checkout_abandoned'
+    | 'code_submitted'
+    | 'plan_cta_clicked'
+    | 'freemium_signup';
   plan?: 'gratis' | 'basico' | 'premium';
+  cta?: string; // plan_cta_clicked: 'hero' | 'card'
   utm_source?: string;
   utm_medium?: string;
   utm_campaign?: string;
@@ -42,6 +49,9 @@ const ALLOWED_EVENTS = new Set([
   'checkout_started',
   'checkout_abandoned',
   'code_submitted',
+  // 5 oct 2026: separar "clic en un plan" de "registro freemium completado".
+  'plan_cta_clicked',
+  'freemium_signup',
 ]);
 
 const MAX_STRING = 200; // recorta strings largas para no ensuciar KV
@@ -109,6 +119,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     event,
     ts,
     plan: body.plan && ['gratis', 'basico', 'premium'].includes(body.plan) ? body.plan : undefined,
+    cta: body.cta === 'hero' || body.cta === 'card' ? body.cta : undefined,
     utm_source: truncate(body.utm_source),
     utm_medium: truncate(body.utm_medium),
     utm_campaign: truncate(body.utm_campaign),

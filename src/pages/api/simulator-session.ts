@@ -326,6 +326,16 @@ async function handleInit(
       (check.record.cohort === 'paywall' || check.record.cohort === 'freemium')
     ) {
       paywallCodeRecord = check.record;
+    } else if (check.record) {
+      // 5 oct 2026: códigos de la beta (sin plan guardado, cohort beta-1 /
+      // pre-paywall) revocados. Antes caían a body.plan y un usuario con CV
+      // obtenía etapas de pago. El panel Mis reportes sigue funcionando.
+      return {
+        ok: false,
+        error:
+          'Este código de la edición beta ya no está activo. Regístrate en solcaciencia.com/simulador-entrevistas/ para tu sesión sin costo.',
+        errorCode: 'beta_code_invalid',
+      };
     }
   }
 
@@ -344,8 +354,9 @@ async function handleInit(
   //   - Existe expirado → error credits_expired (usuario debe recomprar).
   //   - Existe con remaining=0 → error credits_exhausted (usuario debe recomprar).
   //   - Existe válido → usamos record.plan (ignora el plan del body, la KV es la fuente de verdad).
-  // Si el body NO trae email pero sí betaCode, usamos el flujo legacy (plan=gratis por default).
-  let plan: Plan = body.plan ?? 'gratis';
+  // 5 oct 2026: el plan nunca sale del body; arranca en gratis y solo lo
+  // sube el registro del código o de créditos en KV.
+  let plan: Plan = 'gratis';
   let creditsRecord: CreditsRecord | null = null;
 
   // Prioridad #1: auth por código paywall (SIM-XXXXXXXX generado por Stripe webhook)

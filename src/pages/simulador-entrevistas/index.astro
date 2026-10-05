@@ -48,8 +48,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         reporte con lo que funcionó, lo que no y qué trabajar antes de la próxima entrevista.
       </p>
       <div class="cta-row">
-        <a href="#planes" class="btn btn-primary">Ver planes</a>
-        <a href="#como-funciona" class="btn btn-secondary">Cómo funciona</a>
+        <button type="button" class="btn btn-primary plan-cta" data-plan="gratis" data-cta="hero">Probar 1 sesión gratis</button>
+        <a href="#planes" class="btn btn-secondary">Ver planes</a>
       </div>
       <p class="hero-note">
         ¿Ya tienes tu código? Pégalo abajo en
@@ -113,7 +113,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             <li><strong>Reporte PDF enviado a tu email</strong> al terminar</li>
             <li>Vigencia 240 días</li>
           </ul>
-          <button type="button" class="btn btn-secondary plan-cta" data-plan="gratis">Empezar sin costo</button>
+          <button type="button" class="btn btn-primary plan-cta" data-plan="gratis" data-cta="card">Empezar sin costo</button>
         </article>
 
         <article class="plan-card plan-card-highlight">
@@ -129,7 +129,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             <li>Panel "Mis reportes" para volver a descargar cuando quieras</li>
             <li>Vigencia 240 días · pago único, sin suscripción</li>
           </ul>
-          <button type="button" class="btn btn-primary plan-cta" data-plan="basico">Comprar Básico</button>
+          <button type="button" class="btn btn-secondary plan-cta" data-plan="basico" data-cta="card">Comprar Básico</button>
         </article>
 
         <article class="plan-card">
@@ -146,7 +146,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             <li><strong>Bonus:</strong> cupón <strong>40% off</strong> en el Curso Solca CV+ATS+LinkedIn (válido 90 días)</li>
             <li>Vigencia 240 días · pago único, sin suscripción</li>
           </ul>
-          <button type="button" class="btn btn-secondary plan-cta" data-plan="premium">Comprar Premium</button>
+          <button type="button" class="btn btn-secondary plan-cta" data-plan="premium" data-cta="card">Comprar Premium</button>
         </article>
       </div>
       <p class="plans-note">
@@ -447,6 +447,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     planCards.forEach((btn) => {
       btn.addEventListener('click', () => {
         const plan = btn.dataset.plan ?? 'gratis';
+        trackEvent('plan_cta_clicked', { plan, cta: btn.dataset.cta ?? 'card' });
         selectPlan(plan);
         const target = document.getElementById('suscribir');
         if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -495,6 +496,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             });
             const data = (await res.json()) as { ok?: boolean; message?: string; error?: string };
             if (res.ok && data.ok) {
+              trackEvent('freemium_signup', { plan: 'gratis' });
               subMsg.textContent = data.message ?? 'Suscrito. Revisa tu email en unos minutos.';
               subMsg.classList.add('ok');
               subMsg.hidden = false;
