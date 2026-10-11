@@ -152,6 +152,19 @@ interface WeeklyReport {
     action_rate_pct: number | null;
     // Breakdown por utm_source (top 5) para ver qué canal convierte mejor.
     top_sources: Array<{ source: string; paywall_viewed: number; actions: number }>;
+    // 11 oct 2026: desglose por utm_campaign para saber qué post trae cada
+    // visita. Ventana 30 días (los evt: tienen TTL 90 días) para ver campañas
+    // de semanas anteriores. Sin utm_campaign no entra.
+    por_campaign_30d: Array<{
+      utm_campaign: string;
+      utm_source: string | null;
+      utm_medium: string | null;
+      paywall_viewed: number;
+      freemium_cta_clicked: number;
+      freemium_signup: number;
+      code_or_checkout: number;
+      ultimo_evento: string;
+    }>;
   };
   // Postmark Analytics — se llena si POSTMARK_SERVER_TOKEN está presente.
   // Datos de últimos 30 días por tag. Requiere Open + Link tracking activo
@@ -930,7 +943,18 @@ export const GET: APIRoute = async ({ url, locals }) => {
       freemium_cta_clicked: 0,
       freemium_signup: 0,
       by_source: new Map<string, { paywall_viewed: number; actions: number }>(),
+      by_campaign: new Map<string, {
+        utm_campaign: string;
+        utm_source: string | null;
+        utm_medium: string | null;
+        paywall_viewed: number;
+        freemium_cta_clicked: number;
+        freemium_signup: number;
+        code_or_checkout: number;
+        ultimo_evento: string;
+      }>(),
     };
+    const campaignWindowStart = now - 30 * 24 * 60 * 60 * 1000;
 
     const simMetricsKv = env.SIMULATOR_METRICS as KVNamespace | undefined;
     if (simMetricsKv) {
@@ -939,10 +963,34 @@ export const GET: APIRoute = async ({ url, locals }) => {
           event: string;
           ts?: string;
           utm_source?: string;
+          utm_medium?: string;
+          utm_campaign?: string;
           plan?: string;
         }>(simMetricsKv, 'evt:', (rec) => {
           const tsMs = rec.ts ? Date.parse(rec.ts) : NaN;
-          if (isNaN(tsMs) || tsMs < weekAgo || tsMs > now) return;
+          if (isNaN(tsMs) || tsMs > now) return;
+
+          // Desglose por campaña: ventana de 30 días, independiente de la semanal.
+          if (rec.utm_campaign && tsMs >= campaignWindowStart) {
+            const c = funnel.by_campaign.get(rec.utm_campaign) ?? {
+              utm_campaign: rec.utm_campaign,
+              utm_source: rec.utm_source ?? null,
+              utm_medium: rec.utm_medium ?? null,
+              paywall_viewed: 0,
+              freemium_cta_clicked: 0,
+              freemium_signup: 0,
+              code_or_checkout: 0,
+              ultimo_evento: rec.ts!,
+            };
+            if (rec.event === 'paywall_viewed') c.paywall_viewed++;
+            else if (rec.event === 'plan_cta_clicked' && rec.plan === 'gratis') c.freemium_cta_clicked++;
+            else if (rec.event === 'freemium_signup') c.freemium_signup++;
+            else if (rec.event === 'code_submitted' || rec.event === 'checkout_started') c.code_or_checkout++;
+            if (rec.ts! > c.ultimo_evento) c.ultimo_evento = rec.ts!;
+            funnel.by_campaign.set(rec.utm_campaign, c);
+          }
+
+          if (tsMs < weekAgo) return;
           funnel.disponible = true;
           if (rec.event === 'paywall_viewed') funnel.paywall_viewed++;
           else if (rec.event === 'code_submitted') funnel.code_submitted++;
@@ -1238,6 +1286,8 @@ export const GET: APIRoute = async ({ url, locals }) => {
           .sort((a, b) => b[1].paywall_viewed - a[1].paywall_viewed)
           .slice(0, 5)
           .map(([source, v]) => ({ source, paywall_viewed: v.paywall_viewed, actions: v.actions })),
+        por_campaign_30d: Array.from(funnel.by_campaign.values())
+          .sort((a, b) => b.paywall_viewed - a.paywall_viewed),
       },
       email_health,
       traffic,
