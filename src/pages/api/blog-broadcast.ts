@@ -160,14 +160,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return jsonResponse({ skipped: true, reason: 'no_recent_blog', started_at: startedIso });
   }
 
-  const blogUrl = `https://solcaciencia.com/blog/${post.slug}`;
+  const blogUrl = `https://solcaciencia.com/blog/${post.id}`;
   const blogTitle = post.data.title;
   // Hook: primeras ~150 palabras del cuerpo (Postmark decide el rendering final vía template)
-  const bodyText = post.body ?? '';
+  // Sin sintaxis markdown: el correo mostraba "> **Respuesta corta.**" literal.
+  const bodyText = (post.body ?? '')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/^\s*(>|#{1,6})\s*/gm, '')
+    .replace(/[*_`]/g, '')
+    .trim();
   const blogHook = bodyText.split(/\s+/).slice(0, 30).join(' ') + '…';
   // Hero image: heroImage del frontmatter viene como "/blog/slug.png"; agregamos el host absoluto
   // para que Postmark/clientes de correo puedan cargarla desde cualquier lado.
-  const heroPath = (post.data as { heroImage?: string }).heroImage ?? `/blog/${post.slug}.png`;
+  const heroPath = (post.data as { heroImage?: string }).heroImage ?? `/blog/${post.id}.png`;
   const blogImageUrl = heroPath.startsWith('http')
     ? heroPath
     : `https://solcaciencia.com${heroPath}`;
@@ -213,7 +218,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const finished = Date.now();
   const report: BroadcastReport = {
-    blog_slug: post.slug,
+    blog_slug: post.id,
     blog_title: blogTitle,
     candidates: candidates.length,
     eligible: eligible.length,

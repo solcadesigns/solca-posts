@@ -9,6 +9,11 @@ import BlogPostLayout from '../../layouts/BlogPostLayout.astro';
 export const prerender = false;
 
 const { slug } = Astro.params;
+
+// Los broadcasts del 10 sep al 8 oct 2026 salieron con /blog/undefined (bug de
+// post.slug en blog-broadcast). Esos correos siguen en bandejas: mandar al índice.
+if (slug === 'undefined') return Astro.redirect('/blog/', 301);
+
 const posts = await getCollection('blog', ({ data }) => !data.draft);
 const post = posts.find((p) => p.id === slug);
 
