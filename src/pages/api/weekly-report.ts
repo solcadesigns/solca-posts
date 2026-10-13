@@ -22,6 +22,7 @@
  */
 
 import type { APIRoute } from 'astro';
+import { DRIP_STEPS } from '../../lib/drip';
 
 export const prerender = false;
 
@@ -325,12 +326,9 @@ async function fetchPostmarkStats(
   };
 
   try {
-    const [statsRes, opensRes, clicksRes] = await Promise.all([
-      fetch(`https://api.postmarkapp.com/stats/outbound?${qs}`, { headers }),
-      fetch(`https://api.postmarkapp.com/stats/outbound/opens?${qs}`, { headers }),
-      fetch(`https://api.postmarkapp.com/stats/outbound/clicks?${qs}`, { headers }),
-    ]);
-
+    // Primero el resumen; opens/clicks solo si el tag envió algo (ahorra
+    // subrequests: con ~15 tags el Worker se acerca al límite de 50).
+    const statsRes = await fetch(`https://api.postmarkapp.com/stats/outbound?${qs}`, { headers });
     if (!statsRes.ok) return null;
 
     const stats = (await statsRes.json()) as {
@@ -339,6 +337,12 @@ async function fetchPostmarkStats(
       SpamComplaints?: number;
       BounceRate?: number;
     };
+    if (!stats.Sent) return null;
+
+    const [opensRes, clicksRes] = await Promise.all([
+      fetch(`https://api.postmarkapp.com/stats/outbound/opens?${qs}`, { headers }),
+      fetch(`https://api.postmarkapp.com/stats/outbound/clicks?${qs}`, { headers }),
+    ]);
     const opens = opensRes.ok
       ? ((await opensRes.json()) as { Opens?: number; Unique?: number })
       : { Opens: 0, Unique: 0 };
@@ -1081,7 +1085,20 @@ export const GET: APIRoute = async ({ url, locals }) => {
     };
 
     if (postmarkToken) {
-      const tags = ['welcome-cv', 'welcome-quiz', 'blog-broadcast'];
+      // 13 oct 2026: + correos del simulador, secuencia drip (drip-<track>-d<step>)
+      // y el reenvío único blog-resend-clickers. Tags sin envíos en la ventana no salen.
+      const tags = [
+        'welcome-cv',
+        'welcome-quiz',
+        'blog-broadcast',
+        'blog-resend-clickers',
+        'welcome-simulator-code',
+        'simulator-purchase',
+        'simulator-post-package',
+        ...(['cv', 'quiz'] as const).flatMap((track) =>
+          DRIP_STEPS.map((step) => `drip-${track}-d${step}`),
+        ),
+      ];
       const results = await Promise.all(
         tags.map((t) => fetchPostmarkStats(postmarkToken, t, 30)),
       );
