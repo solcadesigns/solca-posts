@@ -174,6 +174,63 @@ const ogImageURL = new URL(ogImage, siteUrl).toString();
     } catch (_) {}
   })();
 </script>
+
+<!--
+  Origen de ventas en Hotmart · 14 oct 2026.
+  Al hacer clic en un enlace a Hotmart, agrega la etiqueta de origen que Hotmart
+  muestra en Ventas > Dashboard Origen de Ventas: sck en pay.hotmart.com (página
+  de pago) y src en go.hotmart.com (HotLink). Valor: "<fuente>|<campaña>" si la
+  visita trae UTM, o "web|<página>" si no. Máx. 30 caracteres, sin "_" (reservado
+  por Hotmart). Registra book_clicked. Delegado en document para cubrir enlaces
+  que se pintan después (resultado del Quiz, reporte del simulador).
+-->
+<script is:inline>
+  (function () {
+    function clean(s) {
+      return String(s || '').toLowerCase().replace(/_/g, '-').replace(/[^a-z0-9|-]/g, '');
+    }
+    function originTag() {
+      var utm = window.__utm || {};
+      var path = window.location.pathname.replace(/\/+$/, '') || '/';
+      if (utm.utm_campaign || utm.utm_source) {
+        var src = utm.utm_source === 'linkedin' ? 'li' : clean(utm.utm_source || 'utm').slice(0, 6);
+        return (src + '|' + clean(utm.utm_campaign || '')).slice(0, 30);
+      }
+      var page = path === '/' ? 'home' : path.split('/').filter(Boolean).pop();
+      return ('web|' + clean(page)).slice(0, 30);
+    }
+    document.addEventListener('click', function (e) {
+      try {
+        var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+        if (!a) return;
+        var url = new URL(a.href, window.location.href);
+        var param = url.hostname === 'pay.hotmart.com' ? 'sck' : url.hostname === 'go.hotmart.com' ? 'src' : null;
+        if (!param) return;
+        var tag = url.searchParams.get(param) || originTag();
+        if (!url.searchParams.get(param)) {
+          url.searchParams.set(param, tag);
+          a.href = url.toString();
+        }
+        var utm = window.__utm || {};
+        var body = JSON.stringify({
+          event: 'book_clicked',
+          product: url.pathname.replace(/\//g, ''),
+          tag: tag,
+          path: window.location.pathname,
+          utm_source: utm.utm_source,
+          utm_medium: utm.utm_medium,
+          utm_campaign: utm.utm_campaign,
+          utm_content: utm.utm_content,
+          utm_term: utm.utm_term,
+          referrer: document.referrer || undefined,
+        });
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon('/api/simulator-events', new Blob([body], { type: 'application/json' }));
+        }
+      } catch (_) {}
+    }, true);
+  })();
+</script>
 </head>
 <body>
 <slot />

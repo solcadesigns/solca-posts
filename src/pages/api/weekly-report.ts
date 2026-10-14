@@ -168,8 +168,11 @@ interface WeeklyReport {
       quiz_viewed: number;
       cv_viewed: number;
       blog_viewed: number;
+      book_clicked: number;
       ultimo_evento: string;
     }>;
+    // 14 oct 2026: clics a libros en Hotmart en la semana, por id de producto.
+    book_clicks_7d: Record<string, number>;
     // 14 oct 2026: visitas registradas por page_viewed en la semana (7 días),
     // con y sin UTM. Desde antes de esa fecha no hay datos.
     page_views_7d: { 'quiz-rol': number; 'revisar-cv': number; blog: number; con_utm: number };
@@ -965,8 +968,10 @@ export const GET: APIRoute = async ({ url, locals }) => {
         quiz_viewed: number;
         cv_viewed: number;
         blog_viewed: number;
+        book_clicked: number;
         ultimo_evento: string;
       }>(),
+      book_clicks_7d: {} as Record<string, number>,
       page_views_7d: { 'quiz-rol': 0, 'revisar-cv': 0, blog: 0, con_utm: 0 },
     };
     const campaignWindowStart = now - 30 * 24 * 60 * 60 * 1000;
@@ -982,6 +987,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
           utm_campaign?: string;
           plan?: string;
           page?: 'quiz-rol' | 'revisar-cv' | 'blog';
+          product?: string;
         }>(simMetricsKv, 'evt:', (rec) => {
           const tsMs = rec.ts ? Date.parse(rec.ts) : NaN;
           if (isNaN(tsMs) || tsMs > now) return;
@@ -999,6 +1005,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
               quiz_viewed: 0,
               cv_viewed: 0,
               blog_viewed: 0,
+              book_clicked: 0,
               ultimo_evento: rec.ts!,
             };
             if (rec.event === 'paywall_viewed') c.paywall_viewed++;
@@ -1009,7 +1016,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
               if (rec.page === 'quiz-rol') c.quiz_viewed++;
               else if (rec.page === 'revisar-cv') c.cv_viewed++;
               else if (rec.page === 'blog') c.blog_viewed++;
-            }
+            } else if (rec.event === 'book_clicked') c.book_clicked++;
             if (rec.ts! > c.ultimo_evento) c.ultimo_evento = rec.ts!;
             funnel.by_campaign.set(rec.utm_campaign, c);
           }
@@ -1020,6 +1027,11 @@ export const GET: APIRoute = async ({ url, locals }) => {
           if (rec.event === 'page_viewed') {
             if (rec.page && rec.page in funnel.page_views_7d) funnel.page_views_7d[rec.page]++;
             if (rec.utm_campaign) funnel.page_views_7d.con_utm++;
+            return;
+          }
+          if (rec.event === 'book_clicked') {
+            const prod = rec.product ?? 'desconocido';
+            funnel.book_clicks_7d[prod] = (funnel.book_clicks_7d[prod] ?? 0) + 1;
             return;
           }
           funnel.disponible = true;
@@ -1331,6 +1343,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
           .slice(0, 5)
           .map(([source, v]) => ({ source, paywall_viewed: v.paywall_viewed, actions: v.actions })),
         page_views_7d: funnel.page_views_7d,
+        book_clicks_7d: funnel.book_clicks_7d,
         por_campaign_30d: Array.from(funnel.by_campaign.values()).sort(
           (a, b) =>
             b.paywall_viewed + b.quiz_viewed + b.cv_viewed + b.blog_viewed -

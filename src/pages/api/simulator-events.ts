@@ -34,10 +34,14 @@ interface EventBody {
     | 'code_submitted'
     | 'plan_cta_clicked'
     | 'freemium_signup'
-    | 'page_viewed';
+    | 'page_viewed'
+    | 'book_clicked';
   // page_viewed: qué página se vio. path = pathname (para blog, el slug).
   page?: 'quiz-rol' | 'revisar-cv' | 'blog';
   path?: string;
+  // book_clicked: id del producto Hotmart (ej. E107847432I) y etiqueta sck/src enviada.
+  product?: string;
+  tag?: string;
   plan?: 'gratis' | 'basico' | 'premium';
   cta?: string; // plan_cta_clicked: 'hero' | 'card'
   utm_source?: string;
@@ -59,6 +63,8 @@ const ALLOWED_EVENTS = new Set([
   // 14 oct 2026: visitas con UTM a Quiz, revisor de CV y artículos del blog
   // (sprint W42-W45: medir visitas por post también fuera del simulador).
   'page_viewed',
+  // 14 oct 2026: clic a un libro en Hotmart (el enlace sale con sck/src del origen).
+  'book_clicked',
 ]);
 
 const ALLOWED_PAGES = new Set(['quiz-rol', 'revisar-cv', 'blog']);
@@ -133,7 +139,9 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     plan: body.plan && ['gratis', 'basico', 'premium'].includes(body.plan) ? body.plan : undefined,
     cta: body.cta === 'hero' || body.cta === 'card' ? body.cta : undefined,
     page: event === 'page_viewed' ? body.page : undefined,
-    path: event === 'page_viewed' ? truncate(body.path) : undefined,
+    path: event === 'page_viewed' || event === 'book_clicked' ? truncate(body.path) : undefined,
+    product: event === 'book_clicked' ? truncate(body.product) : undefined,
+    tag: event === 'book_clicked' ? truncate(body.tag) : undefined,
     utm_source: truncate(body.utm_source),
     utm_medium: truncate(body.utm_medium),
     utm_campaign: truncate(body.utm_campaign),
