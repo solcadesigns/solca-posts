@@ -228,6 +228,13 @@ Las 4 piezas de una semana (3 posts de feed + 1 artículo de Solca Insight) se p
 
 Cuidado: esperar a que cargue la página antes de cada clic por coordenadas; un clic sobre el feed sin cargar abre perfiles ajenos.
 
+Aprendizajes W43-W44 (14 oct 2026):
+- Límite de 3000 caracteres por post: medir antes de escribir.
+- En artículos, el texto del enlace debe ser descriptivo; si parece URL, LinkedIn lo autoenlaza sin la query string (se pierden los UTM).
+- LinkedIn descarta en el paste los `href` con `|` sin codificar: en enlaces a Hotmart usar `sck=li%7C<campaña>`.
+- Si el post lleva URL, la tarjeta de vista previa oculta la barra de adjuntos: cerrar la tarjeta (X) antes de adjuntar el PDF.
+- En el diálogo de fecha, si se encoge al elegir la hora, "Siguiente" queda en y≈322; un clic en la posición vieja abre "Guardar como borrador" (cerrar con X).
+
 ## Fase 5 · Cierre y registro
 
 ### 5.1 · Actualización OSCAR_PROFILE.md
