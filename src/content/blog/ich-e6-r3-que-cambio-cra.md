@@ -7,6 +7,7 @@ category: "carreras-pharma"
 tags: ["ICH GCP", "R3", "CRA", "Clinical Research", "Pharma LATAM", "COFEPRIS", "ANMAT", "FDA", "EMA", "Monitoreo"]
 series: "guia-seo"
 readingMinutes: 8
+updatedDate: 2026-10-14
 ---
 
 La ICH E6(R3) es la actualización más profunda de las Buenas Prácticas Clínicas en una década. Para el Clinical Research Associate, no es un cambio de teoría regulatoria: es un cambio en cómo se monitorea, qué se documenta y qué herramientas se manejan. La guía final fue adoptada por ICH en enero 2025 y entró en vigencia en EMA en julio 2025, en FDA con publicación formal en septiembre 2025 y en Argentina con la Disposición ANMAT 7516/2025 desde diciembre 2025. Este blog desglosa los cinco cambios que más impactan el día a día del CRA y nombra las fechas oficiales por país.
@@ -17,11 +18,11 @@ La ICH E6(R3) es la actualización más profunda de las Buenas Prácticas Clíni
 - **EMA:** vigencia desde el **23 de julio de 2025** para Principios + Anexo 1 ([EMA E6 GCP](https://www.ema.europa.eu/en/ich-e6-good-clinical-practice-scientific-guideline)).
 - **FDA:** publicación en Federal Register el **9 de septiembre de 2025** (90 FR 43460). La FDA aclara que es guía non-binding, sin fecha de cumplimiento obligatorio ([Federal Register E6R3](https://www.federalregister.gov/documents/2025/09/09/2025-17311/e6r3-good-clinical-practice-international-council-for-harmonisation-guidance-for-industry)).
 - **ANMAT Argentina:** Disposición 7516/2025, publicada en Boletín Oficial el **9 de octubre de 2025**, con vigencia desde el **1 de diciembre de 2025**. Argentina logró estatus de Regulatory Member del ICH en 2024 ([Boletín Oficial Argentina](https://www.boletinoficial.gob.ar/detalleAviso/primera/332695/20251009), [argentina.gob.ar](https://www.argentina.gob.ar/noticias/hoy-entra-en-vigencia-el-nuevo-regimen-de-buenas-practicas-clinicas-para-estudios-de)).
-- **COFEPRIS México:** en 2025, el Consejo Científico de COFEPRIS presentó 16 guías de eficacia ICH incluyendo E6(R3), en el marco de armonización regulatoria ([COFEPRIS comunicado oficial](https://www.gob.mx/cofepris/articulos/cofepris-fortalece-la-regulacion-en-ensayos-clinicos-con-la-emision-de-16-guias-de-eficacia-de-ich)). La adopción es de armonización progresiva, sin un día D exclusivo equivalente al de Argentina.
+- **COFEPRIS México:** en 2025, el Consejo Científico de COFEPRIS presentó 16 guías de eficacia ICH, en el marco de armonización regulatoria ([COFEPRIS comunicado oficial](https://www.gob.mx/cofepris/articulos/cofepris-fortalece-la-regulacion-en-ensayos-clinicos-con-la-emision-de-16-guias-de-eficacia-de-ich)). La adopción es de armonización progresiva, sin un día D exclusivo equivalente al de Argentina.
 - **INVIMA Colombia:** observador del ICH; la adopción se enmarca en el go-live regional/internacional sin acto INVIMA único que fije fecha exclusiva.
 - **ANVISA Brasil:** Anexo 1 adoptado por ICH en enero 2025; consulta pública del Anexo 2 cerrada el 14 de marzo de 2025. Sin RDC pública que fije obligatoriedad del Anexo 1 al cierre de junio 2026.
 
-**Anexo 2 (ensayos descentralizados y datos del mundo real):** sigue en consulta pública en EMA al cierre de junio 2026 ([draft Anexo 2 EMA](https://www.ema.europa.eu/en/documents/scientific-guideline/draft-ich-e6r3-guideline-good-clinical-practice-annex-2-step-2b_en.pdf)).
+**Anexo 2 (ensayos pragmáticos, descentralizados y con datos del mundo real):** adoptado por ICH el 3 de junio de 2026 y por el CHMP de la EMA el 25 de junio de 2026; entra en vigencia el **15 de enero de 2027** ([EMA E6 GCP](https://www.ema.europa.eu/en/ich-e6-good-clinical-practice-scientific-guideline)).
 
 ## Cinco cambios clave frente a R2
 
@@ -61,7 +62,7 @@ Para el CRA esto significa: la conversación con el sitio sobre data integrity y
 
 Lista corta, derivada de fuentes con autor citable:
 
-1. **Menos SDV manual, más análisis de tendencias.** ACRP describe el cambio como "monitors might be called upon to perform data trend analysis rather than source-by-source checks" ([ACRP 2026](https://acrpnet.org/2026/02/17/ich-e6r3-unpacked-diving-deep-into-the-impacts-of-the-guideline-changes)).
+1. **Más análisis de tendencias.** ACRP describe que el monitoreo bajo R3 busca "spot trends in deviations or quality signals" ([ACRP 2026](https://acrpnet.org/2026/02/17/ich-e6r3-unpacked-diving-deep-into-the-impacts-of-the-guideline-changes)), y la guía permite que el monitoreo centralizado reduzca la extensión o la frecuencia del monitoreo en sitio (sección 3.11.4.2).
 
 2. **Mix de visitas según riesgo.** On-site, remoto y centralizado se combinan caso por caso, no por receta única ([Efor Group](https://efor-group.com/en/risk-based-monitoring-impact-ich-e6-r3-clinical-trials/)).
 
