@@ -14,11 +14,13 @@
 **Cadencia vacantes — RESET 2026-09-29:**
 El ciclo original (Vie 22 may → 19 jun → 17 jul → 14 ago → 11 sept) se rompió: ago 14 y sept 11 no salieron por conflicto entre sprint LinkedIn y ciclo mensual del newsletter. Se recuperó con la edición del **Vie 25 sept 2026** dentro del sprint W38-W41 ("Vacantes pharma LATAM sept 2026 · 69 postings, 7 países, 7 patrones"). A partir de acá **la marca de tiempo es Vie 25 sept 2026** y la cadencia se sincroniza con los sprints LinkedIn.
 
-Fechas próximas (viernes cada 4 semanas desde 25 sept):
-- Vie 23 oct 2026 · Vacantes post-reset #1 · dueño: siguiente sprint LinkedIn (W42-W45)
-- Vie 20 nov 2026 · Vacantes post-reset #2
-- Vie 18 dic 2026 · Vacantes post-reset #3
-- Vie 15 ene 2027 · Vacantes post-reset #4
+Fechas próximas (viernes cada 4 semanas; ancla movida al 30 oct el 14 oct 2026 por decisión de Oscar):
+- Vie 30 oct 2026 · Vacantes post-reset #1 · semana de vacantes insertada en el sprint W42-W45 (26-30 oct). La semana W43 Regulatory que estaba ahí se mueve al inicio del siguiente sprint (16-20 nov).
+- Vie 27 nov 2026 · Vacantes post-reset #2
+- Vie 25 dic 2026 · Vacantes post-reset #3 (feriado: confirmar fecha)
+- Vie 22 ene 2027 · Vacantes post-reset #4
+
+Error a no repetir (14 oct 2026): el sprint W42-W45 se planeó con un rol por semana en las 4 semanas y no reservó el viernes de vacantes. Al planear un sprint, la semana de vacantes se aparta primero.
 
 Regla operativa: cada sprint LinkedIn nuevo asigna explícitamente su edición vacantes al viernes que corresponda por cadencia (no la puede saltar sin decisión editorial documentada). Si el sprint no contiene un viernes de vacantes, se coordina como envío independiente.
 
