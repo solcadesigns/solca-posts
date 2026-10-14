@@ -1,117 +1,139 @@
 ---
-title: "Regulatory Affairs con COFEPRIS: perfil real vs declarado"
-description: "Qué te piden realmente para Regulatory Affairs en México frente a lo declarado en las vacantes. Formación, vocabulario COFEPRIS, ruta y salario 2026."
+title: "Regulatory Affairs con COFEPRIS: qué hace, qué norma aplica y cómo entrar"
+description: "Qué hace Regulatory Affairs en México, qué dicen la Ley General de Salud, el Reglamento de Insumos y las NOM sobre registro, prórroga y modificaciones, y por dónde se entra."
 pubDate: 2026-07-13
+updatedDate: 2026-10-15
 heroImage: "/blog/regulatory-affairs-cofepris-perfil-real-declarado.png"
 category: "carreras-pharma"
 tags: ["Regulatory Affairs", "COFEPRIS", "Asuntos Regulatorios", "México", "Industria Farmacéutica", "Registro Sanitario"]
 series: "roles-pharma"
 seriesIndex: 4
 readingMinutes: 8
+cta: "revisar-cv"
 ---
 
-Regulatory Affairs (Asuntos Regulatorios) en México es uno de los roles pharma donde el perfil declarado en las vacantes y el perfil real que la empresa quiere se separan más. Las descripciones oficiales piden años de experiencia, dominio de normativa, inglés avanzado. La realidad interna suele aceptar candidatos con perfil más flexible si demuestran competencia técnica específica en COFEPRIS y disciplina documental. Esta guía separa lo declarado de lo real, cubre el vocabulario técnico que sí importa, y traza la ruta de entrada más viable para candidatos con formación en química farmacéutica.
+> **Respuesta corta.** Regulatory Affairs (Asuntos Regulatorios) es el área que obtiene y mantiene el registro sanitario de un medicamento ante la autoridad. En México esa autoridad es COFEPRIS, y el marco base son la Ley General de Salud, el Reglamento de Insumos para la Salud y tres normas: NOM-059 (fabricación), NOM-072 (etiquetado) y NOM-220 (farmacovigilancia).
+
+*Actualizado el 15 de octubre de 2026 con las reformas de 2026 a la Ley General de Salud y al Reglamento de Insumos para la Salud.*
+
+Esta guía es para quien estudió QFB (Químico Farmacéutico Biólogo), Química Farmacéutica o una carrera afín y quiere saber qué hace el área, qué normas conviene leer antes de una entrevista y desde qué puestos se llega.
 
 ## Qué hace Regulatory Affairs en México
 
-El área de Regulatory Affairs gestiona la relación entre la farmacéutica y las autoridades sanitarias que regulan sus productos. En México, la autoridad principal es COFEPRIS (Comisión Federal para la Protección contra Riesgos Sanitarios). El trabajo se estructura en cinco tipos de actividad.
+La Ley General de Salud (LGS) dice en su artículo 376 que los medicamentos requieren registro sanitario. Ese registro lo otorga la Secretaría de Salud a través de COFEPRIS (Comisión Federal para la Protección contra Riesgos Sanitarios), que el artículo 17 Bis de la misma ley define como órgano desconcentrado de la Secretaría. Regulatory Affairs es el área de la empresa titular del registro que prepara, presenta y da seguimiento a esos trámites.
 
-**Registro sanitario de productos nuevos.** Preparación y sometimiento del dossier técnico que sustenta la aprobación de un medicamento nuevo. Incluye información química, farmacéutica, preclínica y clínica. El proceso desde sometimiento a aprobación toma meses o años según la categoría del producto.
+El trabajo se ordena alrededor de tres trámites, todos en el [Reglamento de Insumos para la Salud](https://www.gob.mx/cms/uploads/attachment/file/1100953/Reglamento_de_Insumos_para_la_Salud.pdf) (RIS, última reforma publicada en el Diario Oficial de la Federación, DOF, el 24 de abril de 2026):
 
-**Renovaciones de registro sanitario.** Los registros aprobados tienen vigencia de cinco años en México. Se renuevan con dossier técnico actualizado. Las renovaciones son gran parte del trabajo cotidiano del área.
+**Registro sanitario nuevo.** El artículo 167 del RIS pide demostrar identidad y pureza de los componentes conforme a la Farmacopea de los Estados Unidos Mexicanos, estabilidad del producto, eficacia y seguridad, y presentar la información para prescribir en versión amplia y reducida. El artículo 166 fija plazos de resolución: 180 días naturales si el activo y la indicación ya están registrados en México, y 240 si el activo no está registrado en México pero sí en su país de origen.
 
-**Variaciones y modificaciones.** Cambios en el registro aprobado: nuevo lugar de fabricación, nueva forma farmacéutica, cambio de componente, actualización de leaflet. Cada variación requiere sometimiento específico según su categoría.
+**Prórroga.** Es el trámite que mantiene vigente el registro (se explica abajo).
 
-**Farmacovigilancia regulatoria.** Aunque farmacovigilancia tiene su propia estructura, la interfaz con COFEPRIS para reportes de eventos adversos serios y para actualizaciones de leaflet cae frecuentemente en Regulatory Affairs.
+**Modificaciones.** Cualquier cambio a las condiciones con que se registró el producto necesita autorización previa (artículo 184 del RIS).
 
-**Coordinación con equipos regionales y globales.** Las farmacéuticas multinacionales tienen equipos regulatorios en headquarters (Estados Unidos, Europa) que definen estrategia global. El equipo mexicano adapta a normativa local y ejecuta.
+## Qué marco aplica: la ley, el reglamento y tres NOM
 
-Es trabajo con horizonte largo, documentación intensa, y interacción constante con COFEPRIS. La habilidad crítica es rigor documental y comprensión profunda de normativa.
+**Ley General de Salud.** El [texto vigente de la LGS](https://www.diputados.gob.mx/LeyesBiblio/pdf/LGS.pdf) tiene reformas publicadas en el DOF el 15 de enero de 2026. Dos artículos tocan directo al área. El 222 pide demostrar seguridad, eficacia y calidad, y verificar las buenas prácticas de fabricación antes de otorgar el registro; desde la reforma de 2026 agrega que, una vez otorgado, se debe realizar farmacovigilancia. El 376 fija la vigencia del registro y la prórroga.
 
-## Perfil declarado en vacantes vs perfil real
+**Reglamento de Insumos para la Salud.** Detalla requisitos, plazos y formatos de registro, prórroga y modificaciones. Los artículos que tocan directo el trabajo del área son el 166, 167, 184 a 187 y 190 Bis 1 a 190 Bis 7.
 
-Las vacantes de Regulatory Affairs Junior o Analista suelen declarar:
+**NOM-059-SSA1-2015, Buenas prácticas de fabricación de medicamentos.** Publicada en el [DOF el 5 de febrero de 2016](https://dof.gob.mx/nota_detalle.php?codigo=5424575&fecha=05/02/2016), fija los requisitos mínimos del proceso de fabricación de medicamentos para uso humano. COFEPRIS la lista como vigente junto con una [modificación publicada el 19 de marzo de 2025](https://dof.gob.mx/nota_detalle.php?codigo=5752351&fecha=19/03/2025), que acepta certificados de buenas prácticas de autoridades miembro de PIC/S (Pharmaceutical Inspection Co-operation Scheme) u otras reconocidas para medicamentos biotecnológicos importados.
 
-- Tres años de experiencia en asuntos regulatorios.
-- QFB, QF o afín con cédula profesional.
-- Inglés avanzado.
-- Manejo de sistemas regulatorios.
-- Experiencia con sometimientos a COFEPRIS.
+**NOM-072-SSA1-2012, Etiquetado de medicamentos y de remedios herbolarios.** Publicada en el [DOF el 21 de noviembre de 2012](https://dof.gob.mx/nota_detalle.php?codigo=5278341&fecha=21/11/2012) y vigente desde el 1 de abril de 2013. Establece los requisitos que debe contener el etiquetado de medicamentos y remedios herbolarios.
 
-El perfil real que la empresa acepta cuando el pipeline aprieta suele ser:
+**NOM-220-SSA1-2016, Instalación y operación de la farmacovigilancia.** Publicada en el [DOF el 19 de julio de 2017](https://dof.gob.mx/nota_detalle.php?codigo=5490830&fecha=19/07/2017). Su campo de aplicación incluye a los titulares de registros sanitarios. Por eso la farmacovigilancia y Regulatory Affairs trabajan juntas: el informe de farmacovigilancia es requisito de la primera prórroga (artículo 190 Bis 1, fracción V, del RIS).
 
-- Uno a dos años en asuntos regulatorios O experiencia demostrable con sometimientos concretos aunque no sean tres años completos.
-- QFB, QF, QBP, químico o farmacéutico con cédula. En algunos casos biología con especialización relevante.
-- Inglés B2 real (no C1 declarado sin sustento).
-- Familiaridad con procesos COFEPRIS al menos a nivel de haber leído las guías principales.
-- Un perfil meticuloso comprobado por experiencia previa (académica, laboratorio, cualquier trabajo con procesos documentados).
+## Registro, prórroga y modificación: lo que cambió en 2026
 
-La brecha entre declarado y real es más grande en laboratorios nacionales que en multinacionales top. Laboratorios nacionales frecuentemente aceptan candidatos con menos de un año de experiencia si demuestran comprensión operativa; multinacionales top son más estrictas con los años declarados pero también contratan candidatos "junior senior" si el perfil técnico es fuerte.
+**Vigencia.** El artículo 376 de la LGS dice que el registro "tendrá una vigencia de 5 años". La reforma del 15 de enero de 2026 cambió el plazo de la prórroga: ahora "podrá prorrogarse por plazos de 10 años". El RIS se ajustó el 24 de abril de 2026: la primera prórroga de medicamentos se otorga por diez años (artículo 190 Bis 1) y la segunda y posteriores se piden cada diez años (artículo 190 Bis 7).
 
-## Vocabulario COFEPRIS que sí importa
+**Cuándo pedir la prórroga.** 150 días naturales antes de que venza el registro; COFEPRIS tiene hasta 120 días naturales para resolver (artículo 190 Bis 6). La LGS dice que no pedir la prórroga en plazo, o modificar el producto sin autorización, lleva a la cancelación del registro. En la segunda prórroga y las posteriores, el RIS agrega que si la solicitud no se presenta a tiempo el registro pierde vigencia y hay que pedir uno nuevo (artículo 190 Bis 7).
 
-Un candidato a Regulatory Affairs sin dominio del vocabulario específico COFEPRIS se queda fuera en la entrevista técnica. Los términos que aparecen consistentemente:
+**Prórroga no es modificación.** El artículo 190 Bis 1 aclara que la prórroga no es un trámite para revisar las condiciones autorizadas. Los cambios van por la vía de modificaciones.
 
-- **Registro sanitario**: aprobación para comercializar un medicamento en México.
-- **Prórroga de registro sanitario**: extensión temporal antes de la renovación.
-- **Renovación de registro**: proceso quinquenal de actualización del registro.
-- **Modificación**: cambio menor o mayor al registro aprobado.
-- **Categoría del producto**: I (productos nuevos), II (genéricos), III (fitofarmacéuticos), IV (biológicos), V (biotecnológicos).
-- **Buenas Prácticas de Fabricación (BPM / GMP)**: estándares de manufactura verificables por autoridad.
-- **Dictamen técnico**: respuesta de COFEPRIS a un sometimiento.
-- **Aviso de funcionamiento**: registro del establecimiento farmacéutico.
-- **NOM aplicables**: normas oficiales mexicanas por área (NOM-059 para BPM, NOM-220 para farmacovigilancia, NOM-072 para etiquetado, etc.).
-- **CTD / eCTD**: formato de sometimiento estructurado en cinco módulos (Common Technical Document / electrónico).
-- **DIGIPRIS**: portal electrónico de trámites regulatorios COFEPRIS.
+**Cómo se clasifican las modificaciones.** Los [criterios de COFEPRIS publicados el 20 de septiembre de 2024](https://www.gob.mx/cms/uploads/attachment/file/1030501/Criterios_clasificaci_n_modif_Alop__farmoq___Herb-Homeop-Vitam_P_Sep_V2.pdf) para alopáticos, herbolarios, homeopáticos y vitamínicos las dividen en menores (impacto mínimo o nulo), moderadas (impacto potencial) y mayores (impacto significativo en calidad, seguridad o eficacia). El titular las clasifica con un análisis de riesgo. Por plazos, el artículo 186 del RIS da 45 días hábiles para modificaciones técnicas y 20 para administrativas.
 
-Un candidato que llega a la entrevista sin manejar estos términos naturalmente comunica falta de preparación específica. El manejo se construye en semanas leyendo la NOM-059, la NOM-072, la NOM-220 y las guías COFEPRIS publicadas en su portal oficial.
+**El límite de una modificación.** Según el artículo 184 del RIS, cambiar el fármaco, la forma farmacéutica o la formulación requiere un registro nuevo, no una modificación, salvo una reformulación indicada o acordada por la Secretaría.
 
-## Nivel de inglés real
+## Cuatro términos más para la entrevista
 
-Para Analista o Asistente de Regulatory Affairs en laboratorio nacional, B1-B2 alcanza. La comunicación con autoridad es en español y los sometimientos son en español.
+- **Registro sanitario:** autorización para comercializar el medicamento. Lleva una clave alfanumérica y las siglas SSA en la etiqueta (artículo 165 del RIS).
+- **CTD (Common Technical Document, Documento Técnico Común):** formato de la guía ICH M4, con cinco módulos. El Módulo 1 es administrativo y lo define cada autoridad; los módulos 2 a 5 son comunes (resúmenes, calidad, estudios no clínicos y clínicos). COFEPRIS [informó en septiembre de 2024](https://www.gob.mx/cofepris/articulos/cofepris-consolida-digitalizacion-de-regulacion-sanitaria-con-el-registro-de-nuevos-medicamentos-379430) que las solicitudes de registro de nuevos medicamentos en su plataforma se presentan en formato CTD.
+- **DIGIPRiS:** la [plataforma de trámites de COFEPRIS](https://www.gob.mx/cofepris/acciones-y-programas/digipris-plataforma-de-tramites-y-servicios-de-la-cofepris).
+- **Vía regulatoria abreviada:** desde el [acuerdo publicado en el DOF el 18 de julio de 2025](https://dof.gob.mx/nota_detalle.php?codigo=5763319&fecha=18/07/2025), COFEPRIS reconoce decisiones de autoridades de referencia (miembros fundadores o permanentes de ICH y autoridades del listado WLA, WHO Listed Authorities, de la OMS) y tiene hasta 45 días hábiles para resolver esas solicitudes de medicamentos.
 
-Para Analista o Coordinador de Regulatory Affairs en multinacional top, B2 real es el mínimo operativo. Muchos SOPs internos, comunicaciones con equipo regional LATAM, y dossiers técnicos vienen en inglés. C1 se pide para roles Manager y arriba, y para posiciones con exposición a headquarters.
+COFEPRIS es miembro regulador de ICH (International Council for Harmonisation) desde noviembre de 2021, según el [comunicado de ICH](https://admin.ich.org/sites/default/files/inline-files/ICH43_VirtualMeeting_PressRelease_2021_1125_FINAL_0.pdf). Si también te interesa Argentina, la comparación de [ANMAT y COFEPRIS para aplicar a Regulatory](https://solcaciencia.com/blog/anmat-vs-cofepris-diferencia-aplicar-regulatory-latam/) pone las dos autoridades lado a lado.
 
-El punto crítico: declarar C1 sin sustento y quedar expuesto en la entrevista es más costoso que declarar B2 con honestidad. La entrevista técnica frecuentemente incluye discusión de un caso regulatorio en inglés; sin fluidez conversacional, se detecta rápido.
+## Desde dónde se llega a Regulatory Affairs
 
-## Salario referencia México
+Tres rutas se desprenden de lo que el área hace:
 
-No hay banda salarial pública verificable con desglose 2025-2026 sin descarga con formulario en las principales guías salariales. SalaryExpert reporta un promedio orientativo de MXN 905 mil anuales para Regulatory Affairs Manager en México, pero es agregador y no fuente primaria auditada.
+**Auxiliar o asistente de asuntos regulatorios.** El trabajo es documental: expediente del producto, versiones de etiqueta y seguimiento de trámites. En la selección de vacantes entry-level de julio de 2026 que revisamos en [calidad, regulatorio y prácticas](https://solcaciencia.com/blog/calidad-regulatorio-practicas-entry-level-pharma-latam/), los dos postings de asuntos regulatorios (Bogotá y Lima) no pidieron años de experiencia en industria.
 
-Como referencia orientativa: Analista Junior de Regulatory Affairs en CDMX arranca en el segmento medio del mercado profesional QFB con incrementos consistentes hasta Coordinador (2-3 años), Supervisor o Manager (5-7 años), y Director (8+ años). Multinacionales top pagan por encima del segmento; laboratorios nacionales pagan alineado al promedio pero con mayor estabilidad y menor exigencia de inglés.
+**Farmacovigilancia.** La NOM-220 obliga a los titulares de registro y el informe de farmacovigilancia es requisito de la primera prórroga. Quien trabaja en farmacovigilancia ya conoce una parte del expediente que Regulatory presenta. La guía de [farmacovigilancia en México sin experiencia](https://solcaciencia.com/blog/farmacovigilancia-mexico-empezar-sin-experiencia/) explica esa entrada.
 
-Contexto de mercado: Colombia obtiene 53% en el Índice de Competitividad Biofarmacéutica FIFARMA 2025, penúltimo de la región ([AFIDRO](https://afidro.org/2025/06/06/colombia-obtiene-53-en-el-indice-de-competitividad-biofarmaceutica-y-se-ubica-en-el-penultimo-lugar-de-la-region/)). México se sostiene en la parte media de la región. El acceso demorado (solo 44% de más de 400 medicamentos aprobados globalmente 2014-2024 tienen registro en algún país LATAM según FIFARMA + IQVIA WAIT Indicator 2025, [reporte](https://fifarma.org/wp-content/uploads/2025/09/Biopharmaceutical-Competitiveness-Investment-Report-2025-BCI-ENG.pdf)) crea presión sobre los equipos regulatorios locales para acelerar sometimientos.
+**Calidad y buenas prácticas de fabricación.** La LGS pide verificar BPF antes de otorgar un registro y el RIS vuelve a verificarlas en la prórroga. Quien viene de aseguramiento de calidad (buenas prácticas de fabricación, BPF) conoce la NOM-059 desde dentro.
 
-## Ruta de entrada más viable
+Antes de la entrevista, lee completos el artículo 376 de la LGS, los artículos 184 a 190 Bis 7 del RIS y el índice de la NOM-072.
 
-Cuatro puertas concretas.
+## Preguntas frecuentes sobre Regulatory Affairs en México
 
-**Puerta uno · Asistente Regulatory Affairs en laboratorio nacional**. Menor barrera declarada de años de experiencia. Aprendes normativa COFEPRIS a fondo. Ruta natural en dos a tres años a Analista o Coordinador con salario más alto (a veces cambiando a multinacional).
+### ¿Cuánto dura un registro sanitario en México?
 
-**Puerta dos · Analista Junior en multinacional top con perfil académico fuerte**. Más difícil sin experiencia previa, pero real si tu formación es QFB con promedio alto de universidad top y con proyecto de titulación en área regulatoria o farmacia industrial.
+Cinco años desde que se otorga, según el artículo 376 de la Ley General de Salud. Desde la reforma publicada en el DOF el 15 de enero de 2026, la prórroga se otorga por plazos de 10 años, y se solicita 150 días naturales antes del vencimiento (artículo 190 Bis 6 del Reglamento de Insumos para la Salud).
 
-**Puerta tres · Transición interna desde farmacovigilancia**. Empezar en farmacovigilancia (ver artículo dedicado) y moverse a Regulatory Affairs después de 12-18 meses. El vocabulario y la interfaz con COFEPRIS son transferibles.
+### ¿Qué diferencia hay entre prórroga y modificación del registro sanitario?
 
-**Puerta cuatro · Consultoría regulatoria**. Firmas especializadas en registro sanitario ("consultores regulatorios independientes") contratan analistas junior para apoyo en sometimientos a varias farmacéuticas cliente. Menor salario base pero exposición amplia. Ruta buena para construir networking regulatorio rápido.
+La prórroga mantiene la vigencia del registro y no sirve para revisar las condiciones autorizadas (artículo 190 Bis 1 del RIS). La modificación cambia esas condiciones y requiere autorización previa de COFEPRIS (artículo 184); se clasifica como menor, moderada o mayor según su impacto en calidad, seguridad o eficacia.
 
-## Cómo saber si Regulatory Affairs se ajusta a tu perfil
+### ¿Qué norma regula el etiquetado de medicamentos en México?
 
-Cinco chequeos.
+La NOM-072-SSA1-2012, Etiquetado de medicamentos y de remedios herbolarios, publicada en el DOF el 21 de noviembre de 2012 y vigente desde el 1 de abril de 2013.
 
-Uno, **QFB o afín titulado con cédula**. Sin cédula, la aplicación no arranca.
+### ¿COFEPRIS usa el formato CTD?
 
-Dos, **tolerancia real a documentación intensa y horizonte largo**. Un sometimiento a COFEPRIS puede tomar meses de trabajo y meses adicionales de revisión. Sin tolerancia a esos tiempos, el rol desgasta.
+Sí para registros de nuevos medicamentos: COFEPRIS informó en septiembre de 2024 que esas solicitudes se presentan en formato CTD en su plataforma DIGIPRiS. Sus criterios de modificaciones de 2024 también permiten ordenar la información conforme al CTD alineado con la guía ICH M4.
 
-Tres, **rigor documental verificable**. Autoevaluación honesta: ¿revisas tres veces un correo antes de enviarlo o lo mandas sin releer? En Regulatory Affairs cada línea documental es auditable durante años.
-
-Cuatro, **familiaridad básica con normativa**. Si nunca leíste una NOM completa, dedícale una semana antes de aplicar. La lectura demuestra compromiso con el área.
-
-Cinco, **inglés B2 real (o disposición a B2 en 2-3 meses)**. Sin B2 conversacional, roles en multinacional se cierran. Laboratorio nacional sigue abierto.
-
-## Resumen operativo
-
-Regulatory Affairs en México con COFEPRIS combina rigor documental, comprensión profunda de normativa nacional, y comunicación con autoridad sanitaria. El perfil declarado en vacantes suele pedir tres años de experiencia e inglés avanzado; el perfil real acepta uno a dos años con demostración técnica específica e inglés B2. Vocabulario COFEPRIS específico (registro sanitario, renovación, variación, NOM-059, NOM-220, DIGIPRIS, eCTD) es piso para la entrevista técnica. La ruta de entrada más viable es asistente en laboratorio nacional o transición interna desde farmacovigilancia. Salario público verificable con desglose 2025-2026 no está disponible sin descarga con formulario, pero el contexto de acceso demorado en LATAM crea presión sobre los equipos regulatorios y sostiene demanda de talento.
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "¿Cuánto dura un registro sanitario en México?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Cinco años desde que se otorga, según el artículo 376 de la Ley General de Salud. Desde la reforma publicada en el DOF el 15 de enero de 2026, la prórroga se otorga por plazos de 10 años, y se solicita 150 días naturales antes del vencimiento (artículo 190 Bis 6 del Reglamento de Insumos para la Salud)."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Qué diferencia hay entre prórroga y modificación del registro sanitario?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "La prórroga mantiene la vigencia del registro y no sirve para revisar las condiciones autorizadas (artículo 190 Bis 1 del RIS). La modificación cambia esas condiciones y requiere autorización previa de COFEPRIS (artículo 184); se clasifica como menor, moderada o mayor según su impacto en calidad, seguridad o eficacia."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Qué norma regula el etiquetado de medicamentos en México?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "La NOM-072-SSA1-2012, Etiquetado de medicamentos y de remedios herbolarios, publicada en el DOF el 21 de noviembre de 2012 y vigente desde el 1 de abril de 2013."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿COFEPRIS usa el formato CTD?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Sí para registros de nuevos medicamentos: COFEPRIS informó en septiembre de 2024 que esas solicitudes se presentan en formato CTD en su plataforma DIGIPRiS. Sus criterios de modificaciones de 2024 también permiten ordenar la información conforme al CTD alineado con la guía ICH M4."
+      }
+    }
+  ]
+}
+</script>
 
 ---
 
-**¿Tu CV comunica bien tu perfil regulatorio a COFEPRIS?** La herramienta de Solca revisa tu CV en menos de un minuto y te dice qué tan bien mapea a roles de Regulatory Affairs en LATAM. [Pruébala en solcaciencia.com/revisar-cv](https://solcaciencia.com/revisar-cv).
+**¿Tu CV comunica bien tu perfil regulatorio?** La herramienta de Solca revisa tu CV contra 20 criterios de selección de la industria farmacéutica y te devuelve un diagnóstico estructurado. La primera revisión no tiene costo. [Pruébala en solcaciencia.com/revisar-cv](https://solcaciencia.com/revisar-cv/?utm_source=blog&utm_medium=post&utm_campaign=regulatory-affairs-cofepris).
