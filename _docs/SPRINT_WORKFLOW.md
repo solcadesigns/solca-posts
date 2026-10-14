@@ -217,6 +217,17 @@ mcp__Claude_in_Chrome__computer scroll with scroll_amount=10
 
 ---
 
+### 4.4 · Programación automatizada desde Claude in Chrome (probado 14 oct 2026, semana W42)
+
+Las 4 piezas de una semana (3 posts de feed + 1 artículo de Solca Insight) se programan sin intervención manual salvo el OK de Oscar. Requisitos: extensión Claude in Chrome con sesión iniciada y sesión de LinkedIn abierta.
+
+1. **Post de texto:** feed → "Crear publicación" → clic en el editor → escribir el texto → reloj (abajo, junto a Publicar) → fecha `dd/mm/aaaa` y elegir el día en el calendario → hora: escribir `09:00` y elegir la opción de la lista → Siguiente → Programar. La zona horaria es la de la cuenta (hora estándar central).
+2. **Imagen o PDF (carrusel):** el modal vive en shadow DOM y su `input[type=file]` no aparece en el árbol de accesibilidad. Truco: crear con JS un `<input type=file>` visible en `document.body`, cargarle el archivo con `file_upload`, y copiar `files` al input real (buscado recorriendo `shadowRoot`, `#media-editor-file-selector__file-input` para imagen o `input[accept*=pdf]` para documento) con `DataTransfer` + evento `change`. El documento pide título antes de "Hecho".
+3. **Artículo de newsletter (`/article/new/`):** ya sale ligado a Solca Insight. La portada no tiene input en el DOM hasta el clic: parchar `HTMLInputElement.prototype.click` para que, cuando LinkedIn cree el input y llame `click()`, reciba el archivo del input proxy. El cuerpo se pega como HTML con un `ClipboardEvent('paste')` sobre `.ProseMirror` (los `h2` quedan como `h3`, listas y enlaces se conservan). Siguiente → texto para el feed → reloj → fecha y hora → Programar. El texto del feed se borra al volver del diálogo de fecha: escribirlo después.
+4. **Verificación:** composer → reloj → "Ver todas las publicaciones programadas" y bajar con scroll real (lazy load).
+
+Cuidado: esperar a que cargue la página antes de cada clic por coordenadas; un clic sobre el feed sin cargar abre perfiles ajenos.
+
 ## Fase 5 · Cierre y registro
 
 ### 5.1 · Actualización OSCAR_PROFILE.md

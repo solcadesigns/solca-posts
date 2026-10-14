@@ -199,7 +199,7 @@ def generate_cover(
     # Cuadradito naranja
     sq = 18
     draw.rectangle([80, kicker_y + 6, 80 + sq, kicker_y + 6 + sq], fill=ORANGE)
-    kicker_text = f"SOLCA INSIGHT  ·  #{numero:02d}"
+    kicker_text = f"SOLCA INSIGHT  ·  #{numero:02d}" if numero > 0 else "SOLCA INSIGHT"  # 0 = sin número
     draw.text((80 + sq + 16, kicker_y), kicker_text, font=kicker_font, fill=CREAM)
 
     # ── Título grande con keyword en naranja ─────────────────────────
