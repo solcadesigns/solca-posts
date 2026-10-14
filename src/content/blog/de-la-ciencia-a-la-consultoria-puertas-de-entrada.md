@@ -1,6 +1,6 @@
 ---
 title: "De la ciencia a la consultoría: programas y entrevista de caso"
-description: "Programas de entrada para doctores y médicos en BCG, L.E.K. y Trinity, qué evalúa el proceso de selección y cómo es la entrevista de caso, según las firmas."
+description: "Programas de entrada para personas con PhD y médicos en BCG, L.E.K. y Trinity, qué evalúa el proceso de selección y cómo es la entrevista de caso, según las firmas."
 pubDate: 2026-10-15
 heroImage: "/blog/de-la-ciencia-a-la-consultoria-puertas-de-entrada.png"
 category: "carreras-pharma"
@@ -10,11 +10,11 @@ readingMinutes: 7
 cta: "simulador"
 ---
 
-> **Respuesta corta.** Varias consultoras tienen una puerta específica para doctores, médicos y farmacéuticos: BCG los recibe como Consultant, L.E.K. tiene el puesto de Life Sciences Specialist y Trinity Life Sciences los contrata como Consultant, un nivel arriba del egresado de licenciatura. El proceso combina entrevistas conductuales con la entrevista de caso, en la que resuelves un problema de negocio en voz alta. Al menos un programa de inmersión, Transition to Trinity, solo opera en Estados Unidos: revisa la página de cada uno antes de planear.
+> **Respuesta corta.** Varias consultoras tienen una puerta específica para personas con PhD, médicos y farmacéuticos: BCG los recibe como Consultant, L.E.K. tiene el puesto de Life Sciences Specialist y Trinity Life Sciences los contrata como Consultant, un nivel arriba del egresado de licenciatura. El proceso combina entrevistas conductuales con la entrevista de caso, en la que resuelves un problema de negocio en voz alta. Al menos un programa de inmersión, Transition to Trinity, solo opera en Estados Unidos: revisa la página de cada uno antes de planear.
 
 Esta guía es para quien tiene un doctorado, una especialidad médica, un PharmD o un posgrado en ciencias de la salud y quiere entrar a consultoría. Si todavía no tienes claro qué hace un consultor, empieza por [qué es y qué no es la consultoría en ciencias de la vida](https://solcaciencia.com/blog/consultoria-ciencias-de-la-vida-que-es-y-que-no/). Todas las páginas citadas se consultaron en octubre de 2026; las fechas de convocatoria cambian cada año.
 
-## Programas de entrada para doctores y médicos, firma por firma
+## Programas de entrada para personas con PhD y médicos, firma por firma
 
 ### BCG
 
@@ -24,7 +24,7 @@ La misma página describe dos programas: **BCG Accelerate**, una serie informati
 
 ### L.E.K. Consulting
 
-L.E.K. ofrece a doctores y médicos el puesto de **Life Sciences Specialist** en sus oficinas de América, Europa y Asia, con una vía rápida al nivel de Consultant. En sus oficinas de Estados Unidos tiene además el puesto de PhD Analyst ([L.E.K., Roles at L.E.K.](https://www.lek.com/careers/the-lek-career/roles-at-lek)).
+L.E.K. ofrece a personas con PhD y médicos el puesto de **Life Sciences Specialist** en sus oficinas de América, Europa y Asia, con una vía rápida al nivel de Consultant. En sus oficinas de Estados Unidos tiene además el puesto de PhD Analyst ([L.E.K., Roles at L.E.K.](https://www.lek.com/careers/the-lek-career/roles-at-lek)).
 
 Su programa **Link to L.E.K.** es una inmersión virtual para candidatos de posgrado en ciencias de la vida: se trabaja un caso simulado con consultores de la práctica y se presentan los hallazgos. Quien participa recibe una invitación acelerada a la ronda final para puestos de Life Sciences Specialist. La edición de 2026 fue del 27 al 29 de abril, pedía estar inscrito en un doctorado, posdoctorado, MD o PharmD en ciencias de la vida, y al 14 de octubre de 2026 la página indicaba que no recibía solicitudes ([L.E.K., Link to L.E.K. 2026](https://www.lek.com/link-lek-2026)). Una consultora con doctorado en inmunología cuenta que entró después de participar en ese programa en 2022 ([L.E.K., Sydney Smith](https://www.lek.com/careers/life-lek-blog/sydney-smiths-path-consulting-lab-lek)).
 
@@ -79,13 +79,13 @@ Otros casos oficiales de pharma siguen la misma lógica: L.E.K. pide estimar el 
 
 ### ¿Puedo entrar a consultoría con un doctorado y sin experiencia en negocios?
 
-Sí, varias firmas tienen una puerta para ese perfil. BCG recibe a doctores y médicos como Consultant y ofrece capacitación para quien no viene de negocios; L.E.K. tiene el puesto de Life Sciences Specialist; Trinity contrata a doctores como Consultant.
+Sí, varias firmas tienen una puerta para ese perfil. BCG recibe a personas con PhD y médicos como Consultant y ofrece capacitación para quien no viene de negocios; L.E.K. tiene el puesto de Life Sciences Specialist; Trinity contrata a personas con PhD como Consultant.
 
 ### ¿Qué es una entrevista de caso?
 
 Es una entrevista en la que resuelves en voz alta un problema de negocio realista: estructuras el enfoque, haces preguntas, analizas datos y haces cálculos. BCG dice que pesa más cómo abordas el problema que la respuesta; Bain dice que no busca una sola respuesta correcta.
 
-### ¿Los programas para doctores aplican en América Latina?
+### ¿Los programas para personas con PhD aplican en América Latina?
 
 Depende del programa. Transition to Trinity solo se ofrece en Estados Unidos. Las páginas de BCG y L.E.K. no aclaran si sus programas están abiertos en América Latina; confírmalo en cada convocatoria y, mientras tanto, aplica directo a las vacantes de entrada de tu país.
 
@@ -103,7 +103,7 @@ ZS publica un caso de precio de un tratamiento para EPOC, L.E.K. uno de dimensio
       "name": "¿Puedo entrar a consultoría con un doctorado y sin experiencia en negocios?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Sí, varias firmas tienen una puerta para ese perfil. BCG recibe a doctores y médicos como Consultant y ofrece capacitación para quien no viene de negocios; L.E.K. tiene el puesto de Life Sciences Specialist; Trinity contrata a doctores como Consultant."
+        "text": "Sí, varias firmas tienen una puerta para ese perfil. BCG recibe a personas con PhD y médicos como Consultant y ofrece capacitación para quien no viene de negocios; L.E.K. tiene el puesto de Life Sciences Specialist; Trinity contrata a personas con PhD como Consultant."
       }
     },
     {
@@ -116,7 +116,7 @@ ZS publica un caso de precio de un tratamiento para EPOC, L.E.K. uno de dimensio
     },
     {
       "@type": "Question",
-      "name": "¿Los programas para doctores aplican en América Latina?",
+      "name": "¿Los programas para personas con PhD aplican en América Latina?",
       "acceptedAnswer": {
         "@type": "Answer",
         "text": "Depende del programa. Transition to Trinity solo se ofrece en Estados Unidos. Las páginas de BCG y L.E.K. no aclaran si sus programas están abiertos en América Latina; confírmalo en cada convocatoria y, mientras tanto, aplica directo a las vacantes de entrada de tu país."

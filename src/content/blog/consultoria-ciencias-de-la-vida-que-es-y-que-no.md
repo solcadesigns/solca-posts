@@ -1,6 +1,6 @@
 ---
 title: "Consultoría en ciencias de la vida: qué es y qué no es"
-description: "Qué hace un consultor en ciencias de la vida, por qué market access no es un tipo de consultoría, qué firmas hay y en qué nivel entra un doctor."
+description: "Qué hace un consultor en ciencias de la vida, por qué market access no es un tipo de consultoría, qué firmas hay y en qué nivel entra alguien con PhD."
 pubDate: 2026-10-15
 heroImage: "/blog/consultoria-ciencias-de-la-vida-que-es-y-que-no.png"
 category: "carreras-pharma"
@@ -41,7 +41,7 @@ La diferencia de fondo: quien hace market access dentro de la farmacéutica ejec
 
 ## Tres tipos de firma
 
-**Estrategia generalista.** BCG, McKinsey y Bain trabajan para clientes de muchas industrias y tienen prácticas de salud. En BCG, un doctor o un médico entra como consultor general, que según la firma trabaja en proyectos variados de distintos temas e industrias ([BCG, Advanced Degree Candidates](https://careers.bcg.com/global/en/students/advanced-degree)). El peso de la salud en tu trabajo depende de la oficina y de los proyectos que te asignen.
+**Estrategia generalista.** BCG, McKinsey y Bain trabajan para clientes de muchas industrias y tienen prácticas de salud. En BCG, alguien con PhD o un médico entra como consultor general, que según la firma trabaja en proyectos variados de distintos temas e industrias ([BCG, Advanced Degree Candidates](https://careers.bcg.com/global/en/students/advanced-degree)). El peso de la salud en tu trabajo depende de la oficina y de los proyectos que te asignen.
 
 **Grandes firmas de servicios profesionales.** Deloitte, PwC, EY, KPMG y Accenture tienen áreas de ciencias de la vida dentro de una oferta más amplia.
 
@@ -49,15 +49,15 @@ La diferencia de fondo: quien hace market access dentro de la farmacéutica ejec
 
 Elegir tipo de firma es elegir qué tan especialista serás en tus primeros años y qué tan seguido cambiarás de industria.
 
-## Niveles: dónde entra un egresado y dónde un doctor
+## Niveles: dónde entra un egresado y dónde alguien con PhD
 
 Cada firma usa su propia escalera, pero la lógica se parece: se entra ejecutando análisis, se sube coordinando un frente de trabajo, después un proyecto y al final la relación con el cliente. Lo que cambia es el peldaño de entrada según tu grado:
 
 - **Trinity Life Sciences.** Associate Consultant para licenciatura o maestría de uno a dos años; Consultant para doctorado, PharmD, título médico, MBA con experiencia o posdoctorado ([Trinity, Early Talent](https://trinitylifesciences.com/careers/students-and-graduates/)).
-- **L.E.K.** Tiene el puesto de Life Sciences Specialist para doctores y médicos en sus oficinas de América, Europa y Asia, con vía rápida a Consultant. De Consultant a Manager se pasa en dos a tres años, en promedio ([L.E.K., Roles](https://www.lek.com/careers/the-lek-career/roles-at-lek)).
+- **L.E.K.** Tiene el puesto de Life Sciences Specialist para personas con PhD y médicos en sus oficinas de América, Europa y Asia, con vía rápida a Consultant. De Consultant a Manager se pasa en dos a tres años, en promedio ([L.E.K., Roles](https://www.lek.com/careers/the-lek-career/roles-at-lek)).
 - **BCG.** El candidato de posgrado avanzado entra como Consultant de tiempo completo ([BCG, Advanced Degree Candidates](https://careers.bcg.com/global/en/students/advanced-degree)).
 
-En las demás firmas no encontramos una regla publicada sobre el nivel de entrada de un doctor.
+En las demás firmas no encontramos una regla publicada sobre el nivel de entrada de alguien con PhD.
 
 ## Habilidades de tu formación que se transfieren
 
@@ -89,9 +89,9 @@ No. Market access es una función interna de la farmacéutica (MSD Portugal, por
 
 Tres: firmas de estrategia generalista (BCG, McKinsey, Bain), grandes firmas de servicios profesionales (Deloitte, PwC, EY, KPMG, Accenture) y firmas con práctica centrada en ciencias de la vida (L.E.K., Trinity, Putnam, ZS, IQVIA).
 
-### ¿Un doctorado entra en un nivel más alto?
+### ¿Alguien con doctorado (PhD) entra en un nivel más alto?
 
-Depende de la firma. Trinity contrata a doctores como Consultant y a egresados de licenciatura como Associate Consultant; L.E.K. tiene el puesto de Life Sciences Specialist con vía rápida a Consultant; BCG los recibe como Consultant. En las demás firmas no encontramos una regla publicada.
+Depende de la firma. Trinity contrata a personas con PhD como Consultant y a egresados de licenciatura como Associate Consultant; L.E.K. tiene el puesto de Life Sciences Specialist con vía rápida a Consultant; BCG los recibe como Consultant. En las demás firmas no encontramos una regla publicada.
 
 <script type="application/ld+json">
 {
@@ -124,10 +124,10 @@ Depende de la firma. Trinity contrata a doctores como Consultant y a egresados d
     },
     {
       "@type": "Question",
-      "name": "¿Un doctorado entra en un nivel más alto?",
+      "name": "¿Alguien con doctorado (PhD) entra en un nivel más alto?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Depende de la firma. Trinity contrata a doctores como Consultant y a egresados de licenciatura como Associate Consultant; L.E.K. tiene el puesto de Life Sciences Specialist con vía rápida a Consultant; BCG los recibe como Consultant. En las demás firmas no encontramos una regla publicada."
+        "text": "Depende de la firma. Trinity contrata a personas con PhD como Consultant y a egresados de licenciatura como Associate Consultant; L.E.K. tiene el puesto de Life Sciences Specialist con vía rápida a Consultant; BCG los recibe como Consultant. En las demás firmas no encontramos una regla publicada."
       }
     }
   ]
