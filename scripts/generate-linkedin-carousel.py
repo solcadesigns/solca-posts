@@ -35,7 +35,10 @@ import sys
 from pathlib import Path
 from typing import Callable, Sequence
 from PIL import Image, ImageDraw, ImageFont
-import img2pdf
+try:
+    import img2pdf  # PDF sin recompresión
+except ImportError:  # 14 oct 2026: fallback a Pillow si img2pdf no está instalado
+    img2pdf = None
 
 # ── Constantes ────────────────────────────────────────────────────────
 # LinkedIn Documents soporta 1:1, 4:5 y 16:9.
@@ -431,8 +434,12 @@ def build_carousel(slug: str, slides: Sequence[dict], out_dir: Path | None = Non
 
     # PDF final
     pdf_path = out_dir / f'{slug}.pdf'
-    with open(pdf_path, 'wb') as f:
-        f.write(img2pdf.convert([str(p) for p in png_paths]))
+    if img2pdf is not None:
+        with open(pdf_path, 'wb') as f:
+            f.write(img2pdf.convert([str(p) for p in png_paths]))
+    else:
+        imgs = [Image.open(p).convert('RGB') for p in png_paths]
+        imgs[0].save(pdf_path, 'PDF', save_all=True, append_images=imgs[1:], resolution=150)
     print(f'PDF guardado: {pdf_path}')
     return pdf_path
 
