@@ -108,12 +108,16 @@ def render_question_slide(slide: dict, page_indicator: str, out_path: Path):
         d.text((70, y), ln, font=f(36, bold=False), fill=car.CREAM)
         y += 48
     # Fuente en caja fija al pie
-    src = 'Dónde lo dice ICH E6(R3): ' + slide['source']
+    src = slide.get('source_label', 'Dónde lo dice ICH E6(R3): ') + slide['source']
     sf = f(28)
-    sw = car._text_width(d, src, sf)
-    bx, by = 70, H - 200
-    d.rounded_rectangle([bx, by, bx + sw + 56, by + 70], radius=35, outline=car.ORANGE, width=3)
-    d.text((bx + 28, by + 18), src, font=sf, fill=car.ORANGE)
+    lines = car._wrap(d, src, sf, W - 140 - 56)
+    bx = 70
+    bh = 34 * len(lines) + 36
+    by = H - 130 - bh
+    bw = max(car._text_width(d, ln, sf) for ln in lines) + 56
+    d.rounded_rectangle([bx, by, bx + bw, by + bh], radius=min(35, bh // 2), outline=car.ORANGE, width=3)
+    for i, ln in enumerate(lines):
+        d.text((bx + 28, by + 18 + i * 34), ln, font=sf, fill=car.ORANGE)
     car._draw_footer(d, left_text=slide.get('footer_left', ''))
     img.save(out_path, 'PNG', optimize=True)
 

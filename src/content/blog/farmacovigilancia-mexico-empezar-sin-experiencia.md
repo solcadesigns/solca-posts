@@ -63,7 +63,7 @@ Cuatro semanas antes de la primera aplicación.
 
 Desde analista junior de farmacovigilancia hay tres bifurcaciones posibles.
 
-**Bifurcación uno · Farmacovigilancia como carrera.** Una ruta posible la detalla el libro de Farmacovigilancia de Solca en una trayectoria de cinco años. Dentro de cada titular de registro está el Responsable de Farmacovigilancia, el rol que la NOM-220 define como enlace con la autoridad. El requisito regulatorio no depende del ciclo comercial: existe mientras el titular tenga productos registrados. Se elige por afinidad al detalle documental y a la relación con autoridades regulatorias.
+**Bifurcación uno · Farmacovigilancia como carrera.** Una ruta posible, de Drug Safety Associate I a Manager, la detalla el libro *Farmacovigilancia LATAM · Guía para el primer empleo* de Solca en su sección 4.2. Dentro de cada titular de registro está el Responsable de Farmacovigilancia, el rol que la NOM-220 define como enlace con la autoridad. El requisito regulatorio no depende del ciclo comercial: existe mientras el titular tenga productos registrados. Se elige por afinidad al detalle documental y a la relación con autoridades regulatorias.
 
 **Bifurcación dos · Salto lateral a Regulatory Affairs**. El vocabulario regulatorio y la relación con COFEPRIS son transferibles. Se elige por interés en registro sanitario, renovaciones y biosimilares.
 
@@ -81,4 +81,4 @@ Farmacovigilancia en México es una puerta de entrada a la industria farmacéuti
 
 ---
 
-El libro de Farmacovigilancia de Solca (*Farmacovigilancia · Guía práctica*) cubre el día uno de un Drug Safety Associate, el ICSR y sus cuatro criterios mínimos, MedDRA, la causalidad WHO-UMC y Naranjo, el marco regulatorio (familia ICH E2, EMA GVP, FDA 21 CFR y agencias de México, Argentina, Colombia, Chile, Perú y Uruguay), rangos salariales por país con su nota de método (varios son estimación editorial), una trayectoria de cinco años y quince preguntas técnicas de entrevista con respuestas modelo. Disponible en [Hotmart](https://pay.hotmart.com/E107847432I?sck=blog-fv-empezar).
+El libro *Farmacovigilancia LATAM · Guía para el primer empleo* de Solca cubre el día uno de un Drug Safety Associate, el ICSR y sus cuatro criterios mínimos, MedDRA, la causalidad WHO-UMC y Naranjo, el marco regulatorio (familia ICH E2, EMA GVP, FDA 21 CFR y agencias de México, Argentina, Colombia, Chile, Perú y Uruguay) (Módulo 2); rangos salariales por país con su nota de método, con DataMéxico como referencia complementaria para México (varios rangos son estimación editorial), y quince preguntas técnicas de entrevista con respuestas modelo (Módulo 3); un plan de onboarding 30/60/90 días y la trayectoria de DSA I a Manager (Módulo 4), y un módulo de IA y productividad para farmacovigilancia (Módulo 5). Disponible en [Hotmart](https://pay.hotmart.com/E107847432I?sck=blog-fv-empezar).

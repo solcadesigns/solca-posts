@@ -133,6 +133,6 @@ La Disposición ANMAT 5358/2012 pide notificar las sospechas de reacciones adver
 
 ---
 
-**Saber la norma y explicarla bajo presión son dos cosas distintas.** En el [Simulador de Entrevistas Pharma](https://solcaciencia.com/simulador-entrevistas/?modulo=fv&utm_source=blog&utm_medium=post&utm_campaign=fv-preguntas) puedes elegir Farmacovigilancia como rol. La ronda técnica y el panel están en los planes Básico ($199 MXN) y Premium ($349 MXN).
+**Saber la norma y explicarla bajo presión son dos cosas distintas.** En el [Simulador de Entrevistas Pharma](https://solcaciencia.com/simulador-entrevistas/?modulo=fv&utm_source=blog&utm_medium=post&utm_campaign=fv-preguntas) puedes elegir Farmacovigilancia como rol. La ronda técnica y la práctica general están en los planes Básico ($199 MXN) y Premium ($349 MXN).
 
-Si quieres las quince preguntas técnicas con respuesta modelo, el libro de Farmacovigilancia de Solca las trae en su módulo 5, junto con el ICSR, MedDRA y la causalidad WHO-UMC y Naranjo. Está en [Hotmart](https://pay.hotmart.com/E107847432I?sck=blog-fv-preguntas).
+Si quieres quince preguntas técnicas con respuesta modelo y cinco conductuales, el libro *Farmacovigilancia LATAM · Guía para el primer empleo* de Solca las trae en las secciones 3.8 y 3.9; el ICSR, MedDRA y la causalidad WHO-UMC y Naranjo están en el Módulo 2. Para plazos de reporte, usa las fuentes citadas arriba (NOM-220 con su modificación de 2020, E2D(R1), GVP VI). Está en [Hotmart](https://pay.hotmart.com/E107847432I?sck=blog-fv-preguntas).

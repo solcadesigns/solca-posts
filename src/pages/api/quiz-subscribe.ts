@@ -121,7 +121,7 @@ async function sendWelcomeQuiz(
     FV: {
       kind: 'book',
       label: 'Ver el libro Farmacovigilancia',
-      next: 'Libro "Farmacovigilancia · Guía práctica" — ICSR, MedDRA, agencias LATAM y España, 15 preguntas de entrevista modelo y un módulo de IA para FV.',
+      next: 'Libro "Farmacovigilancia LATAM · Guía para el primer empleo" — ICSR, MedDRA, agencias LATAM y España, 15 preguntas de entrevista modelo y un módulo de IA para FV.',
       url: 'https://pay.hotmart.com/E107847432I',
     },
     Consulting: {

@@ -200,7 +200,7 @@ const ROLE_CTA_CATALOG: Partial<Record<string, RoleCta>> = {
   },
   Pharmacovigilance: {
     type: 'libro',
-    title: 'Farmacovigilancia · Guía práctica para científicos de la salud · LATAM y España',
+    title: 'Farmacovigilancia LATAM · Guía para el primer empleo',
     description:
       'Guía para roles de farmacovigilancia (Drug Safety Associate en CRO y BPO): ICSR y MedDRA, causalidad WHO-UMC y Naranjo, marco regulatorio ICH E2, EMA GVP, FDA 21 CFR y agencias LATAM, 15 preguntas de entrevista con respuestas modelo y un módulo de IA para FV.',
     url: 'https://pay.hotmart.com/E107847432I',
