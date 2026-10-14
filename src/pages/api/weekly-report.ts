@@ -164,8 +164,15 @@ interface WeeklyReport {
       freemium_cta_clicked: number;
       freemium_signup: number;
       code_or_checkout: number;
+      // 14 oct 2026: visitas (page_viewed) a Quiz, revisor de CV y blog.
+      quiz_viewed: number;
+      cv_viewed: number;
+      blog_viewed: number;
       ultimo_evento: string;
     }>;
+    // 14 oct 2026: visitas registradas por page_viewed en la semana (7 días),
+    // con y sin UTM. Desde antes de esa fecha no hay datos.
+    page_views_7d: { 'quiz-rol': number; 'revisar-cv': number; blog: number; con_utm: number };
   };
   // Postmark Analytics — se llena si POSTMARK_SERVER_TOKEN está presente.
   // Datos de últimos 30 días por tag. Requiere Open + Link tracking activo
@@ -955,8 +962,12 @@ export const GET: APIRoute = async ({ url, locals }) => {
         freemium_cta_clicked: number;
         freemium_signup: number;
         code_or_checkout: number;
+        quiz_viewed: number;
+        cv_viewed: number;
+        blog_viewed: number;
         ultimo_evento: string;
       }>(),
+      page_views_7d: { 'quiz-rol': 0, 'revisar-cv': 0, blog: 0, con_utm: 0 },
     };
     const campaignWindowStart = now - 30 * 24 * 60 * 60 * 1000;
 
@@ -970,6 +981,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
           utm_medium?: string;
           utm_campaign?: string;
           plan?: string;
+          page?: 'quiz-rol' | 'revisar-cv' | 'blog';
         }>(simMetricsKv, 'evt:', (rec) => {
           const tsMs = rec.ts ? Date.parse(rec.ts) : NaN;
           if (isNaN(tsMs) || tsMs > now) return;
@@ -984,17 +996,32 @@ export const GET: APIRoute = async ({ url, locals }) => {
               freemium_cta_clicked: 0,
               freemium_signup: 0,
               code_or_checkout: 0,
+              quiz_viewed: 0,
+              cv_viewed: 0,
+              blog_viewed: 0,
               ultimo_evento: rec.ts!,
             };
             if (rec.event === 'paywall_viewed') c.paywall_viewed++;
             else if (rec.event === 'plan_cta_clicked' && rec.plan === 'gratis') c.freemium_cta_clicked++;
             else if (rec.event === 'freemium_signup') c.freemium_signup++;
             else if (rec.event === 'code_submitted' || rec.event === 'checkout_started') c.code_or_checkout++;
+            else if (rec.event === 'page_viewed') {
+              if (rec.page === 'quiz-rol') c.quiz_viewed++;
+              else if (rec.page === 'revisar-cv') c.cv_viewed++;
+              else if (rec.page === 'blog') c.blog_viewed++;
+            }
             if (rec.ts! > c.ultimo_evento) c.ultimo_evento = rec.ts!;
             funnel.by_campaign.set(rec.utm_campaign, c);
           }
 
           if (tsMs < weekAgo) return;
+
+          // Visitas a Quiz / CV / blog: van aparte, no al funnel del simulador.
+          if (rec.event === 'page_viewed') {
+            if (rec.page && rec.page in funnel.page_views_7d) funnel.page_views_7d[rec.page]++;
+            if (rec.utm_campaign) funnel.page_views_7d.con_utm++;
+            return;
+          }
           funnel.disponible = true;
           if (rec.event === 'paywall_viewed') funnel.paywall_viewed++;
           else if (rec.event === 'code_submitted') funnel.code_submitted++;
@@ -1303,8 +1330,12 @@ export const GET: APIRoute = async ({ url, locals }) => {
           .sort((a, b) => b[1].paywall_viewed - a[1].paywall_viewed)
           .slice(0, 5)
           .map(([source, v]) => ({ source, paywall_viewed: v.paywall_viewed, actions: v.actions })),
-        por_campaign_30d: Array.from(funnel.by_campaign.values())
-          .sort((a, b) => b.paywall_viewed - a.paywall_viewed),
+        page_views_7d: funnel.page_views_7d,
+        por_campaign_30d: Array.from(funnel.by_campaign.values()).sort(
+          (a, b) =>
+            b.paywall_viewed + b.quiz_viewed + b.cv_viewed + b.blog_viewed -
+            (a.paywall_viewed + a.quiz_viewed + a.cv_viewed + a.blog_viewed),
+        ),
       },
       email_health,
       traffic,

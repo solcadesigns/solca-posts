@@ -133,6 +133,47 @@ const ogImageURL = new URL(ogImage, siteUrl).toString();
     }
   })();
 </script>
+
+<!--
+  Visitas con UTM · 14 oct 2026 (sprint W42-W45).
+  Registra page_viewed en /quiz-rol, /revisar-cv y artículos del blog, una vez
+  por página y sesión, para medir visitas por post también fuera del simulador.
+  Mismo endpoint y KV que el funnel del simulador. Sin PII.
+-->
+<script is:inline>
+  (function () {
+    try {
+      var path = window.location.pathname.replace(/\/+$/, '') || '/';
+      var page = null;
+      if (path === '/quiz-rol') page = 'quiz-rol';
+      else if (path === '/revisar-cv') page = 'revisar-cv';
+      else if (/^\/blog\/[^/]+$/.test(path)) page = 'blog';
+      if (!page) return;
+      var seenKey = 'solca_pv:' + path;
+      try {
+        if (sessionStorage.getItem(seenKey)) return;
+        sessionStorage.setItem(seenKey, '1');
+      } catch (_) {}
+      var utm = window.__utm || {};
+      var body = JSON.stringify({
+        event: 'page_viewed',
+        page: page,
+        path: path,
+        utm_source: utm.utm_source,
+        utm_medium: utm.utm_medium,
+        utm_campaign: utm.utm_campaign,
+        utm_content: utm.utm_content,
+        utm_term: utm.utm_term,
+        referrer: document.referrer || undefined,
+      });
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon('/api/simulator-events', new Blob([body], { type: 'application/json' }));
+      } else {
+        fetch('/api/simulator-events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body, keepalive: true }).catch(function () {});
+      }
+    } catch (_) {}
+  })();
+</script>
 </head>
 <body>
 <slot />

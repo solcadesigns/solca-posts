@@ -33,7 +33,11 @@ interface EventBody {
     | 'checkout_abandoned'
     | 'code_submitted'
     | 'plan_cta_clicked'
-    | 'freemium_signup';
+    | 'freemium_signup'
+    | 'page_viewed';
+  // page_viewed: qué página se vio. path = pathname (para blog, el slug).
+  page?: 'quiz-rol' | 'revisar-cv' | 'blog';
+  path?: string;
   plan?: 'gratis' | 'basico' | 'premium';
   cta?: string; // plan_cta_clicked: 'hero' | 'card'
   utm_source?: string;
@@ -52,7 +56,12 @@ const ALLOWED_EVENTS = new Set([
   // 5 oct 2026: separar "clic en un plan" de "registro freemium completado".
   'plan_cta_clicked',
   'freemium_signup',
+  // 14 oct 2026: visitas con UTM a Quiz, revisor de CV y artículos del blog
+  // (sprint W42-W45: medir visitas por post también fuera del simulador).
+  'page_viewed',
 ]);
+
+const ALLOWED_PAGES = new Set(['quiz-rol', 'revisar-cv', 'blog']);
 
 const MAX_STRING = 200; // recorta strings largas para no ensuciar KV
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
@@ -83,6 +92,9 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
   const event = body.event;
   if (!event || !ALLOWED_EVENTS.has(event)) {
     return jsonResponse({ error: 'invalid_event' }, 400);
+  }
+  if (event === 'page_viewed' && !ALLOWED_PAGES.has(body.page ?? '')) {
+    return jsonResponse({ error: 'invalid_page' }, 400);
   }
 
   const runtime = (locals as { runtime?: { env?: Record<string, unknown> } }).runtime;
@@ -120,6 +132,8 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     ts,
     plan: body.plan && ['gratis', 'basico', 'premium'].includes(body.plan) ? body.plan : undefined,
     cta: body.cta === 'hero' || body.cta === 'card' ? body.cta : undefined,
+    page: event === 'page_viewed' ? body.page : undefined,
+    path: event === 'page_viewed' ? truncate(body.path) : undefined,
     utm_source: truncate(body.utm_source),
     utm_medium: truncate(body.utm_medium),
     utm_campaign: truncate(body.utm_campaign),
