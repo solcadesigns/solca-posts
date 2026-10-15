@@ -239,6 +239,18 @@ Aprendizajes W43-W44 (14 oct 2026):
 
 Al planear un sprint, la semana de vacantes se aparta primero (lun-vie que termina en el viernes de vacantes según `NEWSLETTER_TOPICS_REGISTRY.md`). Ninguna otra semana del sprint se programa en ese espacio.
 
+**Cuándo se hace la búsqueda (regla de Oscar, 15 oct 2026, aplica a cada sprint mensual):** el jueves de la semana anterior a la publicación de vacantes. Si el sprint arranca la semana previa a la de vacantes, la búsqueda se hace al iniciar el sprint. Ejemplo: edición del vie 30 oct 2026 → búsqueda el jue 22 oct.
+
+**Captura completa para el análisis semestral:** cada vacante se abre en su página (`linkedin.com/jobs/view/<id>`) el mismo día de la búsqueda (después cierran y desaparecen) y se guarda:
+- vacante: título, empresa, ubicación, modalidad, jornada, antigüedad, enlace;
+- descripción completa ("Acerca del empleo");
+- datos de LinkedIn: clics o solicitudes, "evaluando solicitudes de forma activa", solicitud sencilla;
+- solicitantes (sin Premium solo el grupo principal): nivel de responsabilidad (%) y nivel educativo (%);
+- empresa: sector, tamaño, seguidores, empleados en LinkedIn, crecimiento de plantilla.
+No se guardan nombres de reclutadores ni contactos. Ritmo: 10-15 s por vacante (80 vacantes ≈ 20 min) para no disparar límites de LinkedIn. Todo va a `vacantes/busquedas/<fecha>/` (JSON y CSV) y se acumula para el análisis de cada seis meses.
+
+En pruebas del workflow se corre una muestra pequeña, no la búsqueda completa.
+
 Reglas de Oscar (14 oct 2026):
 1. **Búsqueda:** la hace Claude en LinkedIn Jobs (no Oscar). Mínimo 80 vacantes por edición, LATAM.
 2. **Datos por vacante:** puesto, empresa, país y ciudad, modalidad, nivel, fecha de publicación, enlace y los datos de aplicantes que LinkedIn muestra en la vacante (nivel de experiencia de los aplicantes y los otros datos que aparezcan). Se registran tal cual los muestra LinkedIn; no se infieren.
