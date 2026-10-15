@@ -235,6 +235,22 @@ Aprendizajes W43-W44 (14 oct 2026):
 - Si el post lleva URL, la tarjeta de vista previa oculta la barra de adjuntos: cerrar la tarjeta (X) antes de adjuntar el PDF.
 - En el diálogo de fecha, si se encoge al elegir la hora, "Siguiente" queda en y≈322; un clic en la posición vieja abre "Guardar como borrador" (cerrar con X).
 
+### 4.5 · Semana de vacantes (workflow v2, en construcción desde el 14 oct 2026)
+
+Al planear un sprint, la semana de vacantes se aparta primero (lun-vie que termina en el viernes de vacantes según `NEWSLETTER_TOPICS_REGISTRY.md`). Ninguna otra semana del sprint se programa en ese espacio.
+
+Reglas de Oscar (14 oct 2026):
+1. **Búsqueda:** la hace Claude en LinkedIn Jobs (no Oscar). Mínimo 80 vacantes por edición, LATAM.
+2. **Datos por vacante:** puesto, empresa, país y ciudad, modalidad, nivel, fecha de publicación, enlace y los datos de aplicantes que LinkedIn muestra en la vacante (nivel de experiencia de los aplicantes y los otros datos que aparezcan). Se registran tal cual los muestra LinkedIn; no se infieren.
+3. **Verificación:** vacante cerrada o que no abre, sale.
+4. **Newsletter:** tres vacantes curadas por país.
+5. **Página de blog de vacantes:** contiene todas las vacantes encontradas (80+) con su enlace; se actualiza en cada sprint de vacantes y cierra con un CTA fijo al simulador.
+6. **Dataset:** cada búsqueda se guarda con fecha en `vacantes/listados/` para el resumen semestral.
+
+Pendiente de decidir: medición por vacante (redirect propio que registre `vacancy_clicked` antes de mandar a LinkedIn).
+
+Estado del sprint W42-W45 tras el ajuste: W42 CRA (19-23 oct) · vacantes (26-30 oct, aún sin subir) · W44 FV (2-6 nov) · W45 Consulting (9-13 nov). W43 Regulatory se movió a 16-20 nov (mismas horas y textos; los `utm_campaign` conservan el prefijo `oct-w4`).
+
 ## Fase 5 · Cierre y registro
 
 ### 5.1 · Actualización OSCAR_PROFILE.md
