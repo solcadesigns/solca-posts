@@ -247,7 +247,13 @@ Reglas de Oscar (14 oct 2026):
 5. **Página de blog de vacantes:** contiene todas las vacantes encontradas (80+) con su enlace; se actualiza en cada sprint de vacantes y cierra con un CTA fijo al simulador.
 6. **Dataset:** cada búsqueda se guarda con fecha en `vacantes/listados/` para el resumen semestral.
 
-Pendiente de decidir: medición por vacante (redirect propio que registre `vacancy_clicked` antes de mandar a LinkedIn).
+Medición (decidida 15 oct 2026, opción 1): el newsletter y los posts enlazan a la página de vacantes con UTM y ancla por vacante; en la página, cada enlace a LinkedIn dispara `vacancy_clicked` con `vacante_id`, `rol`, `pais`, `empresa`, `tipo_empresa`, `nivel`, `edicion` y la campaña de origen. Objetivo de reporte: cada semestre, qué roles interesan más al público (clics por rol) y, en segundo plano, país, empresa y tipo de empresa.
+
+Método de búsqueda (prueba del 15 oct 2026):
+- LinkedIn Jobs con búsqueda con IA: `keywords=<rol>&geoId=<país>&f_TPR=r2592000` (último mes). `location=` se ignora; usar geoId (MX 103323778 · BR 106057199 · AR 100446943 · CO 100876405 · CL 104621616 · PE 102927786).
+- Recolector: `vacantes/scripts/linkedin_collector.js` (solo coincidencias exactas, antes de "Hemos encontrado más resultados relacionados"). Clasificador: `vacantes/scripts/clasificar_vacantes.py` → `vacantes/busquedas/<fecha>/vacantes.json|csv`.
+- Datos por vacante disponibles sin Premium: antigüedad, clics o solicitudes ("Más de 100 personas han hecho clic"), modalidad, jornada, "evaluando solicitudes de forma activa", solicitud sencilla. La comparación de aplicantes (nivel de experiencia, educación) requiere LinkedIn Premium; la cuenta no lo tiene activo.
+- El reparto por rol y país refleja los topes por consulta (6-8 vacantes por rol y país), no el mercado. El nivel se infiere del título.
 
 Estado del sprint W42-W45 tras el ajuste: W42 CRA (19-23 oct) · vacantes (26-30 oct, aún sin subir) · W44 FV (2-6 nov) · W45 Consulting (9-13 nov). W43 Regulatory se movió a 16-20 nov (mismas horas y textos; los `utm_campaign` conservan el prefijo `oct-w4`).
 
