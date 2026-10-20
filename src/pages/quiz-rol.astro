@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import MarketSurvey from '../components/MarketSurvey.astro';
 
 // CTAs por rol. Los 4 roles con libro publicado van a Hotmart. Consulting
 // aún va al simulador con módulo pre-seleccionado mientras se publica su
@@ -291,6 +292,8 @@ const QUESTIONS = [
           <strong>Te suscribimos al newsletter Solca Insight.</strong> El primer email te llegará en minutos con recursos específicos para tu match. Si no lo ves, revisa la carpeta de spam o promociones.
         </p>
       </div>
+
+      <MarketSurvey origen="quiz" />
 
       <div class="share-strip"
            data-share-url="https://solcaciencia.com/quiz-rol"
@@ -1187,6 +1190,16 @@ const QUESTIONS = [
 
     showScreen('result');
     progressWrap.hidden = true;
+
+    // Encuesta de mercado (catálogo v1, 20 oct 2026): país, rol que la persona creía
+    // y rol que le dio el quiz viajan como datos derivados, sin nombre ni correo.
+    if (window.solcaMarket) {
+      window.solcaMarket.start({
+        pais_label: state.gateData ? state.gateData.country : undefined,
+        quiz_selfMatch: state.selfMatch || undefined,
+        quiz_role: topRole,
+      });
+    }
   }
 
   $('retake-btn').addEventListener('click', () => {
@@ -1212,7 +1225,18 @@ const QUESTIONS = [
     btn.addEventListener('click', async () => {
       const strip = btn.closest('.share-strip');
       if (!strip) return;
-      const shareUrl = strip.dataset.shareUrl || window.location.href;
+      // UTM por botón (20 oct 2026), igual que en el analizador de CV.
+      const shareUrl = (() => {
+        try {
+          const u = new URL(strip.dataset.shareUrl || window.location.href);
+          u.searchParams.set('utm_source', 'share');
+          u.searchParams.set('utm_medium', btn.dataset.share || 'other');
+          u.searchParams.set('utm_campaign', 'quiz_rol');
+          return u.toString();
+        } catch {
+          return strip.dataset.shareUrl || window.location.href;
+        }
+      })();
       const shareText = strip.dataset.shareText || '';
       const fullText = shareText ? `${shareText} ${shareUrl}` : shareUrl;
       const target = btn.dataset.share;

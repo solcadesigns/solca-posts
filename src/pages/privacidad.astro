@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 
-const lastUpdated = 'Junio 2026';
+const lastUpdated = 'Octubre 2026';
 ---
 <BaseLayout
   title="Aviso de privacidad · Solca"
@@ -55,6 +55,9 @@ const lastUpdated = 'Junio 2026';
       <li><strong>País (opcional).</strong> Para contextualizar el análisis o personalizar contenido.</li>
       <li><strong>Texto de tu CV (procesamiento efímero).</strong> Lo procesamos en memoria al momento de generar el análisis y <strong>no lo conservamos</strong> después de entregarte el resultado. No se guarda en bases de datos, no se usa para entrenar modelos, no se comparte con terceros más allá del procesamiento descrito en la sección 4.</li>
       <li><strong>Respuestas y configuración del Simulador de Entrevistas (procesamiento efímero).</strong> Tus respuestas durante la sesión se procesan en memoria para generar el feedback y se descartan al cierre. El detalle completo del flujo del simulador (qué se guarda como métrica anónima y qué no) está en la sección 6.</li>
+      <li><strong>Encuesta de mercado (opcional y anónima).</strong> Después del análisis de CV, del quiz de rol o del simulador te podemos hacer hasta 3 preguntas (por ejemplo, tu etapa profesional o qué te frena para entrar a la industria). Junto con ellas guardamos una copia anónima de datos generales que ya diste en la herramienta (país, formación, nivel académico y rango de años de experiencia, rol de interés, el rol que te sugirió el quiz, y rango de edad y género si los compartiste) y de dónde llegaste al sitio. <strong>Nunca se guarda tu email, tu nombre, tu CV ni texto libre</strong> junto con estas respuestas.</li>
+      <li><strong>Identificador anónimo del navegador.</strong> Un número aleatorio que se guarda en tu navegador (no es una cookie de rastreo ni se comparte con terceros) para contar personas y no usos, y para no repetirte preguntas que ya contestaste. No se vincula con tu email ni con tu identidad.</li>
+      <li><strong>Origen de la visita.</strong> La página desde la que llegaste y los parámetros de campaña (UTM) del enlace, para saber qué canales funcionan.</li>
       <li><strong>Dirección IP.</strong> Registrada únicamente para prevenir abuso de servicios (rate-limiting) y diagnosticar errores. No se vincula a tu identidad para fines comerciales.</li>
       <li><strong>Datos técnicos básicos.</strong> Logs del servidor (navegador, tipo de dispositivo, timestamp) recopilados automáticamente por Cloudflare (nuestro proveedor de hosting) para seguridad y rendimiento.</li>
     </ul>
@@ -93,6 +96,8 @@ const lastUpdated = 'Junio 2026';
     <ul>
       <li><strong>Texto del CV:</strong> efímero. Se procesa en memoria, se entrega el resultado, se descarta. No se guarda en nuestros servidores.</li>
       <li><strong>Email:</strong> hasta que solicites la baja o nuestra lista de suscriptores cierre, lo que ocurra primero.</li>
+      <li><strong>Registro de intentos de análisis de CV</strong> (email, país, largo del CV, origen y si el análisis se completó, sin el texto del CV): 180 días, para detectar fallas y poder escribirte si tu análisis no se entregó.</li>
+      <li><strong>Encuesta de mercado (base de datos interna, anónima):</strong> retención indefinida para análisis agregado de mercado y contenido editorial; no contiene datos que permitan reidentificarte.</li>
       <li><strong>IP y logs técnicos:</strong> 30 días para análisis de seguridad, luego se eliminan o anonimizan.</li>
       <li><strong>Resultados del análisis:</strong> no se guardan. Si quieres conservar tu análisis, usa el botón "Imprimir / guardar como PDF" en la página de resultado.</li>
       <li><strong>Respuestas del simulador:</strong> efímeras. Se procesan, se entrega el reporte final, se descartan.</li>
@@ -142,7 +147,7 @@ const lastUpdated = 'Junio 2026';
 
     <h2>8. Cookies y rastreadores</h2>
     <p>
-      Actualmente Solca <strong>no usa cookies de rastreo, analytics de terceros ni pixels de redes sociales</strong>. Cloudflare usa cookies estrictamente técnicas para enrutamiento y seguridad (no rastreables a tu identidad). Si en el futuro agregamos analytics anónimas (por ejemplo Cloudflare Web Analytics), actualizaremos este aviso.
+      Actualmente Solca <strong>no usa cookies de rastreo, analytics de terceros ni pixels de redes sociales</strong>. Cloudflare usa cookies estrictamente técnicas para enrutamiento y seguridad (no rastreables a tu identidad). Usamos el almacenamiento local de tu navegador para dos cosas: recordar los parámetros de campaña y la página de origen de tu visita, y guardar el identificador anónimo descrito en la sección 2. Ninguno se comparte con terceros ni se vincula con tu identidad; puedes borrarlos limpiando los datos del sitio en tu navegador. Si en el futuro agregamos analytics anónimas (por ejemplo Cloudflare Web Analytics), actualizaremos este aviso.
     </p>
 
     <h2>9. Seguridad</h2>

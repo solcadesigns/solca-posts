@@ -62,3 +62,4 @@ _docs/~$*
 # así que no se versiona. Si prefieres conservar la serie histórica para ver
 # cómo evolucionan las queries, borra esta línea.
 _docs/GSC_SIGNALS_LATEST.json
+scripts/out/

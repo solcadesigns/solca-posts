@@ -1,0 +1,193 @@
+---
+/**
+ * Encuesta de mercado unificada (catálogo v1, 20 oct 2026).
+ * Se monta oculta; la herramienta la arranca con
+ *   window.solcaMarket.start({ ...datos operativos })
+ * cuando entrega su resultado. El componente pide al servidor qué preguntas
+ * faltan (máximo 3) y las muestra. Ver _docs/CATALOGO_ENCUESTA_MERCADO.md.
+ */
+interface Props {
+  origen: 'simulador' | 'quiz' | 'cv';
+}
+const { origen } = Astro.props;
+---
+
+<section class="market-survey" id="market-survey" data-origen={origen} hidden>
+  <div class="ms-card" id="ms-card">
+    <h3 class="ms-title">¿Me ayudas con unas preguntas rápidas?</h3>
+    <p class="ms-helper">
+      Toma unos segundos. Respuestas anónimas: no las vinculamos a tu email ni a tu CV.
+      Nos ayudan a entender qué necesita quien busca entrar o moverse en la industria
+      farmacéutica en América Latina y España.
+    </p>
+    <form id="ms-form">
+      <div id="ms-questions"></div>
+      <div class="ms-actions">
+        <button type="submit" class="btn btn-orange" id="ms-submit">Enviar respuestas</button>
+        <button type="button" class="ms-skip" id="ms-skip">No, gracias</button>
+      </div>
+    </form>
+  </div>
+  <p class="ms-thanks" id="ms-thanks" hidden><strong>Gracias.</strong> Apreciamos tu tiempo.</p>
+</section>
+
+<style>
+  .market-survey { margin: 32px 0; }
+  .ms-card, .ms-thanks {
+    background: #fff;
+    border: 1px solid rgba(27, 58, 107, 0.15);
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .ms-title { color: var(--navy); font-size: 1.15rem; margin: 0 0 8px; }
+  .ms-helper { color: #5a6475; font-size: 0.92rem; margin: 0 0 20px; }
+  :global(.ms-question) { margin-bottom: 22px; border: 0; padding: 0; }
+  :global(.ms-question legend) { color: var(--navy); font-weight: 600; margin-bottom: 10px; }
+  :global(.ms-options) { display: grid; gap: 8px; }
+  :global(.ms-option) {
+    display: flex; gap: 10px; align-items: flex-start;
+    border: 1px solid rgba(27, 58, 107, 0.15); border-radius: 8px;
+    padding: 10px 12px; cursor: pointer; font-size: 0.95rem;
+  }
+  :global(.ms-option:has(input:checked)) { border-color: var(--orange); background: rgba(232, 116, 58, 0.06); }
+  :global(.ms-option input) { margin-top: 3px; accent-color: var(--orange); }
+  .ms-actions { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .ms-skip { background: none; border: 0; color: #5a6475; text-decoration: underline; cursor: pointer; }
+  .ms-thanks { color: var(--navy); }
+</style>
+
+<script>
+  import { QUESTIONS } from '../lib/market-catalog';
+
+  type Raw = Record<string, string | undefined | null>;
+
+  const root = document.getElementById('market-survey') as HTMLElement | null;
+  const origen = root?.dataset.origen ?? '';
+  let started = false;
+  let asked: string[] = [];
+
+  function getAid(): string | undefined {
+    try {
+      let aid = localStorage.getItem('solca_aid');
+      if (!aid && typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+        aid = crypto.randomUUID();
+        localStorage.setItem('solca_aid', aid);
+      }
+      return aid ?? undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  function context(): Record<string, string> {
+    const ctx: Record<string, string> = {};
+    const utm = (window as unknown as { __utm?: Record<string, string> }).__utm || {};
+    for (const [k, v] of Object.entries(utm)) if (typeof v === 'string') ctx[k] = v;
+    try {
+      const ref = sessionStorage.getItem('solca_ref') || document.referrer;
+      if (ref) {
+        const host = new URL(ref).hostname;
+        if (host && host !== window.location.hostname) ctx.referrerHost = host;
+      }
+    } catch { /* ignore */ }
+    return ctx;
+  }
+
+  // Guarda el referrer externo del aterrizaje para no perderlo al navegar dentro del sitio.
+  try {
+    const ref = document.referrer;
+    if (ref && new URL(ref).hostname !== window.location.hostname && !sessionStorage.getItem('solca_ref')) {
+      sessionStorage.setItem('solca_ref', ref.slice(0, 300));
+    }
+  } catch { /* ignore */ }
+
+  function clean(raw: Raw): Record<string, string> {
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(raw)) if (typeof v === 'string') out[k] = v;
+    return out;
+  }
+
+  async function post(payload: Record<string, unknown>): Promise<{ ok?: boolean; ask?: string[] } | null> {
+    try {
+      const res = await fetch('/api/market-survey', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ origen, aid: getAid(), ...context(), ...payload }),
+      });
+      return res.ok ? await res.json() : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function render(ids: string[]): void {
+    const box = document.getElementById('ms-questions');
+    if (!box || !root) return;
+    box.innerHTML = '';
+    for (const id of ids) {
+      const q = QUESTIONS[id];
+      if (!q) continue;
+      const fs = document.createElement('fieldset');
+      fs.className = 'ms-question';
+      const legend = document.createElement('legend');
+      legend.textContent = q.text;
+      fs.appendChild(legend);
+      const opts = document.createElement('div');
+      opts.className = 'ms-options';
+      for (const o of q.options) {
+        const label = document.createElement('label');
+        label.className = 'ms-option';
+        const input = document.createElement('input');
+        input.type = 'radio';
+        input.name = `ms_${id}`;
+        input.value = o.value;
+        const span = document.createElement('span');
+        span.textContent = o.label;
+        label.append(input, span);
+        opts.appendChild(label);
+      }
+      fs.appendChild(opts);
+      box.appendChild(fs);
+    }
+    root.hidden = false;
+  }
+
+  async function start(raw: Raw = {}): Promise<void> {
+    if (started || !root) return;
+    started = true;
+    const data = await post({ mode: 'start', raw: clean(raw) });
+    asked = Array.isArray(data?.ask) ? data!.ask.filter((id) => id in QUESTIONS) : [];
+    if (asked.length > 0) render(asked);
+  }
+
+  /** Guarda datos operativos sueltos (p. ej. edad y género del cuestionario del simulador). */
+  async function record(raw: Raw): Promise<void> {
+    await post({ mode: 'answers', raw: clean(raw) });
+  }
+
+  document.getElementById('ms-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const answers: Record<string, string> = {};
+    for (const id of asked) {
+      const checked = document.querySelector<HTMLInputElement>(`input[name="ms_${id}"]:checked`);
+      if (checked) answers[id] = checked.value;
+    }
+    if (Object.keys(answers).length === 0) {
+      alert('Elige al menos una opción o usa "No, gracias".');
+      return;
+    }
+    const btn = document.getElementById('ms-submit') as HTMLButtonElement | null;
+    if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+    await post({ mode: 'answers', answers });
+    const card = document.getElementById('ms-card');
+    const thanks = document.getElementById('ms-thanks');
+    if (card) card.hidden = true;
+    if (thanks) thanks.hidden = false;
+  });
+
+  document.getElementById('ms-skip')?.addEventListener('click', () => {
+    if (root) root.hidden = true;
+  });
+
+  (window as unknown as { solcaMarket: unknown }).solcaMarket = { start, record };
+</script>

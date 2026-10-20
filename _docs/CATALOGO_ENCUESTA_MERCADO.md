@@ -1,6 +1,6 @@
 # Catálogo de la encuesta de mercado · v1 (borrador, 20 oct 2026)
 
-Estado: **propuesta para revisión de Oscar. No hay código implementado.**
+Estado: **aprobado e implementado el 20 oct 2026.** Código: `src/lib/market-catalog.ts`, `src/pages/api/market-survey.ts`, `src/components/MarketSurvey.astro`, `migrations/0003_mercado_respuestas.sql` y `scripts/backfill-mercado.mjs`.
 
 ## 1. Principios
 
@@ -42,7 +42,7 @@ Estado: **propuesta para revisión de Oscar. No hay código implementado.**
 
 Equivalencia de los valores actuales:
 - La lista del analizador y del quiz (`México`, `Brasil`…) se traduce 1 a 1.
-- El simulador hoy solo infiere el país, y 23 de 30 sesiones quedaron sin dato. Por eso en el simulador el país pasa a la encuesta.
+- El simulador solo infiere el país desde la vacante o el idioma, y 23 de 30 sesiones quedaron sin dato. Ese dato es otro concepto ("país de la vacante", no "dónde vives"), así que no se copia: en el simulador el país se pregunta en la encuesta.
 
 ### P2 · Etapa (`etapa`)
 
@@ -199,11 +199,14 @@ mercado_respuestas(
 
 | Fuente | Registros | Qué se carga |
 |---|---|---|
-| D1 `sessions` (simulador) | 30 | etapa (derivada), formación, rol, país (si lo hay), edad y género (6) |
+| D1 `sessions` (simulador) | 30 | etapa (solo si se puede derivar), formación, rol (salvo `Other`), edad y género (6) |
 | KV `QUIZ_METRICS` (`m:`) | 23 | país, rol de interés, rol resultado |
-| KV `CV_METRICS` (`s:`) | 37 | etapa, obstáculo, urgencia, inglés, movilidad, formación no (es otro concepto) |
+| KV `CV_METRICS` (`s:`) | 37 | etapa, obstáculo, urgencia, inglés, movilidad; el área científica va como `cv_v0` (es otro concepto que formación) |
 
-Las preguntas retiradas del analizador también se cargan, con `catalogo_version='cv_v0'`, para no perder el histórico.
+- Las filas históricas llevan `catalogo_version='v1_hist'`. Las preguntas retiradas del analizador se cargan con `cv_v0`, para no perder el histórico. Re-ejecutar la carga borra solo esas dos versiones.
+- La carga usa un corte (`--corte`, el momento en que el endpoint nuevo quedó en producción): lo posterior ya entra en vivo.
+- No se cargan el país inferido del simulador ni su rol `Other`, que es el valor por defecto de la plantilla y no una respuesta.
+- Para reportes, `v1` y `v1_hist` se suman.
 
 ## 8. Medición del propio sistema
 

@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import MarketSurvey from '../components/MarketSurvey.astro';
 
 const cursoURL = 'https://go.hotmart.com/B104495115T';
 const newsletterURL =
@@ -250,24 +251,7 @@ const atsBlogURL =
     </article>
 
     <!-- ==================== POST-RESULT SURVEY (anónima, opcional) ==================== -->
-    <div class="cv-survey" id="cv-survey" hidden>
-      <div class="cv-survey-card" id="cv-survey-card">
-        <h3 class="cv-survey-title">Ya puedes descargar tu análisis abajo. ¿Me ayudas con 3 preguntas a cambio?</h3>
-        <p class="cv-survey-helper">
-          Toma ~30 segundos. Respuestas anónimas — no las vinculamos a tu email ni a tu CV. Alimentan el reporte gratuito <em>State of PhD Transition LATAM</em> que publicaré en 2027.
-        </p>
-        <form id="cv-survey-form">
-          <div id="cv-survey-questions"></div>
-          <div class="cv-survey-actions">
-            <button type="submit" class="btn btn-orange" id="cv-survey-submit">Enviar respuestas</button>
-            <button type="button" class="btn-skip" id="cv-survey-skip">No, gracias</button>
-          </div>
-        </form>
-      </div>
-      <div class="cv-survey-thanks" id="cv-survey-thanks" hidden>
-        <p><strong>Gracias.</strong> Apreciamos tu tiempo.</p>
-      </div>
-    </div>
+    <MarketSurvey origen="cv" />
 
     <div class="result-actions">
       <button type="button" id="download-btn" class="btn btn-orange btn-large">
@@ -926,118 +910,6 @@ const atsBlogURL =
     color: #fff;
   }
 
-  /* ============ Post-result Survey ============ */
-  .cv-survey {
-    margin-top: 50px;
-    border-top: 1px solid var(--rule);
-    padding-top: 40px;
-  }
-  .cv-survey-card {
-    background: var(--off-white);
-    border: 1px solid var(--rule);
-    border-radius: 14px;
-    padding: 28px;
-    max-width: 720px;
-    margin: 0 auto;
-  }
-  .cv-survey-title {
-    font-family: 'Inter', sans-serif;
-    font-size: 19px;
-    font-weight: 700;
-    color: var(--navy);
-    margin-bottom: 10px;
-    line-height: 1.35;
-  }
-  .cv-survey-helper {
-    font-size: 13px;
-    color: var(--text-mute);
-    margin-bottom: 22px;
-    line-height: 1.55;
-  }
-  .cv-survey-helper em { color: var(--navy); font-style: italic; }
-  /* :global() necesario porque estos elementos se generan dinámicamente via innerHTML
-     y no reciben el hash de scope de Astro. */
-  :global(.cv-survey-question) { margin-bottom: 26px; }
-  :global(.cv-survey-question-text) {
-    font-family: 'Inter', sans-serif;
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--navy);
-    margin-bottom: 12px;
-    line-height: 1.45;
-  }
-  :global(.cv-survey-options) {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  :global(.cv-survey-option) {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 12px 16px;
-    background: #fff;
-    border: 1.5px solid #E0DCD3;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    font-size: 14px;
-    line-height: 1.4;
-    color: var(--text);
-    margin: 0;
-  }
-  :global(.cv-survey-option:hover) {
-    border-color: var(--orange);
-    background: #FFF8F3;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(232, 116, 58, 0.08);
-  }
-  :global(.cv-survey-option input[type="radio"]),
-  :global(.cv-survey-option input[type="checkbox"]) {
-    flex-shrink: 0;
-    margin-top: 1px;
-    width: 16px;
-    height: 16px;
-    accent-color: var(--orange);
-    cursor: pointer;
-  }
-  :global(.cv-survey-option-checked) {
-    border-color: var(--orange) !important;
-    background: #FFF4EC !important;
-    box-shadow: 0 0 0 3px rgba(232, 116, 58, 0.12);
-  }
-  .cv-survey-actions {
-    display: flex;
-    gap: 14px;
-    align-items: center;
-    margin-top: 24px;
-    flex-wrap: wrap;
-  }
-  .btn-skip {
-    background: none;
-    border: none;
-    color: var(--text-mute);
-    font-size: 13px;
-    cursor: pointer;
-    padding: 8px 4px;
-    text-decoration: underline;
-    text-underline-offset: 3px;
-  }
-  .btn-skip:hover { color: var(--navy); }
-  .cv-survey-thanks {
-    background: #FFF8F3;
-    border: 1px solid var(--orange);
-    border-radius: 12px;
-    padding: 20px 24px;
-    max-width: 720px;
-    margin: 0 auto;
-    text-align: center;
-    color: var(--navy);
-    font-size: 14px;
-    line-height: 1.55;
-  }
-  .cv-survey-thanks strong { color: var(--orange); }
-
   /* ============ Error ============ */
   .cv-error { background: var(--bg); padding: 80px 0; }
   .error-card {
@@ -1065,7 +937,7 @@ const atsBlogURL =
 
   /* Print: strip nav, hero, form, footer; keep result + brand header */
   @media print {
-    .nav, .cv-hero, .cv-form-section, .cv-loading, .cv-error, .footer, .result-actions, .result-download-notice, .cv-survey, .share-strip { display: none !important; }
+    .nav, .cv-hero, .cv-form-section, .cv-loading, .cv-error, .footer, .result-actions, .result-download-notice, .market-survey, .share-strip { display: none !important; }
     .cv-result { background: white; padding: 20px 0; }
     .cv-result .result-feedback,
     .cv-result .result-observaciones { box-shadow: none; border: 1px solid #ccc; }
@@ -1731,284 +1603,18 @@ const atsBlogURL =
     submitBtn && (submitBtn.disabled = false);
   });
 
-  // ==================== POST-RESULT SURVEY ====================
-  type SurveyOption = { value: string; label: string };
-  type SurveyQuestion = {
-    id: string;
-    text: string;
-    type: 'radio' | 'checkbox';
-    options: SurveyOption[];
-  };
-
-  const SURVEY_CORE: SurveyQuestion = {
-    id: 'stage',
-    text: '¿En qué etapa de tu trayectoria estás?',
-    type: 'radio',
-    options: [
-      { value: 'phd_1_2', label: 'PhD 1-2 años' },
-      { value: 'phd_3_5', label: 'PhD 3-5 años' },
-      { value: 'phd_writing', label: 'PhD en escritura / pre-defensa' },
-      { value: 'postdoc', label: 'Postdoc' },
-      { value: 'post_phd', label: 'PhD terminado, en transición' },
-      { value: 'in_industry', label: 'Ya en industria, buscando moverme de rol' },
-    ],
-  };
-
-  const SURVEY_POOL: SurveyQuestion[] = [
-    {
-      id: 'urgency',
-      text: '¿En cuánto tiempo te gustaría estar trabajando en pharma?',
-      type: 'radio',
-      options: [
-        { value: '0_3m', label: 'Lo antes posible (0-3 meses)' },
-        { value: '3_6m', label: '3-6 meses' },
-        { value: '6_12m', label: '6-12 meses' },
-        { value: '1_2y', label: '1-2 años' },
-        { value: 'exploring', label: 'Solo explorando' },
-      ],
-    },
-    {
-      id: 'obstacle',
-      text: '¿Cuál es tu mayor obstáculo aplicando a pharma?',
-      type: 'radio',
-      options: [
-        { value: 'no_callbacks', label: 'No recibo callbacks pese a aplicar' },
-        { value: 'no_role_clarity', label: 'No sé qué rol específico me queda' },
-        { value: 'english', label: 'Mi inglés profesional / comunicación' },
-        { value: 'networking', label: 'Falta de networking en industria' },
-        { value: 'time', label: 'Compromiso académico actual no me deja tiempo' },
-        { value: 'other', label: 'Otro' },
-      ],
-    },
-    {
-      id: 'field',
-      text: '¿Cuál es tu área de PhD?',
-      type: 'radio',
-      options: [
-        { value: 'mol_bio', label: 'Biología molecular / celular' },
-        { value: 'immuno', label: 'Inmunología' },
-        { value: 'pharm', label: 'Farmacología / toxicología' },
-        { value: 'oncology', label: 'Oncología' },
-        { value: 'neuro', label: 'Neurociencia' },
-        { value: 'micro', label: 'Microbiología / virología' },
-        { value: 'chem', label: 'Química medicinal / orgánica' },
-        { value: 'public_health', label: 'Salud pública / epidemiología' },
-        { value: 'bioinfo', label: 'Bioinformática / data science' },
-        { value: 'other', label: 'Otra' },
-      ],
-    },
-    {
-      id: 'confidence',
-      text: '¿Qué tan preparado/a te sientes para aplicar a pharma hoy?',
-      type: 'radio',
-      options: [
-        { value: '1', label: '1 — No tengo idea por dónde empezar' },
-        { value: '2', label: '2 — Tengo idea pero no me siento listo' },
-        { value: '3', label: '3 — Sé qué necesito hacer' },
-        { value: '4', label: '4 — Estoy aplicando activamente' },
-        { value: '5', label: '5 — Listo, falta la oferta correcta' },
-      ],
-    },
-    {
-      id: 'attempts',
-      text: '¿Has aplicado a pharma antes?',
-      type: 'radio',
-      options: [
-        { value: '0', label: 'Nunca' },
-        { value: '1_5', label: '1-5 aplicaciones' },
-        { value: '6_20', label: '6-20 aplicaciones' },
-        { value: '20_plus', label: 'Más de 20 aplicaciones' },
-      ],
-    },
-    {
-      id: 'mobility',
-      text: '¿Te moverías de país por la oferta correcta?',
-      type: 'radio',
-      options: [
-        { value: 'any_country', label: 'Sí, a cualquier país' },
-        { value: 'hispanic', label: 'Sí, solo países hispanos' },
-        { value: 'same_country', label: 'Sí, solo dentro de mi país' },
-        { value: 'no_move', label: 'No, no me muevo' },
-      ],
-    },
-    {
-      id: 'motivation',
-      text: '¿Por qué consideras industria pharma?',
-      type: 'radio',
-      options: [
-        { value: 'salary', label: 'Mejor compensación que academia' },
-        { value: 'stability', label: 'Estabilidad laboral' },
-        { value: 'academia_fatigue', label: 'Cansancio de la academia / vida del PhD' },
-        { value: 'impact', label: 'Impacto más directo en pacientes' },
-        { value: 'family', label: 'Por familia / contexto personal' },
-        { value: 'curiosity', label: 'Curiosidad genuina por industria' },
-        { value: 'other', label: 'Otra' },
-      ],
-    },
-    {
-      id: 'english',
-      text: '¿Cómo describirías tu inglés profesional?',
-      type: 'radio',
-      options: [
-        { value: 'native', label: 'Nativo' },
-        { value: 'advanced', label: 'Avanzado (entrevistas y reuniones técnicas sin problema)' },
-        { value: 'intermediate', label: 'Intermedio (puedo defenderme pero me cuesta)' },
-        { value: 'basic', label: 'Básico (puedo leer, pero hablar es difícil)' },
-      ],
-    },
-    {
-      id: 'sources',
-      text: '¿De dónde aprendes sobre transición a pharma? (puedes marcar varias)',
-      type: 'checkbox',
-      options: [
-        { value: 'linkedin', label: 'LinkedIn (posts, newsletters)' },
-        { value: 'podcasts', label: 'Podcasts' },
-        { value: 'mentors', label: 'Mentores / contactos en industria' },
-        { value: 'courses', label: 'Cursos online / libros' },
-        { value: 'forums', label: 'Subreddits / foros' },
-        { value: 'nothing', label: 'Nada formal, voy improvisando' },
-      ],
-    },
-  ];
-
-  function pickRandomSurveyQuestions(): SurveyQuestion[] {
-    // Always include core + 2 random from pool of 9
-    const shuffled = [...SURVEY_POOL].sort(() => Math.random() - 0.5);
-    return [SURVEY_CORE, shuffled[0], shuffled[1]];
-  }
-
-  function renderSurvey(): void {
-    const surveyEl = document.getElementById('cv-survey');
-    const questionsEl = document.getElementById('cv-survey-questions');
-    if (!surveyEl || !questionsEl) return;
-
-    const selected = pickRandomSurveyQuestions();
-    questionsEl.innerHTML = '';
-    selected.forEach((q) => {
-      const wrapper = document.createElement('div');
-      wrapper.className = 'cv-survey-question';
-      wrapper.dataset.qid = q.id;
-      const optsHtml = q.options
-        .map((opt) => `
-          <label class="cv-survey-option">
-            <input type="${q.type}" name="${q.id}" value="${opt.value}" />
-            <span>${opt.label}</span>
-          </label>
-        `)
-        .join('');
-      wrapper.innerHTML = `
-        <div class="cv-survey-question-text">${q.text}</div>
-        <div class="cv-survey-options">${optsHtml}</div>
-      `;
-      questionsEl.appendChild(wrapper);
-    });
-
-    // Visual feedback on selection
-    questionsEl.querySelectorAll('input').forEach((input) => {
-      input.addEventListener('change', () => {
-        const name = (input as HTMLInputElement).name;
-        const isCheckbox = (input as HTMLInputElement).type === 'checkbox';
-        if (!isCheckbox) {
-          questionsEl
-            .querySelectorAll(`input[name="${name}"]`)
-            .forEach((el) => el.closest('label')?.classList.remove('cv-survey-option-checked'));
-        }
-        const lbl = input.closest('label');
-        if (isCheckbox) {
-          if ((input as HTMLInputElement).checked) lbl?.classList.add('cv-survey-option-checked');
-          else lbl?.classList.remove('cv-survey-option-checked');
-        } else {
-          lbl?.classList.add('cv-survey-option-checked');
-        }
-      });
-    });
-
-    show(surveyEl);
-    // Store exposed question IDs in dataset for submit
-    surveyEl.dataset.exposed = selected.map((q) => q.id).join(',');
-  }
-
-  // Contexto anónimo para cruzar la encuesta (20 oct 2026): país del formulario, UTMs y
-  // solo el dominio de origen. Sin correo ni CV, como promete el texto de la encuesta.
-  function surveyContext(): Record<string, string> {
-    const ctx: Record<string, string> = {};
-    const country = (document.getElementById('country') as HTMLSelectElement | null)?.value;
-    if (country) ctx.country = country;
-    const ref = landingReferrer();
-    if (ref) {
-      try { ctx.referrerHost = new URL(ref).hostname; } catch { /* ignore */ }
-    }
-    const utm = (window as unknown as { __utm?: Record<string, string> }).__utm || {};
-    for (const [k, v] of Object.entries(utm)) if (typeof v === 'string') ctx[k] = v;
-    return ctx;
-  }
-
-  const surveyForm = document.getElementById('cv-survey-form') as HTMLFormElement | null;
-  const surveySkip = document.getElementById('cv-survey-skip') as HTMLButtonElement | null;
-  const surveySubmit = document.getElementById('cv-survey-submit') as HTMLButtonElement | null;
-
-  surveyForm?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const surveyEl = document.getElementById('cv-survey');
-    if (!surveyEl) return;
-    const exposed = (surveyEl.dataset.exposed ?? '').split(',').filter(Boolean);
-    const answers: Record<string, string | string[]> = {};
-    exposed.forEach((qid) => {
-      const inputs = surveyEl.querySelectorAll<HTMLInputElement>(`input[name="${qid}"]:checked`);
-      if (inputs.length === 0) return;
-      if (inputs[0].type === 'checkbox') {
-        answers[qid] = Array.from(inputs).map((i) => i.value);
-      } else {
-        answers[qid] = inputs[0].value;
-      }
-    });
-    if (Object.keys(answers).length === 0) {
-      alert('Selecciona al menos una opción o usa "No, gracias".');
-      return;
-    }
-    if (surveySubmit) {
-      surveySubmit.disabled = true;
-      surveySubmit.textContent = 'Enviando...';
-    }
-    try {
-      await fetch('/api/cv-survey', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ exposed, answers, ...surveyContext() }),
-      });
-    } catch (err) {
-      console.warn('CV survey submit failed:', err);
-    }
-    // Hide form, show thanks
-    const cardEl = document.getElementById('cv-survey-card');
-    const thanksEl = document.getElementById('cv-survey-thanks');
-    if (cardEl) cardEl.hidden = true;
-    if (thanksEl) thanksEl.hidden = false;
-  });
-
-  surveySkip?.addEventListener('click', () => {
-    const surveyEl = document.getElementById('cv-survey');
-    if (surveyEl) surveyEl.hidden = true;
-  });
-
-  // Hook: invoke renderSurvey when result is shown
-  const _origShow = show;
-  function showWithSurveyHook(el: HTMLElement | null) {
-    _origShow(el);
-    if (el && el.id === 'result') {
-      // Small delay so UX feels natural (analysis settles first)
-      setTimeout(() => renderSurvey(), 800);
-    }
-  }
-  // Replace internal `show(result)` invocations is impractical; instead,
-  // observe the result element becoming visible.
+  // ==================== ENCUESTA DE MERCADO (catálogo v1, 20 oct 2026) ====================
+  // Reemplaza la encuesta propia del analizador. Se arranca cuando aparece el resultado;
+  // el país del formulario viaja como dato derivado. Ver src/components/MarketSurvey.astro.
   if (result) {
-    const observer = new MutationObserver(() => {
-      if (!result.hidden && document.getElementById('cv-survey')?.hidden) {
-        setTimeout(() => renderSurvey(), 800);
+    const marketObserver = new MutationObserver(() => {
+      if (!result.hidden) {
+        const country = (document.getElementById('country') as HTMLSelectElement | null)?.value;
+        const market = (window as unknown as { solcaMarket?: { start: (raw: Record<string, string | undefined>) => void } }).solcaMarket;
+        setTimeout(() => market?.start({ pais_label: country || undefined }), 800);
       }
     });
-    observer.observe(result, { attributes: true, attributeFilter: ['hidden'] });
+    marketObserver.observe(result, { attributes: true, attributeFilter: ['hidden'] });
   }
 
   // ============ Share strip · LinkedIn / WhatsApp / Email / Copy ============

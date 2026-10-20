@@ -8,6 +8,7 @@
 // Reusable defaults vienen embebidos del cliente porque el endpoint los aplica
 // también. El frontend muestra los defaults para que el usuario los vea y pueda cambiar.
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import MarketSurvey from '../../components/MarketSurvey.astro';
 ---
 <BaseLayout
   title="Sesión · Simulador de Entrevistas · Solca"
@@ -524,6 +525,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             </div>
           </details>
         </section>
+
+        <!-- Encuesta de mercado (catálogo v1, 20 oct 2026) · para todos los planes -->
+        <MarketSurvey origen="simulador" />
 
         <!-- Encuesta beta · solo visible para usuarios con código beta (Fase 1.5.H) -->
         <section id="beta-survey" class="beta-survey" hidden>
@@ -2416,6 +2420,20 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     // el panel sin enviar.
 
     function maybeShowSurvey() {
+      // Encuesta de mercado: copia anonimizada del perfil (sin vacante, empresa ni texto libre)
+      // y hasta 3 preguntas. Ver src/components/MarketSurvey.astro.
+      const marketProfile = (appState.sessionState as unknown as { profile?: Record<string, string | undefined> })?.profile;
+      const market = (window as unknown as { solcaMarket?: { start: (raw: Record<string, string | undefined>) => void } }).solcaMarket;
+      if (market && marketProfile) {
+        market.start({
+          sim_mode: marketProfile.mode,
+          sim_academicLevel: marketProfile.academicLevel,
+          sim_experienceYears: marketProfile.experienceYears,
+          sim_formationArea: marketProfile.formationArea,
+          sim_roleGeneric: marketProfile.mode === 'B' ? (marketProfile.roleTitle ?? '') : undefined,
+        });
+      }
+
       const plan = (appState.sessionState as unknown as { plan?: string })?.plan ?? 'gratis';
       const betaCode = sessionStorage.getItem('solca_beta_code');
       // Créditos restantes reportados por el backend en el response del reporte final
@@ -2628,6 +2646,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           genero: generoEl?.value || null,
         };
 
+
         surveySubmitBtn.disabled = true;
         surveyMessageEl.hidden = true;
 
@@ -2640,6 +2659,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           const data = await resp.json();
           if (!resp.ok || !data.ok) {
             throw new Error(data.error || `Error ${resp.status}`);
+          }
+          // Copia anónima de edad y género a la base de mercado (solo tras guardar el feedback).
+          const marketRec = (window as unknown as { solcaMarket?: { record: (raw: Record<string, string | undefined>) => void } }).solcaMarket;
+          if (marketRec && (payload.edadRango || payload.genero)) {
+            marketRec.record({ edad: payload.edadRango || undefined, genero: payload.genero || undefined });
           }
           // Éxito · ocultar form y mostrar gracias
           surveyForm.hidden = true;
