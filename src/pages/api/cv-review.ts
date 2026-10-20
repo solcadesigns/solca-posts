@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { CV_REVIEW_SYSTEM_PROMPT } from '../../lib/cv-review-prompt';
 import { chatCompletion, extractText, AnthropicError } from '../../lib/anthropic';
 import { checkCvSubmitLimit, incrementCvSubmitCount } from '../../lib/rate-limit';
-import { sendEmailWithTemplate, PostmarkError } from '../../lib/postmark';
+import { sendEmail, sendEmailWithTemplate, PostmarkError } from '../../lib/postmark';
 import { extractUtms, type UtmRecord } from '../../lib/utm';
 // Postmark reemplaza a Brevo (jul 2026). Ver _docs/que-rompimos-brevo-mailerlite.md.
 
@@ -19,6 +19,8 @@ interface CVReviewRequest {
   utm_campaign?: string;
   utm_content?: string;
   utm_term?: string;
+  // Página de origen externa (document.referrer al aterrizar). Ver revisar-cv.astro.
+  referrer?: string;
 }
 
 interface Observacion {
@@ -90,6 +92,7 @@ async function storeEmail(
   country: string | undefined,
   ip: string | null,
   utms: UtmRecord,
+  referrer?: string,
 ): Promise<void> {
   // Si hay KV namespace `EMAILS` configurado, guardamos. Si no, log a console (visible vía `wrangler tail`).
   const kv = runtime?.env?.EMAILS as KVNamespace | undefined;
@@ -98,6 +101,7 @@ async function storeEmail(
     country: country?.toLowerCase().trim(),
     ip,
     ts: new Date().toISOString(),
+    ...(referrer ? { referrer } : {}),
     ...utms,
   };
   if (kv && typeof kv.put === 'function') {
@@ -110,6 +114,44 @@ async function storeEmail(
   } else {
     console.log('cv-review:email-captured', JSON.stringify(record));
   }
+}
+
+// Tope diario global (20 oct 2026): un pico de 29 análisis en un día (vs 1-2 normal)
+// llegó sin aviso. El tope corta el gasto si el pico crece; al alcanzarlo se avisa
+// una sola vez a hello@ para decidir si se sube.
+const DAILY_CAP = 50;
+
+async function bumpDailyCount(kv: KVNamespace | undefined): Promise<number> {
+  if (!kv) return 0;
+  const key = `cv_daily:${new Date().toISOString().slice(0, 10)}`;
+  const current = Number.parseInt((await kv.get(key)) ?? '0', 10) || 0;
+  const next = current + 1;
+  await kv.put(key, String(next), { expirationTtl: 60 * 60 * 48 });
+  return next;
+}
+
+// Registro de intentos (20 oct 2026): el registro `email:` solo existe cuando el
+// análisis sale bien. `attempt:` se escribe antes de llamar a Anthropic y se
+// actualiza con el resultado; los que quedan en 'started' son abandonos
+// (p. ej., la persona cerró la página durante los 30-40 s de espera).
+async function putAttempt(
+  kv: KVNamespace | undefined,
+  key: string,
+  record: Record<string, unknown>,
+): Promise<void> {
+  if (!kv) return;
+  try {
+    await kv.put(key, JSON.stringify(record), { expirationTtl: 60 * 60 * 24 * 180 });
+  } catch (err) {
+    console.error('attempt put failed', err);
+  }
+}
+
+function cleanReferrer(raw: unknown): string | undefined {
+  if (typeof raw !== 'string') return undefined;
+  const v = raw.trim().slice(0, 300);
+  if (!/^https?:\/\//i.test(v)) return undefined;
+  return v;
 }
 
 export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
@@ -186,6 +228,60 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     );
   }
 
+  // Kill switch compartido con el simulador (flag `anthropic_paused` en SIMULATOR_SESSIONS).
+  const simKV = runtime?.env?.SIMULATOR_SESSIONS as KVNamespace | undefined;
+  if (simKV && (await simKV.get('anthropic_paused'))) {
+    return jsonResponse(
+      {
+        error: 'paused',
+        message: 'El analizador está en pausa por mantenimiento. Intenta de nuevo más tarde.',
+      },
+      503,
+    );
+  }
+
+  const dailyCount = await bumpDailyCount(limitsKV);
+  if (dailyCount > DAILY_CAP) {
+    return jsonResponse(
+      {
+        error: 'daily_cap',
+        message:
+          'Hoy alcanzamos el cupo diario de análisis gratuitos. Vuelve mañana: tu cupo personal sigue intacto.',
+      },
+      503,
+    );
+  }
+  if (dailyCount === DAILY_CAP) {
+    const postmarkToken = runtime?.env?.POSTMARK_SERVER_TOKEN as string | undefined;
+    if (postmarkToken) {
+      try {
+        await sendEmail(postmarkToken, {
+          from: 'hello@solcaciencia.com',
+          to: 'hello@solcaciencia.com',
+          subject: `[CV checker] Se alcanzó el tope diario de ${DAILY_CAP} análisis`,
+          textBody: `El analizador de CV llegó hoy a ${DAILY_CAP} análisis. Los siguientes verán un aviso de cupo diario hasta mañana (UTC). Para subir el tope, cambia DAILY_CAP en src/pages/api/cv-review.ts.`,
+          tag: 'cv-daily-cap',
+        });
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  const emailsKV = runtime?.env?.EMAILS as KVNamespace | undefined;
+  const referrer = cleanReferrer(body.referrer);
+  const attemptTs = new Date().toISOString();
+  const attemptKey = `attempt:${attemptTs}:${email}`;
+  const attemptBase = {
+    email,
+    country,
+    ts: attemptTs,
+    cvLength: cv.length,
+    ...(referrer ? { referrer } : {}),
+    ...extractUtms(body as unknown as Record<string, unknown>),
+  };
+  await putAttempt(emailsKV, attemptKey, { ...attemptBase, status: 'started' });
+
   // Build user message
   const userMessage = `País del candidato: ${country || 'no especificado'}\n\n--- INICIO DEL CV ---\n${cv}\n--- FIN DEL CV ---\n\nGenera el análisis ahora siguiendo exactamente el formato JSON especificado.`;
 
@@ -197,7 +293,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
       model: 'claude-haiku-4-5-20251001',
       system: CV_REVIEW_SYSTEM_PROMPT,
       temperature: 0.3,
-      maxTokens: 4000,
+      maxTokens: 5000, // 20 oct 2026: 4000 truncó 2 de 32 análisis de CVs largos
       messages: [
         { role: 'user', content: userMessage },
         { role: 'assistant', content: '{' }, // prefill — fuerza JSON limpio
@@ -209,6 +305,11 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     } else {
       console.error('Unexpected error calling Anthropic', err);
     }
+    await putAttempt(emailsKV, attemptKey, {
+      ...attemptBase,
+      status: 'llm_error',
+      httpStatus: err instanceof AnthropicError ? err.status : undefined,
+    });
     return jsonResponse(
       {
         error: 'llm_error',
@@ -228,6 +329,11 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     parsed = JSON.parse(jsonString) as CVReviewResult;
   } catch (err) {
     console.error('LLM returned non-JSON:', jsonString.slice(0, 500));
+    await putAttempt(emailsKV, attemptKey, {
+      ...attemptBase,
+      status: 'parse_error',
+      outputTokens: completion.usage?.output_tokens,
+    });
     return jsonResponse(
       {
         error: 'parse_error',
@@ -246,6 +352,11 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     parsed.observaciones.length === 0
   ) {
     console.error('LLM returned malformed structure:', JSON.stringify(parsed).slice(0, 500));
+    await putAttempt(emailsKV, attemptKey, {
+      ...attemptBase,
+      status: 'incomplete_result',
+      outputTokens: completion.usage?.output_tokens,
+    });
     return jsonResponse(
       {
         error: 'incomplete_result',
@@ -272,7 +383,15 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
       country,
       ip,
       utms,
+      referrer,
     ).catch((err) => console.error('storeEmail failed', err)),
+  );
+  waitUntil(
+    putAttempt(emailsKV, attemptKey, {
+      ...attemptBase,
+      status: 'ok',
+      outputTokens: completion.usage?.output_tokens,
+    }),
   );
   waitUntil(
     sendWelcomeCv(

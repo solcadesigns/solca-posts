@@ -1079,6 +1079,27 @@ const atsBlogURL =
 </style>
 
 <script>
+  // Referrer externo del aterrizaje (20 oct 2026). Se guarda en sessionStorage al cargar
+  // para que "Revisar otro CV" o una recarga no lo pierdan; se ignora el propio dominio.
+  function landingReferrer(): string | undefined {
+    try {
+      const stored = sessionStorage.getItem('cv_ref');
+      if (stored) return stored;
+    } catch { /* storage bloqueado */ }
+    const ref = document.referrer;
+    if (!ref) return undefined;
+    try {
+      if (new URL(ref).hostname === window.location.hostname) return undefined;
+    } catch {
+      return undefined;
+    }
+    return ref.slice(0, 300);
+  }
+  try {
+    const ref = landingReferrer();
+    if (ref) sessionStorage.setItem('cv_ref', ref);
+  } catch { /* storage bloqueado */ }
+
   const form = document.getElementById('cv-form') as HTMLFormElement | null;
   const loading = document.getElementById('loading') as HTMLElement | null;
   const loadingStatus = document.getElementById('loading-status') as HTMLElement | null;
@@ -1275,6 +1296,8 @@ const atsBlogURL =
       consent: fd.get('consent') === 'on',
       // UTM attribution (P1 sprint 2026-08-18): window.__utm lo llena BaseLayout.
       ...(window.__utm || {}),
+      // Página de origen externa (20 oct 2026): para ubicar picos que llegan sin UTM.
+      referrer: landingReferrer(),
     };
 
     // Quick client-side validation
@@ -1974,14 +1997,26 @@ const atsBlogURL =
   }
 
   // ============ Share strip · LinkedIn / WhatsApp / Email / Copy ============
+  // Cada botón agrega su UTM (20 oct 2026): antes los enlaces compartidos llegaban sin fuente.
+  function withShareUtm(url: string, medium: string): string {
+    try {
+      const u = new URL(url);
+      u.searchParams.set('utm_source', 'share');
+      u.searchParams.set('utm_medium', medium);
+      u.searchParams.set('utm_campaign', 'cv_checker');
+      return u.toString();
+    } catch {
+      return url;
+    }
+  }
   document.querySelectorAll<HTMLButtonElement>('.share-btn').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const strip = btn.closest<HTMLElement>('.share-strip');
       if (!strip) return;
-      const shareUrl = strip.dataset.shareUrl || window.location.href;
+      const target = btn.dataset.share;
+      const shareUrl = withShareUtm(strip.dataset.shareUrl || window.location.href, target || 'other');
       const shareText = strip.dataset.shareText || '';
       const fullText = shareText ? `${shareText} ${shareUrl}` : shareUrl;
-      const target = btn.dataset.share;
 
       let openUrl = '';
       if (target === 'linkedin') {
