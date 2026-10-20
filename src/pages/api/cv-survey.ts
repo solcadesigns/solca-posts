@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { extractUtms } from '../../lib/utm';
 
 export const prerender = false;
 
@@ -24,6 +25,21 @@ const MULTI_SELECT = new Set(['sources']);
 interface SurveyRequest {
   exposed?: string[];
   answers?: Record<string, string | string[]>;
+  // Contexto anónimo del análisis (20 oct 2026): país elegido en el formulario,
+  // UTMs y dominio de origen. Nunca correo, nombre ni texto del CV: la encuesta
+  // promete no vincularse al email ni al CV.
+  country?: string;
+  referrerHost?: string;
+}
+
+const VALID_COUNTRIES = new Set([
+  'México', 'Brasil', 'Argentina', 'Colombia', 'Chile', 'España', 'Perú', 'Ecuador', 'Otro LATAM', 'Otro',
+]);
+
+function cleanHost(raw: unknown): string | undefined {
+  if (typeof raw !== 'string') return undefined;
+  const v = raw.trim().toLowerCase().slice(0, 100);
+  return /^[a-z0-9.-]+$/.test(v) ? v : undefined;
 }
 
 function jsonResponse(data: unknown, status = 200) {
@@ -98,6 +114,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
     exposed: validExposed,
     answers: validAnswers,
   };
+  if (typeof body.country === 'string' && VALID_COUNTRIES.has(body.country)) record.country = body.country;
+  const referrerHost = cleanHost(body.referrerHost);
+  if (referrerHost) record.referrerHost = referrerHost;
+  Object.assign(record, extractUtms(body as unknown as Record<string, unknown>));
 
   waitUntil(
     storeSurvey(runtime as { env?: Record<string, unknown> }, record).catch((err) =>

@@ -1928,6 +1928,21 @@ const atsBlogURL =
     surveyEl.dataset.exposed = selected.map((q) => q.id).join(',');
   }
 
+  // Contexto anónimo para cruzar la encuesta (20 oct 2026): país del formulario, UTMs y
+  // solo el dominio de origen. Sin correo ni CV, como promete el texto de la encuesta.
+  function surveyContext(): Record<string, string> {
+    const ctx: Record<string, string> = {};
+    const country = (document.getElementById('country') as HTMLSelectElement | null)?.value;
+    if (country) ctx.country = country;
+    const ref = landingReferrer();
+    if (ref) {
+      try { ctx.referrerHost = new URL(ref).hostname; } catch { /* ignore */ }
+    }
+    const utm = (window as unknown as { __utm?: Record<string, string> }).__utm || {};
+    for (const [k, v] of Object.entries(utm)) if (typeof v === 'string') ctx[k] = v;
+    return ctx;
+  }
+
   const surveyForm = document.getElementById('cv-survey-form') as HTMLFormElement | null;
   const surveySkip = document.getElementById('cv-survey-skip') as HTMLButtonElement | null;
   const surveySubmit = document.getElementById('cv-survey-submit') as HTMLButtonElement | null;
@@ -1959,7 +1974,7 @@ const atsBlogURL =
       await fetch('/api/cv-survey', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ exposed, answers }),
+        body: JSON.stringify({ exposed, answers, ...surveyContext() }),
       });
     } catch (err) {
       console.warn('CV survey submit failed:', err);
