@@ -31,7 +31,14 @@ function filtrosLimpios(raw: unknown): string | null {
   }
 }
 
-export const POST: APIRoute = async ({ request, locals }) => {
+// Límite simple por IP (60 eventos por minuto), igual que /api/simulator-events. La IP solo se usa
+// como llave temporal del contador (1 minuto) y no se guarda con el evento.
+const RL_MAX = 60;
+const ORIGENES = /^https:\/\/(www\.)?solcaciencia\.com$/;
+
+export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
+  const origin = request.headers.get('origin');
+  if (origin && !ORIGENES.test(origin)) return new Response('forbidden', { status: 403 });
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
@@ -44,6 +51,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const env = (locals as { runtime?: { env?: Record<string, unknown> } }).runtime?.env ?? {};
   const db = env.SIMULATOR_METRICS_DB as D1Database | undefined;
   if (!db) return ok();
+
+  const kv = env.SIMULATOR_METRICS as KVNamespace | undefined;
+  if (kv) {
+    try {
+      const ip = clientAddress ?? request.headers.get('cf-connecting-ip') ?? 'unknown';
+      const rlKey = `vac-rl:${ip}`;
+      const count = Number.parseInt((await kv.get(rlKey)) ?? '0', 10) || 0;
+      if (count >= RL_MAX) return new Response('rate_limited', { status: 429 });
+      await kv.put(rlKey, String(count + 1), { expirationTtl: 60 });
+    } catch {
+      /* el límite falla en suave */
+    }
+  }
 
   const vacanteId = typeof body.vacante_id === 'string' ? body.vacante_id.slice(0, 200) : null;
   let vac: { rol?: string; pais?: string; empresa?: string; nivel?: string; tipo_empresa?: string } | null = null;

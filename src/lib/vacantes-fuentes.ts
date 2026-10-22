@@ -50,20 +50,28 @@ export const PAIS_NOMBRE: Record<PaisObjetivo, string> = {
 };
 
 /**
- * Reconoce el país en textos de ubicación de Workday. Acepta códigos ISO3 ("MEX - …"),
- * nombres en inglés, español y portugués, y las ciudades principales.
+ * Reconoce el país en textos de ubicación de Workday. Dos tipos de pista:
+ * - códigos ISO3 en mayúsculas al inicio de un segmento ("MEX - Ciudad de México"), sensibles a mayúsculas
+ *   para no confundir "Col." (colonia) con Colombia;
+ * - nombres de país en inglés, español y portugués, y solo ciudades sin homónimos en otros países
+ *   (se excluyen Lima, Valencia, Guadalajara, Santiago, Cali: existen en EE. UU., Venezuela o España).
+ * El país principal sale del código ISO del detalle (alpha2Code); esto es para las ubicaciones adicionales.
  */
-const PAIS_RX: Record<PaisObjetivo, RegExp> = {
-  mx: /\b(MEX|Mexico|México|Ciudad de M[eé]xico|Guadalajara|Monterrey|Toluca)\b/i,
-  br: /\b(BRA|Brazil|Brasil|S[aã]o Paulo|Rio de Janeiro|Curitiba|Campinas)\b/i,
-  ar: /\b(ARG|Argentina|Buenos Aires)\b/i,
-  co: /\b(COL|Colombia|Bogot[aá]|Medell[ií]n)\b/i,
-  cl: /\b(CHL|Chile)\b|\bSantiago,? (de )?Chile\b/i,
-  pe: /\b(PER|Peru|Perú|Lima)\b/,
-  es: /\b(ESP|Spain|España|Madrid|Barcelona|Valencia|Sevilla|Bilbao)\b/i,
+const PAIS_ISO3: Record<PaisObjetivo, RegExp> = {
+  mx: /(^|[|,;]\s*)MEX\b/, br: /(^|[|,;]\s*)BRA\b/, ar: /(^|[|,;]\s*)ARG\b/, co: /(^|[|,;]\s*)COL\b/,
+  cl: /(^|[|,;]\s*)CHL\b/, pe: /(^|[|,;]\s*)PER\b/, es: /(^|[|,;]\s*)ESP\b/,
+};
+const PAIS_NOMBRE_RX: Record<PaisObjetivo, RegExp> = {
+  mx: /(?<!new )(?<![\p{L}])(mexico|méxico|ciudad de m[eé]xico|cdmx|monterrey|toluca)(?![\p{L}])/iu,
+  br: /(?<![\p{L}])(brazil|brasil|s[aã]o paulo|rio de janeiro|curitiba|campinas)(?![\p{L}])/iu,
+  ar: /(?<![\p{L}])(argentina|buenos aires)(?![\p{L}])/iu,
+  co: /(?<![\p{L}])(colombia|bogot[aá]|medell[ií]n)(?![\p{L}])/iu,
+  cl: /(?<![\p{L}])(chile)(?![\p{L}])/iu,
+  pe: /(?<![\p{L}])(peru|perú)(?![\p{L}])/iu,
+  es: /(?<![\p{L}])(spain|españa|espanha|madrid|barcelona)(?![\p{L}])/iu,
 };
 
 export function paisesEnTexto(texto: string | null | undefined): PaisObjetivo[] {
   if (!texto) return [];
-  return PAISES_OBJETIVO.filter((p) => PAIS_RX[p].test(texto));
+  return PAISES_OBJETIVO.filter((p) => PAIS_ISO3[p].test(texto) || PAIS_NOMBRE_RX[p].test(texto));
 }

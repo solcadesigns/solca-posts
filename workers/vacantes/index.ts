@@ -9,7 +9,7 @@
  * Carga manual (primera carga o pruebas): GET /run?key=<RUN_KEY>[&fuente=iqvia]
  * Recalcular rol, nivel y descriptores tras cambiar reglas: GET /run?key=<RUN_KEY>&modo=reprocesar
  */
-import { FUENTES, paisesEnTexto, type FuenteWorkday } from '../../src/lib/vacantes-fuentes';
+import { FUENTES, PAISES_OBJETIVO, paisesEnTexto, type FuenteWorkday } from '../../src/lib/vacantes-fuentes';
 import {
   CLASIFICACION_VERSION,
   clasificarModalidad,
@@ -164,6 +164,7 @@ async function leerFuente(env: Env, f: FuenteWorkday, ahora: string): Promise<Re
     // 1. Listado completo filtrado a los países objetivo.
     const postings: Posting[] = [];
     let total = Infinity;
+    let leidas = 0;
     for (let p = 0; p < MAX_PAGES && p * PAGE < total; p++) {
       const d = await postJson(`${base}/jobs`, {
         appliedFacets: { [fac.param]: fac.ids },
@@ -174,35 +175,51 @@ async function leerFuente(env: Env, f: FuenteWorkday, ahora: string): Promise<Re
       if (p === 0) total = d.total ?? 0;
       const page: Posting[] = d.jobPostings ?? [];
       if (!page.length) break;
-      postings.push(...page);
+      // Workday a veces devuelve entradas incompletas (solo bulletFields): no se pueden leer.
+      postings.push(...page.filter((x) => x.externalPath && x.title));
+      leidas += page.length;
     }
-    if (total > MAX_PAGES * PAGE) res.estado = 'parcial';
+    // 1. Lectura incompleta (página vacía antes de tiempo, tope de páginas): no se cierra nada.
+    if (leidas < Math.min(total, MAX_PAGES * PAGE)) res.estado = 'parcial';
 
     const idDe = (x: Posting) => `${f.id}:${x.bulletFields?.[0] ?? x.externalPath}`;
     const vistos = new Map(postings.map((x) => [idDe(x), x]));
     res.vistas = vistos.size;
 
-    // 2. Cuáles ya conocemos.
-    const conocidas = new Set<string>();
-    const rows = await env.DB.prepare('SELECT id FROM vacantes WHERE fuente = ?').bind(f.id).all<{ id: string }>();
-    for (const r of rows.results ?? []) conocidas.add(r.id);
+    // 2. Cuáles ya conocemos (guardadas o descartadas antes).
+    const conocidas = new Map<string, string>();
+    const rows = await env.DB.prepare('SELECT id, titulo FROM vacantes WHERE fuente = ?').bind(f.id).all<{ id: string; titulo: string }>();
+    for (const r of (rows.results ?? []) as Array<{ id: string; titulo: string }>) conocidas.set(r.id, r.titulo);
+    const descartadas = new Set<string>();
+    const desc = await env.DB.prepare('SELECT id FROM vacantes_descartadas WHERE fuente = ?').bind(f.id).all<{ id: string }>();
+    for (const r of (desc.results ?? []) as Array<{ id: string }>) descartadas.add(r.id);
 
     // 3. Las conocidas que siguen publicadas: actualizar última vez (y reabrir si estaban cerradas).
+    // Si la empresa cambió el título, se actualiza y se marca para reclasificar.
     const siguen = [...vistos.keys()].filter((id) => conocidas.has(id));
     const upd = env.DB.prepare('UPDATE vacantes SET ultima_vez = ?, activa = 1, fecha_cierre = NULL WHERE id = ?');
-    for (let i = 0; i < siguen.length; i += 50) {
-      await env.DB.batch(siguen.slice(i, i + 50).map((id) => upd.bind(ahora, id)));
-    }
+    const updTitulo = env.DB.prepare(
+      // clasificacion_version vacía (no NULL: la columna es NOT NULL) para que reprocesar la tome.
+      "UPDATE vacantes SET ultima_vez = ?, activa = 1, fecha_cierre = NULL, titulo = ?, clasificacion_version = '', descriptores_version = NULL WHERE id = ?",
+    );
+    const stmtsSiguen = siguen.map((id) => {
+      const nuevoTitulo = vistos.get(id)!.title;
+      return nuevoTitulo && nuevoTitulo !== conocidas.get(id) ? updTitulo.bind(ahora, nuevoTitulo, id) : upd.bind(ahora, id);
+    });
+    for (let i = 0; i < stmtsSiguen.length; i += 50) await env.DB.batch(stmtsSiguen.slice(i, i + 50));
 
     // 4. Las nuevas: leer el detalle, clasificar e insertar.
-    const nuevas = [...vistos.entries()].filter(([id]) => !conocidas.has(id)).slice(0, MAX_NEW_DETAILS);
-    if (nuevas.length < [...vistos.keys()].filter((id) => !conocidas.has(id)).length) res.estado = 'parcial';
+    const porLeer = [...vistos.entries()].filter(([id]) => !conocidas.has(id) && !descartadas.has(id));
+    const nuevas = porLeer.slice(0, MAX_NEW_DETAILS);
+    if (nuevas.length < porLeer.length) res.estado = 'parcial';
     const ins = env.DB.prepare(
-      `INSERT OR REPLACE INTO vacantes (id, fuente, empresa, tipo_empresa, titulo, url, pais, paises, ubicacion, modalidad,
+      `INSERT INTO vacantes (id, fuente, empresa, tipo_empresa, titulo, url, pais, paises, ubicacion, modalidad,
          rol, nivel, fecha_publicacion, primera_vez, ultima_vez, activa, fecha_cierre, descripcion, clasificacion_version)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NULL, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NULL, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET ultima_vez = excluded.ultima_vez, activa = 1, fecha_cierre = NULL`,
     );
     const pendientes: D1PreparedStatement[] = [];
+    const insDesc = env.DB.prepare('INSERT OR IGNORE INTO vacantes_descartadas (id, fuente, ts, motivo) VALUES (?, ?, ?, ?)');
     let insertadas = 0;
     await enParalelo(nuevas, CONCURRENCY, async ([id, x]) => {
       try {
@@ -212,15 +229,25 @@ async function leerFuente(env: Env, f: FuenteWorkday, ahora: string): Promise<Re
         const ubic = [info.location, ...(info.additionalLocations ?? []), info.country?.descriptor, x.locationsText]
           .filter(Boolean)
           .join(' | ');
-        const paises = paisesEnTexto(ubic);
-        if (!paises.length) return; // la faceta coincidió pero ninguna ubicación es de un país objetivo
-        const principal = paisesEnTexto(`${info.country?.descriptor ?? ''} ${info.location ?? ''}`)[0] ?? paises[0];
+        // País principal: el código ISO que trae Workday (más fiable que el texto). El resto, del texto de ubicaciones.
+        const alpha2: string | undefined = info.jobRequisitionLocation?.country?.alpha2Code ?? info.country?.alpha2Code;
+        const principalIso = alpha2 ? alpha2.toLowerCase() : undefined;
+        const paises = [...new Set([
+          ...(principalIso && (PAISES_OBJETIVO as readonly string[]).includes(principalIso) ? [principalIso] : []),
+          ...paisesEnTexto(ubic),
+        ])];
+        if (!paises.length) {
+          // La faceta coincidió pero ninguna ubicación es de un país objetivo: no volver a pedirla.
+          pendientes.push(insDesc.bind(id, f.id, ahora, 'sin_pais_objetivo'));
+          return;
+        }
+        const principal = principalIso && paises.includes(principalIso) ? principalIso : paises[0];
         const descripcion = info.jobDescription ? textoPlano(String(info.jobDescription)) : null;
         insertadas++;
         pendientes.push(
           ins.bind(
             id, f.id, f.empresa, f.tipo, titulo,
-            info.externalUrl ?? `https://${f.host}/${f.site}${x.externalPath}`,
+            typeof info.externalUrl === 'string' && info.externalUrl.startsWith('https://') ? info.externalUrl : `https://${f.host}/${f.site}${x.externalPath}`,
             principal, paises.join(','), (info.location ?? x.locationsText ?? '').slice(0, 300),
             clasificarModalidad(`${info.remoteType ?? ''} ${titulo}`),
             clasificarRolEmpresa(titulo, f.tipo), clasificarNivel(titulo),
@@ -238,23 +265,32 @@ async function leerFuente(env: Env, f: FuenteWorkday, ahora: string): Promise<Re
     for (let i = 0; i < pendientes.length; i += 50) await env.DB.batch(pendientes.slice(i, i + 50));
     res.nuevas = insertadas;
 
-    // 5. Cerrar las que ya no aparecen. Solo si la lectura fue completa: una falla no cierra nada.
+    // 5. Cerrar las que ya no aparecen. Solo si la lectura fue completa (una falla no cierra nada) y si
+    // tampoco apareció en la lectura anterior: no se ve desde hace más de 30 horas. La fecha de cierre
+    // es el último día en que se vio.
     if (res.estado === 'ok') {
-      const activas = await env.DB.prepare('SELECT id FROM vacantes WHERE fuente = ? AND activa = 1').bind(f.id).all<{ id: string }>();
-      const cerrar = ((activas.results ?? []) as Array<{ id: string }>).map((r) => r.id).filter((id) => !vistos.has(id));
+      const limite = new Date(Date.parse(ahora) - 30 * 3600 * 1000).toISOString();
+      const activas = await env.DB.prepare('SELECT id, ultima_vez FROM vacantes WHERE fuente = ? AND activa = 1 AND ultima_vez < ?')
+        .bind(f.id, limite)
+        .all<{ id: string; ultima_vez: string }>();
+      const cerrar = ((activas.results ?? []) as Array<{ id: string; ultima_vez: string }>).filter((r) => !vistos.has(r.id));
       const cls = env.DB.prepare('UPDATE vacantes SET activa = 0, fecha_cierre = ? WHERE id = ?');
-      for (let i = 0; i < cerrar.length; i += 50) await env.DB.batch(cerrar.slice(i, i + 50).map((id: string) => cls.bind(ahora.slice(0, 10), id)));
+      for (let i = 0; i < cerrar.length; i += 50) await env.DB.batch(cerrar.slice(i, i + 50).map((r) => cls.bind(r.ultima_vez.slice(0, 10), r.id)));
       res.cerradas = cerrar.length;
     }
   } catch (err) {
     res.estado = 'error';
     res.error = String(err).slice(0, 300);
   }
-  await env.DB.prepare(
-    'INSERT INTO vacantes_corridas (ts, fuente, estado, vistas, nuevas, cerradas, error) VALUES (?, ?, ?, ?, ?, ?, ?)',
-  )
-    .bind(ahora, res.fuente, res.estado, res.vistas, res.nuevas, res.cerradas, res.error ?? null)
-    .run();
+  try {
+    await env.DB.prepare(
+      'INSERT INTO vacantes_corridas (ts, fuente, estado, vistas, nuevas, cerradas, error) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    )
+      .bind(ahora, res.fuente, res.estado, res.vistas, res.nuevas, res.cerradas, res.error ?? null)
+      .run();
+  } catch (err) {
+    console.error('bitácora falló', f.id, String(err));
+  }
   return res;
 }
 

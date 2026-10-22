@@ -181,7 +181,7 @@ const actualizadoTxt = actualizado
       </select>
       <select name="dias" aria-label="Publicación">
         <option value="">Cualquier fecha</option>
-        <option value="1" selected={diasOk === '1'}>Últimas 24 horas</option>
+        <option value="1" selected={diasOk === '1'}>Hoy y ayer</option>
         <option value="7" selected={diasOk === '7'}>Última semana</option>
         <option value="30" selected={diasOk === '30'}>Último mes</option>
       </select>
@@ -247,7 +247,7 @@ const actualizadoTxt = actualizado
       <h2>Cómo funciona</h2>
       <ul>
         <li>Cada mañana leemos los portales de empleo oficiales de {FUENTES.map((f) => f.empresa).join(', ')}.</li>
-        <li>Solo mostramos vacantes con al menos una ubicación en México, Brasil, Argentina, Colombia, Chile, Perú o España. Cuando una vacante deja de aparecer en el portal, la quitamos.</li>
+        <li>Solo mostramos vacantes con al menos una ubicación en México, Brasil, Argentina, Colombia, Chile, Perú o España. Cuando una vacante deja de aparecer en el portal en dos lecturas completas seguidas, la quitamos.</li>
         <li>El rol y el nivel se asignan automáticamente a partir del título, así que pueden tener errores. Revisa siempre la oferta original.</li>
         <li>No somos intermediarios: la postulación se hace en el sitio de cada empresa.</li>
       </ul>

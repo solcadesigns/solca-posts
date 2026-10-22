@@ -3,13 +3,13 @@
  *
  * Reglas, sin IA: cero tokens y reproducible. Como la descripción completa se
  * guarda en D1, se puede volver a extraer todo cuando cambien las reglas
- * (sube DESCRIPTORES_VERSION y corre el worker con modo=descriptores).
+ * (sube DESCRIPTORES_VERSION y corre el worker con modo=reprocesar).
  *
  * Sirve para el análisis de contenido (mensual, trimestral, anual): qué piden las
  * vacantes de cada rol y país, y cómo cambia con el tiempo. Ver _docs/VACANTES_BUSCADOR.md.
  */
 
-export const DESCRIPTORES_VERSION = 'd1';
+export const DESCRIPTORES_VERSION = 'd2';
 
 export interface Descriptores {
   idioma_anuncio: 'es' | 'en' | 'pt' | null;
@@ -45,19 +45,47 @@ function idiomaAnuncio(t: string): Descriptores['idioma_anuncio'] {
 
 const RX_INGLES = /(english|ingl[eé]s|ingl[eê]s)/i;
 
+const OTRO_IDIOMA = /(spanish|espa[nñ]ol|espanhol|castellano|portugu[eéê]s|portuguese|french|franc[eéê]s|german|alem[aã]n|alem[aá]o|italian|italiano|mandarin|korean|japanese|estonian|local (office )?language|idioma local)/gi;
+const N_NATIVO = /(native|nativo|bilingual|biling[uü]e|mother tongue)/i;
+const N_AVANZADO = /(\bC1\b|\bC2\b|fluent|fluency|fluid|fluido|fluente|advanced?|avanzado|avan[cç]ado|proficien|excellent|excelente|full professional|professional|strong|high level|\balto\b|alto nivel|n[ií]vel alto|business english|excellent command|command of)/i;
+const N_INTERMEDIO = /(\bB2\b|\bB1\b|intermedi|good command|good level|buen nivel|bom n[ií]vel|conversational|conversacional|working knowledge)/i;
+const N_BASICO = /(\bA2\b|\bA1\b|b[aá]sico|basic)/i;
+
+function nivelEn(texto: string): Descriptores['ingles'] | null {
+  if (N_NATIVO.test(texto)) return 'nativo';
+  if (N_AVANZADO.test(texto)) return 'avanzado';
+  if (N_INTERMEDIO.test(texto)) return 'intermedio';
+  if (N_BASICO.test(texto)) return 'basico';
+  return null;
+}
+
+/**
+ * Nivel de inglés. Primero busca el nivel pegado a la palabra (desde el idioma anterior, si lo hay,
+ * hasta el fin de la frase): "native Spanish and fluent English" → avanzado. Si ahí no hay nivel,
+ * acepta un nivel compartido antes de la lista de idiomas: "Fluency in Spanish and English" → avanzado.
+ */
 function nivelIngles(t: string): Descriptores['ingles'] {
   if (!RX_INGLES.test(t)) return 'no_mencionado';
-  // Ventana de texto alrededor de cada mención del idioma.
-  const ventanas: string[] = [];
   const rx = /(english|ingl[eé]s|ingl[eê]s)/gi;
+  let mejor: Descriptores['ingles'] | null = null;
+  const rango = { nativo: 4, avanzado: 3, intermedio: 2, basico: 1 } as Record<string, number>;
   let m: RegExpExecArray | null;
-  while ((m = rx.exec(t))) ventanas.push(t.slice(Math.max(0, m.index - 80), m.index + 80));
-  const v = ventanas.join(' ');
-  if (/(native|nativo|bilingual|biling[uü]e|mother tongue)/i.test(v)) return 'nativo';
-  if (/(\bC1\b|\bC2\b|fluent|fluency|fluid|fluido|fluente|advanced|avanzado|avan[cç]ado|proficien|excellent|excelente|full professional|strong|high level|alto nivel|n[ií]vel alto)/i.test(v)) return 'avanzado';
-  if (/(\bB2\b|\bB1\b|intermedi|good command|buen nivel|bom n[ií]vel|conversational|conversacional|working knowledge)/i.test(v)) return 'intermedio';
-  if (/(\bA2\b|\bA1\b|b[aá]sico|basic)/i.test(v)) return 'basico';
-  return 'mencionado';
+  while ((m = rx.exec(t))) {
+    const antesFull = t.slice(Math.max(0, m.index - 60), m.index).split(/[.•\n;]/).pop() ?? '';
+    const despues = t.slice(m.index, m.index + m[0].length + 70).split(/[.•\n]/)[0];
+    // Tramo inmediato: después del último idioma distinto que aparezca antes.
+    let corte = -1;
+    for (const o of antesFull.matchAll(OTRO_IDIOMA)) corte = (o.index ?? 0) + o[0].length;
+    const inmediato = (corte >= 0 ? antesFull.slice(corte) : antesFull) + despues;
+    let nivel = nivelEn(inmediato);
+    if (!nivel && corte >= 0) {
+      // Nivel compartido antes de la lista ("Excellent command of Spanish and English").
+      const previo = antesFull.slice(0, antesFull.search(OTRO_IDIOMA));
+      nivel = nivelEn(previo);
+    }
+    if (nivel && (!mejor || rango[nivel] > rango[mejor])) mejor = nivel;
+  }
+  return mejor ?? 'mencionado';
 }
 
 const IDIOMAS: Array<[string, RegExp]> = [
@@ -69,8 +97,9 @@ const IDIOMAS: Array<[string, RegExp]> = [
 ];
 
 const GRADOS: Array<[string, RegExp]> = [
-  ['licenciatura', /(bachelor|\bBSc?\b|\bB\.S\.|licenciatura|gradua[cç][aã]o|graduado|grado universitario|t[ií]tulo universitario|degree in|university degree|ensino superior|carrera (profesional|universitaria)|ingenier[ií]a en|qu[ií]mico farmac)/i],
-  ['maestria', /(master|\bMSc?\b|\bM\.S\.|maestr[ií]a|mestrado|m[aá]ster|\bMBA\b|posgrado|p[oó]s-gradua|postgraduate)/i],
+  ['licenciatura', /(bachelor|\bBSc?\b|\bB\.S\.|licenciatura|gradua[cç][aã]o|graduado|grado universitario|t[ií]tulo universitario|(?<!(master'?s?|doctoral|advanced|graduate) )degree in|university degree|ensino superior|carrera (profesional|universitaria)|ingenier[ií]a en|qu[ií]mico farmac)/i],
+  // Sin "MS" suelto (MS Office) ni "master" suelto (Scrum Master, master data).
+  ['maestria', /(master'?s|master of|masters? degree|\bM\.?Sc\b|\bM\.S\.|maestr[ií]a|mestrado|m[aá]ster (en|in|universitario)|\bMBA\b|posgrado|p[oó]s-gradua|postgraduate)/i],
   ['doctorado', /(\bPh\.?\s?D\b|doctorate|doctoral degree|doctorado|doutorado|\bMD\b|medical degree|m[eé]dico cirujano|\bPharmD\b)/i],
 ];
 
@@ -130,7 +159,7 @@ export function extraerDescriptores(descripcion: string | null | undefined, titu
 
   // Años de experiencia: el mínimo que se menciona ("3+ years", "mínimo 2 años", "2 a 4 anos").
   let anios_min: number | null = null;
-  const rxAnios = /(\d{1,2})\s*(?:\+|-|–|\/|a|to|ou|o)?\s*(?:\d{1,2}\s*)?(?:\+\s*)?(?:years?|yrs?|años|anos)\b/gi;
+  const rxAnios = /(?<!\d)(\d{1,2})(?!\d)\s*(?:\+|-|–|\/|a|to|ou|o)?\s*(?:\d{1,2}\s*)?(?:\+\s*)?(?:years?|yrs?|años?|anos?)(?![\p{L}])/giu;
   let m: RegExpExecArray | null;
   while ((m = rxAnios.exec(t))) {
     const n = Number.parseInt(m[1], 10);
@@ -140,12 +169,13 @@ export function extraerDescriptores(descripcion: string | null | undefined, titu
     const antes = t.slice(Math.max(0, m.index - 40), m.index).split(/[.•\n]/).pop() ?? '';
     const despues = t.slice(m.index, m.index + m[0].length + 45).split(/[.•\n]/)[0];
     const ctx = antes + despues;
+    if (/(edad|\bage\b|idade)/i.test(antes)) continue; // "edad de 25 a 40 años"
     if (n > 0 && n <= 25 && /(experien|exp\.|trabaj|work|atua)/i.test(ctx)) anios_min = anios_min === null ? n : Math.min(anios_min, n);
   }
 
   let contrato: Descriptores['contrato'] = null;
   if (/(intern\b|internship|trainee|becari|est[aá]gi|practicante|pasant|aprendiz|graduate program)/i.test(titulo)) contrato = 'practicas';
-  else if (/(freelance|independent contractor|contratista independiente|aut[oô]nomo)/i.test(t)) contrato = 'freelance';
+  else if (/(freelance|independent contractor|contratista independiente)/i.test(t)) contrato = 'freelance';
   else if (/(temporary|temporal|tempor[aá]rio|fixed[- ]term|contrato por tiempo determinado|maternity cover|sustituci[oó]n|interinidad)/i.test(t)) contrato = 'temporal';
 
   return {

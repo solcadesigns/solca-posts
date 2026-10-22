@@ -10,7 +10,7 @@
  * queda como 'no_especificado'. Al cambiar reglas, sube CLASIFICACION_VERSION.
  */
 
-export const CLASIFICACION_VERSION = 'r5';
+export const CLASIFICACION_VERSION = 'r6';
 
 export interface RolVacante {
   id: string;
@@ -46,6 +46,8 @@ const ROL_REGLAS: Array<[string, RegExp]> = [
   ['clinical_pm', /(clinical project|local trial manager|global trial manager|trial delivery manager|clinical team lead|team lead - project manager|clinical project manager|clinical trial manager|\bCTM\b|study manager|global study (lead|associate director|director)|trial clinical delivery|gerente de proyectos? cl[ií]nic|project manager.*(clinical|study|trial)|(clinical|study|trial|biosampling).*project manager|gestor de projetos? cl[ií]nic)/i],
   ['investigacion_clinica', /(study process|\bCRA ?\d?\b|start[- ]?up (specialist|associate)|startup associate|set[- ]?up specialist|site navigator|site enrollment|clin\. operations|centralized monitoring|clinical monitoring|adjudication|(psych|independent) rater|clinical trial finance|contracts? (and budget|negotiat|spec|analyst)|remote monitoring|clinical outcome|\bDCT\b|estudios cl[ií]nicos|global study associate|clinical rese?a?r?ch|investigaci[oó]n cl[ií]nica|pesquisa cl[ií]nica|investiga[cç][aã]o cl[ií]nica|monitor (cl[ií]nico|de ensayos|de estudos)|central monitor|\bsite (manager|management|monitor|activation|contracts?|payments?|specialist|engagement|identification)|feasibility|informed consent|investigator payments?|grants (specialist|analyst)|study (start[- ]up|coordinator|support|team)|patient recruitment|\bTMF\b|\bRBQM\b|\bCRC\b|clinical trial (assistant|associate|coordinator)|\bCTA\b|clinical operations|operaciones cl[ií]nicas|opera[cç][oõ]es cl[ií]nicas|in-house clinical|trial vendor)/i],
   ['medical_affairs', /(clinical (science|development)|medical (strategy|contact|ecosystem|education|representative)|healthcare ecosystem|opera[cç][oõ]es m[eé]dicas|eventos m[eé]dicos|medical (advisor|affairs|manager|lead|director|information|writer|writing|scientist|excellence|doctor|spain|mexico|m[eé]xico)|director medical|scientific affairs|physician|asesor m[eé]dico|gerente m[eé]dico|director m[eé]dico|assessor m[eé]dico|redactor m[eé]dico|clinical scientist)/i],
+  // "Consultor de ventas" es un puesto comercial, no consultoría.
+  ['ventas', /consultor[a]? (de ventas|comercial|de vendas)/i],
   ['consulting', /(consultant|consultor|consultoria|consultoría|consulting|advisory)/i],
   ['laboratorio_rd', /(scientist|cient[ií]fico|research (associate|scientist)|R&D|I\+D|P&D|laborator|bioanal|formulat|analista de laborat)/i],
   ['ventas', /(delegad|delega@|agente de propaganda|promoci[oó]n m[eé]dica|visita m[eé]dica|\bAPM\b|\bKAE\b|ejecutivo de cuenta|account manager|gerente (distrital|de distrito|de cuentas|de area|de área)|area manager|business unit (director|manager)|biopharmaceutical rep|therapeutic area specialist|disease area specialist|professional relations|assessor t[eé]cnico|field application|mapping specialist|market development|product specialist|clinical selling|especialista cl[ií]nico|promotor|sell out|nutriasesor|\brep\b|sales|ventas|vendas|representante (m[eé]dico|de ventas|comercial|de salud|en salud)|heal?th representative|visitador|propagandista|key account|\bKAM\b|territory)/i],

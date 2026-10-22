@@ -662,7 +662,7 @@ interface VacantesStats {
   cerradas_7d: number;
   activas_por_pais: Record<string, number>;
   activas_por_rol: Record<string, number>;
-  fuentes_con_error_7d: Array<{ fuente: string; errores: number; ultimo_error: string | null }>;
+  fuentes_con_problemas_7d: Array<{ fuente: string; errores: number; parciales: number; ultimo_error: string | null }>;
   ultima_corrida: string | null;
   eventos_7d: Record<string, number>;
   personas_unicas_7d: number;
@@ -678,13 +678,27 @@ async function buildVacantes(db: D1Database, sinceIso: string): Promise<Vacantes
     Object.fromEntries((rows ?? []).map((r) => [r.k ?? 'sin_dato', r.n]));
   const [tot, nuevas, cerradas, porPais, porRol, errores, ultima, evs, personas, clRol, clPais, tools, camp] = await db.batch([
     db.prepare('SELECT COUNT(*) AS n FROM vacantes WHERE activa = 1'),
-    db.prepare('SELECT COUNT(*) AS n FROM vacantes WHERE primera_vez >= ?').bind(sinceIso),
+    // Nuevas sin contar la carga inicial de cada fuente (su primera corrida).
+    db.prepare(
+      `SELECT COUNT(*) AS n FROM vacantes v WHERE primera_vez >= ?
+         AND primera_vez > (SELECT MIN(ts) FROM vacantes_corridas c WHERE c.fuente = v.fuente)`,
+    ).bind(sinceIso),
     db.prepare('SELECT COUNT(*) AS n FROM vacantes WHERE fecha_cierre >= ?').bind(sinceDay),
-    db.prepare('SELECT pais AS k, COUNT(*) AS n FROM vacantes WHERE activa = 1 GROUP BY pais'),
+    // Por país con todas las ubicaciones (una vacante multi-país cuenta en cada país), igual que el filtro de la página.
+    db.prepare(
+      `SELECT p.k AS k, COUNT(*) AS n FROM vacantes v
+         JOIN (SELECT 'mx' AS k UNION ALL SELECT 'br' UNION ALL SELECT 'ar' UNION ALL SELECT 'co'
+               UNION ALL SELECT 'cl' UNION ALL SELECT 'pe' UNION ALL SELECT 'es') p
+           ON (',' || v.paises || ',') LIKE '%,' || p.k || ',%'
+       WHERE v.activa = 1 GROUP BY p.k`,
+    ),
     db.prepare('SELECT rol AS k, COUNT(*) AS n FROM vacantes WHERE activa = 1 GROUP BY rol'),
     db.prepare(
-      `SELECT fuente, COUNT(*) AS errores, MAX(error) AS ultimo_error FROM vacantes_corridas
-       WHERE ts >= ? AND estado = 'error' GROUP BY fuente`,
+      `SELECT fuente,
+              SUM(CASE WHEN estado = 'error' THEN 1 ELSE 0 END) AS errores,
+              SUM(CASE WHEN estado = 'parcial' THEN 1 ELSE 0 END) AS parciales,
+              (SELECT error FROM vacantes_corridas c2 WHERE c2.fuente = c.fuente AND c2.estado = 'error' ORDER BY c2.ts DESC LIMIT 1) AS ultimo_error
+       FROM vacantes_corridas c WHERE ts >= ? AND estado != 'ok' GROUP BY fuente`,
     ).bind(sinceIso),
     db.prepare('SELECT MAX(ts) AS ts FROM vacantes_corridas'),
     db.prepare('SELECT evento AS k, COUNT(*) AS n FROM vacantes_eventos WHERE ts >= ? GROUP BY evento').bind(sinceIso),
@@ -707,7 +721,7 @@ async function buildVacantes(db: D1Database, sinceIso: string): Promise<Vacantes
     cerradas_7d: n(cerradas),
     activas_por_pais: toMap(porPais.results as KN),
     activas_por_rol: toMap(porRol.results as KN),
-    fuentes_con_error_7d: (errores.results ?? []) as VacantesStats['fuentes_con_error_7d'],
+    fuentes_con_problemas_7d: (errores.results ?? []) as VacantesStats['fuentes_con_problemas_7d'],
     ultima_corrida: ((ultima.results?.[0] as { ts?: string })?.ts) ?? null,
     eventos_7d: toMap(evs.results as KN),
     personas_unicas_7d: n(personas),
