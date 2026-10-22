@@ -40,6 +40,41 @@ Inspiración: https://bertamunoz02.github.io/busqueda_empleo/. Su repositorio no
 - **Fallas:** `SELECT * FROM vacantes_corridas WHERE estado != 'ok' ORDER BY ts DESC`
 - **Agregar fuente Workday:** una línea en `vacantes-fuentes.ts`, con host, tenant y site tomados de la URL del portal.
 
+## Descriptores para análisis de contenido (desde 22 oct 2026)
+
+Se extraen de la descripción con reglas, sin IA (`src/lib/vacantes-descriptores.ts`, versión en `DESCRIPTORES_VERSION`). La descripción completa se guarda, así que todo se puede volver a extraer: al cambiar reglas, sube la versión y corre `/run?key=…&modo=reprocesar` (el cron también reprocesa un lote cada día).
+
+- **Columnas en `vacantes`:**
+  - `idioma_anuncio` (es, en, pt);
+  - `ingles` (no_mencionado, mencionado, basico, intermedio, avanzado, nativo);
+  - `grado_min` (el grado más bajo que acepta la vacante);
+  - `anios_min` (años mínimos de experiencia mencionados);
+  - `contrato` (temporal, freelance, practicas; vacío si no lo dice);
+  - `sponsor_dedicado` (CRO dedicada a un solo cliente o modelo FSP);
+  - `inclusion` (convocatoria para personas con discapacidad o de diversidad).
+- **Tabla `vacantes_etiquetas`** (`tipo`, `valor`): idiomas, grados aceptados, áreas terapéuticas y herramientas o normas (GCP/ICH, GMP, SAS, Python, SQL, Power BI, Excel, Veeva, Medidata, CTMS, EDC…).
+- **Lo que no se extrae:** salario. Casi nunca viene en las vacantes de la región, y las coincidencias de texto salen de párrafos genéricos de beneficios.
+
+**Prueba sobre 1,066 vacantes (22 oct 2026):**
+- 53 % menciona inglés; de las que lo mencionan, la mayoría pide nivel avanzado.
+- 50 % menciona años de experiencia mínimos.
+- 20 % menciona GCP o ICH.
+- 86 % de los anuncios está en inglés.
+
+Son resultados de reglas: antes de publicar una cifra, valida una muestra a mano.
+
+### Reglas para que el dato sea defendible
+
+- **Qué es el dato.** Es un censo de lo que publican estas empresas en sus portales, no del mercado laboral completo. El contenido tiene que decirlo así.
+- **Panel fijo para tendencias.** Cada fuente tiene fecha de `alta` en `vacantes-fuentes.ts`. Al comparar periodos, usa solo las fuentes con alta anterior al primer periodo; sumar fuentes infla las cifras sin que el mercado cambie.
+- **Métricas por periodo (mes, trimestre, año), cortadas por país, rol, nivel, empresa y tipo de empresa:**
+  - vacantes abiertas al cierre del periodo (de `primera_vez` y `fecha_cierre`);
+  - nuevas y cerradas;
+  - días publicada (mediana, de `fecha_cierre` menos `primera_vez`);
+  - porcentaje de puestos de entrada, de remotos, de los que piden inglés avanzado y de los que piden doctorado;
+  - herramientas y áreas terapéuticas más pedidas;
+  - cambio contra el periodo anterior y contra el mismo periodo del año previo.
+
 ## Medición
 
 `vacantes_eventos` guarda cuatro eventos:

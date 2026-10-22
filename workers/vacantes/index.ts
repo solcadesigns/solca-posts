@@ -7,6 +7,7 @@
  * No usa IA: cero tokens. Diseño: _docs/VACANTES_BUSCADOR.md.
  *
  * Carga manual (primera carga o pruebas): GET /run?key=<RUN_KEY>[&fuente=iqvia]
+ * Recalcular rol, nivel y descriptores tras cambiar reglas: GET /run?key=<RUN_KEY>&modo=reprocesar
  */
 import { FUENTES, paisesEnTexto, type FuenteWorkday } from '../../src/lib/vacantes-fuentes';
 import {
@@ -15,6 +16,7 @@ import {
   clasificarNivel,
   clasificarRolEmpresa,
 } from '../../src/lib/vacantes-clasificar';
+import { DESCRIPTORES_VERSION, extraerDescriptores } from '../../src/lib/vacantes-descriptores';
 
 interface Env {
   DB: D1Database;
@@ -90,6 +92,47 @@ function textoPlano(html: string): string {
     .slice(0, DESC_MAX);
 }
 
+/** Sentencias que guardan los descriptores de una vacante (columnas + etiquetas). */
+function descriptoresStmts(db: D1Database, id: string, titulo: string, descripcion: string | null): D1PreparedStatement[] {
+  const d = extraerDescriptores(descripcion, titulo);
+  const out: D1PreparedStatement[] = [
+    db.prepare(
+      `UPDATE vacantes SET idioma_anuncio = ?, ingles = ?, grado_min = ?, anios_min = ?, contrato = ?,
+         sponsor_dedicado = ?, inclusion = ?, descriptores_version = ? WHERE id = ?`,
+    ).bind(d.idioma_anuncio, d.ingles, d.grado_min, d.anios_min, d.contrato, d.sponsor_dedicado ? 1 : 0, d.inclusion ? 1 : 0, DESCRIPTORES_VERSION, id),
+    db.prepare('DELETE FROM vacantes_etiquetas WHERE vacante_id = ?').bind(id),
+  ];
+  const ins = db.prepare('INSERT OR IGNORE INTO vacantes_etiquetas (vacante_id, tipo, valor) VALUES (?, ?, ?)');
+  for (const e of d.etiquetas) out.push(ins.bind(id, e.tipo, e.valor));
+  return out;
+}
+
+/**
+ * Recalcula rol, nivel y descriptores de las vacantes guardadas con una versión
+ * anterior de las reglas. Corre en lotes; el cron lo llama cada día.
+ */
+async function reprocesar(env: Env, limite = 400): Promise<number> {
+  const rows = await env.DB.prepare(
+    `SELECT id, titulo, descripcion, tipo_empresa FROM vacantes
+     WHERE clasificacion_version IS NOT ? OR descriptores_version IS NOT ? LIMIT ?`,
+  )
+    .bind(CLASIFICACION_VERSION, DESCRIPTORES_VERSION, limite)
+    .all<{ id: string; titulo: string; descripcion: string | null; tipo_empresa: string }>();
+  const lista = (rows.results ?? []) as Array<{ id: string; titulo: string; descripcion: string | null; tipo_empresa: string }>;
+  const upd = env.DB.prepare('UPDATE vacantes SET rol = ?, nivel = ?, clasificacion_version = ? WHERE id = ?');
+  let stmts: D1PreparedStatement[] = [];
+  for (const r of lista) {
+    stmts.push(upd.bind(clasificarRolEmpresa(r.titulo, r.tipo_empresa), clasificarNivel(r.titulo), CLASIFICACION_VERSION, r.id));
+    stmts.push(...descriptoresStmts(env.DB, r.id, r.titulo, r.descripcion));
+    if (stmts.length >= 80) {
+      await env.DB.batch(stmts);
+      stmts = [];
+    }
+  }
+  if (stmts.length) await env.DB.batch(stmts);
+  return lista.length;
+}
+
 async function enParalelo<T>(items: T[], n: number, fn: (x: T) => Promise<void>): Promise<void> {
   let i = 0;
   const workers = Array.from({ length: Math.min(n, items.length) }, async () => {
@@ -160,6 +203,7 @@ async function leerFuente(env: Env, f: FuenteWorkday, ahora: string): Promise<Re
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NULL, ?, ?)`,
     );
     const pendientes: D1PreparedStatement[] = [];
+    let insertadas = 0;
     await enParalelo(nuevas, CONCURRENCY, async ([id, x]) => {
       try {
         const det = await getJson(`${base}${x.externalPath}`);
@@ -171,6 +215,8 @@ async function leerFuente(env: Env, f: FuenteWorkday, ahora: string): Promise<Re
         const paises = paisesEnTexto(ubic);
         if (!paises.length) return; // la faceta coincidió pero ninguna ubicación es de un país objetivo
         const principal = paisesEnTexto(`${info.country?.descriptor ?? ''} ${info.location ?? ''}`)[0] ?? paises[0];
+        const descripcion = info.jobDescription ? textoPlano(String(info.jobDescription)) : null;
+        insertadas++;
         pendientes.push(
           ins.bind(
             id, f.id, f.empresa, f.tipo, titulo,
@@ -180,16 +226,17 @@ async function leerFuente(env: Env, f: FuenteWorkday, ahora: string): Promise<Re
             clasificarRolEmpresa(titulo, f.tipo), clasificarNivel(titulo),
             typeof info.startDate === 'string' ? info.startDate.slice(0, 10) : null,
             ahora, ahora,
-            info.jobDescription ? textoPlano(String(info.jobDescription)) : null,
+            descripcion,
             CLASIFICACION_VERSION,
           ),
+          ...descriptoresStmts(env.DB, id, titulo, descripcion),
         );
       } catch (err) {
         console.error('detalle falló', f.id, x.externalPath, String(err));
       }
     });
     for (let i = 0; i < pendientes.length; i += 50) await env.DB.batch(pendientes.slice(i, i + 50));
-    res.nuevas = pendientes.length;
+    res.nuevas = insertadas;
 
     // 5. Cerrar las que ya no aparecen. Solo si la lectura fue completa: una falla no cierra nada.
     if (res.estado === 'ok') {
@@ -222,12 +269,18 @@ async function correr(env: Env, soloFuente?: string): Promise<Resultado[]> {
 export default {
   async scheduled(_event: unknown, env: Env): Promise<void> {
     const r = await correr(env);
-    console.log('vacantes', JSON.stringify(r));
+    const reproc = await reprocesar(env);
+    console.log('vacantes', JSON.stringify(r), 'reprocesadas', reproc);
   },
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname !== '/run') return new Response('solca-vacantes', { status: 200 });
     if (!env.RUN_KEY || url.searchParams.get('key') !== env.RUN_KEY) return new Response('unauthorized', { status: 401 });
+    if (url.searchParams.get('modo') === 'reprocesar') {
+      let total = 0;
+      for (let n = await reprocesar(env); n > 0; n = await reprocesar(env)) total += n;
+      return new Response(JSON.stringify({ reprocesadas: total }), { headers: { 'Content-Type': 'application/json' } });
+    }
     const r = await correr(env, url.searchParams.get('fuente') ?? undefined);
     return new Response(JSON.stringify(r, null, 2), { headers: { 'Content-Type': 'application/json' } });
   },
