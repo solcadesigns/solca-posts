@@ -114,6 +114,9 @@ interface WeeklyReport {
   // por_pregunta[qid].exposiciones (no sobre submissions_totales) porque el
   // formulario muestra un subconjunto aleatorio de preguntas.
   cv_survey: CvSurveyStats;
+  // Encuesta de mercado unificada (catálogo v1, 20 oct 2026) · D1 mercado_respuestas.
+  // Ver _docs/CATALOGO_ENCUESTA_MERCADO.md.
+  market_survey: MarketSurveyStats | null;
   simulator: {
     sesiones_acumuladas: number;
     esta_semana: number;
@@ -651,6 +654,69 @@ function gscDimRows(rows: GscApiRow[], stripOrigin: boolean): GscDimRow[] {
  * Recorre KV con prefix, parsea, aplica callback por registro válido.
  * Silencia registros corruptos con warn a console.
  */
+interface MarketSurveyStats {
+  nota: string;
+  encuestas_por_origen: Array<{ origen: string; total: number; ultimos_7d: number }>;
+  usos_con_datos_derivados_por_origen: Array<{ origen: string; total: number; ultimos_7d: number }>;
+  personas_unicas: { total: number; ultimos_7d: number };
+  por_pregunta: Record<string, { respuestas: number; faltan_para_50: number; distribucion: Record<string, number> }>;
+}
+
+/**
+ * Resumen de la encuesta de mercado. Cuenta v1 (en vivo) + v1_hist (carga histórica).
+ * Una "encuesta" = un envío (mismo aid + ts); un "uso" = un arranque con datos derivados.
+ */
+async function buildMarketSurvey(db: D1Database, sinceIso: string): Promise<MarketSurveyStats> {
+  const porOrigen = async (tipo: 'encuesta' | 'derivado') => {
+    const r = await db
+      .prepare(
+        `SELECT origen, COUNT(*) AS total, SUM(CASE WHEN ts >= ? THEN 1 ELSE 0 END) AS ultimos_7d
+         FROM (SELECT DISTINCT origen, COALESCE(aid, '-') || '|' || ts AS k, ts
+               FROM mercado_respuestas
+               WHERE tipo = ? AND catalogo_version IN ('v1', 'v1_hist'))
+         GROUP BY origen`,
+      )
+      .bind(sinceIso, tipo)
+      .all<{ origen: string; total: number; ultimos_7d: number }>();
+    return (r.results ?? []).map((x: { origen: string; total: number; ultimos_7d: number }) => ({ origen: x.origen, total: x.total, ultimos_7d: x.ultimos_7d ?? 0 }));
+  };
+
+  const personas = await db
+    .prepare(
+      `SELECT COUNT(DISTINCT aid) AS total,
+              COUNT(DISTINCT CASE WHEN ts >= ? THEN aid END) AS ultimos_7d
+       FROM mercado_respuestas WHERE aid IS NOT NULL`,
+    )
+    .bind(sinceIso)
+    .first<{ total: number; ultimos_7d: number }>();
+
+  const dist = await db
+    .prepare(
+      `SELECT pregunta, valor, COUNT(*) AS n FROM mercado_respuestas
+       WHERE catalogo_version IN ('v1', 'v1_hist') GROUP BY pregunta, valor`,
+    )
+    .all<{ pregunta: string; valor: string; n: number }>();
+
+  const por_pregunta: MarketSurveyStats['por_pregunta'] = {};
+  for (const r of (dist.results ?? []) as Array<{ pregunta: string; valor: string; n: number }>) {
+    const q = (por_pregunta[r.pregunta] ??= { respuestas: 0, faltan_para_50: 50, distribucion: {} });
+    q.respuestas += r.n;
+    q.distribucion[r.valor] = r.n;
+  }
+  for (const q of Object.values(por_pregunta)) q.faltan_para_50 = Math.max(0, 50 - q.respuestas);
+
+  return {
+    nota:
+      'Respuestas = filas, no personas: quien usa una herramienta varias veces cuenta varias veces en los datos derivados. ' +
+      'Los usos del analizador solo traen dato derivado si la persona eligió país. Tasa de respuesta = encuestas / usos de cada herramienta ' +
+      '(cv_review.esta_semana, quiz_match.esta_semana, simulator.esta_semana). No publicar proporciones de preguntas con menos de 50 respuestas.',
+    encuestas_por_origen: await porOrigen('encuesta'),
+    usos_con_datos_derivados_por_origen: await porOrigen('derivado'),
+    personas_unicas: { total: personas?.total ?? 0, ultimos_7d: personas?.ultimos_7d ?? 0 },
+    por_pregunta,
+  };
+}
+
 async function walkKv<T>(kv: KVNamespace, prefix: string, onRec: (r: T, key: string) => void): Promise<void> {
   let cursor: string | undefined;
   do {
@@ -1112,6 +1178,12 @@ export const GET: APIRoute = async ({ url, locals }) => {
       sim.avg_facilidad = fbRow?.f ? +fbRow.f.toFixed(2) : null;
     }
 
+    // ── 4b. Encuesta de mercado unificada (catálogo v1) ───────────
+    const market_survey = simDb ? await buildMarketSurvey(simDb, new Date(weekAgo).toISOString()).catch((err) => {
+      console.error('market_survey failed', err);
+      return null;
+    }) : null;
+
     // ── 5. Email health (Postmark Analytics API) ─────────────────
     // Consulta por tag los últimos 30 días. Data útil solo si Open+Link
     // tracking están ON en Server Settings (activados 30 jul 2026).
@@ -1314,6 +1386,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
         pct_leads_con_utm: pctLeadsConUtm,
       },
       cv_survey,
+      market_survey,
       simulator: {
         sesiones_acumuladas: sim.total,
         esta_semana: sim.cur,
