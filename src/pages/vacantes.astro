@@ -1,0 +1,363 @@
+---
+/**
+ * /vacantes · buscador de vacantes pharma de LATAM y España (22 oct 2026).
+ * Lee la tabla D1 `vacantes` que llena el worker solca-vacantes cada día.
+ * Filtros por URL (funcionan sin JavaScript). Medición: /api/vacantes-evento.
+ * Diseño: _docs/VACANTES_BUSCADOR.md.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { FUENTES, PAISES_OBJETIVO, PAIS_NOMBRE, type PaisObjetivo } from '../lib/vacantes-fuentes';
+import { ROLES_VACANTE, NIVELES } from '../lib/vacantes-clasificar';
+
+export const prerender = false;
+
+const POR_PAGINA = 30;
+const url = Astro.url;
+const q = (url.searchParams.get('q') ?? '').trim().slice(0, 80);
+const pais = url.searchParams.get('pais') ?? '';
+const rol = url.searchParams.get('rol') ?? '';
+const nivel = url.searchParams.get('nivel') ?? '';
+const empresa = url.searchParams.get('empresa') ?? '';
+const dias = url.searchParams.get('dias') ?? '';
+const pagina = Math.max(1, Number.parseInt(url.searchParams.get('p') ?? '1', 10) || 1);
+
+const paisOk = (PAISES_OBJETIVO as readonly string[]).includes(pais) ? pais : '';
+const rolOk = ROLES_VACANTE.some((r) => r.id === rol) ? rol : '';
+const nivelOk = NIVELES.some((n) => n.id === nivel) ? nivel : '';
+const empresaOk = FUENTES.some((f) => f.id === empresa) ? empresa : '';
+const diasOk = ['1', '7', '30'].includes(dias) ? dias : '';
+
+const where: string[] = ['activa = 1'];
+const args: unknown[] = [];
+if (paisOk) { where.push("(',' || paises || ',') LIKE ?"); args.push(`%,${paisOk},%`); }
+if (rolOk) { where.push('rol = ?'); args.push(rolOk); }
+if (nivelOk) { where.push('nivel = ?'); args.push(nivelOk); }
+if (empresaOk) { where.push('fuente = ?'); args.push(empresaOk); }
+if (diasOk) {
+  const desde = new Date(Date.now() - Number(diasOk) * 86400000).toISOString().slice(0, 10);
+  where.push('COALESCE(fecha_publicacion, substr(primera_vez, 1, 10)) >= ?');
+  args.push(desde);
+}
+if (q) { where.push('titulo LIKE ?'); args.push(`%${q.replace(/[%_]/g, '')}%`); }
+const whereSql = where.join(' AND ');
+
+interface Vacante {
+  id: string; empresa: string; titulo: string; url: string; pais: string | null; paises: string | null;
+  ubicacion: string | null; modalidad: string | null; rol: string; nivel: string; fecha_publicacion: string | null;
+  primera_vez: string; tipo_empresa: string;
+}
+
+const env = (Astro.locals as { runtime?: { env?: Record<string, unknown> } }).runtime?.env ?? {};
+const db = env.SIMULATOR_METRICS_DB as D1Database | undefined;
+let vacantes: Vacante[] = [];
+let total = 0;
+let resumen = { activas: 0, empresas: 0, paises: 0 };
+let actualizado: string | null = null;
+let errorCarga = false;
+if (db) {
+  try {
+    const [lista, cuenta, res, corrida] = await db.batch([
+      db.prepare(
+        `SELECT id, empresa, titulo, url, pais, paises, ubicacion, modalidad, rol, nivel, fecha_publicacion, primera_vez, tipo_empresa
+         FROM vacantes WHERE ${whereSql}
+         ORDER BY COALESCE(fecha_publicacion, substr(primera_vez, 1, 10)) DESC, titulo
+         LIMIT ? OFFSET ?`,
+      ).bind(...args, POR_PAGINA, (pagina - 1) * POR_PAGINA),
+      db.prepare(`SELECT COUNT(*) AS n FROM vacantes WHERE ${whereSql}`).bind(...args),
+      db.prepare('SELECT COUNT(*) AS activas, COUNT(DISTINCT fuente) AS empresas, COUNT(DISTINCT pais) AS paises FROM vacantes WHERE activa = 1'),
+      db.prepare("SELECT MAX(ts) AS ts FROM vacantes_corridas WHERE estado != 'error'"),
+    ]);
+    vacantes = (lista.results ?? []) as Vacante[];
+    total = ((cuenta.results?.[0] as { n?: number })?.n) ?? 0;
+    resumen = (res.results?.[0] as typeof resumen) ?? resumen;
+    actualizado = ((corrida.results?.[0] as { ts?: string })?.ts) ?? null;
+  } catch (err) {
+    console.error('vacantes query failed', err);
+    errorCarga = true;
+  }
+}
+
+const paginas = Math.max(1, Math.ceil(total / POR_PAGINA));
+const rolLabel = Object.fromEntries(ROLES_VACANTE.map((r) => [r.id, r.label]));
+const nivelLabel = Object.fromEntries(NIVELES.map((n) => [n.id, n.label]));
+
+// Rol de la vacante → módulo del simulador (claves de simulador-entrevistas/index.astro).
+const MODULO: Record<string, string> = {
+  investigacion_clinica: 'cr', clinical_pm: 'pm', msl: 'msl', medical_affairs: 'ma', farmacovigilancia: 'fv',
+  regulatorio: 'ra', heor_analytics: 'heor', consulting: 'consulting', ventas: 'sales',
+};
+function linkSimulador(r: string): string {
+  const u = new URL('https://solcaciencia.com/simulador-entrevistas/');
+  if (MODULO[r]) u.searchParams.set('modulo', MODULO[r]);
+  u.searchParams.set('utm_source', 'vacantes');
+  u.searchParams.set('utm_medium', 'buscador');
+  u.searchParams.set('utm_campaign', 'vacantes_diarias');
+  u.searchParams.set('utm_content', r);
+  return u.pathname + u.search;
+}
+const linkCv = '/revisar-cv?utm_source=vacantes&utm_medium=buscador&utm_campaign=vacantes_diarias';
+
+function fechaCorta(iso: string | null): string {
+  if (!iso) return '';
+  const d = new Date(`${iso.slice(0, 10)}T12:00:00Z`);
+  const diff = Math.floor((Date.now() - d.getTime()) / 86400000);
+  if (diff <= 0) return 'Hoy';
+  if (diff === 1) return 'Ayer';
+  if (diff < 30) return `Hace ${diff} días`;
+  return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+function paisesDe(v: Vacante): string {
+  const ps = (v.paises ?? v.pais ?? '').split(',').filter(Boolean) as PaisObjetivo[];
+  return ps.map((p) => PAIS_NOMBRE[p] ?? p).join(' · ');
+}
+function qs(over: Record<string, string>): string {
+  const p = new URLSearchParams();
+  const base: Record<string, string> = { q, pais: paisOk, rol: rolOk, nivel: nivelOk, empresa: empresaOk, dias: diasOk };
+  for (const [k, v] of Object.entries({ ...base, ...over })) if (v) p.set(k, v);
+  const s = p.toString();
+  return s ? `?${s}` : '';
+}
+const filtros = { q, pais: paisOk, rol: rolOk, nivel: nivelOk, empresa: empresaOk, dias: diasOk };
+const hayFiltros = Object.values(filtros).some(Boolean);
+const actualizadoTxt = actualizado
+  ? new Date(actualizado).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Mexico_City' })
+  : null;
+---
+
+<BaseLayout
+  title="Vacantes pharma en América Latina y España · Solca"
+  description="Vacantes de industria farmacéutica, CROs y medtech en México, Brasil, Argentina, Colombia, Chile, Perú y España, tomadas cada día de los portales oficiales de las empresas. Filtra por país, rol y nivel."
+>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand"><span class="dot"></span><span>Solca</span></a>
+    <div class="nav-links">
+      <a href="/vacantes">Vacantes</a>
+      <a href="/revisar-cv">Revisar CV</a>
+      <a href="/simulador-entrevistas/">Simulador</a>
+      <a href="/quiz-rol">Quiz de rol</a>
+      <a href="/contacto">Contacto</a>
+    </div>
+  </div>
+</nav>
+
+<section class="vac-hero">
+  <div class="container">
+    <div class="eyebrow eyebrow-light"><span class="dot"></span><span>Actualizado cada día</span></div>
+    <h1>Vacantes pharma en América Latina y España</h1>
+    <p class="vac-lead">
+      Tomadas directamente de los portales de empleo de {FUENTES.length} laboratorios, CROs y empresas de dispositivos médicos.
+      Cada vacante te lleva a la oferta original para postularte.
+    </p>
+    <div class="vac-stats" data-nosnippet>
+      <span><strong>{resumen.activas.toLocaleString('es-MX')}</strong> vacantes abiertas</span>
+      <span><strong>{resumen.empresas}</strong> empresas</span>
+      <span><strong>{resumen.paises}</strong> países</span>
+      {actualizadoTxt && <span>Actualizado el {actualizadoTxt}</span>}
+    </div>
+  </div>
+</section>
+
+<section class="vac-main">
+  <div class="container">
+    <form class="vac-filtros" method="get" action="/vacantes" id="vac-filtros">
+      <input type="search" name="q" value={q} placeholder="Buscar en el título (ej. CRA, regulatory, MSL)" aria-label="Buscar en el título" />
+      <select name="pais" aria-label="País">
+        <option value="">Todos los países</option>
+        {PAISES_OBJETIVO.map((p) => <option value={p} selected={p === paisOk}>{PAIS_NOMBRE[p]}</option>)}
+      </select>
+      <select name="rol" aria-label="Rol">
+        <option value="">Todos los roles</option>
+        {ROLES_VACANTE.map((r) => <option value={r.id} selected={r.id === rolOk}>{r.label}</option>)}
+      </select>
+      <select name="nivel" aria-label="Nivel">
+        <option value="">Todos los niveles</option>
+        {NIVELES.map((n) => <option value={n.id} selected={n.id === nivelOk}>{n.label}</option>)}
+      </select>
+      <select name="empresa" aria-label="Empresa">
+        <option value="">Todas las empresas</option>
+        {[...FUENTES].sort((a, b) => a.empresa.localeCompare(b.empresa)).map((f) => <option value={f.id} selected={f.id === empresaOk}>{f.empresa}</option>)}
+      </select>
+      <select name="dias" aria-label="Publicación">
+        <option value="">Cualquier fecha</option>
+        <option value="1" selected={diasOk === '1'}>Últimas 24 horas</option>
+        <option value="7" selected={diasOk === '7'}>Última semana</option>
+        <option value="30" selected={diasOk === '30'}>Último mes</option>
+      </select>
+      <button type="submit" class="btn btn-orange">Filtrar</button>
+      {hayFiltros && <a class="vac-limpiar" href="/vacantes">Quitar filtros</a>}
+    </form>
+
+    <p class="vac-conteo">
+      {errorCarga
+        ? 'No pudimos cargar las vacantes en este momento. Intenta de nuevo en unos minutos.'
+        : total === 0
+          ? 'No hay vacantes abiertas con estos filtros. Prueba quitando alguno.'
+          : `${total.toLocaleString('es-MX')} vacantes${pagina > 1 ? ` · página ${pagina} de ${paginas}` : ''}`}
+    </p>
+
+    <ul class="vac-lista">
+      {vacantes.map((v) => (
+        <li class="vac-card" data-id={v.id}>
+          <div class="vac-card-top">
+            <span class="vac-empresa">{v.empresa}</span>
+            <span class="vac-fecha">{fechaCorta(v.fecha_publicacion ?? v.primera_vez)}</span>
+          </div>
+          <h2 class="vac-titulo">
+            <a href={v.url} target="_blank" rel="noopener nofollow" class="vac-link" data-id={v.id}>{v.titulo}</a>
+          </h2>
+          <p class="vac-meta">
+            <span>{paisesDe(v)}</span>
+            {v.ubicacion && <span class="vac-ubic">{v.ubicacion}</span>}
+            {v.modalidad && <span class="vac-chip">{v.modalidad === 'hibrido' ? 'Híbrido' : v.modalidad === 'remoto' ? 'Remoto' : 'Presencial'}</span>}
+          </p>
+          <p class="vac-tags">
+            <span class="vac-chip vac-chip-rol">{rolLabel[v.rol] ?? v.rol}</span>
+            {v.nivel !== 'no_especificado' && <span class="vac-chip">{nivelLabel[v.nivel]}</span>}
+          </p>
+          <div class="vac-acciones">
+            <a href={v.url} target="_blank" rel="noopener nofollow" class="vac-ver vac-link" data-id={v.id}>Ver vacante →</a>
+            {MODULO[v.rol] && (
+              <a href={linkSimulador(v.rol)} class="vac-tool" data-tool="simulador" data-id={v.id}>Practica la entrevista</a>
+            )}
+            <a href={linkCv} class="vac-tool" data-tool="cv" data-id={v.id}>Revisa tu CV</a>
+          </div>
+        </li>
+      ))}
+    </ul>
+
+    {paginas > 1 && (
+      <nav class="vac-paginacion" aria-label="Páginas">
+        {pagina > 1 && <a href={`/vacantes${qs({ p: String(pagina - 1) })}`}>← Anterior</a>}
+        <span>Página {pagina} de {paginas}</span>
+        {pagina < paginas && <a href={`/vacantes${qs({ p: String(pagina + 1) })}`}>Siguiente →</a>}
+      </nav>
+    )}
+
+    <aside class="vac-cta">
+      <div>
+        <h2>¿Ya encontraste la vacante? Prepárate para la entrevista</h2>
+        <p>Practica con el Simulador de Entrevistas: preguntas del rol que te interesa y un reporte con lo que tienes que reforzar.</p>
+      </div>
+      <a href={linkSimulador(rolOk || 'general')} class="btn btn-orange vac-tool" data-tool="simulador">Probar el simulador</a>
+    </aside>
+
+    <section class="vac-nota">
+      <h2>Cómo funciona</h2>
+      <ul>
+        <li>Cada mañana leemos los portales de empleo oficiales de {FUENTES.map((f) => f.empresa).join(', ')}.</li>
+        <li>Solo mostramos vacantes con al menos una ubicación en México, Brasil, Argentina, Colombia, Chile, Perú o España. Cuando una vacante deja de aparecer en el portal, la quitamos.</li>
+        <li>El rol y el nivel se asignan automáticamente a partir del título, así que pueden tener errores. Revisa siempre la oferta original.</li>
+        <li>No somos intermediarios: la postulación se hace en el sitio de cada empresa.</li>
+      </ul>
+    </section>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      <div class="eyebrow eyebrow-light"><span class="dot"></span><span>Solca · Ciencia y Consultoría</span></div>
+      <p>Acompañamiento profesional en la transición de academia a industria farmacéutica para PhDs en LATAM y España.</p>
+    </div>
+    <div class="footer-links">
+      <h4>Recursos</h4>
+      <a href="/vacantes">Vacantes</a>
+      <a href="/revisar-cv">Análisis de CV</a>
+      <a href="/simulador-entrevistas/">Simulador de entrevistas</a>
+      <a href="/#libros">Libros</a>
+    </div>
+    <div class="footer-links">
+      <h4>Sitio</h4>
+      <a href="/">Inicio</a>
+      <a href="/contacto">Contacto</a>
+      <a href="/privacidad">Privacidad</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2026 Oscar Omar Solís Castro · Solca · Ciencia y Consultoría. · <a href="/privacidad" style="color: inherit; text-decoration: underline;">Aviso de privacidad</a></p>
+  </div>
+</footer>
+
+<div id="vac-ctx" hidden data-filtros={JSON.stringify(filtros)} data-filtrado={hayFiltros ? '1' : ''} data-total={String(total)}></div>
+</BaseLayout>
+
+<style>
+  [hidden] { display: none !important; }
+  .vac-hero { background: var(--navy-deep); color: var(--off-white); padding: 64px 0 40px; }
+  .vac-hero h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); margin: 12px 0; line-height: 1.15; }
+  .vac-lead { max-width: 720px; color: var(--off-white-mute); font-size: 1.05rem; }
+  .vac-stats { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 20px; font-size: 0.95rem; color: var(--off-white-mute); }
+  .vac-stats strong { color: var(--off-white); }
+  .vac-main { background: var(--bg); padding: 32px 0 64px; }
+  .vac-filtros { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; align-items: center; }
+  .vac-filtros input, .vac-filtros select {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--rule); border-radius: 10px; background: #fff; font: inherit; color: var(--text);
+  }
+  .vac-filtros input[type="search"] { grid-column: 1 / -1; }
+  .vac-limpiar { color: var(--text-mute); font-size: 0.9rem; }
+  .vac-conteo { color: var(--text-mute); margin: 20px 0 12px; }
+  .vac-lista { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+  .vac-card { background: #fff; border: 1px solid var(--rule); border-radius: var(--radius); padding: 18px 20px; }
+  .vac-card-top { display: flex; justify-content: space-between; gap: 12px; font-size: 0.85rem; color: var(--text-mute); }
+  .vac-empresa { font-weight: 600; color: var(--navy); }
+  .vac-titulo { font-size: 1.1rem; margin: 6px 0 8px; line-height: 1.3; }
+  .vac-titulo a { color: var(--text); text-decoration: none; }
+  .vac-titulo a:hover { color: var(--orange); }
+  .vac-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.9rem; color: var(--text-mute); margin: 0 0 8px; }
+  .vac-ubic { overflow-wrap: anywhere; }
+  .vac-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+  .vac-chip { display: inline-block; font-size: 0.8rem; padding: 3px 10px; border-radius: 999px; background: var(--blue-soft); color: var(--navy); }
+  .vac-chip-rol { background: var(--orange-light); color: var(--orange); font-weight: 600; }
+  .vac-acciones { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font-size: 0.92rem; }
+  .vac-ver { font-weight: 600; color: var(--navy); }
+  .vac-tool { color: var(--orange); }
+  .vac-paginacion { display: flex; justify-content: center; gap: 20px; margin: 28px 0; color: var(--text-mute); }
+  .vac-cta {
+    display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: center; justify-content: space-between;
+    background: var(--navy); color: var(--off-white); border-radius: var(--radius); padding: 24px 28px; margin: 32px 0;
+  }
+  .vac-cta h2 { font-size: 1.2rem; margin: 0 0 6px; }
+  .vac-cta p { margin: 0; color: var(--off-white-mute); max-width: 620px; }
+  .vac-cta .vac-tool { color: var(--off-white); }
+  .vac-nota { color: var(--text-mute); font-size: 0.92rem; }
+  .vac-nota h2 { font-size: 1.05rem; color: var(--navy); }
+  @media (max-width: 600px) {
+    .vac-hero { padding: 40px 0 28px; }
+    .vac-card { padding: 16px; }
+  }
+</style>
+
+<script>
+  // Medición del buscador (22 oct 2026): vistas, filtros, clics a vacantes y paso a herramientas.
+  // Sin correo ni IP; aid = identificador anónimo del navegador (el mismo de la encuesta de mercado).
+  const ctx = document.getElementById('vac-ctx');
+  function aid(): string | undefined {
+    try {
+      let a = localStorage.getItem('solca_aid');
+      if (!a && 'randomUUID' in crypto) { a = crypto.randomUUID(); localStorage.setItem('solca_aid', a); }
+      return a ?? undefined;
+    } catch { return undefined; }
+  }
+  function send(evento: string, extra: Record<string, string | undefined> = {}): void {
+    const utm = (window as unknown as { __utm?: Record<string, string> }).__utm || {};
+    let referrerHost: string | undefined;
+    try {
+      const ref = sessionStorage.getItem('solca_ref') || document.referrer;
+      if (ref) { const h = new URL(ref).hostname; if (h !== location.hostname) referrerHost = h; }
+    } catch { /* ignore */ }
+    const body = JSON.stringify({ evento, aid: aid(), filtros: ctx?.dataset.filtros, referrerHost, ...utm, ...extra });
+    try {
+      if (navigator.sendBeacon) navigator.sendBeacon('/api/vacantes-evento', new Blob([body], { type: 'application/json' }));
+      else fetch('/api/vacantes-evento', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true });
+    } catch { /* ignore */ }
+  }
+  send(ctx?.dataset.filtrado ? 'vacantes_filtered' : 'vacantes_viewed');
+  document.addEventListener('click', (e) => {
+    const a = (e.target as HTMLElement).closest('a') as HTMLAnchorElement | null;
+    if (!a) return;
+    if (a.classList.contains('vac-link')) send('vacancy_clicked', { vacante_id: a.dataset.id });
+    else if (a.classList.contains('vac-tool')) send('tool_clicked', { vacante_id: a.dataset.id, herramienta: a.dataset.tool });
+  });
+</script>

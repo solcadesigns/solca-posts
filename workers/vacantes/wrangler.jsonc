@@ -1,0 +1,21 @@
+// Worker solca-vacantes · lector diario de vacantes (22 oct 2026).
+// Despliegue (desde website/workers/vacantes):  npx wrangler deploy
+// Llave para la carga manual:                     npx wrangler secret put RUN_KEY
+{
+	"$schema": "../../node_modules/wrangler/config-schema.json",
+	"name": "solca-vacantes",
+	"main": "index.ts",
+	"compatibility_date": "2025-01-01",
+	"workers_dev": true,
+	// 11:00 UTC = 5:00 en Ciudad de México (12:00 o 13:00 en Madrid): vacantes listas al empezar el día.
+	"triggers": { "crons": ["0 11 * * *"] },
+	"limits": { "cpu_ms": 300000 },
+	"observability": { "enabled": true },
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "simulator-metrics",
+			"database_id": "a72d6780-de9c-4cc0-b8da-368fdc0bc932"
+		}
+	]
+}

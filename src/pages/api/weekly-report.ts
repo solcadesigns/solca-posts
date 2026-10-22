@@ -117,6 +117,8 @@ interface WeeklyReport {
   // Encuesta de mercado unificada (catálogo v1, 20 oct 2026) · D1 mercado_respuestas.
   // Ver _docs/CATALOGO_ENCUESTA_MERCADO.md.
   market_survey: MarketSurveyStats | null;
+  // Buscador de vacantes (22 oct 2026) · D1 vacantes, vacantes_corridas, vacantes_eventos.
+  vacantes: VacantesStats | null;
   simulator: {
     sesiones_acumuladas: number;
     esta_semana: number;
@@ -178,7 +180,7 @@ interface WeeklyReport {
     book_clicks_7d: Record<string, number>;
     // 14 oct 2026: visitas registradas por page_viewed en la semana (7 días),
     // con y sin UTM. Desde antes de esa fecha no hay datos.
-    page_views_7d: { 'quiz-rol': number; 'revisar-cv': number; blog: number; con_utm: number };
+    page_views_7d: { 'quiz-rol': number; 'revisar-cv': number; blog: number; vacantes: number; con_utm: number };
   };
   // Postmark Analytics — se llena si POSTMARK_SERVER_TOKEN está presente.
   // Datos de últimos 30 días por tag. Requiere Open + Link tracking activo
@@ -654,6 +656,68 @@ function gscDimRows(rows: GscApiRow[], stripOrigin: boolean): GscDimRow[] {
  * Recorre KV con prefix, parsea, aplica callback por registro válido.
  * Silencia registros corruptos con warn a console.
  */
+interface VacantesStats {
+  activas: number;
+  nuevas_7d: number;
+  cerradas_7d: number;
+  activas_por_pais: Record<string, number>;
+  activas_por_rol: Record<string, number>;
+  fuentes_con_error_7d: Array<{ fuente: string; errores: number; ultimo_error: string | null }>;
+  ultima_corrida: string | null;
+  eventos_7d: Record<string, number>;
+  personas_unicas_7d: number;
+  clics_por_rol_7d: Record<string, number>;
+  clics_por_pais_7d: Record<string, number>;
+  herramientas_7d: Record<string, number>;
+  por_campaign_7d: Array<{ utm_campaign: string; vistas: number; clics: number }>;
+}
+
+async function buildVacantes(db: D1Database, sinceIso: string): Promise<VacantesStats> {
+  const sinceDay = sinceIso.slice(0, 10);
+  const toMap = (rows: Array<{ k: string | null; n: number }> | undefined) =>
+    Object.fromEntries((rows ?? []).map((r) => [r.k ?? 'sin_dato', r.n]));
+  const [tot, nuevas, cerradas, porPais, porRol, errores, ultima, evs, personas, clRol, clPais, tools, camp] = await db.batch([
+    db.prepare('SELECT COUNT(*) AS n FROM vacantes WHERE activa = 1'),
+    db.prepare('SELECT COUNT(*) AS n FROM vacantes WHERE primera_vez >= ?').bind(sinceIso),
+    db.prepare('SELECT COUNT(*) AS n FROM vacantes WHERE fecha_cierre >= ?').bind(sinceDay),
+    db.prepare('SELECT pais AS k, COUNT(*) AS n FROM vacantes WHERE activa = 1 GROUP BY pais'),
+    db.prepare('SELECT rol AS k, COUNT(*) AS n FROM vacantes WHERE activa = 1 GROUP BY rol'),
+    db.prepare(
+      `SELECT fuente, COUNT(*) AS errores, MAX(error) AS ultimo_error FROM vacantes_corridas
+       WHERE ts >= ? AND estado = 'error' GROUP BY fuente`,
+    ).bind(sinceIso),
+    db.prepare('SELECT MAX(ts) AS ts FROM vacantes_corridas'),
+    db.prepare('SELECT evento AS k, COUNT(*) AS n FROM vacantes_eventos WHERE ts >= ? GROUP BY evento').bind(sinceIso),
+    db.prepare('SELECT COUNT(DISTINCT aid) AS n FROM vacantes_eventos WHERE ts >= ? AND aid IS NOT NULL').bind(sinceIso),
+    db.prepare("SELECT rol AS k, COUNT(*) AS n FROM vacantes_eventos WHERE ts >= ? AND evento = 'vacancy_clicked' GROUP BY rol").bind(sinceIso),
+    db.prepare("SELECT pais AS k, COUNT(*) AS n FROM vacantes_eventos WHERE ts >= ? AND evento = 'vacancy_clicked' GROUP BY pais").bind(sinceIso),
+    db.prepare("SELECT herramienta AS k, COUNT(*) AS n FROM vacantes_eventos WHERE ts >= ? AND evento = 'tool_clicked' GROUP BY herramienta").bind(sinceIso),
+    db.prepare(
+      `SELECT COALESCE(utm_campaign, '(sin utm)') AS utm_campaign,
+              SUM(CASE WHEN evento IN ('vacantes_viewed', 'vacantes_filtered') THEN 1 ELSE 0 END) AS vistas,
+              SUM(CASE WHEN evento = 'vacancy_clicked' THEN 1 ELSE 0 END) AS clics
+       FROM vacantes_eventos WHERE ts >= ? GROUP BY 1 ORDER BY vistas DESC LIMIT 10`,
+    ).bind(sinceIso),
+  ]);
+  const n = (r: D1Result) => ((r.results?.[0] as { n?: number })?.n) ?? 0;
+  type KN = Array<{ k: string | null; n: number }>;
+  return {
+    activas: n(tot),
+    nuevas_7d: n(nuevas),
+    cerradas_7d: n(cerradas),
+    activas_por_pais: toMap(porPais.results as KN),
+    activas_por_rol: toMap(porRol.results as KN),
+    fuentes_con_error_7d: (errores.results ?? []) as VacantesStats['fuentes_con_error_7d'],
+    ultima_corrida: ((ultima.results?.[0] as { ts?: string })?.ts) ?? null,
+    eventos_7d: toMap(evs.results as KN),
+    personas_unicas_7d: n(personas),
+    clics_por_rol_7d: toMap(clRol.results as KN),
+    clics_por_pais_7d: toMap(clPais.results as KN),
+    herramientas_7d: toMap(tools.results as KN),
+    por_campaign_7d: (camp.results ?? []) as VacantesStats['por_campaign_7d'],
+  };
+}
+
 interface MarketSurveyStats {
   nota: string;
   encuestas_por_origen: Array<{ origen: string; total: number; ultimos_7d: number }>;
@@ -1038,7 +1102,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
         ultimo_evento: string;
       }>(),
       book_clicks_7d: {} as Record<string, number>,
-      page_views_7d: { 'quiz-rol': 0, 'revisar-cv': 0, blog: 0, con_utm: 0 },
+      page_views_7d: { 'quiz-rol': 0, 'revisar-cv': 0, blog: 0, vacantes: 0, con_utm: 0 },
     };
     const campaignWindowStart = now - 30 * 24 * 60 * 60 * 1000;
 
@@ -1181,6 +1245,12 @@ export const GET: APIRoute = async ({ url, locals }) => {
     // ── 4b. Encuesta de mercado unificada (catálogo v1) ───────────
     const market_survey = simDb ? await buildMarketSurvey(simDb, new Date(weekAgo).toISOString()).catch((err) => {
       console.error('market_survey failed', err);
+      return null;
+    }) : null;
+
+    // ── 4c. Buscador de vacantes ─────────────────────────────────
+    const vacantes = simDb ? await buildVacantes(simDb, new Date(weekAgo).toISOString()).catch((err) => {
+      console.error('vacantes stats failed', err);
       return null;
     }) : null;
 
@@ -1387,6 +1457,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
       },
       cv_survey,
       market_survey,
+      vacantes,
       simulator: {
         sesiones_acumuladas: sim.total,
         esta_semana: sim.cur,

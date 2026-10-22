@@ -37,7 +37,7 @@ interface EventBody {
     | 'page_viewed'
     | 'book_clicked';
   // page_viewed: qué página se vio. path = pathname (para blog, el slug).
-  page?: 'quiz-rol' | 'revisar-cv' | 'blog';
+  page?: 'quiz-rol' | 'revisar-cv' | 'blog' | 'vacantes';
   path?: string;
   // book_clicked: id del producto Hotmart (ej. E107847432I) y etiqueta sck/src enviada.
   product?: string;
@@ -67,7 +67,8 @@ const ALLOWED_EVENTS = new Set([
   'book_clicked',
 ]);
 
-const ALLOWED_PAGES = new Set(['quiz-rol', 'revisar-cv', 'blog']);
+// 22 oct 2026: + buscador de vacantes.
+const ALLOWED_PAGES = new Set(['quiz-rol', 'revisar-cv', 'blog', 'vacantes']);
 
 const MAX_STRING = 200; // recorta strings largas para no ensuciar KV
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
