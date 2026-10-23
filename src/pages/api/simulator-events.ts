@@ -68,7 +68,7 @@ const ALLOWED_EVENTS = new Set([
 ]);
 
 // 22 oct 2026: + buscador de vacantes.
-const ALLOWED_PAGES = new Set(['quiz-rol', 'revisar-cv', 'blog', 'vacantes']);
+const ALLOWED_PAGES = new Set(['quiz-rol', 'revisar-cv', 'blog', 'vacantes', 'libro']);
 
 const MAX_STRING = 200; // recorta strings largas para no ensuciar KV
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;

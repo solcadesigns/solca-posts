@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { FUENTES } from '../lib/vacantes-fuentes';
 
 // URLs reales de Hotmart
 const hotmart = {
@@ -34,6 +35,7 @@ const youtube = {
     </a>
     <div class="nav-links">
       <a href="#libros">Libros</a>
+      <a href="/vacantes">Vacantes</a>
       <a href="#curso">Curso</a>
       <a href="/simulador-entrevistas">Simulador</a>
       <a href="/blog">Blog</a>
@@ -139,6 +141,26 @@ const youtube = {
   </div>
 </section>
 
+<!-- ==================== VACANTES (23 oct 2026) ==================== -->
+<section class="vacantes-teaser" id="vacantes">
+  <div class="container vacantes-teaser-grid">
+    <div>
+      <div class="eyebrow">
+        <span class="dot"></span>
+        <span>Vacantes · actualizado cada día</span>
+      </div>
+      <h2 class="section-title">Vacantes pharma en LATAM y España, directo de cada empresa</h2>
+      <p class="section-lead">
+        Cada mañana leemos los portales de empleo oficiales de {FUENTES.length} farmacéuticas, CROs y empresas de tecnología médica y de laboratorio. Filtra por país, rol y nivel, y postúlate en el sitio de la empresa, sin intermediarios.
+      </p>
+      <a href="/vacantes/?ref=home" class="btn btn-orange btn-large">Ver vacantes →</a>
+    </div>
+    <ul class="vacantes-teaser-paises" aria-label="Países">
+      <li>México</li><li>Brasil</li><li>Argentina</li><li>Colombia</li><li>Chile</li><li>Perú</li><li>España</li>
+    </ul>
+  </div>
+</section>
+
 <!-- ==================== LIBROS ==================== -->
 <section class="libros" id="libros">
   <div class="container">
@@ -168,7 +190,7 @@ const youtube = {
             <li>Módulo de IA para PMs</li>
             <li>Introductorio · ideal para quienes inician carrera en pharma</li>
           </ul>
-          <a href={hotmart.libroPM} class="btn btn-primary btn-block" target="_blank" rel="noopener">Comprar en Hotmart</a>
+          <a href="/libros/project-manager/?ref=home" class="btn btn-primary btn-block">Ver qué incluye</a>
         </div>
       </article>
 
@@ -186,7 +208,7 @@ const youtube = {
             <li>Módulo de IA para MSLs</li>
             <li>Introductorio · ideal para quienes inician carrera en pharma</li>
           </ul>
-          <a href={hotmart.libroMSL} class="btn btn-primary btn-block" target="_blank" rel="noopener">Comprar en Hotmart</a>
+          <a href="/libros/msl/?ref=home" class="btn btn-primary btn-block">Ver qué incluye</a>
         </div>
       </article>
 
@@ -204,7 +226,7 @@ const youtube = {
             <li>Módulo nuevo de IA en clinical research</li>
             <li>Introductorio · ideal para quienes inician carrera en pharma</li>
           </ul>
-          <a href={hotmart.libroCR} class="btn btn-primary btn-block" target="_blank" rel="noopener">Comprar en Hotmart</a>
+          <a href="/libros/clinical-research/?ref=home" class="btn btn-primary btn-block">Ver qué incluye</a>
         </div>
       </article>
 
@@ -223,7 +245,7 @@ const youtube = {
             <li>Módulo de IA para farmacovigilancia</li>
             <li>Introductorio · ideal para quienes inician carrera en pharma</li>
           </ul>
-          <a href={hotmart.libroFV} class="btn btn-primary btn-block" target="_blank" rel="noopener">Comprar en Hotmart</a>
+          <a href="/libros/farmacovigilancia/?ref=home" class="btn btn-primary btn-block">Ver qué incluye</a>
         </div>
       </article>
     </div>
@@ -304,7 +326,7 @@ const youtube = {
 
 <!-- ==================== ABOUT ==================== -->
 <section class="about" id="sobre">
-  <div class="container about-grid">
+  <div class="container about-grid about-grid-solo">
     <div class="about-text">
       <div class="eyebrow">
         <span class="dot"></span>
@@ -315,9 +337,6 @@ const youtube = {
       <p>Solca nació de esa observación. Soy Oscar Solís, doctor en ciencias y consultor científico. Acompaño a profesionales que están haciendo la transición con tres herramientas: libros, contenido en redes y consultoría individual. La promesa es la misma en los tres frentes: cero invención, fuentes verificables, voz de tuteo y lenguaje accionable.</p>
       <p><strong>Las puertas de Solca están abiertas.</strong> Si quieres conversar tu transición específica —tu área terapéutica, tu país, tu calendario, tu CV—, escríbeme en LinkedIn.</p>
       <a href={linkedIn.profile} class="btn btn-secondary" target="_blank" rel="noopener" style="color: var(--navy); border-color: var(--navy);">LinkedIn</a>
-    </div>
-    <div class="about-photo-wrap">
-      <img src="/oscar.jpg" alt="Oscar Omar Solís Castro" class="about-photo" loading="lazy" onerror="this.style.display='none'" />
     </div>
   </div>
 </section>

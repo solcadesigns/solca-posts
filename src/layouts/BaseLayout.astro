@@ -148,6 +148,7 @@ const ogImageURL = new URL(ogImage, siteUrl).toString();
       if (path === '/quiz-rol') page = 'quiz-rol';
       else if (path === '/revisar-cv') page = 'revisar-cv';
       else if (path === '/vacantes') page = 'vacantes';
+      else if (/^\/libros\/[^/]+$/.test(path)) page = 'libro';
       else if (/^\/blog\/[^/]+$/.test(path)) page = 'blog';
       if (!page) return;
       var seenKey = 'solca_pv:' + path;

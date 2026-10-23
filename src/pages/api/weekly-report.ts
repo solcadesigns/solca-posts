@@ -180,7 +180,7 @@ interface WeeklyReport {
     book_clicks_7d: Record<string, number>;
     // 14 oct 2026: visitas registradas por page_viewed en la semana (7 días),
     // con y sin UTM. Desde antes de esa fecha no hay datos.
-    page_views_7d: { 'quiz-rol': number; 'revisar-cv': number; blog: number; vacantes: number; con_utm: number };
+    page_views_7d: { 'quiz-rol': number; 'revisar-cv': number; blog: number; vacantes: number; libro: number; con_utm: number };
   };
   // Postmark Analytics — se llena si POSTMARK_SERVER_TOKEN está presente.
   // Datos de últimos 30 días por tag. Requiere Open + Link tracking activo
@@ -1137,7 +1137,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
         ultimo_evento: string;
       }>(),
       book_clicks_7d: {} as Record<string, number>,
-      page_views_7d: { 'quiz-rol': 0, 'revisar-cv': 0, blog: 0, vacantes: 0, con_utm: 0 },
+      page_views_7d: { 'quiz-rol': 0, 'revisar-cv': 0, blog: 0, vacantes: 0, libro: 0, con_utm: 0 },
     };
     const campaignWindowStart = now - 30 * 24 * 60 * 60 * 1000;
 
