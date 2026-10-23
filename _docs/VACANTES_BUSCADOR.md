@@ -23,6 +23,27 @@ Inspiración: https://bertamunoz02.github.io/busqueda_empleo/. Su repositorio no
 | Página | `src/pages/vacantes.astro` |
 | Medición | `src/pages/api/vacantes-evento.ts`, `page_viewed` con `page='vacantes'`, sección `vacantes` de `/api/weekly-report` |
 
+## Fuentes evaluadas (23 oct 2026)
+
+Lista tomada de la herramienta de referencia. Para cada empresa se revisó si su portal oficial se puede leer (`robots.txt`) y si tiene vacantes en los 7 países.
+
+| Empresa | Plataforma | Estado | Vacantes en los 7 países (23 oct) |
+|---|---|---|---|
+| IQVIA, ICON, Fortrea, Pfizer, MSD, Novartis, AstraZeneca, Sanofi, Roche, GSK, Amgen, Viatris, BMS, Almirall, Medtronic | Workday | Activas desde el 22 oct | Ver `vacantes_diario` |
+| Eli Lilly | Workday (detrás de su portal Phenom) | Agregada | 19 |
+| Merck KGaA (EMD) | Phenom | Agregada | 54 |
+| Thermo Fisher (PPD) | Phenom | Agregada. Su sitio Workday prohíbe la lectura en `robots.txt`; su portal público la permite. | ~360 en el listado |
+| Gilead, Rovi, Regeneron, Ipsen, Lonza, Sartorius | Workday | Agregadas | 2, 25, 10, 13, 6, 5 |
+| Evotec, Ferring | Workday | Sin vacantes en los 7 países; se pueden sumar si abren | 0 |
+| Labcorp | Phenom | Sin vacantes en los 7 países | 0 |
+| Parexel, Takeda | Radancy | **Excluidas:** su `robots.txt` prohíbe `/search-jobs/` | — |
+| Medpace | API JSON propia | Pendiente: requiere un lector propio; el acceso está permitido | Por medir |
+| BioMarin | Jobvite | Pendiente: presencia en la región por verificar | Por medir |
+
+**Regla:** el lector revisa el `robots.txt` de cada fuente en cada corrida. Si una fuente lo prohíbe, se salta y queda registrada con error en `vacantes_corridas`.
+
+**Fichas de Phenom:** se piden de una en una, con pausa de 400 ms y un reintento, porque el portal responde 410 si se le pide rápido.
+
 ## Reglas
 
 - **Solo portales oficiales de las empresas.** Nunca LinkedIn ni agregadores: leerlos de forma automática viola sus condiciones.

@@ -99,7 +99,7 @@ export function clasificarNivel(titulo: string): string {
 
 export function clasificarModalidad(texto: string | null | undefined): string | null {
   if (!texto) return null;
-  if (/remote|remoto|home office|teletrabajo/i.test(texto)) return 'remoto';
+  if (/remote|remoto|home office|teletrabajo|telecommute/i.test(texto)) return 'remoto';
   if (/hybrid|h[ií]brido/i.test(texto)) return 'hibrido';
   if (/on[- ]?site|office|presencial/i.test(texto)) return 'presencial';
   return null;
