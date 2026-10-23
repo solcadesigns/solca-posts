@@ -9,7 +9,7 @@
  * vacantes de cada rol y país, y cómo cambia con el tiempo. Ver _docs/VACANTES_BUSCADOR.md.
  */
 
-export const DESCRIPTORES_VERSION = 'd4';
+export const DESCRIPTORES_VERSION = 'd5';
 
 export interface Descriptores {
   idioma_anuncio: 'es' | 'en' | 'pt' | null;
@@ -215,22 +215,22 @@ export function extraerDescriptores(descripcion: string | null | undefined, titu
   // antes que los secundarios ("7+ years GCP… 3+ years auditing"). Lo deseable no cuenta.
   let anios_min: number | null = null;
   const tn = t.replace(new RegExp(`\\b(${Object.keys(NUM_LETRA).join('|')})\\b`, 'gi'), (w) => String(NUM_LETRA[w.toLowerCase()]));
-  const rxAnios = /(?<!\d)(\d{1,2})(?!\d)\s*(?:\+|-|–|\/|a|to|ou|o|y|e|and)?\s*(\d{1,2}\s*)?(?:\+\s*)?(?:years?|yrs?|años?|anos?)(?![\p{L}])/giu;
+  const rxAnios = /(?<!\d)(\d{1,2})(?!\d)\s*(?:\+|-|–|\/|a|to|ou|o|y|e|and|or more|or above|o más|ou mais)?\s*(\d{1,2}\s*)?(?:\+\s*)?(?:years?|yrs?|años?|anos?)(?![\p{L}])/giu;
   let m: RegExpExecArray | null;
   while ((m = rxAnios.exec(tn))) {
     const n = Number.parseInt(m[1], 10);
     const esRango = Boolean(m[2]);
     // La palabra "experiencia" (o un marcador de requisito) tiene que estar en la misma frase,
     // para no contar "lanzó un producto en los últimos 5 años". La línea anterior también cuenta.
-    const antes = tn.slice(Math.max(0, m.index - 60), m.index).split(/\.(?:\s|$)/).pop() ?? '';
+    const antes = tn.slice(Math.max(0, m.index - 160), m.index).split(/\.(?:\s|$)/).pop() ?? '';
     const despues = tn.slice(m.index, m.index + m[0].length + 80).split(/[.•\n]/)[0];
     const ctx = antes + despues;
-    if (/(edad|\bage\b|idade)/i.test(antes)) continue; // "edad de 25 a 40 años"
+    if (/(\bedad\b|\bage\b|\bidade\b)/i.test(antes)) continue; // "edad de 25 a 40 años"
     // Requisitos secundarios ("2 years managerial", "de los cuales 2 en liderazgo") no son el mínimo del puesto.
     const mismaClausula = despues.split(/[,;(]/)[0] + antes.split(/[,;]/).pop()!.slice(-25);
     // d4: "manag" a secas atrapaba el área ("study management", "Facilities Management"); solo cuenta la gestión de personas.
     if (/(managerial|people manag|line manag|managing (people|teams?|a team)|management (role|position)|as a (people )?manager|leadership|liderazgo|lideran[cç]a|supervis|people lead|of which|de los cuales|dos quais|in a lead)/i.test(mismaClausula)) continue;
-    if (/(preferred|preferable|desirable|deseable|desej[aá]vel|diferencial|a plus|nice to have|valorable|valorad[oa])/i.test(despues.split(/[;]/)[0] + antes.slice(-20))) continue;
+    if (/(preferred|preferable|desirable|deseable|desej[aá]vel|diferencial|a plus|nice to have|valorable|valorad[oa])/i.test(despues.split(/[,;]/)[0] + antes.slice(-20))) continue;
     if (!/(experi[eêé]n|exp\.|trabaj|work|atua|comparable to|typically|at least|minimum|m[ií]nimo|al menos|pelo menos)/i.test(ctx)) continue;
     if (n > 25 || (n === 0 && !esRango)) continue;
     // Escalera por grado ("Bachelor's: 2-5 years · Master's: 1-3 years"): manda la de licenciatura.
