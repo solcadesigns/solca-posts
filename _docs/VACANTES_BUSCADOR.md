@@ -140,7 +140,7 @@ Las correcciones están en las reglas r7/d3 y en la migración 0007.
 2. Excluye la cohorte inicial, los bancos de talento y las perpetuas. Por país, usa solo `es_principal = 1`.
 3. Por cada cifra, revisa a mano una muestra aleatoria de 30 vacantes del numerador y 30 del denominador. Publica solo si la precisión es de 90 % o más; si no, corrige la regla, reprocesa y repite.
 4. Da el número absoluto junto al porcentaje. No publiques cortes con menos de 30 vacantes.
-5. Di siempre "lo que publican estas N empresas en sus portales" y cuánto aporta la fuente más grande. Hoy IQVIA es alrededor de 27 %.
+5. Di siempre "lo que publican estas N empresas en sus portales" y cuánto aporta la fuente más grande. Al 23 oct 2026, contando ofertas distintas, IQVIA es 18 % (255 de 1,381).
 6. En comparaciones entre periodos, que un revisor independiente vuelva a correr la consulta desde la foto congelada.
 
 ## Medición
