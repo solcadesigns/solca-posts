@@ -111,3 +111,22 @@ export function paisesEnTexto(texto: string | null | undefined): PaisObjetivo[] 
   if (!texto) return [];
   return PAISES_OBJETIVO.filter((p) => PAIS_ISO3[p].test(texto) || PAIS_NOMBRE_RX[p].test(texto));
 }
+
+/**
+ * Ubicación que nombra un país fuera de los siete (Dublín, Londres, Varsovia, EE. UU.…).
+ * Sirve cuando el portal no da el país de la sede: si la ubicación no nombra otro país y la vacante
+ * solo tiene un país objetivo, la sede es ese país ("INSURGENTES" → México, "Recife" → Brasil).
+ */
+const RX_OTRO_PAIS = /(ireland|dublin|united kingdom|\buk\b|england|london|reading|leeds|maidenhead|watford|germany|frankfurt|berlin|bulgaria|sofia|poland|warsaw|italy|milan|france|paris|portugal|lisbon|lisboa|sweden|stockholm|gothenburg|serbia|belgrade|hungary|budapest|croatia|zagreb|czech|prague|brno|south africa|johannesburg|united states|\busa\b|new jersey|pennsylvania|belgium|brussels|netherlands|amsterdam|switzerland|india|hyderabad|china|canada|mississauga|burlington|romania|bucharest|bucuresti|greece|athens|turkey|israel|japan|australia|latvia|riga|estonia|tartu|kenya|nairobi|costa rica|\bNLD\b)/i;
+const RX_US = /(^|[\s,(-])US([\s,)-]|$)/; // mayúsculas: no confundir con "us"
+export function ubicacionFueraDeObjetivo(ubicacion: string | null | undefined): boolean {
+  return RX_OTRO_PAIS.test(ubicacion ?? '') || RX_US.test(ubicacion ?? '');
+}
+
+/** País de la sede cuando el portal no lo da: por texto de la ubicación o, si hay un solo país objetivo, ese. */
+export function principalPorUbicacion(ubicacion: string | null | undefined, paises: readonly string[]): PaisObjetivo | null {
+  const porTexto = paisesEnTexto(ubicacion)[0];
+  if (porTexto) return porTexto;
+  if (paises.length === 1 && !ubicacionFueraDeObjetivo(ubicacion)) return paises[0] as PaisObjetivo;
+  return null;
+}

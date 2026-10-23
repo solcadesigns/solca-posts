@@ -9,7 +9,7 @@
  * Carga manual (primera carga o pruebas): GET /run?key=<RUN_KEY>[&fuente=iqvia]
  * Recalcular rol, nivel y descriptores tras cambiar reglas: GET /run?key=<RUN_KEY>&modo=reprocesar
  */
-import { FUENTES, PAISES_OBJETIVO, paisesEnTexto, type Fuente } from '../../src/lib/vacantes-fuentes';
+import { FUENTES, PAISES_OBJETIVO, principalPorUbicacion, type Fuente } from '../../src/lib/vacantes-fuentes';
 import {
   CLASIFICACION_VERSION,
   clasificarModalidad,
@@ -55,17 +55,17 @@ function descriptoresStmts(db: D1Database, id: string, titulo: string, descripci
  */
 async function reprocesar(env: Env, limite = 400): Promise<number> {
   const rows = await env.DB.prepare(
-    `SELECT id, fuente, titulo, descripcion, tipo_empresa, ubicacion, es_principal FROM vacantes
+    `SELECT id, fuente, titulo, descripcion, tipo_empresa, ubicacion, paises, pais_principal_iso FROM vacantes
      WHERE clasificacion_version IS NOT ? OR descriptores_version IS NOT ? LIMIT ?`,
   )
     .bind(CLASIFICACION_VERSION, DESCRIPTORES_VERSION, limite)
     .all();
-  type Fila = { id: string; fuente: string; titulo: string; descripcion: string | null; tipo_empresa: string; ubicacion: string | null; es_principal: number | null };
+  type Fila = { id: string; fuente: string; titulo: string; descripcion: string | null; tipo_empresa: string; ubicacion: string | null; paises: string | null; pais_principal_iso: string | null };
   const lista = (rows.results ?? []) as Fila[];
   const upd = env.DB.prepare(
     'UPDATE vacantes SET rol = ?, nivel = ?, clasificacion_version = ?, tipo_publicacion = ?, grupo_dup = ? WHERE id = ?',
   );
-  // Filas guardadas antes de existir pais_principal_iso: se aproxima con el texto de la ubicación principal.
+  // Filas sin país de sede (anteriores a la columna, o el portal solo daba la ciudad): se aproxima con la ubicación.
   const updPrincipal = env.DB.prepare('UPDATE vacantes SET pais_principal_iso = ?, es_principal = ? WHERE id = ?');
   let stmts: D1PreparedStatement[] = [];
   for (const r of lista) {
@@ -77,9 +77,10 @@ async function reprocesar(env: Env, limite = 400): Promise<number> {
         r.id,
       ),
     );
-    if (r.es_principal === null) {
-      const p = paisesEnTexto(r.ubicacion)[0];
-      stmts.push(updPrincipal.bind(p ?? null, p ? 1 : 0, r.id));
+    // d4: también las que quedaron sin sede porque el portal solo daba ciudad ("INSURGENTES", "Recife").
+    if (r.pais_principal_iso === null) {
+      const p = principalPorUbicacion(r.ubicacion, (r.paises ?? '').split(',').filter(Boolean));
+      stmts.push(updPrincipal.bind(p, p ? 1 : 0, r.id));
     }
     stmts.push(...descriptoresStmts(env.DB, r.id, r.titulo, r.descripcion));
     if (stmts.length >= 80) {
@@ -220,6 +221,7 @@ async function leerFuente(env: Env, f: Fuente, ahora: string, opt: Opciones): Pr
           return;
         }
         const principal = d.principalIso && (d.paises as string[]).includes(d.principalIso) ? d.principalIso : d.paises[0];
+        const sede = d.principalIso ?? principalPorUbicacion(d.ubicacion, d.paises);
         insertadas++;
         pendientes.push(
           ins.bind(
@@ -231,8 +233,8 @@ async function leerFuente(env: Env, f: Fuente, ahora: string, opt: Opciones): Pr
             ahora, ahora,
             d.descripcion,
             CLASIFICACION_VERSION,
-            d.principalIso,
-            d.principalIso && (PAISES_OBJETIVO as readonly string[]).includes(d.principalIso) ? 1 : 0,
+            sede,
+            sede && (PAISES_OBJETIVO as readonly string[]).includes(sede) ? 1 : 0,
             d.nUbicaciones,
             primeraLectura ? 1 : 0,
             RX_BANCO_TALENTO.test(titulo) ? 'banco_talento' : 'vacante',

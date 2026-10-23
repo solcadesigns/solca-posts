@@ -6,7 +6,7 @@
  * Diseño: _docs/VACANTES_BUSCADOR.md.
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { FUENTES, PAISES_OBJETIVO, PAIS_NOMBRE, type PaisObjetivo } from '../lib/vacantes-fuentes';
+import { FUENTES, PAISES_OBJETIVO, PAIS_NOMBRE, ubicacionFueraDeObjetivo, type PaisObjetivo } from '../lib/vacantes-fuentes';
 import { ROLES_VACANTE, NIVELES } from '../lib/vacantes-clasificar';
 import { LIBRO_POR_ROL } from '../lib/libros';
 
@@ -115,12 +115,9 @@ function fechaCorta(iso: string | null): string {
 }
 // Vacante con varias ubicaciones cuya sede principal está fuera de los siete países
 // (ej. Dublín con Barcelona como ubicación adicional): se muestra la sede y "También en España".
-// Cuando no hay país principal (filas antiguas), se decide por la ubicación: solo es secundaria si nombra otro país.
-const RX_OTRO_PAIS = /(ireland|dublin|united kingdom|\buk\b|england|london|reading|germany|frankfurt|berlin|bulgaria|sofia|poland|warsaw|italy|milan|france|paris|portugal|lisbon|sweden|stockholm|serbia|hungary|croatia|czech|prague|south africa|united states|\busa\b|belgium|netherlands|switzerland|india|china|canada|romania|greece|turkey|israel|japan|australia|latvia|estonia|kenya|leeds|maidenhead|costa rica|hyderabad|mississauga|czechia|\bNLD\b)/i;
-const RX_US = /(^|[\s,(-])US([\s,)-]|$)/; // mayúsculas: no confundir con 'us' en español
 function esSecundaria(v: Vacante): boolean {
   if (v.pais_principal_iso) return !(PAISES_OBJETIVO as readonly string[]).includes(v.pais_principal_iso);
-  return RX_OTRO_PAIS.test(v.ubicacion ?? '') || RX_US.test(v.ubicacion ?? '');
+  return ubicacionFueraDeObjetivo(v.ubicacion); // filas sin país de sede
 }
 function paisesDe(v: Vacante): string {
   const ps = (v.paises ?? v.pais ?? '').split(',').filter(Boolean) as PaisObjetivo[];

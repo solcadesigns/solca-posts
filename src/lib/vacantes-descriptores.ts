@@ -9,7 +9,7 @@
  * vacantes de cada rol y país, y cómo cambia con el tiempo. Ver _docs/VACANTES_BUSCADOR.md.
  */
 
-export const DESCRIPTORES_VERSION = 'd3';
+export const DESCRIPTORES_VERSION = 'd4';
 
 export interface Descriptores {
   idioma_anuncio: 'es' | 'en' | 'pt' | null;
@@ -136,7 +136,7 @@ const AREAS: Array<[string, RegExp]> = [
 ];
 
 const HERRAMIENTAS: Array<[string, RegExp]> = [
-  ['gcp_ich', /(\bGCP\b|good clinical practice|buenas pr[aá]cticas cl[ií]nicas|\bICH\b|\bBPC\b)/i],
+  ['gcp_ich', /(\bGCP\b|good clinical practice|buenas pr[aá]cticas cl[ií]nicas|boas pr[aá]ticas cl[ií]nicas|\bICH\b|\bBPC\b)/i],
   ['gmp', /(\bGMP\b|good manufacturing|buenas pr[aá]cticas de manufactura|\bBPF\b)/i],
   ['sas', /\bSAS\b/],
   ['r', /\bR (programming|language|studio)|\bRStudio\b|\bR\/|, R,|\bR and Python\b/],
@@ -144,14 +144,15 @@ const HERRAMIENTAS: Array<[string, RegExp]> = [
   ['sql', /\bSQL\b/],
   ['power_bi', /power ?bi/i],
   ['tableau', /\btableau\b/i],
-  ['excel', /\bexcel\b/i],
+  // d4: con mayúscula y sin letra después (\b de JS deja pasar "excelência"); "to excel" es verbo.
+  ['excel', /(?<![\p{L}])(?<!to )Excel(?![\p{L}])/u],
   ['veeva', /\bveeva\b/i],
   ['medidata', /(medidata|\bRave\b)/i],
   ['salesforce', /salesforce/i],
   ['sap', /\bSAP\b/],
   ['argus_safety', /\bargus\b/i],
   ['meddra', /meddra/i],
-  ['ctms', /\bCTMS\b/],
+  ['ctms', /(\bCTMS\b|clinical trial management system)/i],
   ['edc', /\bEDC\b/],
 ];
 
@@ -205,30 +206,38 @@ export function extraerDescriptores(descripcion: string | null | undefined, titu
   for (const [h, rx] of HERRAMIENTAS) {
     if (!rx.test(t)) continue;
     // "GCP" junto a nubes es Google Cloud Platform, no Buenas Prácticas Clínicas.
-    if (h === 'gcp_ich' && !/(good clinical practice|buenas pr[aá]cticas cl[ií]nicas|\bICH\b|\bBPC\b)/i.test(t) && /(google cloud|\bAWS\b|azure|cloud)/i.test(t)) continue;
+    if (h === 'gcp_ich' && !/(good clinical practice|buenas pr[aá]cticas cl[ií]nicas|boas pr[aá]ticas cl[ií]nicas|\bICH\b|\bBPC\b)/i.test(t) && /(google cloud|\bAWS\b|azure|cloud)/i.test(t)) continue;
     etiquetas.push({ tipo: 'herramienta', valor: h });
   }
 
-  // Años de experiencia: el mínimo que se menciona ("3+ years", "mínimo 2 años", "2 a 4 anos").
+  // Años de experiencia (d4): el primer requisito que se menciona ("3+ years", "mínimo 2 años", "2 a 4 anos",
+  // "0 - 2 years", "(comparable to 5+ years)"). Se toma el primero y no el menor: el requisito principal suele ir
+  // antes que los secundarios ("7+ years GCP… 3+ years auditing"). Lo deseable no cuenta.
   let anios_min: number | null = null;
   const tn = t.replace(new RegExp(`\\b(${Object.keys(NUM_LETRA).join('|')})\\b`, 'gi'), (w) => String(NUM_LETRA[w.toLowerCase()]));
-  const rxAnios = /(?<!\d)(\d{1,2})(?!\d)\s*(?:\+|-|–|\/|a|to|ou|o|y|e|and)?\s*(?:\d{1,2}\s*)?(?:\+\s*)?(?:years?|yrs?|años?|anos?)(?![\p{L}])/giu;
+  const rxAnios = /(?<!\d)(\d{1,2})(?!\d)\s*(?:\+|-|–|\/|a|to|ou|o|y|e|and)?\s*(\d{1,2}\s*)?(?:\+\s*)?(?:years?|yrs?|años?|anos?)(?![\p{L}])/giu;
   let m: RegExpExecArray | null;
   while ((m = rxAnios.exec(tn))) {
-    const t2 = tn;
     const n = Number.parseInt(m[1], 10);
-    // La palabra "experiencia" tiene que estar cerca del número (antes o después),
-    // para no contar frases como "lanzó un producto en los últimos 5 años".
-    // Solo dentro de la misma frase: se corta en punto, viñeta o salto de línea.
-    // La línea anterior también cuenta ("Experience:\n• Minimum of 3 years").
-    const antes = t2.slice(Math.max(0, m.index - 60), m.index).split(/\.(?:\s|$)/).pop() ?? '';
-    const despues = t2.slice(m.index, m.index + m[0].length + 45).split(/[.•\n]/)[0];
+    const esRango = Boolean(m[2]);
+    // La palabra "experiencia" (o un marcador de requisito) tiene que estar en la misma frase,
+    // para no contar "lanzó un producto en los últimos 5 años". La línea anterior también cuenta.
+    const antes = tn.slice(Math.max(0, m.index - 60), m.index).split(/\.(?:\s|$)/).pop() ?? '';
+    const despues = tn.slice(m.index, m.index + m[0].length + 80).split(/[.•\n]/)[0];
     const ctx = antes + despues;
     if (/(edad|\bage\b|idade)/i.test(antes)) continue; // "edad de 25 a 40 años"
     // Requisitos secundarios ("2 years managerial", "de los cuales 2 en liderazgo") no son el mínimo del puesto.
     const mismaClausula = despues.split(/[,;(]/)[0] + antes.split(/[,;]/).pop()!.slice(-25);
-    if (/(manag|leadership|liderazgo|lideran[cç]a|supervis|people lead|of which|de los cuales|dos quais|in a lead)/i.test(mismaClausula)) continue;
-    if (n > 0 && n <= 25 && /(experien|exp\.|trabaj|work|atua)/i.test(ctx)) anios_min = anios_min === null ? n : Math.min(anios_min, n);
+    // d4: "manag" a secas atrapaba el área ("study management", "Facilities Management"); solo cuenta la gestión de personas.
+    if (/(managerial|people manag|line manag|managing (people|teams?|a team)|management (role|position)|as a (people )?manager|leadership|liderazgo|lideran[cç]a|supervis|people lead|of which|de los cuales|dos quais|in a lead)/i.test(mismaClausula)) continue;
+    if (/(preferred|preferable|desirable|deseable|desej[aá]vel|diferencial|a plus|nice to have|valorable|valorad[oa])/i.test(despues.split(/[;]/)[0] + antes.slice(-20))) continue;
+    if (!/(experi[eêé]n|exp\.|trabaj|work|atua|comparable to|typically|at least|minimum|m[ií]nimo|al menos|pelo menos)/i.test(ctx)) continue;
+    if (n > 25 || (n === 0 && !esRango)) continue;
+    // Escalera por grado ("Bachelor's: 2-5 years · Master's: 1-3 years"): manda la de licenciatura.
+    const linea = tn.slice(tn.lastIndexOf('\n', m.index) + 1, m.index);
+    if (/(bachelor|licenciatura|gradua[cç][aã]o|bacharel)/i.test(linea)) { anios_min = n; break; }
+    if (anios_min === null) anios_min = n;
+    if (!/(degree|grado|t[ií]tulo|master|maestr|mestrado|phd|doctor)/i.test(linea)) break;
   }
 
   let contrato: Descriptores['contrato'] = null;

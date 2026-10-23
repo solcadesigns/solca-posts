@@ -106,6 +106,13 @@ Son resultados de reglas: antes de publicar una cifra, valida una muestra a mano
 
 Las correcciones están en las reglas r7/d3 y en la migración 0007.
 
+**Validación del 23 oct 2026 (foto congelada, reglas r7/d3; muestras de 30 + 30 en `vacantes/snapshots/2026-10-23/muestras/`):**
+- Inglés mencionado: 30/30 y 30/30. País de sede (es_principal = 1): 30/30.
+- Herramientas: 29/30 en etiquetas asignadas, 26/30 en etiquetas completas. "Excel" contaba "excelência" y "to excel"; faltaban "Clinical Trial Management System" y "boas práticas clínicas".
+- Años de experiencia: 26/30 con valor y 22/30 sin valor. Faltaban "(comparable to 5+ years)", "0 - 2 years", "Experiência de 2 a 4 anos", y "management" como área se descartaba como requisito de gestión; tomaba el menor y no el principal.
+- Sede sin país: 22/30. El portal da solo la ciudad ("INSURGENTES", "Recife") y la fila quedaba fuera de su país.
+- Corregido en d4 (`vacantes-descriptores.ts`) y `principalPorUbicacion` (`vacantes-fuentes.ts`): sobre las mismas muestras, 30/30, 29/30 y 30/30. Antes de publicar se valida con una muestra nueva.
+
 **Columnas de calidad** (migración 0007):
 - `pais_principal_iso`, `es_principal` y `n_ubicaciones`: 13 % de las vacantes tenían su ubicación principal fuera de los 7 países (Londres, Varsovia, EE. UU.) y entraron porque España o México eran una opción más. **Para cifras por país, usa solo `es_principal = 1`** y reporta aparte las regionales o multipaís.
 - `cohorte_inicial`: lo que ya estaba publicado en la primera lectura de cada fuente. **Exclúyelo de "nuevas" y de "días publicada".**
