@@ -11,7 +11,7 @@ import { extractUtms } from '../../lib/utm';
 export const prerender = false;
 
 const EVENTOS = new Set(['vacantes_viewed', 'vacantes_filtered', 'vacancy_clicked', 'tool_clicked']);
-const HERRAMIENTAS = new Set(['simulador', 'cv', 'quiz']);
+const HERRAMIENTAS = new Set(['simulador', 'cv', 'quiz', 'libro']);
 const AID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const FILTRO_KEYS = ['q', 'pais', 'rol', 'nivel', 'empresa', 'dias'];
 

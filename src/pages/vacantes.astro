@@ -97,6 +97,22 @@ function linkSimulador(r: string): string {
 }
 const linkCv = '/revisar-cv?utm_source=vacantes&utm_medium=buscador&utm_campaign=vacantes_diarias';
 
+// Rol de la vacante → libro publicado (mismas URLs que index.astro y quiz-rol.astro).
+// Solo roles con libro a la venta; consultoría, medical affairs, regulatorio y HEOR aún no tienen.
+// La etiqueta de origen (sck en pay.hotmart.com, src en go.hotmart.com) va fija como "vacantes|<rol>"
+// para que Hotmart atribuya la venta al buscador; BaseLayout respeta la que ya trae el enlace y registra book_clicked.
+const LIBRO: Record<string, { url: string; titulo: string }> = {
+  msl: { url: 'https://go.hotmart.com/Y105718405Y', titulo: 'Medical Science Liaison' },
+  clinical_pm: { url: 'https://go.hotmart.com/R105710415P', titulo: 'Project Manager en pharma' },
+  investigacion_clinica: { url: 'https://go.hotmart.com/U105724060O', titulo: 'Clinical Research' },
+  farmacovigilancia: { url: 'https://pay.hotmart.com/E107847432I', titulo: 'Farmacovigilancia LATAM' },
+};
+function linkLibro(r: string): string {
+  const u = new URL(LIBRO[r].url);
+  u.searchParams.set(u.hostname === 'pay.hotmart.com' ? 'sck' : 'src', ('vacantes|' + r.replace(/_/g, '-')).slice(0, 30));
+  return u.toString();
+}
+
 function fechaCorta(iso: string | null): string {
   if (!iso) return '';
   const d = new Date(`${iso.slice(0, 10)}T12:00:00Z`);
@@ -222,6 +238,9 @@ const actualizadoTxt = actualizado
               <a href={linkSimulador(v.rol)} class="vac-tool" data-tool="simulador" data-id={v.id}>Practica la entrevista</a>
             )}
             <a href={linkCv} class="vac-tool" data-tool="cv" data-id={v.id}>Revisa tu CV</a>
+            {LIBRO[v.rol] && (
+              <a href={linkLibro(v.rol)} target="_blank" rel="noopener" class="vac-tool" data-tool="libro" data-id={v.id}>Libro: {LIBRO[v.rol].titulo}</a>
+            )}
           </div>
         </li>
       ))}
