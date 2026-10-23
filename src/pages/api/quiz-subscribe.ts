@@ -104,19 +104,19 @@ async function sendWelcomeQuiz(
       kind: 'book',
       label: 'Ver el libro De Doctorado a Project Manager',
       next: 'Libro "De Doctorado a Project Manager" — guía práctica del rol de PM clínico en pharma LATAM y España.',
-      url: 'https://go.hotmart.com/R105710415P',
+      url: 'https://pay.hotmart.com/R105710415P',
     },
     MSL: {
       kind: 'book',
       label: 'Ver el libro De Doctorado a MSL',
       next: 'Libro "De Doctorado a MSL" — guía práctica del rol de Medical Science Liaison en pharma LATAM y España.',
-      url: 'https://go.hotmart.com/Y105718405Y',
+      url: 'https://pay.hotmart.com/Y105718405Y',
     },
     CR: {
       kind: 'book',
       label: 'Ver el libro De Doctorado a Clinical Research',
       next: 'Libro "De Doctorado a Clinical Research" — guía práctica del rol de CRA/CRS en pharma LATAM y España.',
-      url: 'https://go.hotmart.com/U105724060O',
+      url: 'https://pay.hotmart.com/U105724060O',
     },
     FV: {
       kind: 'book',

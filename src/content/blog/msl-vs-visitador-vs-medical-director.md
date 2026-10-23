@@ -64,4 +64,4 @@ La diferencia está en el verbo y en el sujeto. **MSL habla de ciencia. Visitado
 
 Si tu CV ya está apuntando a MSL pero quieres verificar que el headline de LinkedIn y la actividad reciente refuerzan la misma señal, lee primero [los tres lugares de tu LinkedIn que un reclutador pharma checa](/blog/despues-del-cv). Y si quieres validar que MSL es el cuadrante con más vacantes abiertas para ti hoy en LATAM, mira la [distribución real del mes pasado](/blog/clinical-ops-40-pharma-latam).
 
-El libro 2 de Solca (*De Doctorado a MSL*) cubre el reverse-engineering completo del rol, los patrones de pregunta que más se repiten en entrevista, y plantillas de CV específicas para PhDs apuntando a MSL en LATAM. Disponible en [Hotmart](https://go.hotmart.com/Y105718405Y).
+El libro 2 de Solca (*De Doctorado a MSL*) cubre el reverse-engineering completo del rol, los patrones de pregunta que más se repiten en entrevista, y plantillas de CV específicas para PhDs apuntando a MSL en LATAM. Disponible en [Hotmart](https://pay.hotmart.com/Y105718405Y).

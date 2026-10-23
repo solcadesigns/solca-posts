@@ -36,7 +36,7 @@ export const LIBROS: Libro[] = [
     tituloSeo: 'Libro Project Manager en industria farmacéutica',
     subtitulo: 'Guía práctica para científicos de la salud · LATAM y España',
     portada: '/covers/portada_pm.png',
-    hotmart: 'https://go.hotmart.com/R105710415P',
+    hotmart: 'https://pay.hotmart.com/R105710415P',
     intro:
       'Si tu formación es científica y quieres entrar a industria como Project Manager en pharma, biotech o dispositivos médicos, este libro traduce lo que ya sabes hacer al vocabulario que la industria contrata.',
     resultados: [
@@ -63,7 +63,7 @@ export const LIBROS: Libro[] = [
     tituloSeo: 'Libro Medical Science Liaison (MSL)',
     subtitulo: 'Guía práctica para científicos de la salud · LATAM y España',
     portada: '/covers/portada_msl.png',
-    hotmart: 'https://go.hotmart.com/Y105718405Y',
+    hotmart: 'https://pay.hotmart.com/Y105718405Y',
     intro:
       'El Medical Science Liaison es el rol que muchos científicos de la salud descubren tarde. Es el puente entre la ciencia y los KOLs, y la puerta más natural de industria para un profesional clínico o de investigación con vocación de intercambio científico. Este libro te enseña a cruzarla.',
     resultados: [
@@ -90,7 +90,7 @@ export const LIBROS: Libro[] = [
     tituloSeo: 'Libro Clinical Research: CRA y CRS',
     subtitulo: 'Guía práctica para científicos de la salud · LATAM y España',
     portada: '/covers/portada_cr.png',
-    hotmart: 'https://go.hotmart.com/U105724060O',
+    hotmart: 'https://pay.hotmart.com/U105724060O',
     intro:
       'Si tu formación es científica y quieres entrar a la operación de ensayos clínicos como CRA o CRS, este libro es el mapa completo desde la definición del rol hasta los primeros noventa días, con el marco regulatorio LATAM, España y FDA actualizado a agosto de 2026.',
     resultados: [

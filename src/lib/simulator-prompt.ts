@@ -714,9 +714,9 @@ Ancla la justificación en la dimensión específica que falló (ej. "Tu estruct
     case 'gratis':
       return `${performanceOverride}Plan gratis: SÍ incluye CTA libro contextual al rol practicado al cierre.
 Mapeo de rol a libro:
-  PM, Clinical PM → Libro 1 (https://go.hotmart.com/R105710415P)
-  MSL, Medical Affairs → Libro 2 (https://go.hotmart.com/Y105718405Y)
-  CRA, Clinical Research, ACS → Libro 3 (https://go.hotmart.com/U105724060O)
+  PM, Clinical PM → Libro 1 (https://pay.hotmart.com/R105710415P)
+  MSL, Medical Affairs → Libro 2 (https://pay.hotmart.com/Y105718405Y)
+  CRA, Clinical Research, ACS → Libro 3 (https://pay.hotmart.com/U105724060O)
   PV, Drug Safety, Farmacovigilancia, DSA → Libro 4 (https://pay.hotmart.com/E107847432I)
   Regulatory, HEOR, Otro → Rotar + sugerir /revisar-cv
 

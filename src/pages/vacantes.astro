@@ -90,13 +90,12 @@ const MODULO: Record<string, string> = {
 function linkSimulador(r: string): string {
   const u = new URL('https://solcaciencia.com/simulador-entrevistas/');
   if (MODULO[r]) u.searchParams.set('modulo', MODULO[r]);
-  u.searchParams.set('utm_source', 'vacantes');
-  u.searchParams.set('utm_medium', 'buscador');
-  u.searchParams.set('utm_campaign', 'vacantes_diarias');
-  u.searchParams.set('utm_content', r);
+  // ?ref= y no UTM: un UTM interno pisaría la campaña externa guardada en la sesión.
+  // El paso de vacantes a cada herramienta ya queda en vacantes_eventos (tool_clicked).
+  u.searchParams.set('ref', 'vacantes');
   return u.pathname + u.search;
 }
-const linkCv = '/revisar-cv?utm_source=vacantes&utm_medium=buscador&utm_campaign=vacantes_diarias';
+const linkCv = '/revisar-cv?ref=vacantes';
 
 // Rol de la vacante → landing del libro (src/lib/libros.ts). Solo roles con libro a la venta.
 // Con ?ref= (no UTM, para no pisar la campaña externa de la sesión); la landing lo usa como origen en Hotmart.

@@ -171,9 +171,9 @@ Los ángulos pedagógicos (A, C, D, E):
 Rotalos por pregunta sin repetir dos veces seguidas.
 
 Para CTA:
-  Plan gratis + rol PM/Clinical PM: libro "De doctorado a Project Manager" (https://go.hotmart.com/R105710415P)
-  Plan gratis + rol MSL/Medical Affairs: libro MSL (https://go.hotmart.com/Y105718405Y)
-  Plan gratis + rol CRA/Clinical Research: libro Clinical Research (https://go.hotmart.com/U105724060O)
+  Plan gratis + rol PM/Clinical PM: libro "De doctorado a Project Manager" (https://pay.hotmart.com/R105710415P)
+  Plan gratis + rol MSL/Medical Affairs: libro MSL (https://pay.hotmart.com/Y105718405Y)
+  Plan gratis + rol CRA/Clinical Research: libro Clinical Research (https://pay.hotmart.com/U105724060O)
   Otros roles o scores promedio ≤2.5: recurso "Revisa tu CV" (https://solcaciencia.com/revisar-cv)
 `;
 

@@ -175,28 +175,28 @@ const ROLE_CTA_CATALOG: Partial<Record<string, RoleCta>> = {
     title: 'Medical Science Liaison · Guía práctica para científicos de la salud · LATAM y España',
     description:
       'Guía para posiciones MSL en pharma LATAM y España: Scientific Engagement, insight capture, MLR compliance, manejo de KOLs, casos reales por área terapéutica. El siguiente paso para consolidar tu perfil antes de la próxima entrevista.',
-    url: 'https://go.hotmart.com/Y105718405Y',
+    url: 'https://pay.hotmart.com/Y105718405Y',
   },
   Clinical_PM: {
     type: 'libro',
     title: 'Project Management · Guía práctica para científicos de la salud · LATAM y España',
     description:
       'Guía completa para Project Manager en pharma LATAM y España: stakeholder management, critical path, RACI, presupuestos y timelines. Cinco módulos con cuaderno de trabajo aplicable.',
-    url: 'https://go.hotmart.com/R105710415P',
+    url: 'https://pay.hotmart.com/R105710415P',
   },
   CRA: {
     type: 'libro',
     title: 'Clinical Research · Guía práctica para científicos de la salud · LATAM y España',
     description:
       'Guía para roles de investigación clínica (CRA, coordinación de estudios): ICH-GCP, monitoreo basado en riesgo, manejo de SAEs, SDV, relación con sitios investigadores. Casos y preguntas típicas del sector.',
-    url: 'https://go.hotmart.com/U105724060O?dp=1',
+    url: 'https://pay.hotmart.com/U105724060O',
   },
   Associate_Clinical_Scientist: {
     type: 'libro',
     title: 'Clinical Research · Guía práctica para científicos de la salud · LATAM y España',
     description:
       'Guía para roles clínicos y de investigación: protocolos, ICH-GCP, monitoreo, manejo de SAEs, relación con sitios. Preguntas típicas por área terapéutica.',
-    url: 'https://go.hotmart.com/U105724060O?dp=1',
+    url: 'https://pay.hotmart.com/U105724060O',
   },
   Pharmacovigilance: {
     type: 'libro',

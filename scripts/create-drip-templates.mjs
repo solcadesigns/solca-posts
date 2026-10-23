@@ -150,9 +150,9 @@ Un rol no es un título. Es una decisión diaria sobre en qué invertir tu tiemp
 
 Escribí unas guías introductorias para tres roles comunes en la industria pharma con las que puedes iniciar tu camino. Cada guía incluye información para iniciar tu formación y prepararte para adaptar y transformar tus habilidades a lo que cada rol necesita.
 
-Project Manager → https://go.hotmart.com/R105710415P
-MSL → https://go.hotmart.com/Y105718405Y
-Clinical Research → https://go.hotmart.com/U105724060O
+Project Manager → https://pay.hotmart.com/R105710415P
+MSL → https://pay.hotmart.com/Y105718405Y
+Clinical Research → https://pay.hotmart.com/U105724060O
 
 Si después de leerla el rol no te queda tan bien como el quiz sugirió, es información valiosa. El quiz es una hipótesis; la guía es el reality check.
 
