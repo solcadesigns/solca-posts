@@ -686,8 +686,7 @@ async function buildVacantes(db: D1Database, sinceIso: string): Promise<Vacantes
     // Por país con todas las ubicaciones (una vacante multi-país cuenta en cada país), igual que el filtro de la página.
     db.prepare(
       `SELECT p.k AS k, COUNT(*) AS n FROM vacantes v
-         JOIN (SELECT 'mx' AS k UNION ALL SELECT 'br' UNION ALL SELECT 'ar' UNION ALL SELECT 'co'
-               UNION ALL SELECT 'cl' UNION ALL SELECT 'pe' UNION ALL SELECT 'es') p
+         JOIN (SELECT value AS k FROM json_each('["mx","br","ar","co","cl","pe","es"]')) p
            ON (',' || v.paises || ',') LIKE '%,' || p.k || ',%'
        WHERE v.activa = 1 GROUP BY p.k`,
     ),

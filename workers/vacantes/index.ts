@@ -376,8 +376,7 @@ async function fotoDiaria(env: Env, ahora: string): Promise<void> {
        SELECT ?, v.fuente, p.k, v.rol, v.nivel, COUNT(*),
               SUM(CASE WHEN v.pais_principal_iso = p.k THEN 1 ELSE 0 END), ?
        FROM vacantes v
-       JOIN (SELECT 'mx' AS k UNION ALL SELECT 'br' UNION ALL SELECT 'ar' UNION ALL SELECT 'co'
-             UNION ALL SELECT 'cl' UNION ALL SELECT 'pe' UNION ALL SELECT 'es') p
+       JOIN (SELECT value AS k FROM json_each('["mx","br","ar","co","cl","pe","es"]')) p
          ON (',' || v.paises || ',') LIKE '%,' || p.k || ',%'
        WHERE v.activa = 1 AND COALESCE(v.tipo_publicacion, 'vacante') = 'vacante'
        GROUP BY v.fuente, p.k, v.rol, v.nivel`,
