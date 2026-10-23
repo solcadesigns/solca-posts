@@ -75,6 +75,46 @@ Son resultados de reglas: antes de publicar una cifra, valida una muestra a mano
   - herramientas y áreas terapéuticas más pedidas;
   - cambio contra el periodo anterior y contra el mismo periodo del año previo.
 
+## Auditoría independiente de datos (22 oct 2026) y controles
+
+**Resultado de la auditoría** (copia del 22 oct, reglas r5/d1):
+- **Guardado:** fiel. 244 de 244 vacantes coinciden con el portal en título, fecha y descripción.
+- **Rol:** alrededor de 85 % de acierto, ponderado.
+- **Nivel:** casi siempre correcto cuando se asigna, pero 40 % queda sin nivel.
+- **Descriptores:** cerca de 95 % de acierto en "menciona inglés" y cerca de 90 % en herramientas. Los puntos débiles eran "inglés nativo", grado mínimo, años de experiencia y áreas terapéuticas.
+
+Las correcciones están en las reglas r7/d3 y en la migración 0007.
+
+**Columnas de calidad** (migración 0007):
+- `pais_principal_iso`, `es_principal` y `n_ubicaciones`: 13 % de las vacantes tenían su ubicación principal fuera de los 7 países (Londres, Varsovia, EE. UU.) y entraron porque España o México eran una opción más. **Para cifras por país, usa solo `es_principal = 1`** y reporta aparte las regionales o multipaís.
+- `cohorte_inicial`: lo que ya estaba publicado en la primera lectura de cada fuente. **Exclúyelo de "nuevas" y de "días publicada".**
+- `tipo_publicacion`: separa los bancos de talento (`banco_talento`). Las vacantes "perpetuas" (más de 365 días desde `fecha_publicacion`) se excluyen en la consulta, no en la columna.
+- `grupo_dup`: plazas múltiples de la misma oferta (por ejemplo, 6 "CRA" de ICON en São Paulo). Cuenta plazas, pero no las leas como 6 empleadores.
+- `id_llave`: identifica los ids armados con la ruta en vez del número de requisición.
+- `cerrada_en`: el momento en que el lector la cerró.
+- Tabla `vacantes_ciclo`: historial de alta, cierre, reapertura y cambio de título, para reconstruir periodos pasados.
+- Tabla `vacantes_diario`: foto diaria agregada (fuente, país, rol, nivel; activas y activas con país principal), con la versión de reglas del día.
+
+**Controles automáticos en el lector:**
+- Si una fuente cae a la mitad o menos de la mediana de sus últimas 7 corridas, la corrida queda `sospechosa` y no cierra nada.
+- Lo mismo si pretende cerrar más del 30 % de las activas de una fuente en un día.
+- Las lecturas incompletas quedan `parcial`.
+- El reporte semanal muestra `vacantes.calidad` y las corridas sospechosas.
+
+**Límites conocidos:**
+- El rol se clasifica solo con el título. Por ejemplo, IQVIA tiene un "MSL" que en la descripción es delegado comercial.
+- La modalidad solo existe en 5 fuentes: **no publiques "% remotos"** salvo con las fuentes que la reportan.
+- BMS solo aporta 1 o 2 vacantes porque no tiene faceta de país; hay que configurarla.
+
+### Protocolo antes de publicar una cifra
+
+1. Congela el periodo: fecha, versión de reglas (`vacantes_diario.reglas`) y panel de fuentes con `alta` anterior al periodo.
+2. Excluye la cohorte inicial, los bancos de talento y las perpetuas. Por país, usa solo `es_principal = 1`.
+3. Por cada cifra, revisa a mano una muestra aleatoria de 30 vacantes del numerador y 30 del denominador. Publica solo si la precisión es de 90 % o más; si no, corrige la regla, reprocesa y repite.
+4. Da el número absoluto junto al porcentaje. No publiques cortes con menos de 30 vacantes.
+5. Di siempre "lo que publican estas N empresas en sus portales" y cuánto aporta la fuente más grande. Hoy IQVIA es alrededor de 27 %.
+6. En comparaciones entre periodos, que un revisor independiente vuelva a correr la consulta desde la foto congelada.
+
 ## Medición
 
 `vacantes_eventos` guarda cuatro eventos:

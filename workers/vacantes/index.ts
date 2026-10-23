@@ -113,16 +113,32 @@ function descriptoresStmts(db: D1Database, id: string, titulo: string, descripci
  */
 async function reprocesar(env: Env, limite = 400): Promise<number> {
   const rows = await env.DB.prepare(
-    `SELECT id, titulo, descripcion, tipo_empresa FROM vacantes
+    `SELECT id, fuente, titulo, descripcion, tipo_empresa, ubicacion, es_principal FROM vacantes
      WHERE clasificacion_version IS NOT ? OR descriptores_version IS NOT ? LIMIT ?`,
   )
     .bind(CLASIFICACION_VERSION, DESCRIPTORES_VERSION, limite)
-    .all<{ id: string; titulo: string; descripcion: string | null; tipo_empresa: string }>();
-  const lista = (rows.results ?? []) as Array<{ id: string; titulo: string; descripcion: string | null; tipo_empresa: string }>;
-  const upd = env.DB.prepare('UPDATE vacantes SET rol = ?, nivel = ?, clasificacion_version = ? WHERE id = ?');
+    .all();
+  type Fila = { id: string; fuente: string; titulo: string; descripcion: string | null; tipo_empresa: string; ubicacion: string | null; es_principal: number | null };
+  const lista = (rows.results ?? []) as Fila[];
+  const upd = env.DB.prepare(
+    'UPDATE vacantes SET rol = ?, nivel = ?, clasificacion_version = ?, tipo_publicacion = ?, grupo_dup = ? WHERE id = ?',
+  );
+  // Filas guardadas antes de existir pais_principal_iso: se aproxima con el texto de la ubicación principal.
+  const updPrincipal = env.DB.prepare('UPDATE vacantes SET pais_principal_iso = ?, es_principal = ? WHERE id = ?');
   let stmts: D1PreparedStatement[] = [];
   for (const r of lista) {
-    stmts.push(upd.bind(clasificarRolEmpresa(r.titulo, r.tipo_empresa), clasificarNivel(r.titulo), CLASIFICACION_VERSION, r.id));
+    stmts.push(
+      upd.bind(
+        clasificarRolEmpresa(r.titulo, r.tipo_empresa), clasificarNivel(r.titulo), CLASIFICACION_VERSION,
+        RX_BANCO_TALENTO.test(r.titulo) ? 'banco_talento' : 'vacante',
+        huella(`${r.fuente}|${r.titulo.toLowerCase().replace(/\s+/g, ' ').trim()}|${(r.descripcion ?? '').slice(0, 1500)}`),
+        r.id,
+      ),
+    );
+    if (r.es_principal === null) {
+      const p = paisesEnTexto(r.ubicacion)[0];
+      stmts.push(updPrincipal.bind(p ?? null, p ? 1 : 0, r.id));
+    }
     stmts.push(...descriptoresStmts(env.DB, r.id, r.titulo, r.descripcion));
     if (stmts.length >= 80) {
       await env.DB.batch(stmts);
@@ -132,6 +148,18 @@ async function reprocesar(env: Env, limite = 400): Promise<number> {
   if (stmts.length) await env.DB.batch(stmts);
   return lista.length;
 }
+
+/** Huella corta (FNV-1a) para agrupar plazas múltiples de la misma oferta. */
+function huella(texto: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < texto.length; i++) {
+    h ^= texto.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(16).padStart(8, '0');
+}
+
+const RX_BANCO_TALENTO = /(banco de talent|talent ?(pool|community)|comunidad de talento|candidatura espont)/i;
 
 async function enParalelo<T>(items: T[], n: number, fn: (x: T) => Promise<void>): Promise<void> {
   let i = 0;
@@ -146,7 +174,7 @@ async function enParalelo<T>(items: T[], n: number, fn: (x: T) => Promise<void>)
 
 interface Resultado {
   fuente: string;
-  estado: 'ok' | 'error' | 'parcial';
+  estado: 'ok' | 'error' | 'parcial' | 'sospechosa';
   vistas: number;
   nuevas: number;
   cerradas: number;
@@ -186,10 +214,26 @@ async function leerFuente(env: Env, f: FuenteWorkday, ahora: string): Promise<Re
     const vistos = new Map(postings.map((x) => [idDe(x), x]));
     res.vistas = vistos.size;
 
+    // Controles de calidad: primera lectura de la fuente (cohorte inicial) y caídas bruscas.
+    const previas = await env.DB.prepare(
+      "SELECT vistas FROM vacantes_corridas WHERE fuente = ? AND estado = 'ok' ORDER BY ts DESC LIMIT 7",
+    ).bind(f.id).all<{ vistas: number }>();
+    const historico = ((previas.results ?? []) as Array<{ vistas: number }>).map((r) => r.vistas).sort((a, b) => a - b);
+    const primeraLectura = historico.length === 0;
+    if (historico.length >= 3) {
+      const mediana = historico[Math.floor(historico.length / 2)];
+      // Si la fuente cae a la mitad o menos de su mediana, algo cambió en el portal: no se cierra nada.
+      if (mediana >= 10 && res.vistas <= mediana * 0.5) {
+        res.estado = 'sospechosa';
+        res.error = `vistas ${res.vistas} contra mediana ${mediana}`;
+      }
+    }
+
     // 2. Cuáles ya conocemos (guardadas o descartadas antes).
-    const conocidas = new Map<string, string>();
-    const rows = await env.DB.prepare('SELECT id, titulo FROM vacantes WHERE fuente = ?').bind(f.id).all<{ id: string; titulo: string }>();
-    for (const r of (rows.results ?? []) as Array<{ id: string; titulo: string }>) conocidas.set(r.id, r.titulo);
+    const conocidas = new Map<string, { titulo: string; activa: number }>();
+    const rows = await env.DB.prepare('SELECT id, titulo, activa FROM vacantes WHERE fuente = ?').bind(f.id).all<{ id: string; titulo: string; activa: number }>();
+    for (const r of (rows.results ?? []) as Array<{ id: string; titulo: string; activa: number }>) conocidas.set(r.id, { titulo: r.titulo, activa: r.activa });
+    const ciclo = env.DB.prepare('INSERT INTO vacantes_ciclo (vacante_id, ts, evento, valor) VALUES (?, ?, ?, ?)');
     const descartadas = new Set<string>();
     const desc = await env.DB.prepare('SELECT id FROM vacantes_descartadas WHERE fuente = ?').bind(f.id).all<{ id: string }>();
     for (const r of (desc.results ?? []) as Array<{ id: string }>) descartadas.add(r.id);
@@ -202,10 +246,17 @@ async function leerFuente(env: Env, f: FuenteWorkday, ahora: string): Promise<Re
       // clasificacion_version vacía (no NULL: la columna es NOT NULL) para que reprocesar la tome.
       "UPDATE vacantes SET ultima_vez = ?, activa = 1, fecha_cierre = NULL, titulo = ?, clasificacion_version = '', descriptores_version = NULL WHERE id = ?",
     );
-    const stmtsSiguen = siguen.map((id) => {
+    const stmtsSiguen: D1PreparedStatement[] = [];
+    for (const id of siguen) {
+      const previa = conocidas.get(id)!;
       const nuevoTitulo = vistos.get(id)!.title;
-      return nuevoTitulo && nuevoTitulo !== conocidas.get(id) ? updTitulo.bind(ahora, nuevoTitulo, id) : upd.bind(ahora, id);
-    });
+      if (nuevoTitulo && nuevoTitulo !== previa.titulo) {
+        stmtsSiguen.push(updTitulo.bind(ahora, nuevoTitulo, id), ciclo.bind(id, ahora, 'cambio_titulo', previa.titulo.slice(0, 300)));
+      } else {
+        stmtsSiguen.push(upd.bind(ahora, id));
+      }
+      if (previa.activa === 0) stmtsSiguen.push(ciclo.bind(id, ahora, 'reapertura', null));
+    }
     for (let i = 0; i < stmtsSiguen.length; i += 50) await env.DB.batch(stmtsSiguen.slice(i, i + 50));
 
     // 4. Las nuevas: leer el detalle, clasificar e insertar.
@@ -214,8 +265,9 @@ async function leerFuente(env: Env, f: FuenteWorkday, ahora: string): Promise<Re
     if (nuevas.length < porLeer.length) res.estado = 'parcial';
     const ins = env.DB.prepare(
       `INSERT INTO vacantes (id, fuente, empresa, tipo_empresa, titulo, url, pais, paises, ubicacion, modalidad,
-         rol, nivel, fecha_publicacion, primera_vez, ultima_vez, activa, fecha_cierre, descripcion, clasificacion_version)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NULL, ?, ?)
+         rol, nivel, fecha_publicacion, primera_vez, ultima_vez, activa, fecha_cierre, descripcion, clasificacion_version,
+         pais_principal_iso, es_principal, n_ubicaciones, cohorte_inicial, tipo_publicacion, grupo_dup, id_llave)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(id) DO UPDATE SET ultima_vez = excluded.ultima_vez, activa = 1, fecha_cierre = NULL`,
     );
     const pendientes: D1PreparedStatement[] = [];
@@ -255,7 +307,15 @@ async function leerFuente(env: Env, f: FuenteWorkday, ahora: string): Promise<Re
             ahora, ahora,
             descripcion,
             CLASIFICACION_VERSION,
+            principalIso ?? null,
+            principalIso && (PAISES_OBJETIVO as readonly string[]).includes(principalIso) ? 1 : 0,
+            1 + (Array.isArray(info.additionalLocations) ? info.additionalLocations.length : 0),
+            primeraLectura ? 1 : 0,
+            RX_BANCO_TALENTO.test(titulo) ? 'banco_talento' : 'vacante',
+            huella(`${f.id}|${titulo.toLowerCase().replace(/\s+/g, ' ').trim()}|${(descripcion ?? '').slice(0, 1500)}`),
+            x.bulletFields?.[0] ? 'req' : 'ruta',
           ),
+          ciclo.bind(id, ahora, 'alta', null),
           ...descriptoresStmts(env.DB, id, titulo, descripcion),
         );
       } catch (err) {
@@ -274,9 +334,17 @@ async function leerFuente(env: Env, f: FuenteWorkday, ahora: string): Promise<Re
         .bind(f.id, limite)
         .all<{ id: string; ultima_vez: string }>();
       const cerrar = ((activas.results ?? []) as Array<{ id: string; ultima_vez: string }>).filter((r) => !vistos.has(r.id));
-      const cls = env.DB.prepare('UPDATE vacantes SET activa = 0, fecha_cierre = ? WHERE id = ?');
-      for (let i = 0; i < cerrar.length; i += 50) await env.DB.batch(cerrar.slice(i, i + 50).map((r) => cls.bind(r.ultima_vez.slice(0, 10), r.id)));
-      res.cerradas = cerrar.length;
+      const totalActivas = await env.DB.prepare('SELECT COUNT(*) AS n FROM vacantes WHERE fuente = ? AND activa = 1').bind(f.id).first<{ n: number }>();
+      if (cerrar.length > 5 && cerrar.length > (totalActivas?.n ?? 0) * 0.3) {
+        // Cerrar más del 30 % de una fuente en un día no es normal: se deja para revisión.
+        res.estado = 'sospechosa';
+        res.error = `pretendía cerrar ${cerrar.length} de ${totalActivas?.n}`;
+      } else {
+        const cls = env.DB.prepare('UPDATE vacantes SET activa = 0, fecha_cierre = ?, cerrada_en = ? WHERE id = ?');
+        const stmts = cerrar.flatMap((r) => [cls.bind(r.ultima_vez.slice(0, 10), ahora, r.id), ciclo.bind(r.id, ahora, 'cierre', null)]);
+        for (let i = 0; i < stmts.length; i += 50) await env.DB.batch(stmts.slice(i, i + 50));
+        res.cerradas = cerrar.length;
+      }
     }
   } catch (err) {
     res.estado = 'error';
@@ -294,11 +362,39 @@ async function leerFuente(env: Env, f: FuenteWorkday, ahora: string): Promise<Re
   return res;
 }
 
+/**
+ * Foto diaria agregada: activas por fuente, país, rol y nivel con la versión de reglas del día.
+ * Excluye bancos de talento. Cada país cuenta las vacantes que lo incluyen entre sus ubicaciones
+ * (activas) y, aparte, las que lo tienen como ubicación principal (activas_principal).
+ */
+async function fotoDiaria(env: Env, ahora: string): Promise<void> {
+  const fecha = ahora.slice(0, 10);
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM vacantes_diario WHERE fecha = ?').bind(fecha),
+    env.DB.prepare(
+      `INSERT INTO vacantes_diario (fecha, fuente, pais, rol, nivel, activas, activas_principal, reglas)
+       SELECT ?, v.fuente, p.k, v.rol, v.nivel, COUNT(*),
+              SUM(CASE WHEN v.pais_principal_iso = p.k THEN 1 ELSE 0 END), ?
+       FROM vacantes v
+       JOIN (SELECT 'mx' AS k UNION ALL SELECT 'br' UNION ALL SELECT 'ar' UNION ALL SELECT 'co'
+             UNION ALL SELECT 'cl' UNION ALL SELECT 'pe' UNION ALL SELECT 'es') p
+         ON (',' || v.paises || ',') LIKE '%,' || p.k || ',%'
+       WHERE v.activa = 1 AND COALESCE(v.tipo_publicacion, 'vacante') = 'vacante'
+       GROUP BY v.fuente, p.k, v.rol, v.nivel`,
+    ).bind(fecha, `${CLASIFICACION_VERSION}/${DESCRIPTORES_VERSION}`),
+  ]);
+}
+
 async function correr(env: Env, soloFuente?: string): Promise<Resultado[]> {
   const ahora = new Date().toISOString();
   const fuentes = soloFuente ? FUENTES.filter((f) => f.id === soloFuente) : FUENTES;
   const out: Resultado[] = [];
   for (const f of fuentes) out.push(await leerFuente(env, f, ahora)); // una fuente a la vez: amable con los portales
+  try {
+    await fotoDiaria(env, ahora);
+  } catch (err) {
+    console.error('foto diaria falló', String(err));
+  }
   return out;
 }
 
@@ -306,6 +402,7 @@ export default {
   async scheduled(_event: unknown, env: Env): Promise<void> {
     const r = await correr(env);
     const reproc = await reprocesar(env);
+    if (reproc > 0) await fotoDiaria(env, new Date().toISOString()); // la foto del día con las reglas vigentes
     console.log('vacantes', JSON.stringify(r), 'reprocesadas', reproc);
   },
   async fetch(request: Request, env: Env): Promise<Response> {

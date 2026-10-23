@@ -670,6 +670,8 @@ interface VacantesStats {
   clics_por_pais_7d: Record<string, number>;
   herramientas_7d: Record<string, number>;
   por_campaign_7d: Array<{ utm_campaign: string; vistas: number; clics: number }>;
+  // Calidad de datos (auditoría 22 oct 2026). Revisar antes de citar cualquier cifra.
+  calidad: Record<string, number>;
 }
 
 async function buildVacantes(db: D1Database, sinceIso: string): Promise<VacantesStats> {
@@ -678,11 +680,8 @@ async function buildVacantes(db: D1Database, sinceIso: string): Promise<Vacantes
     Object.fromEntries((rows ?? []).map((r) => [r.k ?? 'sin_dato', r.n]));
   const [tot, nuevas, cerradas, porPais, porRol, errores, ultima, evs, personas, clRol, clPais, tools, camp] = await db.batch([
     db.prepare('SELECT COUNT(*) AS n FROM vacantes WHERE activa = 1'),
-    // Nuevas sin contar la carga inicial de cada fuente (su primera corrida).
-    db.prepare(
-      `SELECT COUNT(*) AS n FROM vacantes v WHERE primera_vez >= ?
-         AND primera_vez > (SELECT MIN(ts) FROM vacantes_corridas c WHERE c.fuente = v.fuente)`,
-    ).bind(sinceIso),
+    // Nuevas sin la cohorte inicial (lo que ya estaba publicado en la primera lectura de cada fuente).
+    db.prepare('SELECT COUNT(*) AS n FROM vacantes WHERE primera_vez >= ? AND cohorte_inicial = 0').bind(sinceIso),
     db.prepare('SELECT COUNT(*) AS n FROM vacantes WHERE fecha_cierre >= ?').bind(sinceDay),
     // Por país con todas las ubicaciones (una vacante multi-país cuenta en cada país), igual que el filtro de la página.
     db.prepare(
@@ -714,6 +713,28 @@ async function buildVacantes(db: D1Database, sinceIso: string): Promise<Vacantes
     ).bind(sinceIso),
   ]);
   const n = (r: D1Result) => ((r.results?.[0] as { n?: number })?.n) ?? 0;
+  const hace365 = new Date(Date.now() - 365 * 86400000).toISOString().slice(0, 10);
+  const cal = await db
+    .prepare(
+      `SELECT
+         SUM(rol = 'otro') AS rol_otro,
+         SUM(nivel = 'no_especificado') AS nivel_no_especificado,
+         SUM(modalidad IS NULL) AS modalidad_sin_dato,
+         SUM(es_principal = 0) AS ubicacion_principal_fuera,
+         SUM(fecha_publicacion < ?) AS perpetuas_mas_365_dias,
+         SUM(tipo_publicacion = 'banco_talento') AS bancos_talento,
+         SUM(id_llave = 'ruta') AS ids_por_ruta,
+         SUM(clasificacion_version IS NULL OR clasificacion_version = '' OR descriptores_version IS NULL) AS reglas_pendientes,
+         COUNT(*) - COUNT(DISTINCT grupo_dup) AS plazas_repetidas,
+         COUNT(*) AS activas
+       FROM vacantes WHERE activa = 1`,
+    )
+    .bind(hace365)
+    .first<Record<string, number>>();
+  const sosp = await db
+    .prepare("SELECT COUNT(*) AS n FROM vacantes_corridas WHERE ts >= ? AND estado = 'sospechosa'")
+    .bind(sinceIso)
+    .first<{ n: number }>();
   type KN = Array<{ k: string | null; n: number }>;
   return {
     activas: n(tot),
@@ -729,6 +750,7 @@ async function buildVacantes(db: D1Database, sinceIso: string): Promise<Vacantes
     clics_por_pais_7d: toMap(clPais.results as KN),
     herramientas_7d: toMap(tools.results as KN),
     por_campaign_7d: (camp.results ?? []) as VacantesStats['por_campaign_7d'],
+    calidad: { ...(cal ?? {}), corridas_sospechosas_7d: sosp?.n ?? 0 },
   };
 }
 
