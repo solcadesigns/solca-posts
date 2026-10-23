@@ -16,6 +16,7 @@
  *   https://account.postmarkapp.com/servers/20030569/credentials
  *
  * Idempotente: si el alias ya existe, hace EDIT (PUT) en vez de POST.
+ * --dry-run: no escribe; compara cada plantilla en Postmark con la del repo.
  *
  * Merge tags que espera cada template (los envía drip-tick.ts):
  *   {{first_name}}   — primer nombre (puede venir vacío)
@@ -27,6 +28,7 @@
 
 const API = 'https://api.postmarkapp.com';
 const TOKEN = process.env.POSTMARK_SERVER_TOKEN;
+const DRY_RUN = process.argv.includes('--dry-run');
 
 if (!TOKEN) {
   console.error('ERROR: POSTMARK_SERVER_TOKEN no está en env.');
@@ -340,6 +342,18 @@ async function upsertTemplate(tpl) {
   };
 
   const existingId = await findTemplateIdByAlias(tpl.alias);
+  if (DRY_RUN) {
+    // Solo lectura: compara lo que está en Postmark con lo que se subiría, ignorando el
+    // cambio go.hotmart.com → pay.hotmart.com (23 oct 2026). Si algo más difiere, alguien
+    // editó la plantilla en Postmark y subirla borraría ese cambio.
+    if (!existingId) return console.log(`  · nueva    ${tpl.alias} (no existe en Postmark)`);
+    const live = await pmFetch(`/templates/${existingId}`, 'GET');
+    const norm = (x) => String(x ?? '').replace(/https:\/\/(go|pay)\.hotmart\.com\/(R105710415P|Y105718405Y|U105724060O)(\?dp=1)?/g, 'HOTMART_$2').replace(/\s+/g, ' ').trim();
+    const difs = ['Subject', 'TextBody', 'HtmlBody'].filter((k) => norm(live[k]) !== norm(payload[k]));
+    const viejos = (String(live.TextBody ?? '') + String(live.HtmlBody ?? '')).match(/go\.hotmart\.com\/(R105710415P|Y105718405Y|U105724060O)/g)?.length ?? 0;
+    console.log(`  ${difs.length ? '✗ DIFIERE ' : '✓ igual   '} ${tpl.alias}${difs.length ? ' en ' + difs.join(', ') : ''} · enlaces go a cambiar: ${viejos}`);
+    return;
+  }
   if (existingId) {
     await pmFetch(`/templates/${existingId}`, 'PUT', payload);
     console.log(`  ✓ updated  ${tpl.alias} (id ${existingId})`);
@@ -355,7 +369,7 @@ async function main() {
   console.log(`Postmark server: querying...`);
   const server = await pmFetch('/server', 'GET');
   console.log(`Postmark server: ${server.Name} (id ${server.ID})`);
-  console.log(`Upserting ${TEMPLATES.length} drip templates:`);
+  console.log(`${DRY_RUN ? 'Comparando (solo lectura)' : 'Upserting'} ${TEMPLATES.length} drip templates:`);
   for (const tpl of TEMPLATES) {
     try {
       await upsertTemplate(tpl);
