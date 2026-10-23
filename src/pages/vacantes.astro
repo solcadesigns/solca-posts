@@ -44,6 +44,7 @@ const whereSql = where.join(' AND ');
 
 interface Vacante {
   id: string; empresa: string; titulo: string; url: string; pais: string | null; paises: string | null;
+  pais_principal_iso: string | null;
   ubicacion: string | null; modalidad: string | null; rol: string; nivel: string; fecha_publicacion: string | null;
   primera_vez: string; tipo_empresa: string;
 }
@@ -59,7 +60,7 @@ if (db) {
   try {
     const [lista, cuenta, res, corrida] = await db.batch([
       db.prepare(
-        `SELECT id, empresa, titulo, url, pais, paises, ubicacion, modalidad, rol, nivel, fecha_publicacion, primera_vez, tipo_empresa
+        `SELECT id, empresa, titulo, url, pais, paises, pais_principal_iso, ubicacion, modalidad, rol, nivel, fecha_publicacion, primera_vez, tipo_empresa
          FROM vacantes WHERE ${whereSql}
          ORDER BY COALESCE(fecha_publicacion, substr(primera_vez, 1, 10)) DESC, titulo
          LIMIT ? OFFSET ?`,
@@ -111,6 +112,15 @@ function fechaCorta(iso: string | null): string {
   if (diff === 1) return 'Ayer';
   if (diff < 30) return `Hace ${diff} días`;
   return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+// Vacante con varias ubicaciones cuya sede principal está fuera de los siete países
+// (ej. Dublín con Barcelona como ubicación adicional): se muestra la sede y "También en España".
+// Cuando no hay país principal (filas antiguas), se decide por la ubicación: solo es secundaria si nombra otro país.
+const RX_OTRO_PAIS = /(ireland|dublin|united kingdom|\buk\b|england|london|reading|germany|frankfurt|berlin|bulgaria|sofia|poland|warsaw|italy|milan|france|paris|portugal|lisbon|sweden|stockholm|serbia|hungary|croatia|czech|prague|south africa|united states|\busa\b|belgium|netherlands|switzerland|india|china|canada|romania|greece|turkey|israel|japan|australia|latvia|estonia|kenya|leeds|maidenhead|costa rica|hyderabad|mississauga|czechia|\bNLD\b)/i;
+const RX_US = /(^|[\s,(-])US([\s,)-]|$)/; // mayúsculas: no confundir con 'us' en español
+function esSecundaria(v: Vacante): boolean {
+  if (v.pais_principal_iso) return !(PAISES_OBJETIVO as readonly string[]).includes(v.pais_principal_iso);
+  return RX_OTRO_PAIS.test(v.ubicacion ?? '') || RX_US.test(v.ubicacion ?? '');
 }
 function paisesDe(v: Vacante): string {
   const ps = (v.paises ?? v.pais ?? '').split(',').filter(Boolean) as PaisObjetivo[];
@@ -214,8 +224,17 @@ const actualizadoTxt = actualizado
             <a href={v.url} target="_blank" rel="noopener nofollow" class="vac-link" data-id={v.id}>{v.titulo}</a>
           </h2>
           <p class="vac-meta">
-            <span>{paisesDe(v)}</span>
-            {v.ubicacion && <span class="vac-ubic">{v.ubicacion}</span>}
+            {esSecundaria(v) ? (
+              <>
+                {v.ubicacion && <span class="vac-ubic">{v.ubicacion}</span>}
+                <span>También en {paisesDe(v)}</span>
+              </>
+            ) : (
+              <>
+                <span>{paisesDe(v)}</span>
+                {v.ubicacion && <span class="vac-ubic">{v.ubicacion}</span>}
+              </>
+            )}
             {v.modalidad && <span class="vac-chip">{v.modalidad === 'hibrido' ? 'Híbrido' : v.modalidad === 'remoto' ? 'Remoto' : 'Presencial'}</span>}
           </p>
           <p class="vac-tags">
