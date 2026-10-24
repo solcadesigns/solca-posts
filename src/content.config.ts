@@ -38,7 +38,8 @@ const blog = defineCollection({
     //   'simulador'  → posts sobre entrevistas, preparación, preguntas por rol, salarios que llevan a negociación
     //   'quiz-rol'   → posts que comparan PM (clínico) / MSL / Clinical Research sin ancla a entrevistas
     //   'revisar-cv' → posts sobre CV en sí (default legacy · fallback conservador)
-    cta: z.enum(['simulador', 'revisar-cv', 'quiz-rol']).optional().default('revisar-cv'),
+    //   'vacantes'   → posts que salen del buscador de vacantes (datos del censo); sin CTA de pago
+    cta: z.enum(['simulador', 'revisar-cv', 'quiz-rol', 'vacantes']).optional().default('revisar-cv'),
   }),
 });
 

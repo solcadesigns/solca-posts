@@ -170,6 +170,14 @@ const breadcrumbSchema = {
               </p>
               <a href="/simulador-entrevistas/#planes" class="btn btn-primary">Empezar simulador →</a>
             </>
+          ) : data.cta === 'vacantes' ? (
+            <>
+              <h2>Busca vacantes pharma en LATAM y España</h2>
+              <p>
+                Vacantes de 24 farmacéuticas, CROs y empresas de tecnología médica, tomadas cada mañana de sus portales oficiales. Filtra por país, rol y nivel, y postúlate directo en el sitio de la empresa.
+              </p>
+              <a href="/vacantes/?ref=blog" class="btn btn-primary">Abrir el buscador →</a>
+            </>
           ) : data.cta === 'quiz-rol' ? (
             <>
               <h2>¿Qué rol pharma encaja con tu perfil?</h2>
