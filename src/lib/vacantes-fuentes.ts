@@ -2,7 +2,7 @@
  * Fuentes del buscador de vacantes (22 oct 2026).
  *
  * Solo portales oficiales de empleo de cada empresa. Nunca LinkedIn ni agregadores.
- * Dos plataformas: Workday (API pública /wday/cxs/, la misma que consume su página de carreras)
+ * Plataformas: Workday (API pública /wday/cxs/, la misma que consume su página de carreras), Jibe, Jobvite
  * y Phenom (página de resultados con datos embebidos y ficha con JSON-LD JobPosting).
  * El lector revisa robots.txt de cada portal en cada corrida y salta la fuente si lo prohíbe.
  * Thermo Fisher / PPD se lee por su portal Phenom: su sitio Workday prohíbe /ThermoFisherCareers/ en robots.txt.
@@ -40,7 +40,30 @@ export interface FuentePhenom {
   base: string;
 }
 
-export type Fuente = FuenteWorkday | FuentePhenom;
+/**
+ * Portales Jibe (careers.<empresa>.com/api/jobs): JSON público con filtro ?country= y la descripción completa
+ * en el listado, así que no hace falta pedir la ficha. `base` es el origen (ej. https://careers.medpace.com).
+ */
+export interface FuenteJibe {
+  plataforma: 'jibe';
+  id: string;
+  alta: string;
+  empresa: string;
+  tipo: TipoEmpresa;
+  base: string;
+}
+
+/** Portales Jobvite (jobs.jobvite.com/<empresa>): lista HTML en una página y ficha con JSON-LD JobPosting. */
+export interface FuenteJobvite {
+  plataforma: 'jobvite';
+  id: string;
+  alta: string;
+  empresa: string;
+  tipo: TipoEmpresa;
+  base: string;
+}
+
+export type Fuente = FuenteWorkday | FuentePhenom | FuenteJibe | FuenteJobvite;
 
 export const FUENTES: Fuente[] = [
   { id: 'iqvia', alta: '2026-10-22', empresa: 'IQVIA', tipo: 'cro', host: 'iqvia.wd1.myworkdayjobs.com', tenant: 'iqvia', site: 'IQVIA' },
@@ -70,6 +93,9 @@ export const FUENTES: Fuente[] = [
   // 24 oct 2026: consultoría de life sciences. Trinity tiene oficina en Ciudad de México.
   // ZS y Accenture quedan fuera: su robots.txt prohíbe la búsqueda (ZS publica en careers-zs.icims.com).
   { id: 'trinity', alta: '2026-10-24', empresa: 'Trinity Life Sciences', tipo: 'consultoria', host: 'trinitylifesciences.wd108.myworkdayjobs.com', tenant: 'trinitylifesciences', site: 'Trinity' },
+  // 24 oct 2026: Medpace (CRO, API Jibe; robots pide 5 s entre peticiones) y BioMarin (Jobvite).
+  { plataforma: 'jibe', id: 'medpace', alta: '2026-10-24', empresa: 'Medpace', tipo: 'cro', base: 'https://careers.medpace.com' },
+  { plataforma: 'jobvite', id: 'biomarin', alta: '2026-10-24', empresa: 'BioMarin', tipo: 'farma', base: 'https://jobs.jobvite.com/biomarin' },
   // Las fuentes Phenom van al final: son las más lentas (una ficha a la vez).
   { plataforma: 'phenom', id: 'merckkgaa', alta: '2026-10-23', empresa: 'Merck KGaA (EMD)', tipo: 'farma', base: 'https://careers.emdgroup.com/us/en' },
   // Thermo Fisher (incluye PPD): su sitio Workday prohíbe la lectura en robots.txt, pero su portal público (Phenom) la permite.

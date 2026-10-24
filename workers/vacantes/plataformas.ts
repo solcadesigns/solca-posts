@@ -6,6 +6,8 @@
  * - Workday: API pública /wday/cxs/<tenant>/<site>/jobs y detalle por externalPath.
  * - Phenom: página search-results con los resultados embebidos (eagerLoadRefineSearch),
  *   filtrada por país con qcountry, y ficha /job/<id> con JSON-LD JobPosting (schema.org).
+ * - Jibe: /api/jobs?country=<país>&limit=100 con la descripción completa en el listado.
+ * - Jobvite: lista HTML /<empresa>/jobs en una página y ficha /<empresa>/job/<id> con JSON-LD JobPosting.
  */
 import {
   PAISES_OBJETIVO,
@@ -14,6 +16,8 @@ import {
   type Fuente,
   type FuenteWorkday,
   type FuentePhenom,
+  type FuenteJibe,
+  type FuenteJobvite,
   type PaisObjetivo,
 } from '../../src/lib/vacantes-fuentes';
 
@@ -173,6 +177,11 @@ export async function robotsPermite(origen: string, rutas: string[]): Promise<{ 
 
 /** Rutas reales que pide el lector (con su query), para revisarlas contra robots.txt. */
 export function rutasDe(f: Fuente): { origen: string; rutas: string[] } {
+  if (f.plataforma === 'jibe') return { origen: f.base, rutas: ['/api/jobs?country=Mexico&limit=100&page=1', '/jobs/0'] };
+  if (f.plataforma === 'jobvite') {
+    const u = new URL(f.base);
+    return { origen: u.origin, rutas: [`${u.pathname}/jobs`, `${u.pathname}/job/x`] };
+  }
   if (f.plataforma === 'phenom') {
     const u = new URL(f.base);
     return { origen: u.origin, rutas: [`${u.pathname}/search-results`, `${u.pathname}/search-results?qcountry=Mexico&from=0`, `${u.pathname}/job/0`] };
@@ -391,12 +400,180 @@ async function detallePhenom(f: FuentePhenom, ref: unknown): Promise<Detalle | n
   };
 }
 
+/** Primer JobPosting de los bloques JSON-LD de una página (solo o dentro de @graph). */
+function jobPostingLd(html: string): any | null {
+  for (const m of html.matchAll(/<script[^>]+application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi)) {
+    try {
+      const o = JSON.parse(m[1]);
+      const lista = Array.isArray(o) ? o : o['@graph'] ?? [o];
+      const jp = lista.find((x: any) => x?.['@type'] === 'JobPosting');
+      if (jp) return jp;
+    } catch {
+      /* bloque inválido: se ignora */
+    }
+  }
+  return null;
+}
+
+/** ISO-2 de un nombre de país en inglés o español, si lo conocemos. */
+function isoDe(nombre: string | null | undefined): string | null {
+  return ISO_POR_NOMBRE[(nombre ?? '').trim().toLowerCase()] ?? null;
+}
+
+// ──────────────────────────────── Jibe (Medpace)
+
+/** robots.txt de Medpace pide crawl-delay: 5. */
+const PAUSA_JIBE_MS = 5000;
+
+interface JobJibe {
+  req_id?: string;
+  country_code?: string;
+  multipleLocations?: Array<{ country?: string; country_code?: string }> | false;
+  slug?: string;
+  title?: string;
+  country?: string;
+  city?: string | null;
+  full_location?: string;
+  location_type?: string;
+  posted_date?: string;
+  description?: string;
+  qualifications?: string;
+  responsibilities?: string;
+}
+
+async function listarJibe(f: FuenteJibe): Promise<Listado> {
+  const items: ItemListado[] = [];
+  let completo = true;
+  for (const p of PAISES_OBJETIVO) {
+    let total = Infinity;
+    let leidas = 0;
+    for (let page = 1; leidas < total && page <= 10; page++) {
+      await espera(PAUSA_JIBE_MS);
+      const d = await getJson(`${f.base}/api/jobs?country=${encodeURIComponent(PAIS_EN[p])}&limit=100&page=${page}`);
+      // Sin arreglo de vacantes la respuesta cambió de forma: error, para no cerrar todo por una lectura vacía.
+      if (!Array.isArray(d?.jobs)) throw new Error('respuesta de Jibe sin jobs');
+      const jobs: JobJibe[] = d.jobs.map((x: { data: JobJibe }) => x.data);
+      if (page === 1) total = d.count ?? jobs.length;
+      if (!jobs.length) break;
+      leidas += jobs.length;
+      for (const j of jobs) {
+        if (!j.req_id || !j.title || RX_PRUEBA.test(j.title)) continue;
+        // Doble control: el país pedido tiene que estar entre los de la vacante (sede o ubicaciones adicionales).
+        if (!paisesJibe(j).includes(p)) continue;
+        items.push({ id: `${f.id}:${j.req_id}`, titulo: j.title, llave: 'req', ref: j });
+      }
+    }
+    if (leidas < total) completo = false;
+  }
+  return { items, completo };
+}
+
+function isoJibe(nombre?: string, codigo?: string): string | null {
+  return codigo ? codigo.toLowerCase() : isoDe(nombre);
+}
+
+/** Países de una vacante Jibe: la sede y las ubicaciones adicionales. */
+function paisesJibe(j: JobJibe): string[] {
+  const extra = Array.isArray(j.multipleLocations) ? j.multipleLocations.map((x) => isoJibe(x.country, x.country_code)) : [];
+  return [isoJibe(j.country, j.country_code), ...extra].filter((x): x is string => Boolean(x));
+}
+
+/** Jibe trae todo en el listado: la ficha no se pide. */
+async function detalleJibe(f: FuenteJibe, ref: unknown): Promise<Detalle | null> {
+  const j = ref as JobJibe;
+  const principalIso = isoJibe(j.country, j.country_code);
+  const ubicacion = [j.city, j.country].filter(Boolean).join(', ') || String(j.full_location ?? '');
+  const todos = paisesJibe(j);
+  // description ya incluye responsabilidades y requisitos; los campos sueltos solo si falta.
+  const html = j.description || [j.responsibilities, j.qualifications].filter(Boolean).join('\n');
+  return {
+    titulo: j.title ?? '',
+    url: `${f.base}/jobs/${encodeURIComponent(String(j.slug ?? j.req_id))}`,
+    principalIso,
+    paises: [...new Set(todos.filter((x) => (PAISES_OBJETIVO as readonly string[]).includes(x)))] as PaisObjetivo[],
+    ubicacion: ubicacion.slice(0, 300),
+    nUbicaciones: Math.max(1, todos.length),
+    modalidad: j.location_type === 'ANY' ? 'remote' : null,
+    fecha: (j.posted_date ?? '').slice(0, 10) || null,
+    descripcion: html ? textoPlano(html) : null,
+  };
+}
+
+// ──────────────────────────────── Jobvite (BioMarin)
+
+interface JobJobvite {
+  ruta: string;          // /<empresa>/job/<id>
+  titulo: string;
+  ubicacion: string;
+}
+
+async function listarJobvite(f: FuenteJobvite): Promise<Listado> {
+  const html = await getTexto(`${f.base}/jobs`);
+  const filas = html.split(/<tr[\s>]/i).slice(1);
+  const items: ItemListado[] = [];
+  let conVacante = 0;
+  let conUbicacion = 0;
+  for (const fila of filas) {
+    const a = fila.match(/<a href="([^"]*\/job\/([A-Za-z0-9]+))"[^>]*>([\s\S]*?)<\/a>/i);
+    const loc = fila.match(/jv-job-list-location[^>]*>([\s\S]*?)<\/td>/i);
+    if (!a) continue;
+    conVacante++;
+    const titulo = textoPlano(decodificarEntidades(a[3])).replace(/\s+/g, ' ').trim();
+    const ubicacion = textoPlano(loc?.[1] ?? '').replace(/\s+/g, ' ').trim();
+    if (ubicacion) conUbicacion++;
+    // "3 Locations" no dice cuáles: se pide la ficha y ahí se decide (sin país objetivo, se descarta).
+    const varias = /\d+\s+locations?/i.test(ubicacion);
+    if (!titulo || RX_PRUEBA.test(titulo) || (!varias && !paisesEnTexto(ubicacion).length)) continue;
+    items.push({ id: `${f.id}:${a[2]}`, titulo, llave: 'req', ref: { ruta: a[1].startsWith('http') ? new URL(a[1]).pathname : a[1], titulo, ubicacion } satisfies JobJobvite });
+  }
+  // La lista viene completa en una sola página. Si no trae vacantes, o la mayoría llega sin ubicación,
+  // el portal cambió de formato: error, para no cerrar todo por una lectura mal interpretada.
+  if (!conVacante) throw new Error('lista de Jobvite sin vacantes');
+  if (conUbicacion < conVacante / 2) throw new Error('lista de Jobvite sin ubicaciones');
+  return { items, completo: true };
+}
+
+async function detalleJobvite(f: FuenteJobvite, ref: unknown): Promise<Detalle | null> {
+  const j = ref as JobJobvite;
+  const url = `${new URL(f.base).origin}${j.ruta}`;
+  await espera(PAUSA_PHENOM_MS);
+  const jp = jobPostingLd(await getTexto(url));
+  const lugares: any[] = Array.isArray(jp?.jobLocation) ? jp.jobLocation : jp?.jobLocation ? [jp.jobLocation] : [];
+  const paisPrincipal = lugares[0]?.address?.addressCountry;
+  const principalIso = isoDe(typeof paisPrincipal === 'string' ? paisPrincipal : paisPrincipal?.name);
+  const paises = [...new Set<PaisObjetivo>([
+    ...(principalIso && (PAISES_OBJETIVO as readonly string[]).includes(principalIso) ? [principalIso as PaisObjetivo] : []),
+    ...paisesEnTexto(j.ubicacion),
+  ])];
+  return {
+    titulo: (jp?.title as string) ?? j.titulo,
+    url,
+    principalIso,
+    paises,
+    ubicacion: j.ubicacion.slice(0, 300),
+    nUbicaciones: Math.max(1, lugares.length),
+    modalidad: [typeof jp?.jobLocationType === 'string' ? jp.jobLocationType : '', j.ubicacion].join(' ') || null,
+    fecha: typeof jp?.datePosted === 'string' ? jp.datePosted.slice(0, 10) : null,
+    descripcion: typeof jp?.description === 'string' ? textoPlano(decodificarEntidades(jp.description)) : null,
+  };
+}
+
 // ──────────────────────────────── despacho
 
 export function listar(f: Fuente): Promise<Listado> {
-  return f.plataforma === 'phenom' ? listarPhenom(f) : listarWorkday(f);
+  switch (f.plataforma) {
+    case 'phenom': return listarPhenom(f);
+    case 'jibe': return listarJibe(f);
+    case 'jobvite': return listarJobvite(f);
+    default: return listarWorkday(f);
+  }
 }
 
 export function detalle(f: Fuente, ref: unknown): Promise<Detalle | null> {
-  return f.plataforma === 'phenom' ? detallePhenom(f, ref) : detalleWorkday(f, ref);
+  switch (f.plataforma) {
+    case 'phenom': return detallePhenom(f, ref);
+    case 'jibe': return detalleJibe(f, ref);
+    case 'jobvite': return detalleJobvite(f, ref);
+    default: return detalleWorkday(f, ref);
+  }
 }

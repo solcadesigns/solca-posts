@@ -37,8 +37,10 @@ Lista tomada de la herramienta de referencia. Para cada empresa se revisó si su
 | Evotec, Ferring | Workday | Sin vacantes en los 7 países; se pueden sumar si abren | 0 |
 | Labcorp | Phenom | Sin vacantes en los 7 países | 0 |
 | Parexel, Takeda | Radancy | **Excluidas:** su `robots.txt` prohíbe `/search-jobs/` | — |
-| Medpace | API JSON propia | Pendiente: requiere un lector propio; el acceso está permitido | Por medir |
-| BioMarin | Jobvite | Pendiente: presencia en la región por verificar | Por medir |
+| Medpace | Jibe (`careers.medpace.com/api/jobs`) | **Agregada 24 oct 2026.** Filtro `?country=`, descripción en el listado; robots pide 5 s entre peticiones | 35 (MX, BR, AR, ES) |
+| BioMarin | Jobvite (`jobs.jobvite.com/biomarin`) | **Agregada 24 oct 2026.** Lista en una página, ficha con JSON-LD | 1 (BR) |
+| Trinity Life Sciences | Workday | **Agregada 24 oct 2026** (primera consultora) | 1 (MX) |
+| ZS, Accenture | iCIMS / propio | **Excluidas:** robots.txt prohíbe la lectura (ZS publica en careers-zs.icims.com) | — |
 
 **Regla:** el lector revisa el `robots.txt` de cada fuente en cada corrida. Si una fuente lo prohíbe, se salta y queda registrada con error en `vacantes_corridas`.
 

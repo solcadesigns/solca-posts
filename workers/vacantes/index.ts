@@ -206,7 +206,7 @@ async function leerFuente(env: Env, f: Fuente, ahora: string, opt: Opciones): Pr
       if (pendientes.length >= 50) await env.DB.batch(pendientes.splice(0, pendientes.length));
     };
     // Phenom limita la velocidad: una ficha a la vez con pausa. Workday tolera 5 en paralelo.
-    await enParalelo(nuevas, f.plataforma === 'phenom' ? 1 : CONCURRENCY, async ([id, x]) => {
+    await enParalelo(nuevas, f.plataforma === 'phenom' || f.plataforma === 'jobvite' ? 1 : CONCURRENCY, async ([id, x]) => {
       if (cortado || Date.now() > opt.limite) {
         cortado = true;
         return;

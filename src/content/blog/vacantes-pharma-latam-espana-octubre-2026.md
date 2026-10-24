@@ -11,7 +11,7 @@ readingMinutes: 6
 cta: "vacantes"
 ---
 
-Solca tiene desde hoy un [buscador de vacantes pharma](https://solcaciencia.com/vacantes/?ref=blog) que lee cada mañana los portales de empleo oficiales de 25 farmacéuticas, CROs, empresas de tecnología médica y consultoras de ciencias de la vida, y muestra las vacantes con al menos una ubicación en México, Brasil, Argentina, Colombia, Chile, Perú o España. Para presentarlo, leímos las vacantes abiertas de las 24 empresas que el buscador tenía el 23 de octubre de 2026; sin bancos de talento ni publicaciones permanentes, quedan 1,381 ofertas distintas.
+Solca tiene desde hoy un [buscador de vacantes pharma](https://solcaciencia.com/vacantes/?ref=blog) que lee cada mañana los portales de empleo oficiales de 27 farmacéuticas, CROs, empresas de tecnología médica y consultoras de ciencias de la vida, y muestra las vacantes con al menos una ubicación en México, Brasil, Argentina, Colombia, Chile, Perú o España. Para presentarlo, leímos las vacantes abiertas de las 24 empresas que el buscador tenía el 23 de octubre de 2026; sin bancos de talento ni publicaciones permanentes, quedan 1,381 ofertas distintas.
 
 No es una muestra elegida con palabras de búsqueda. Es un censo de lo que publican estas 24 empresas en sus portales. Tampoco es todo el mercado: deja fuera a las empresas que todavía no están en el buscador y a las vacantes que solo se publican en otros sitios.
 
