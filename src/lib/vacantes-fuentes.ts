@@ -6,13 +6,13 @@
  * y Phenom (página de resultados con datos embebidos y ficha con JSON-LD JobPosting).
  * El lector revisa robots.txt de cada portal en cada corrida y salta la fuente si lo prohíbe.
  * Thermo Fisher / PPD se lee por su portal Phenom: su sitio Workday prohíbe /ThermoFisherCareers/ en robots.txt.
- * Excluidas por robots.txt: Parexel y Takeda (prohíben /search-jobs/).
+ * Excluidas por robots.txt: Parexel y Takeda (prohíben /search-jobs/), ZS (careers-zs.icims.com) y Accenture (/careers/jobsearch).
  *
  * Para agregar una fuente Workday: copia una línea y cambia host, tenant y site
  * (están en la URL de su portal: https://<host>/<site>).
  */
 
-export type TipoEmpresa = 'farma' | 'cro' | 'medtech';
+export type TipoEmpresa = 'farma' | 'cro' | 'medtech' | 'consultoria';
 
 export interface FuenteWorkday {
   plataforma?: 'workday'; // por omisión
@@ -67,6 +67,9 @@ export const FUENTES: Fuente[] = [
   { id: 'ipsen', alta: '2026-10-23', empresa: 'Ipsen', tipo: 'farma', host: 'ipsen.wd103.myworkdayjobs.com', tenant: 'ipsen', site: 'Ipsen_Careers' },
   { id: 'lonza', alta: '2026-10-23', empresa: 'Lonza', tipo: 'farma', host: 'lonza.wd3.myworkdayjobs.com', tenant: 'lonza', site: 'Lonza_Careers' },
   { id: 'sartorius', alta: '2026-10-23', empresa: 'Sartorius', tipo: 'medtech', host: 'sartorius.wd3.myworkdayjobs.com', tenant: 'sartorius', site: 'SartoriusCareers' },
+  // 24 oct 2026: consultoría de life sciences. Trinity tiene oficina en Ciudad de México.
+  // ZS y Accenture quedan fuera: su robots.txt prohíbe la búsqueda (ZS publica en careers-zs.icims.com).
+  { id: 'trinity', alta: '2026-10-24', empresa: 'Trinity Life Sciences', tipo: 'consultoria', host: 'trinitylifesciences.wd108.myworkdayjobs.com', tenant: 'trinitylifesciences', site: 'Trinity' },
   // Las fuentes Phenom van al final: son las más lentas (una ficha a la vez).
   { plataforma: 'phenom', id: 'merckkgaa', alta: '2026-10-23', empresa: 'Merck KGaA (EMD)', tipo: 'farma', base: 'https://careers.emdgroup.com/us/en' },
   // Thermo Fisher (incluye PPD): su sitio Workday prohíbe la lectura en robots.txt, pero su portal público (Phenom) la permite.

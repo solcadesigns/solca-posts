@@ -90,6 +90,7 @@ const breadcrumbSchema = {
     },
   ],
 };
+import { FUENTES } from '../lib/vacantes-fuentes';
 ---
 <BaseLayout
   title={`${data.title} · Solca`}
@@ -174,7 +175,7 @@ const breadcrumbSchema = {
             <>
               <h2>Busca vacantes pharma en LATAM y España</h2>
               <p>
-                Vacantes de 24 farmacéuticas, CROs y empresas de tecnología médica, tomadas cada mañana de sus portales oficiales. Filtra por país, rol y nivel, y postúlate directo en el sitio de la empresa.
+                Vacantes de {FUENTES.length} farmacéuticas, CROs, empresas de tecnología médica y consultoras, tomadas cada mañana de sus portales oficiales. Filtra por país, rol y nivel, y postúlate directo en el sitio de la empresa.
               </p>
               <a href="/vacantes/?ref=blog" class="btn btn-primary">Abrir el buscador →</a>
             </>
