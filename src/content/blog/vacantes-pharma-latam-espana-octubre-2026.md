@@ -23,7 +23,7 @@ De las 1,262 vacantes con sede en los siete países, 429 están en España y 338
 
 El país se toma de la sede de la vacante, no de todas sus ubicaciones. Una vacante con sede en Dublín que también ofrece Barcelona como ubicación no cuenta para España aquí, aunque sí aparece en el buscador al filtrar por España.
 
-**Quién publica.** Los CROs (empresas de investigación por contrato) publican 700 de las 1,381 ofertas; las farmacéuticas, 610; las de tecnología médica, 71. Tres CROs, IQVIA, Thermo Fisher (PPD) e ICON, suman 656: casi la mitad. Son las empresas con más ofertas abiertas en este censo. Qué piden esas CROs en sus puestos de entrada lo vimos en [los CROs en LATAM: qué piden en realidad](/blog/cro-latam-entry-level-icon-iqvia-que-piden-en-realidad).
+**Quién publica.** Los CROs (empresas de investigación por contrato) publican 700 de las 1,381 ofertas; las farmacéuticas, 610; las de tecnología médica, 71. Tres CROs, IQVIA, Thermo Fisher (PPD) e ICON, suman 656: casi la mitad. Son las empresas con más ofertas abiertas en este censo. Qué piden esos CROs en sus puestos de entrada lo vimos en [los CROs en LATAM: qué piden en realidad](/blog/cro-latam-entry-level-icon-iqvia-que-piden-en-realidad).
 
 ## Cuánta experiencia piden
 
