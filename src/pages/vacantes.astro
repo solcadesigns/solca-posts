@@ -20,6 +20,7 @@ const rol = url.searchParams.get('rol') ?? '';
 const nivel = url.searchParams.get('nivel') ?? '';
 const empresa = url.searchParams.get('empresa') ?? '';
 const dias = url.searchParams.get('dias') ?? '';
+const tipo = url.searchParams.get('tipo') ?? '';
 const pagina = Math.max(1, Number.parseInt(url.searchParams.get('p') ?? '1', 10) || 1);
 
 const paisOk = (PAISES_OBJETIVO as readonly string[]).includes(pais) ? pais : '';
@@ -27,6 +28,9 @@ const rolOk = ROLES_VACANTE.some((r) => r.id === rol) ? rol : '';
 const nivelOk = NIVELES.some((n) => n.id === nivel) ? nivel : '';
 const empresaOk = FUENTES.some((f) => f.id === empresa) ? empresa : '';
 const diasOk = ['1', '7', '30'].includes(dias) ? dias : '';
+// Bancos de talento: convocatorias abiertas sin puesto concreto (muchas, de inclusión). Pueden ser la puerta
+// de entrada de quien no tiene experiencia, así que se muestran siempre y se pueden filtrar.
+const tipoOk = tipo === 'banco' ? tipo : '';
 
 const where: string[] = ['activa = 1'];
 const args: unknown[] = [];
@@ -34,6 +38,7 @@ if (paisOk) { where.push("(',' || paises || ',') LIKE ?"); args.push(`%,${paisOk
 if (rolOk) { where.push('rol = ?'); args.push(rolOk); }
 if (nivelOk) { where.push('nivel = ?'); args.push(nivelOk); }
 if (empresaOk) { where.push('fuente = ?'); args.push(empresaOk); }
+if (tipoOk) where.push("tipo_publicacion = 'banco_talento'");
 if (diasOk) {
   const desde = new Date(Date.now() - Number(diasOk) * 86400000).toISOString().slice(0, 10);
   where.push('COALESCE(fecha_publicacion, substr(primera_vez, 1, 10)) >= ?');
@@ -44,7 +49,7 @@ const whereSql = where.join(' AND ');
 
 interface Vacante {
   id: string; empresa: string; titulo: string; url: string; pais: string | null; paises: string | null;
-  pais_principal_iso: string | null;
+  pais_principal_iso: string | null; tipo_publicacion: string | null;
   ubicacion: string | null; modalidad: string | null; rol: string; nivel: string; fecha_publicacion: string | null;
   primera_vez: string; tipo_empresa: string;
 }
@@ -60,7 +65,7 @@ if (db) {
   try {
     const [lista, cuenta, res, corrida] = await db.batch([
       db.prepare(
-        `SELECT id, empresa, titulo, url, pais, paises, pais_principal_iso, ubicacion, modalidad, rol, nivel, fecha_publicacion, primera_vez, tipo_empresa
+        `SELECT id, empresa, titulo, url, pais, paises, pais_principal_iso, tipo_publicacion, ubicacion, modalidad, rol, nivel, fecha_publicacion, primera_vez, tipo_empresa
          FROM vacantes WHERE ${whereSql}
          ORDER BY COALESCE(fecha_publicacion, substr(primera_vez, 1, 10)) DESC, titulo
          LIMIT ? OFFSET ?`,
@@ -115,6 +120,11 @@ function fechaCorta(iso: string | null): string {
 }
 // Vacante con varias ubicaciones cuya sede principal está fuera de los siete países
 // (ej. Dublín con Barcelona como ubicación adicional): se muestra la sede y "También en España".
+// Publicación permanente: la empresa la mantiene abierta desde hace más de un año.
+const HACE_UN_ANIO = new Date(Date.now() - 365 * 86400000).toISOString().slice(0, 10);
+function esPermanente(v: Vacante): boolean {
+  return Boolean(v.fecha_publicacion && v.fecha_publicacion < HACE_UN_ANIO);
+}
 function esSecundaria(v: Vacante): boolean {
   if (v.pais_principal_iso) return !(PAISES_OBJETIVO as readonly string[]).includes(v.pais_principal_iso);
   return ubicacionFueraDeObjetivo(v.ubicacion); // filas sin país de sede
@@ -125,12 +135,12 @@ function paisesDe(v: Vacante): string {
 }
 function qs(over: Record<string, string>): string {
   const p = new URLSearchParams();
-  const base: Record<string, string> = { q, pais: paisOk, rol: rolOk, nivel: nivelOk, empresa: empresaOk, dias: diasOk };
+  const base: Record<string, string> = { q, pais: paisOk, rol: rolOk, nivel: nivelOk, empresa: empresaOk, dias: diasOk, tipo: tipoOk };
   for (const [k, v] of Object.entries({ ...base, ...over })) if (v) p.set(k, v);
   const s = p.toString();
   return s ? `?${s}` : '';
 }
-const filtros = { q, pais: paisOk, rol: rolOk, nivel: nivelOk, empresa: empresaOk, dias: diasOk };
+const filtros = { q, pais: paisOk, rol: rolOk, nivel: nivelOk, empresa: empresaOk, dias: diasOk, tipo: tipoOk };
 const hayFiltros = Object.values(filtros).some(Boolean);
 const actualizadoTxt = actualizado
   ? new Date(actualizado).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Mexico_City' })
@@ -198,6 +208,10 @@ const actualizadoTxt = actualizado
         <option value="7" selected={diasOk === '7'}>Última semana</option>
         <option value="30" selected={diasOk === '30'}>Último mes</option>
       </select>
+      <select name="tipo" aria-label="Tipo de publicación">
+        <option value="">Vacantes y bancos de talento</option>
+        <option value="banco" selected={tipoOk === 'banco'}>Solo bancos de talento</option>
+      </select>
       <button type="submit" class="btn btn-orange">Filtrar</button>
       {hayFiltros && <a class="vac-limpiar" href="/vacantes">Quitar filtros</a>}
     </form>
@@ -237,6 +251,8 @@ const actualizadoTxt = actualizado
           <p class="vac-tags">
             <span class="vac-chip vac-chip-rol">{rolLabel[v.rol] ?? v.rol}</span>
             {v.nivel !== 'no_especificado' && <span class="vac-chip">{nivelLabel[v.nivel]}</span>}
+            {v.tipo_publicacion === 'banco_talento' && <span class="vac-chip vac-chip-banco" title="Convocatoria abierta sin puesto concreto: dejas tu perfil para futuras vacantes">Banco de talento</span>}
+            {esPermanente(v) && <span class="vac-chip vac-chip-vieja" title="La empresa la mantiene abierta desde hace más de un año">Publicada hace más de un año</span>}
           </p>
           <div class="vac-acciones">
             <a href={v.url} target="_blank" rel="noopener nofollow" class="vac-ver vac-link" data-id={v.id}>Ver vacante →</a>
@@ -335,6 +351,8 @@ const actualizadoTxt = actualizado
   .vac-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
   .vac-chip { display: inline-block; font-size: 0.8rem; padding: 3px 10px; border-radius: 999px; background: var(--blue-soft); color: var(--navy); }
   .vac-chip-rol { background: var(--orange-light); color: var(--orange); font-weight: 600; }
+  .vac-chip-banco { background: #E7F3EC; color: #1F6B45; font-weight: 600; }
+  .vac-chip-vieja { background: #EEEDE8; color: var(--text-mute); }
   .vac-acciones { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font-size: 0.92rem; }
   .vac-ver { font-weight: 600; color: var(--navy); }
   .vac-tool { color: var(--orange); }

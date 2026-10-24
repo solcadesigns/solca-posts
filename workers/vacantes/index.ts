@@ -102,7 +102,8 @@ function huella(texto: string): string {
   return h.toString(16).padStart(8, '0');
 }
 
-const RX_BANCO_TALENTO = /(banco de talent|talent ?(pool|community)|comunidad de talento|candidatura espont)/i;
+// "(Pipeline)": requisición permanente de Thermo Fisher para contratar de forma continua (23 oct 2026).
+const RX_BANCO_TALENTO = /(banco de talent|talent ?(pool|community)|comunidad de talento|candidatura espont|cadastro reserva|\(pipeline\b)/i;
 
 async function enParalelo<T>(items: T[], n: number, fn: (x: T) => Promise<void>): Promise<void> {
   let i = 0;

@@ -11,7 +11,7 @@ readingMinutes: 6
 cta: "vacantes"
 ---
 
-Solca tiene desde hoy un [buscador de vacantes pharma](https://solcaciencia.com/vacantes/?ref=blog) que lee cada mañana los portales de empleo oficiales de 24 farmacéuticas, CROs y empresas de tecnología médica, y muestra las vacantes con al menos una ubicación en México, Brasil, Argentina, Colombia, Chile, Perú o España. Para presentarlo, leímos sus vacantes abiertas el 23 de octubre de 2026; sin bancos de talento ni anuncios de más de un año, quedan 1,381 ofertas distintas.
+Solca tiene desde hoy un [buscador de vacantes pharma](https://solcaciencia.com/vacantes/?ref=blog) que lee cada mañana los portales de empleo oficiales de 24 farmacéuticas, CROs y empresas de tecnología médica, y muestra las vacantes con al menos una ubicación en México, Brasil, Argentina, Colombia, Chile, Perú o España. Para presentarlo, leímos sus vacantes abiertas el 23 de octubre de 2026; sin bancos de talento ni publicaciones permanentes, quedan 1,381 ofertas distintas.
 
 No es una muestra elegida con palabras de búsqueda. Es un censo de lo que publican estas 24 empresas en sus portales. Tampoco es todo el mercado: deja fuera a las empresas que todavía no están en el buscador y a las vacantes que solo se publican en otros sitios.
 
@@ -54,7 +54,8 @@ Cuentan las menciones como requisito, como deseable o como parte del trabajo. Si
 
 - **Fuente:** los portales de empleo oficiales de 24 empresas, leídos el 23 de octubre de 2026. La lista completa está al pie del [buscador](https://solcaciencia.com/vacantes/?ref=blog).
 - **Ofertas distintas:** una oferta publicada varias veces (por ejemplo, la misma vacante en varias ciudades) cuenta una vez. Por eso aquí son 1,381 y el contador del buscador, que muestra cada publicación, es mayor.
-- **Exclusiones:** bancos de talento ("únete a nuestra comunidad") y anuncios publicados hace más de un año.
+- **Bancos de talento:** se cuentan aparte. Son convocatorias abiertas sin un puesto concreto, la mayoría de inclusión (para personas con discapacidad, por ejemplo), y pueden ser una puerta de entrada para quien no tiene experiencia. En el buscador aparecen con su etiqueta y se pueden filtrar.
+- **Publicaciones permanentes:** los anuncios que la empresa mantiene abiertos desde hace más de un año tampoco entran en las cifras; en el buscador se marcan como tales.
 - **Peso de cada empresa:** la que más aporta es IQVIA, con 255 de 1,381 (18 %).
 - **Reglas automáticas:** el país, los años, las herramientas y el inglés se extraen del texto de cada vacante con reglas, sin inteligencia artificial. Antes de publicar cada cifra revisamos a mano 60 vacantes al azar (30 que la regla cuenta y 30 que no) y las reglas acertaron en al menos 9 de cada 10.
 - **Límites:** Bristol Myers Squibb aporta pocas vacantes porque su portal todavía no se filtra por país en el buscador. El rol y el nivel de cada vacante también se asignan con reglas, pero no los usamos en estas cifras.
