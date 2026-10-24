@@ -10,7 +10,7 @@
  * queda como 'no_especificado'. Al cambiar reglas, sube CLASIFICACION_VERSION.
  */
 
-export const CLASIFICACION_VERSION = 'r7';
+export const CLASIFICACION_VERSION = 'r8';
 
 export interface RolVacante {
   id: string;
