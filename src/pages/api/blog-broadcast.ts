@@ -160,7 +160,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return jsonResponse({ skipped: true, reason: 'no_recent_blog', started_at: startedIso });
   }
 
-  const blogUrl = `https://solcaciencia.com/blog/${post.id}`;
+  // UTM para atribuir las visitas de cada envío (26 oct 2026); sin ellas llegaban como tráfico directo.
+  const blogUrl = `https://solcaciencia.com/blog/${post.id}/?utm_source=email&utm_medium=broadcast&utm_campaign=blog-${post.id}`;
   const blogTitle = post.data.title;
   // Hook: primeras ~150 palabras del cuerpo (Postmark decide el rendering final vía template)
   // Sin sintaxis markdown: el correo mostraba "> **Respuesta corta.**" literal.
