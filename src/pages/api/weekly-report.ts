@@ -674,8 +674,16 @@ interface VacantesStats {
   calidad: Record<string, number>;
 }
 
+/**
+ * Inicio de la medición del lanzamiento de /vacantes y las landings de libros: jue 29 oct 2026, 00:00 CDMX.
+ * Antes de esa fecha casi todo el tráfico fue de pruebas internas (decisión de Oscar, 26 oct 2026).
+ */
+const MEDICION_LANZAMIENTO_DESDE = '2026-10-29T06:00:00.000Z';
+
 async function buildVacantes(db: D1Database, sinceIso: string): Promise<VacantesStats> {
   const sinceDay = sinceIso.slice(0, 10);
+  // Eventos de uso (vistas, filtros, clics): solo desde el lanzamiento.
+  const sinceEventos = sinceIso > MEDICION_LANZAMIENTO_DESDE ? sinceIso : MEDICION_LANZAMIENTO_DESDE;
   const toMap = (rows: Array<{ k: string | null; n: number }> | undefined) =>
     Object.fromEntries((rows ?? []).map((r) => [r.k ?? 'sin_dato', r.n]));
   const [tot, nuevas, cerradas, porPais, porRol, errores, ultima, evs, personas, clRol, clPais, tools, camp] = await db.batch([
@@ -699,17 +707,17 @@ async function buildVacantes(db: D1Database, sinceIso: string): Promise<Vacantes
        FROM vacantes_corridas c WHERE ts >= ? AND estado != 'ok' GROUP BY fuente`,
     ).bind(sinceIso),
     db.prepare('SELECT MAX(ts) AS ts FROM vacantes_corridas'),
-    db.prepare('SELECT evento AS k, COUNT(*) AS n FROM vacantes_eventos WHERE ts >= ? GROUP BY evento').bind(sinceIso),
-    db.prepare('SELECT COUNT(DISTINCT aid) AS n FROM vacantes_eventos WHERE ts >= ? AND aid IS NOT NULL').bind(sinceIso),
-    db.prepare("SELECT rol AS k, COUNT(*) AS n FROM vacantes_eventos WHERE ts >= ? AND evento = 'vacancy_clicked' GROUP BY rol").bind(sinceIso),
-    db.prepare("SELECT pais AS k, COUNT(*) AS n FROM vacantes_eventos WHERE ts >= ? AND evento = 'vacancy_clicked' GROUP BY pais").bind(sinceIso),
-    db.prepare("SELECT herramienta AS k, COUNT(*) AS n FROM vacantes_eventos WHERE ts >= ? AND evento = 'tool_clicked' GROUP BY herramienta").bind(sinceIso),
+    db.prepare('SELECT evento AS k, COUNT(*) AS n FROM vacantes_eventos WHERE ts >= ? GROUP BY evento').bind(sinceEventos),
+    db.prepare('SELECT COUNT(DISTINCT aid) AS n FROM vacantes_eventos WHERE ts >= ? AND aid IS NOT NULL').bind(sinceEventos),
+    db.prepare("SELECT rol AS k, COUNT(*) AS n FROM vacantes_eventos WHERE ts >= ? AND evento = 'vacancy_clicked' GROUP BY rol").bind(sinceEventos),
+    db.prepare("SELECT pais AS k, COUNT(*) AS n FROM vacantes_eventos WHERE ts >= ? AND evento = 'vacancy_clicked' GROUP BY pais").bind(sinceEventos),
+    db.prepare("SELECT herramienta AS k, COUNT(*) AS n FROM vacantes_eventos WHERE ts >= ? AND evento = 'tool_clicked' GROUP BY herramienta").bind(sinceEventos),
     db.prepare(
       `SELECT COALESCE(utm_campaign, '(sin utm)') AS utm_campaign,
               SUM(CASE WHEN evento IN ('vacantes_viewed', 'vacantes_filtered') THEN 1 ELSE 0 END) AS vistas,
               SUM(CASE WHEN evento = 'vacancy_clicked' THEN 1 ELSE 0 END) AS clics
        FROM vacantes_eventos WHERE ts >= ? GROUP BY 1 ORDER BY vistas DESC LIMIT 10`,
-    ).bind(sinceIso),
+    ).bind(sinceEventos),
   ]);
   const n = (r: D1Result) => ((r.results?.[0] as { n?: number })?.n) ?? 0;
   const hace365 = new Date(Date.now() - 365 * 86400000).toISOString().slice(0, 10);
@@ -1151,11 +1159,16 @@ export const GET: APIRoute = async ({ url, locals }) => {
           utm_medium?: string;
           utm_campaign?: string;
           plan?: string;
-          page?: 'quiz-rol' | 'revisar-cv' | 'blog';
+          page?: 'quiz-rol' | 'revisar-cv' | 'blog' | 'vacantes' | 'libro';
           product?: string;
+          path?: string;
         }>(simMetricsKv, 'evt:', (rec) => {
           const tsMs = rec.ts ? Date.parse(rec.ts) : NaN;
           if (isNaN(tsMs) || tsMs > now) return;
+          // Vacantes y landings de libros: antes del lanzamiento el tráfico fue de pruebas internas.
+          const esLanzamiento = (rec.event === 'page_viewed' && (rec.page === 'vacantes' || rec.page === 'libro'))
+            || (rec.event === 'book_clicked' && /^\/(libros|vacantes)\b/.test(rec.path ?? ''));
+          if (esLanzamiento && tsMs < Date.parse(MEDICION_LANZAMIENTO_DESDE)) return;
 
           // Desglose por campaña: ventana de 30 días, independiente de la semanal.
           if (rec.utm_campaign && tsMs >= campaignWindowStart) {

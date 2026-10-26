@@ -147,6 +147,9 @@ Las correcciones están en las reglas r7/d3 y en la migración 0007.
 
 ## Medición
 
+**Inicio de la medición del lanzamiento:** jue 29 oct 2026, 00:00 CDMX (`MEDICION_LANZAMIENTO_DESDE` en `src/pages/api/weekly-report.ts`). Antes, el tráfico de `/vacantes` y de las landings de libros fue casi todo de pruebas internas; el reporte semanal lo ignora. Los teasers en LinkedIn (desde el lun 26) se miden con las analíticas de LinkedIn y los suscriptores del newsletter.
+
+
 `vacantes_eventos` guarda cuatro eventos:
 - `vacantes_viewed`
 - `vacantes_filtered`
