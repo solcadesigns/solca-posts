@@ -2,6 +2,7 @@
 title: "De la ciencia a la consultoría: programas y entrevista de caso"
 description: "Programas de entrada para personas con PhD y médicos en BCG, L.E.K. y Trinity, qué evalúa el proceso de selección y cómo es la entrevista de caso, según las firmas."
 pubDate: 2026-10-15
+updatedDate: 2026-10-28
 heroImage: "/blog/de-la-ciencia-a-la-consultoria-puertas-de-entrada.png"
 category: "carreras-pharma"
 tags: ["Consultoría", "Life Sciences Consulting", "PhD", "Entrevista de caso", "Entrevistas", "Carrera"]
@@ -135,5 +136,7 @@ ZS publica un caso de precio de un tratamiento para EPOC, L.E.K. uno de dimensio
 </script>
 
 ---
+
+**Para practicar la entrevista de caso.** El libro *Consultoría en ciencias de la vida* de la colección Solca trae seis casos resueltos, uno por cada tipo, y cinco preguntas de experiencia personal preparadas desde una trayectoria científica (Módulo 3), además de las herramientas que esos casos ponen a prueba: árboles de problemas, hipótesis, estado de resultados y escenarios (Módulo 2). [Ver qué incluye el libro](https://solcaciencia.com/libros/consultoria/?ref=blog-cons-puertas).
 
 **Ensaya la primera llamada antes de la real.** El [Simulador de Entrevistas Solca](https://solcaciencia.com/simulador-entrevistas/?modulo=consulting&utm_source=blog&utm_medium=post&utm_campaign=consultoria-puertas-entrada#planes) tiene un módulo de Strategy Consulting. La primera sesión no tiene costo: una llamada inicial con reclutador de 5 preguntas, personalizada con tu CV, con reporte PDF a tu email. La ronda técnica y el panel están en los planes Básico ($199 MXN) y Premium ($349 MXN).

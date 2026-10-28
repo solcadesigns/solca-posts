@@ -150,7 +150,7 @@ const linkVacantes = `/vacantes/?rol=${libro.rol}&ref=${ref}`;
 
 <script is:inline>
   // Origen de la venta cuando la visita llegó desde dentro del sitio (?ref=vacantes, ?ref=home)
-  // y no trae campaña externa: etiqueta "<ref>|<libro>" en sck/src (libro = pm, msl, cr, fv). Con campaña externa decide BaseLayout.
+  // y no trae campaña externa: etiqueta "<ref>|<libro>" en sck/src (libro = pm, msl, cr, fv, consulting). Con campaña externa decide BaseLayout.
   (function () {
     try {
       var ref = new URLSearchParams(location.search).get('ref');

@@ -2,6 +2,7 @@
 title: "Consultoría en ciencias de la vida: qué es y qué no es"
 description: "Qué hace un consultor en ciencias de la vida, por qué market access no es un tipo de consultoría, qué firmas hay y en qué nivel entra alguien con PhD."
 pubDate: 2026-10-15
+updatedDate: 2026-10-28
 heroImage: "/blog/consultoria-ciencias-de-la-vida-que-es-y-que-no.png"
 category: "carreras-pharma"
 tags: ["Consultoría", "Life Sciences Consulting", "Market Access", "Industria Farmacéutica", "Carrera", "PhD"]
@@ -135,5 +136,7 @@ Depende de la firma. Trinity contrata a personas con PhD como Consultant y a egr
 </script>
 
 ---
+
+**Para ir más a fondo.** El libro *Consultoría en ciencias de la vida* de la colección Solca desarrolla lo que este artículo resume: qué es y qué no es la consultoría, los tipos de firma y la escalera de puestos (Módulo 1); las herramientas del oficio, del árbol de problemas al pronóstico basado en pacientes y la pirámide de Minto (Módulo 2); los puestos de entrada según tu grado, el resume de consultoría y la entrevista de caso (Módulo 3); los primeros 90 días y los caminos de carrera (Módulo 4), y un módulo de IA en consultoría (Módulo 5). [Ver qué incluye el libro](https://solcaciencia.com/libros/consultoria/?ref=blog-cons-que-es).
 
 **Ensaya la primera llamada de consultoría antes de la real.** El [Simulador de Entrevistas Solca](https://solcaciencia.com/simulador-entrevistas/?modulo=consulting&utm_source=blog&utm_medium=post&utm_campaign=consultoria-que-es#planes) tiene un módulo de Strategy Consulting. La primera sesión no tiene costo: una llamada inicial con reclutador de 5 preguntas, personalizada con tu CV, con reporte PDF a tu email. La ronda técnica y el panel están en los planes Básico y Premium.

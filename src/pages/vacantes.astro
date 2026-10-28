@@ -8,7 +8,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { FUENTES, PAISES_OBJETIVO, PAIS_NOMBRE, ubicacionFueraDeObjetivo, type PaisObjetivo } from '../lib/vacantes-fuentes';
 import { ROLES_VACANTE, NIVELES } from '../lib/vacantes-clasificar';
-import { LIBRO_POR_ROL } from '../lib/libros';
+import { LIBRO_POR_ROL, type Libro } from '../lib/libros';
 
 export const prerender = false;
 
@@ -104,9 +104,18 @@ function linkSimulador(r: string): string {
 const linkCv = '/revisar-cv?ref=vacantes';
 
 // Rol de la vacante → landing del libro (src/lib/libros.ts). Solo roles con libro a la venta.
+// Analistas de inteligencia de mercado, pronóstico, insights, HEOR/HTA y acceso hacen el trabajo que
+// enseña el libro de consultoría (módulo 2), aunque su rol no sea 'consulting'.
 // Con ?ref= (no UTM, para no pisar la campaña externa de la sesión); la landing lo usa como origen en Hotmart.
-function linkLibro(r: string): string {
-  return `/libros/${LIBRO_POR_ROL[r].slug}/?ref=vacantes`;
+const ANALISTA_CONSULTORIA = /(analyst|analista)/i;
+const TEMA_CONSULTORIA = /(market (research|insights?|intelligence|access)|intelig[eê]ncia de mercado|inteligencia de mercado|forecast|insight|\bHTA\b|health technology|\bHEOR\b|health econom|access|acceso|acesso|strateg|estrat[eé]g)/i;
+function libroDe(v: { rol: string; titulo: string }): Libro | undefined {
+  if (LIBRO_POR_ROL[v.rol]) return LIBRO_POR_ROL[v.rol];
+  if (ANALISTA_CONSULTORIA.test(v.titulo) && TEMA_CONSULTORIA.test(v.titulo)) return LIBRO_POR_ROL.consulting;
+  return undefined;
+}
+function linkLibro(l: Libro): string {
+  return `/libros/${l.slug}/?ref=vacantes`;
 }
 
 function fechaCorta(iso: string | null): string {
@@ -260,8 +269,8 @@ const actualizadoTxt = actualizado
               <a href={linkSimulador(v.rol)} class="vac-tool" data-tool="simulador" data-id={v.id}>Practica la entrevista</a>
             )}
             <a href={linkCv} class="vac-tool" data-tool="cv" data-id={v.id}>Revisa tu CV</a>
-            {LIBRO_POR_ROL[v.rol] && (
-              <a href={linkLibro(v.rol)} class="vac-tool" data-tool="libro" data-id={v.id}>Libro: {LIBRO_POR_ROL[v.rol].titulo}</a>
+            {libroDe(v) && (
+              <a href={linkLibro(libroDe(v)!)} class="vac-tool" data-tool="libro" data-id={v.id}>Libro: {libroDe(v)!.titulo}</a>
             )}
           </div>
         </li>
