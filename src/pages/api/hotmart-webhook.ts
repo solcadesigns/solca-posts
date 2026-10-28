@@ -69,6 +69,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (!ev.id || !ev.event) return new Response('missing fields', { status: 400 });
   // Eventos sin compra (abandono de carrito, suscripciones, club): se aceptan con 200 para que Hotmart no reintente.
   if (!p?.transaction) return new Response('ignored', { status: 200 });
+  // Las pruebas del panel de Hotmart llegan con el token real y un producto ficticio: se confirman sin guardarse
+  // para que no entren al reporte (el resultado se ve en Hotmart > Webhook > Historial).
+  if (p.transaction === 'HP16015479281022' || /test postback/i.test(ev.data?.product?.name ?? '')) {
+    return new Response('test ok', { status: 200 });
+  }
 
   const comisiones = ev.data?.commissions ?? [];
   const comision = (fuente: string) => numero(comisiones.find((c) => c.source === fuente)?.value);
