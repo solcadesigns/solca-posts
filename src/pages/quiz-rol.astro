@@ -2,18 +2,14 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import MarketSurvey from '../components/MarketSurvey.astro';
 
-// CTAs por rol. Los 4 roles con libro publicado van a Hotmart. Consulting
-// aún va al simulador con módulo pre-seleccionado mientras se publica su
-// libro (oct 2026 · Consulting en investigación editorial, roadmap 2027Q1).
-// Cuando salga el libro de Consulting, cambiar aquí la URL a Hotmart es un
-// edit puntual.
+// CTAs por rol. Los 5 roles tienen libro publicado y van a Hotmart
+// (Consulting desde el 28 oct 2026).
 const cta = {
   libroPM: 'https://pay.hotmart.com/R105710415P',
   libroMSL: 'https://pay.hotmart.com/Y105718405Y',
   libroCR: 'https://pay.hotmart.com/U105724060O',
   libroFV: 'https://pay.hotmart.com/E107847432I',
-  cursoConsulting:
-    '/simulador-entrevistas/?modulo=strategy-consulting&ref=quiz-rol',
+  libroConsulting: 'https://pay.hotmart.com/D108233272L',
 };
 
 // Ampliado 2026-09-28: quiz pasa de 3 a 5 roles. Añadidos Farmacovigilancia
@@ -874,11 +870,7 @@ const QUESTIONS = [
 
 <script define:vars={{ QUESTIONS, cta }}>
   // ROLE_DATA · usa `ctaTitle`, `ctaDesc`, `ctaURL`, `ctaLabel` de forma
-  // unificada. Los 4 roles con libro publicado apuntan a Hotmart; Consulting
-  // sigue apuntando al simulador con módulo pre-seleccionado mientras se
-  // publica su libro (roadmap editorial 2027Q1). Cuando salga el libro de
-  // Consulting, actualizar aquí el ctaURL, ctaTitle y ctaDesc, y el flujo
-  // del quiz sigue igual.
+  // unificada. Los 5 roles apuntan a su libro en Hotmart.
   const ROLE_DATA = {
     PM: {
       name: 'Project Manager clínico',
@@ -933,12 +925,12 @@ const QUESTIONS = [
       short: 'Consulting',
       explanation:
         'Tu perfil encaja con consultoría de life sciences / strategy consulting para pharma: alta tolerancia a ambigüedad, rotación temática, deliverable ejecutivo, comunicación concisa. Firmas típicas: IQVIA Consulting, ZS Associates, Deloitte Life Sciences, Accenture, McKinsey/Bain/BCG con práctica pharma. Cada 6-12 semanas cambias de proyecto y de industria adyacente. Pide inglés C1 real y pensamiento estructurado bajo presión.',
-      ctaEyebrow: 'Próximo paso (mientras se publica el libro)',
-      ctaTitle: 'Practica el rol con el Simulador de Entrevistas Pharma',
+      ctaEyebrow: 'Libro recomendado',
+      ctaTitle: 'Consultoría en ciencias de la vida',
       ctaDesc:
-        'El módulo Strategy Consulting del Simulador tiene preguntas basadas en patrones reales de entrevistas de consulting pharma LATAM (case interviews, PEI, fit). Freemium sin costo. El libro sobre carrera en Life Sciences Consulting está en investigación editorial (roadmap 2027Q1).',
-      ctaLabel: 'Practicar módulo Consulting →',
-      ctaURL: cta.cursoConsulting,
+        '185 páginas · 36 figuras. Cubre las herramientas del oficio (árboles de problemas, escenarios, pronóstico basado en pacientes, pirámide de Minto), referencias salariales con su fuente, seis casos de entrevista resueltos y un módulo de IA en consultoría.',
+      ctaLabel: 'Ver en Hotmart →',
+      ctaURL: cta.libroConsulting,
     },
   };
 

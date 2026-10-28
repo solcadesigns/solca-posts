@@ -1,8 +1,8 @@
 /**
- * Libros de la colección Solca · fuente de las landings /libros/<slug> (23 oct 2026).
+ * Libros de la colección Solca · fuente de las landings /libros/<slug> (23 oct 2026; consultoría 28 oct).
  *
  * Todo el texto sale de los manuscritos: contraportada (contraportada.md de libro, libro2 y libro3;
- * libro4/make_contraportada.py para FV) e índice de cada libro (_combined.md;
+ * libro4/make_contraportada.py para FV; books/life-sciences-consulting/make_contraportada.py para consultoría) e índice de cada libro (_combined.md;
  * Solca_FV.docx para FV). No agregues cifras ni promesas que no estén en el libro.
  * URLs de Hotmart: las mismas de index.astro y quiz-rol.astro.
  */
@@ -137,6 +137,34 @@ export const LIBROS: Libro[] = [
       { titulo: 'IA y productividad para farmacovigilancia', temas: ['Casos de uso reales hoy', 'Diez prompts plantilla con caveat de compliance', 'Riesgos éticos y operativos', 'FDA, EMA e ICH ante la IA'] },
     ],
     extras: ['Cuaderno de trabajo al final de cada módulo', 'Referencias verificables por módulo', 'Glosario inglés-español de farmacovigilancia', 'Apéndice con las agencias regulatorias por país'],
+  },
+  {
+    slug: 'consultoria',
+    rol: 'consulting',
+    modulo: 'consulting',
+    titulo: 'Consultoría en ciencias de la vida',
+    tituloSeo: 'Libro Consultoría en ciencias de la vida',
+    subtitulo: 'Guía práctica para científicos de la salud · LATAM y España',
+    portada: '/covers/portada_consulting.png',
+    hotmart: 'https://pay.hotmart.com/D108233272L',
+    intro:
+      'La consultoría en ciencias de la vida es una puerta de entrada a la industria farmacéutica desde una formación científica que no siempre se entiende bien. Lo que suele faltar es el lenguaje de los negocios. Este libro trata de esa traducción.',
+    resultados: [
+      'Qué es la consultoría en ciencias de la vida, qué no es y qué tipos de firma trabajan en América Latina y España.',
+      'Las herramientas del oficio: árboles de problemas, hipótesis, estado de resultados y escenarios, pronóstico basado en pacientes, evaluación económica y la pirámide de Minto.',
+      'Cómo se entra: puestos de entrada según tu grado, salarios con su fuente, el resume de consultoría y la entrevista de caso.',
+      'Seis casos resueltos, uno por cada tipo, y cinco preguntas de experiencia personal preparadas desde una trayectoria científica.',
+      'Un plan para los primeros noventa días, la trayectoria dentro de una firma y los caminos para salir de ella.',
+      'Un módulo sobre inteligencia artificial en consultoría: lo que las firmas ya usan, diez prompts plantilla y los riesgos documentados.',
+    ],
+    modulos: [
+      { titulo: 'Fundamentos de la consultoría en ciencias de la vida', temas: ['Por qué un científico de la salud encaja en consultoría', 'Qué es la consultoría en ciencias de la vida y qué NO es', 'Tipos de firma y dónde están', 'Roles y niveles', 'Diez habilidades transferibles de tu formación científica'] },
+      { titulo: 'Operación y compliance', temas: ['Un día en la vida del analista', 'Estructurar el problema: alcance, hipótesis y árboles lógicos', 'Investigación documental, expertos, encuestas e inteligencia competitiva', 'Estado de resultados, Excel y escenarios', 'Del pipeline al pronóstico', 'HEOR, impacto presupuestal y evaluación de tecnologías sanitarias', 'Pirámide, storyline y slides', 'Compliance del oficio'] },
+      { titulo: 'Reverse-engineering tu rol ideal en consultoría', temas: ['Seis factores que decides tú antes de aplicar', 'Quién contrata: firmas y puestos de entrada', 'Salarios en América Latina y mercado laboral en España', 'El resume de consultoría frente al CV académico', 'La entrevista de caso: seis casos resueltos', 'Cinco preguntas de experiencia personal'] },
+      { titulo: 'Primeros 90 días y carrera', temas: ['Los primeros 90 días', 'Patrones de fracaso en el primer año', 'Trayectoria vertical', 'Movimientos laterales', 'Certificaciones, desarrollo y comunidades'] },
+      { titulo: 'IA y productividad para consultores', temas: ['La IA cambia el rol pero no lo reemplaza', 'Lo que las firmas dicen que ya usan', 'Diez prompts plantilla para el analista', 'Cinco riesgos éticos y operativos', 'Marco regulatorio y tendencias'] },
+    ],
+    extras: ['Cuaderno de trabajo al final de cada módulo', 'Referencias verificables por módulo', 'Glosario inglés-español de consultoría en ciencias de la vida'],
   },
 ];
 
