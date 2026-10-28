@@ -119,6 +119,8 @@ interface WeeklyReport {
   market_survey: MarketSurveyStats | null;
   // Buscador de vacantes (22 oct 2026) · D1 vacantes, vacantes_corridas, vacantes_eventos.
   vacantes: VacantesStats | null;
+  // Ventas de Hotmart por webhook (28 oct 2026) · D1 hotmart_eventos. Sin datos antes de activar el webhook.
+  hotmart: HotmartStats | null;
   simulator: {
     sesiones_acumuladas: number;
     esta_semana: number;
@@ -656,6 +658,129 @@ function gscDimRows(rows: GscApiRow[], stripOrigin: boolean): GscDimRow[] {
  * Recorre KV con prefix, parsea, aplica callback por registro válido.
  * Silencia registros corruptos con warn a console.
  */
+interface HotmartFila {
+  transaccion: string;
+  evento: string;
+  estado: string | null;
+  creado_ms: number;
+  aprobado_ms: number | null;
+  producto: string | null;
+  moneda: string | null;
+  sck: string | null;
+  afiliado: string | null;
+  comision_afiliado: number | null;
+  moneda_c_afiliado: string | null;
+  comision_productor: number | null;
+  moneda_c: string | null;
+}
+
+interface HotmartStats {
+  datos_desde: string | null;                 // primer evento recibido por el webhook
+  // Ventas aprobadas en la ventana con su estado de hoy: una venta reembolsada después deja de contar,
+  // incluso en la semana anterior (la cifra de esa semana puede bajar de un reporte a otro).
+  ventas_7d: number;
+  ventas_semana_anterior: number;
+  reembolsos_7d: number;                      // reembolsos y contracargos registrados en la semana
+  otros_estados_7d: Record<string, number>;   // ventas aprobadas que en la semana pasaron a otro estado (cancelada, disputa...)
+  ingreso_productor_7d: Record<string, number>; // comisión del productor por moneda
+  por_libro_7d: Record<string, number>;
+  por_origen_7d: Record<string, number>;      // sck sin el sufijo |libro; 'afiliado' y 'sin_sck' aparte
+  con_afiliado_7d: number;
+  sin_afiliado_7d: number;
+  por_afiliado_7d: Array<{ afiliado: string; ventas: number; comision: number; moneda: string | null }>;
+}
+
+// El estado sale del nombre del evento; purchase.status solo como respaldo (Hotmart documenta COMPLETE y CANCELLED).
+function claseHotmart(evento: string, estado: string | null): 'venta' | 'devuelta' | string {
+  if (evento === 'PURCHASE_APPROVED' || evento === 'PURCHASE_COMPLETE') return 'venta';
+  if (evento === 'PURCHASE_REFUNDED' || evento === 'PURCHASE_CHARGEBACK') return 'devuelta';
+  const st = (estado ?? '').toUpperCase();
+  if (st === 'APPROVED' || st === 'COMPLETE' || st === 'COMPLETED') return 'venta';
+  if (st === 'REFUNDED' || st === 'PARTIALLY_REFUNDED' || st === 'CHARGEBACK') return 'devuelta';
+  return st || evento;
+}
+
+async function buildHotmart(db: D1Database, weekAgo: number, twoWeeksAgo: number): Promise<HotmartStats> {
+  const [desde, filas] = await db.batch([
+    db.prepare('SELECT MIN(recibido) AS d FROM hotmart_eventos'),
+    db
+      .prepare(
+        `SELECT transaccion, evento, estado, creado_ms, aprobado_ms, producto, moneda, sck, afiliado,
+                comision_afiliado, moneda_comision_afiliado AS moneda_c_afiliado, comision_productor, moneda_comision AS moneda_c
+         FROM hotmart_eventos
+         WHERE transaccion IN (SELECT transaccion FROM hotmart_eventos WHERE creado_ms >= ?1 OR aprobado_ms >= ?1)
+         ORDER BY creado_ms, recibido, id`,
+      )
+      .bind(twoWeeksAgo),
+  ]);
+  // Clase vigente = la del evento más reciente; los datos de la venta salen del primer evento que los traiga.
+  // Si ningún evento trae approved_date, se usa la fecha del primer evento de venta.
+  type Tx = HotmartFila & { clase: string; ultimo_ms: number; devuelta_ms: number | null };
+  const tx = new Map<string, Tx>();
+  for (const f of (filas.results ?? []) as HotmartFila[]) {
+    const clase = claseHotmart(f.evento, f.estado);
+    let t = tx.get(f.transaccion);
+    if (!t) {
+      t = { ...f, clase, ultimo_ms: f.creado_ms, devuelta_ms: null };
+      tx.set(f.transaccion, t);
+    } else {
+      t.clase = clase;
+      t.ultimo_ms = f.creado_ms;
+      for (const k of ['aprobado_ms', 'producto', 'moneda', 'sck', 'afiliado', 'comision_afiliado', 'moneda_c_afiliado', 'comision_productor', 'moneda_c'] as const) {
+        if (t[k] === null && f[k] !== null) (t as unknown as Record<string, unknown>)[k] = f[k];
+      }
+    }
+    if (clase === 'venta' && t.aprobado_ms === null) t.aprobado_ms = f.aprobado_ms ?? f.creado_ms;
+    if (clase === 'devuelta' && t.devuelta_ms === null) t.devuelta_ms = f.creado_ms;
+  }
+  const out: HotmartStats = {
+    datos_desde: (desde.results?.[0] as { d: string | null } | undefined)?.d ?? null,
+    ventas_7d: 0,
+    ventas_semana_anterior: 0,
+    reembolsos_7d: 0,
+    otros_estados_7d: {},
+    ingreso_productor_7d: {},
+    por_libro_7d: {},
+    por_origen_7d: {},
+    con_afiliado_7d: 0,
+    sin_afiliado_7d: 0,
+    por_afiliado_7d: [],
+  };
+  const afiliados = new Map<string, { afiliado: string; ventas: number; comision: number; moneda: string | null }>();
+  for (const t of tx.values()) {
+    if (t.devuelta_ms !== null && t.devuelta_ms >= weekAgo) out.reembolsos_7d++;
+    if (t.aprobado_ms === null) continue;
+    if (t.clase !== 'venta') {
+      if (t.clase !== 'devuelta' && t.ultimo_ms >= weekAgo) out.otros_estados_7d[t.clase] = (out.otros_estados_7d[t.clase] ?? 0) + 1;
+      continue;
+    }
+    if (t.aprobado_ms >= twoWeeksAgo && t.aprobado_ms < weekAgo) out.ventas_semana_anterior++;
+    if (t.aprobado_ms < weekAgo) continue;
+    out.ventas_7d++;
+    const libro = t.producto ?? 'sin_dato';
+    out.por_libro_7d[libro] = (out.por_libro_7d[libro] ?? 0) + 1;
+    if (t.comision_productor !== null) {
+      const m = t.moneda_c ?? t.moneda ?? 'sin_moneda';
+      out.ingreso_productor_7d[m] = +((out.ingreso_productor_7d[m] ?? 0) + t.comision_productor).toFixed(2);
+    }
+    const origen = t.afiliado ? 'afiliado' : t.sck ? t.sck.split('|')[0] : 'sin_sck';
+    out.por_origen_7d[origen] = (out.por_origen_7d[origen] ?? 0) + 1;
+    if (t.afiliado) {
+      out.con_afiliado_7d++;
+      const moneda = t.moneda_c_afiliado ?? t.moneda;
+      const clave = `${t.afiliado}|${moneda ?? ''}`;
+      const a = afiliados.get(clave) ?? { afiliado: t.afiliado, ventas: 0, comision: 0, moneda };
+      a.ventas++;
+      a.comision = +(a.comision + (t.comision_afiliado ?? 0)).toFixed(2);
+      afiliados.set(clave, a);
+    } else {
+      out.sin_afiliado_7d++;
+    }
+  }
+  out.por_afiliado_7d = [...afiliados.values()].sort((x, y) => y.ventas - x.ventas);
+  return out;
+}
+
 interface VacantesStats {
   activas: number;
   nuevas_7d: number;
@@ -1302,6 +1427,12 @@ export const GET: APIRoute = async ({ url, locals }) => {
       return null;
     }) : null;
 
+    // ── 4d. Ventas de Hotmart (webhook) ──────────────────────────
+    const hotmart = simDb ? await buildHotmart(simDb, weekAgo, twoWeeksAgo).catch((err) => {
+      console.error('hotmart stats failed', err);
+      return null;
+    }) : null;
+
     // ── 5. Email health (Postmark Analytics API) ─────────────────
     // Consulta por tag los últimos 30 días. Data útil solo si Open+Link
     // tracking están ON en Server Settings (activados 30 jul 2026).
@@ -1506,6 +1637,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
       cv_survey,
       market_survey,
       vacantes,
+      hotmart,
       simulator: {
         sesiones_acumuladas: sim.total,
         esta_semana: sim.cur,
