@@ -98,7 +98,7 @@ Estos son ediciones a piezas ya publicadas. Se pueden agendar como items del sch
 
 **Pendientes de esa lista:**
 
-- Configurar Cloudflare Crawler Hints (IndexNow automático) si no está. Requiere el dashboard, que está bloqueado para automatización — manual de Oscar.
+- ~~Configurar Cloudflare Crawler Hints (IndexNow automático)~~ **HECHO 29 oct 2026** (Oscar, dashboard de Cloudflare).
 - Bing Webmaster Tools tab AI Performance (BETA) → chequear cada 2-3 semanas.
 - **Capa editorial AEO, sin empezar.** Medido el 21 sep sobre los 55 posts: TL;DR en blockquote 11/55, sección FAQ 10/55, JSON-LD FAQPage 5/55, campo `cta` en frontmatter 7/55. Ese último es el más caro: 48 posts renderizan el aside legacy de revisar-cv, incluidos `salario-msl-latam-por-pais-nivel` (21 clicks) y `salario-cra-junior-latam-2026` (12 clicks), que por el eje del 14 sep deberían apuntar al simulador. No es trabajo mecánico: escribir TL;DR y FAQ por post exige leer la pieza y sacar las preguntas de las queries GSC de su cluster, sin inventar. Se hace por tandas, priorizando impressions sin clicks.
 
