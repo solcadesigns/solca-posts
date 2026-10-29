@@ -235,6 +235,13 @@ Aprendizajes W43-W44 (14 oct 2026):
 - Si el post lleva URL, la tarjeta de vista previa oculta la barra de adjuntos: cerrar la tarjeta (X) antes de adjuntar el PDF.
 - En el diálogo de fecha, si se encoge al elegir la hora, "Siguiente" queda en y≈322; un clic en la posición vieja abre "Guardar como borrador" (cerrar con X).
 
+Aprendizajes W45 (29 oct 2026):
+- El navegador interno de la app no puede leer archivos locales ni descargarlos desde otro sitio (LinkedIn bloquea por CSP): sirve para posts de solo texto. Imagen, PDF y portada se suben desde Claude in Chrome.
+- El composer de posts ya no usa calendario: fecha y hora son campos de texto (`dd/mm/aaaa`, Tab, luego hora y elegir la opción). El de artículos sigue con calendario.
+- Para el documento (PDF) el input no existe hasta el clic en "Seleccionar archivo": usar el parche de `HTMLInputElement.prototype.click` también ahí.
+- Etiquetar empresas: escribir `@Nombre` y elegir la página en la lista. La mención inserta el nombre completo (p. ej. "Eli Lilly and Company") y suma caracteres: medir contra el límite de 3000 después de etiquetar.
+- El HTML del artículo con UTM se pasa en base64 al `ClipboardEvent('paste')`: la herramienta de JS bloquea salidas con query strings.
+
 ### 4.5 · Semana de vacantes (workflow v2, en construcción desde el 14 oct 2026)
 
 Al planear un sprint, la semana de vacantes se aparta primero (lun-vie que termina en el viernes de vacantes según `NEWSLETTER_TOPICS_REGISTRY.md`). Ninguna otra semana del sprint se programa en ese espacio.
