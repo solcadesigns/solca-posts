@@ -139,7 +139,7 @@ def img_w45(path: Path):
                 y += 33
             y += 18
     _band(d, 'LA DISTINCIÓN', 'Consultoría es un modelo de empleo, no una especialidad.', 920)
-    _footer(img, d, 'Solca Ciencia · Consulting en ciencias de la vida')
+    _footer(img, d, 'Solca Ciencia · Consultoría en ciencias de la vida')
     path.parent.mkdir(parents=True, exist_ok=True)
     img.save(path, 'PNG', optimize=True)
 
