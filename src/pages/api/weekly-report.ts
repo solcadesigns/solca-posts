@@ -206,6 +206,8 @@ interface WeeklyReport {
     top_referrers: Array<{ referrer: string; views: number }>;
     top_paises: Array<{ pais: string; views: number }>;
     nota?: string;
+    // Visitas con referer de un asistente de IA (ChatGPT, Perplexity, Copilot, Gemini, Claude...), desde el 29 oct 2026.
+    desde_asistentes_ia: (AiReferralStats & { nota?: string }) | null;
   };
   // Google Search Console · Search Analytics API (agregado 10 ago 2026).
   // Requiere secrets GSC_CLIENT_EMAIL + GSC_PRIVATE_KEY (service account con
@@ -401,6 +403,96 @@ interface CloudflareTrafficStats {
   top_pages: Array<{ path: string; views: number }>;
   top_referrers: Array<{ referrer: string; views: number }>;
   top_countries: Array<{ pais: string; views: number }>;
+}
+
+// Visitas que llegan desde asistentes de IA (29 oct 2026). Consulta aparte para que un error aquí no tumbe `traffic`.
+// Solo cuenta visitas con referer del asistente: ChatGPT agrega además utm_source=chatgpt.com, que se ve en las campañas.
+const AI_REFERRERS = [
+  'chatgpt.com', 'chat.openai.com', 'perplexity.ai', 'www.perplexity.ai', 'copilot.microsoft.com',
+  'gemini.google.com', 'claude.ai', 'chat.deepseek.com', 'grok.com', 'www.meta.ai', 'chat.mistral.ai',
+];
+
+interface AiReferralStats {
+  visitas_esta_semana: number;
+  visitas_semana_anterior: number;
+  por_asistente: Array<{ referrer: string; visitas: number }>;
+  por_pagina: Array<{ referrer: string; path: string; visitas: number }>;
+}
+
+async function fetchAiReferrals(
+  token: string,
+  accountTag: string,
+  siteTag: string,
+): Promise<AiReferralStats | { error: string }> {
+  const now = new Date();
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+  const query = `
+    query($accountTag: String!, $siteTag: String!, $hosts: [String!], $curFrom: Time!, $curTo: Time!, $prevFrom: Time!, $prevTo: Time!) {
+      viewer {
+        accounts(filter: { accountTag: $accountTag }) {
+          cur: rumPageloadEventsAdaptiveGroups(
+            limit: 50,
+            filter: { siteTag: $siteTag, datetime_geq: $curFrom, datetime_leq: $curTo, bot: 0, refererHost_in: $hosts },
+            orderBy: [count_DESC]
+          ) {
+            count
+            dimensions { refererHost requestPath }
+          }
+          prev: rumPageloadEventsAdaptiveGroups(
+            limit: 1,
+            filter: { siteTag: $siteTag, datetime_geq: $prevFrom, datetime_leq: $prevTo, bot: 0, refererHost_in: $hosts }
+          ) {
+            count
+          }
+        }
+      }
+    }
+  `;
+  try {
+    const res = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query,
+        variables: {
+          accountTag,
+          siteTag,
+          hosts: AI_REFERRERS,
+          curFrom: weekAgo.toISOString(),
+          curTo: now.toISOString(),
+          prevFrom: twoWeeksAgo.toISOString(),
+          prevTo: weekAgo.toISOString(),
+        },
+      }),
+    });
+    if (!res.ok) return { error: `HTTP ${res.status}: ${(await res.text()).slice(0, 120)}` };
+    const body = (await res.json()) as {
+      data?: { viewer?: { accounts?: Array<{
+        cur?: Array<{ count?: number; dimensions?: { refererHost?: string; requestPath?: string } }>;
+        prev?: Array<{ count?: number }>;
+      }> } };
+      errors?: Array<{ message?: string }>;
+    };
+    if (body.errors?.length) return { error: `GraphQL: ${body.errors.map((e) => e.message).join('; ').slice(0, 200)}` };
+    const acc = body.data?.viewer?.accounts?.[0];
+    if (!acc) return { error: 'No accounts returned' };
+    const filas = (acc.cur ?? []).map((r) => ({
+      referrer: r.dimensions?.refererHost ?? '',
+      path: r.dimensions?.requestPath ?? '',
+      visitas: r.count ?? 0,
+    }));
+    const porAsistente = new Map<string, number>();
+    for (const f of filas) porAsistente.set(f.referrer, (porAsistente.get(f.referrer) ?? 0) + f.visitas);
+    return {
+      visitas_esta_semana: filas.reduce((n, f) => n + f.visitas, 0),
+      visitas_semana_anterior: acc.prev?.[0]?.count ?? 0,
+      por_asistente: [...porAsistente.entries()].map(([referrer, visitas]) => ({ referrer, visitas })).sort((a, b) => b.visitas - a.visitas),
+      por_pagina: filas.slice(0, 20),
+    };
+  } catch (err) {
+    return { error: `Exception: ${(err as Error)?.message}` };
+  }
 }
 
 async function fetchCloudflareTraffic(
@@ -1496,6 +1588,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
       top_referrers: [] as Array<{ referrer: string; views: number }>,
       top_paises: [] as Array<{ pais: string; views: number }>,
       nota: undefined as string | undefined,
+      desde_asistentes_ia: null as (AiReferralStats & { nota?: string }) | null,
     };
 
     if (cfToken && accountTag && siteTag) {
@@ -1512,6 +1605,10 @@ export const GET: APIRoute = async ({ url, locals }) => {
         traffic.top_referrers = cf.top_referrers;
         traffic.top_paises = cf.top_countries;
       }
+      const ia = await fetchAiReferrals(cfToken, accountTag, siteTag);
+      traffic.desde_asistentes_ia = 'error' in ia
+        ? { visitas_esta_semana: 0, visitas_semana_anterior: 0, por_asistente: [], por_pagina: [], nota: ia.error }
+        : ia;
     } else {
       traffic.nota = !cfToken
         ? 'Falta CLOUDFLARE_ANALYTICS_TOKEN.'
