@@ -101,7 +101,7 @@ Sitio en Astro 5 + Cloudflare Workers. Código en `/Users/oscar/proyectos/solca-
   - Sitemap submitted: `https://solcaciencia.com/sitemap-index.xml`. Status inicial "Couldn't fetch" es transitorio — Google reintenta automáticamente. Verificar status en 24h.
   - URL Inspection · priority crawl queue solicitada para los 4 URLs (25 may 2026):
     - `/blog`, `/blog/despues-del-cv`, `/blog/clinical-ops-40-pharma-latam`, `/blog/msl-vs-visitador-vs-medical-director`.
-  - Bing Webmaster Tools: pendiente (mismo sitemap a submit).
+  - Bing Webmaster Tools: activo (cuenta de Oscar, junto con cursospadi.com, rebeauty.mx y reemplaza.app). Sitemaps enviados el 17 jun 2026. Reporte AI Performance: citas en Copilot y socios por página. IndexNow pendiente.
 
 ### 1.5 · `/simulador-entrevistas` · Simulador de entrevistas pharma (EN DESARROLLO · Fase 0.1 completa)
 

@@ -167,7 +167,7 @@ Más detalles en `TOOLS_REGISTRY.md`.
 - Sitemap submitted a Google Search Console.
 - 4 URLs en priority crawl queue (URL Inspection ejecutado).
 - Esperar 24-72h para primera indexación.
-- Bing Webmaster Tools pendiente.
+- Bing Webmaster Tools: verificado y con los dos sitemaps (enviados el 17 jun 2026; confirmado el 29 oct 2026). AI Performance (Copilot y socios): 202 citas en 3 meses al 27 oct 2026. IndexNow pendiente (Cloudflare Crawler Hints).
 
 ### Solca Legal/Inmobiliaria
 
