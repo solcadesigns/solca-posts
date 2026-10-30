@@ -162,6 +162,7 @@ const outputTokens = body.usage?.output_tokens ?? 0;
 const pricing = {
   'claude-haiku-4-5': { in: 1, out: 5 },
   'claude-sonnet-4-5': { in: 3, out: 15 },
+  'claude-sonnet-5-5': { in: 2, out: 10 },
 };
 const price = pricing[model] ?? { in: 3, out: 15 };
 const costUsd = (inputTokens * price.in) / 1_000_000 + (outputTokens * price.out) / 1_000_000;

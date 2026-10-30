@@ -9,7 +9,7 @@
  *
  * Beta cerrada: si llega `betaCode`, lo valida contra SIMULATOR_BETA_CODES.
  *
- * Modelo: claude-sonnet-4-5-20251001 (decisión 16 jun 2026).
+ * Modelo: claude-sonnet-5-5 desde el 30 oct 2026 (antes claude-sonnet-4-5, decisión 16 jun 2026; Sonnet 4.5 se retira el 30 nov 2026).
  * Non-streaming en MVP. Streaming en v2 si la beta valida el producto.
  */
 
@@ -118,7 +118,9 @@ export const prerender = false;
 
 // FIX (7 sept 2026): revertimos de sonnet-4-6 a sonnet-4-5. Ver comentario en
 // simulator-process-pending.ts para el post-mortem del incidente de tokens.
-const MODEL = 'claude-sonnet-4-5';
+// 30 oct 2026: Sonnet 4.5 se retira el 30 nov 2026 → Sonnet 5.5, con el pensamiento apagado
+// (`between_tools`) y sin temperature; ver parametrosDeModelo en lib/anthropic.ts.
+const MODEL = 'claude-sonnet-5-5';
 const TEMPERATURE = 0.5; // ligeramente más alto que cv-review para variabilidad de feedback
 const MAX_TOKENS_PER_TURN = 2000;
 // Fase 1.4.G.4 · 19 jun 2026 · max_tokens del reporte final escala con

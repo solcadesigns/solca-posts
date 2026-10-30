@@ -34,7 +34,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
 // Default a un modelo con "latest" alias que no requiere fecha específica.
 // Override con MODEL=... si tu cuenta tiene acceso a otro modelo.
-const MODEL = process.env.MODEL ?? 'claude-sonnet-4-5';
+const MODEL = process.env.MODEL ?? 'claude-sonnet-5-5';
 const TIMEOUT_MS = 10 * 60 * 1000; // 10 min · lejos del límite Cloudflare
 
 if (!ANTHROPIC_KEY) {
@@ -216,7 +216,8 @@ try {
     body: JSON.stringify({
       model: MODEL,
       max_tokens: 16000,
-      temperature: 0.5,
+      // Sonnet 5.5 rechaza temperature y piensa por default: pensamiento apagado (30 oct 2026).
+      ...(MODEL === 'claude-sonnet-5-5' ? { thinking: { type: 'between_tools' } } : { temperature: 0.5 }),
       system: systemPrompt,
       messages,
     }),

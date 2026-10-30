@@ -51,6 +51,17 @@ export interface AnthropicResponse {
   };
 }
 
+/**
+ * Parámetros que dependen del modelo (30 oct 2026, retiro de Sonnet 4.5 el 30 nov 2026).
+ * Claude Sonnet 5.5 rechaza con 400 un `temperature` distinto del default y piensa por default
+ * (los tokens de pensamiento cuentan contra max_tokens y suman latencia). `between_tools` apaga
+ * el pensamiento, que es como se comportaba Sonnet 4.5 en estas llamadas.
+ */
+function parametrosDeModelo(model: string, temperature: number): Record<string, unknown> {
+  if (model === 'claude-sonnet-5-5') return { thinking: { type: 'between_tools' } };
+  return { temperature };
+}
+
 export class AnthropicError extends Error {
   constructor(public status: number, message: string, public body?: unknown) {
     super(message);
@@ -84,7 +95,7 @@ export async function chatCompletion(
     model,
     system: systemField,
     messages,
-    temperature,
+    ...parametrosDeModelo(model, temperature),
     max_tokens: maxTokens,
   };
 
@@ -207,6 +218,18 @@ export async function retryableChatCompletion(
         }),
       );
 
+      // Respaldo temporal (30 oct 2026): si Sonnet 5.5 rechaza la petición (400/404, p. ej. un
+      // parámetro que no acepta o falta de acceso), se repite una vez con Sonnet 4.5 para no cortar
+      // la sesión. Quitar antes del 30 nov 2026, cuando Sonnet 4.5 se retira.
+      if (
+        options.model === 'claude-sonnet-5-5' &&
+        err instanceof AnthropicError &&
+        (err.status === 400 || err.status === 404)
+      ) {
+        console.warn(`[anthropic-fallback] ${context}: claude-sonnet-5-5 respondió ${err.status}; reintento con claude-sonnet-4-5`, JSON.stringify(err.body).slice(0, 300));
+        return chatCompletion({ ...options, model: 'claude-sonnet-4-5' });
+      }
+
       if (!willRetry) {
         throw err;
       }
@@ -264,7 +287,7 @@ export async function chatCompletionStream(
     model,
     system,
     messages,
-    temperature,
+    ...parametrosDeModelo(model, temperature),
     max_tokens: maxTokens,
     stream: true,
   };
