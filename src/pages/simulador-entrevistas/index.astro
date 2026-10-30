@@ -154,9 +154,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         en un par de minutos. Sin suscripciones automáticas.
       </p>
       <p class="plans-note plans-note-refund">
-        <strong>Reembolsos:</strong> puedes solicitar reembolso completo si no has iniciado ninguna
-        sesión y no han pasado más de 7 días desde la compra. Escríbenos a
-        <a href="mailto:hola@solcaciencia.com">hola@solcaciencia.com</a> con el email de tu compra.
+        <strong>Reembolsos:</strong> puedes pedir el reembolso completo dentro de los 14 días naturales
+        siguientes a la compra si no has completado ninguna sesión. Escríbenos a
+        <a href="mailto:hello@solcaciencia.com?subject=Reembolso">hello@solcaciencia.com</a> con el email de tu compra.
+        Consulta los <a href="/terminos">términos y condiciones</a>.
       </p>
     </div>
   </section>
@@ -527,7 +528,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
               return; // redirect toma el control
             }
             trackEvent('checkout_abandoned', { plan, reason: 'checkout_api_error' });
-            subMsg.textContent = data.error ?? 'No pudimos abrir el pago. Reintenta o escribe a hola@solcaciencia.com';
+            subMsg.textContent = data.error ?? 'No pudimos abrir el pago. Reintenta o escribe a hello@solcaciencia.com';
             subMsg.classList.add('err');
             subMsg.hidden = false;
           }

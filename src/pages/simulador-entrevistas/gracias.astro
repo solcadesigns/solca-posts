@@ -22,7 +22,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     <section class="thanks-hero">
       <div class="container">
         <div class="check-circle" aria-hidden="true">✓</div>
-        <h1>Compra confirmada</h1>
+        <h1>Gracias por tu compra</h1>
 
         <!-- Bloque del código: aparece cuando el polling encuentra el beta code -->
         <div id="code-block" class="code-block" hidden>
@@ -49,7 +49,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         <!-- Fallback si el polling agota timeout sin encontrar el código -->
         <div id="fallback-block" class="fallback-block" hidden>
           <p class="lead">
-            El código aún se está generando. Te llegará por correo en unos minutos.
+            Si pagaste con tarjeta, el código aún se está generando y te llegará por correo en unos minutos.
+            Si elegiste pagar en OXXO, el código te llega por correo cuando OXXO confirme tu pago.
           </p>
           <p class="lead lead-mute">
             Revisa tu bandeja de entrada — y la carpeta de spam la primera vez.
@@ -65,7 +66,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
         <p class="thanks-note">
           ¿Problemas con tu código? Escribe a
-          <a href="mailto:hola@solcaciencia.com">hola@solcaciencia.com</a> con el email que usaste
+          <a href="mailto:hello@solcaciencia.com">hello@solcaciencia.com</a> con el email que usaste
           en la compra y te ayudamos.
         </p>
       </div>

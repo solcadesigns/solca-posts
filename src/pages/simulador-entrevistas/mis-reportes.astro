@@ -135,7 +135,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         const res = await fetch(`/api/simulator-my-sessions?codigo=${encodeURIComponent(code)}`);
         const data = await res.json();
         if (!data.ok) {
-          if (leadEl) leadEl.textContent = 'No pudimos cargar tus reportes. Revisa tu código o escríbenos a hola@solcaciencia.com.';
+          if (leadEl) leadEl.textContent = 'No pudimos cargar tus reportes. Revisa tu código o escríbenos a hello@solcaciencia.com.';
           return;
         }
 

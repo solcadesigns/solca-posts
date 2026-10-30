@@ -5,8 +5,9 @@
  * Ver `_docs/PAYWALL_SIMULADOR.md`.
  *
  * Eventos que procesa:
- *   - checkout.session.completed → escribe créditos + envía email confirmación
- *   - charge.refunded            → marca créditos como remaining=0 (soft-cancel)
+ *   - checkout.session.completed (pagado)    → escribe créditos + envía email confirmación
+ *   - checkout.session.async_payment_succeeded → igual, para OXXO (pago diferido, 30 oct 2026)
+ *   - completed con payment_status 'unpaid' (ficha OXXO) y async_payment_failed → solo log
  *
  * Verificación de firma: HMAC-SHA256(timestamp + '.' + rawBody) con
  * STRIPE_WEBHOOK_SECRET, comparado con v1 del header stripe-signature.
@@ -37,6 +38,7 @@ interface StripeSessionCompleted {
   metadata?: Record<string, string> | null;
   amount_total?: number;
   currency?: string;
+  payment_status?: 'paid' | 'unpaid' | 'no_payment_required';
 }
 
 interface StripeEvent {
@@ -187,14 +189,28 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return jsonResponse(200, { received: true, deduped: true });
   }
 
-  if (event.type !== 'checkout.session.completed') {
-    // Otros eventos: log y OK. Extender aquí para charge.refunded en Fase 2.
-    console.log(`[stripe-webhook] Event type ${event.type} recibido, no procesado.`);
+  // 30 oct 2026: OXXO es un pago diferido. checkout.session.completed llega con
+  // payment_status 'unpaid' al generar la ficha; las sesiones se entregan hasta
+  // checkout.session.async_payment_succeeded (pago confirmado en tienda).
+  const session = event.data.object;
+  const entrega =
+    (event.type === 'checkout.session.completed' && session.payment_status !== 'unpaid') ||
+    (event.type === 'checkout.session.async_payment_succeeded' && session.payment_status === 'paid');
+  if (!entrega) {
+    // Otros eventos (incluye ficha OXXO sin pagar y async_payment_failed): log y OK.
+    console.log(
+      `[stripe-webhook] Event type ${event.type} recibido, no procesado (payment_status=${session.payment_status ?? 'n/a'}, session=${session.id}).`,
+    );
     await dedupKv.put(dedupKey, '1', { expirationTtl: 60 * 60 * 24 * 7 });
     return jsonResponse(200, { received: true, processed: false });
   }
 
-  const session = event.data.object;
+  // Una sola entrega por Checkout Session (Stripe puede mandar el mismo evento más de una vez).
+  if (await dedupKv.get(`stripe_session:${session.id}`)) {
+    await dedupKv.put(dedupKey, '1', { expirationTtl: 60 * 60 * 24 * 7 });
+    return jsonResponse(200, { received: true, deduped: 'session' });
+  }
+
   const email = (
     session.metadata?.email ??
     session.customer_email ??
@@ -268,6 +284,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
     };
   }
 
+  // Marcar el evento antes de escribir créditos: un reintento por error posterior no los duplica.
+  await dedupKv.put(dedupKey, '1', { expirationTtl: 60 * 60 * 24 * 7 });
+
   await creditsKv.put(creditsKey, JSON.stringify(record), {
     expirationTtl: 60 * 60 * 24 * cfg.vigenciaDias, // TTL alineado con vigencia declarada
   });
@@ -313,9 +332,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
   } catch (err) {
     console.error('[stripe-webhook] stripe_session index write failed:', err);
   }
-
-  // Marcar dedup ANTES de enviar email (si el email falla no queremos duplicar créditos).
-  await dedupKv.put(dedupKey, '1', { expirationTtl: 60 * 60 * 24 * 7 });
 
   // Email de confirmación via Postmark.
   if (postmarkToken) {

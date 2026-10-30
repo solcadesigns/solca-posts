@@ -1,0 +1,194 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const lastUpdated = '30 de octubre de 2026';
+---
+<BaseLayout
+  title="Términos y condiciones · Simulador de Entrevistas · Solca"
+  description="Términos y condiciones del Simulador de Entrevistas de Solca: quién vende, qué compras, precio, reembolso y ley aplicable."
+>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <span class="dot"></span>
+      <span>Solca</span>
+    </a>
+    <div class="nav-links">
+      <a href="/#libros">Libros</a>
+      <a href="/#curso">Curso</a>
+      <a href="/revisar-cv">Revisar CV</a>
+      <a href="/#sobre">Sobre</a>
+      <a href="/contacto">Contacto</a>
+    </div>
+  </div>
+</nav>
+
+<section class="legal-hero">
+  <div class="container legal-hero-inner">
+    <div class="eyebrow eyebrow-light">
+      <span class="dot"></span>
+      <span>Legal</span>
+    </div>
+    <h1 class="legal-title">Términos y condiciones del Simulador de Entrevistas</h1>
+    <p class="legal-lead">Última actualización: {lastUpdated}</p>
+  </div>
+</section>
+
+<section class="legal-body">
+  <div class="container legal-content">
+    <h2>1. Quién vende</h2>
+    <p>
+      Oscar Omar Solís Castro, que opera como Solca · Ciencia y Consultoría.<br />
+      Domicilio: Calle 18 No. 106B, Colonia Yucatán, C.P. 97050, Mérida, Yucatán, México.<br />
+      Teléfono: <a href="tel:+525660875885">56 6087 5885</a>.<br />
+      Correo: <a href="mailto:hello@solcaciencia.com">hello@solcaciencia.com</a>.
+    </p>
+
+    <h2>2. Qué compras</h2>
+    <ul>
+      <li><strong>Freemium:</strong> 1 sesión de llamada inicial con reclutador (5 preguntas), sin costo. Vigencia de 10 días.</li>
+      <li><strong>Básico:</strong> 3 sesiones. Vigencia de 240 días.</li>
+      <li><strong>Premium:</strong> 5 sesiones. Vigencia de 240 días.</li>
+    </ul>
+    <p>Una sesión se descuenta solo cuando terminas la entrevista y recibes tu reporte.</p>
+
+    <h2>3. Precio y pago</h2>
+    <p>
+      Básico MXN 199 y Premium MXN 349. Pago único con Stripe, sin cobros automáticos ni suscripción. Si pagas desde fuera de México, el checkout puede mostrarte el monto en tu moneda.
+    </p>
+
+    <h2>4. Reembolso</h2>
+    <p>
+      Puedes pedir el reembolso completo dentro de los 14 días naturales siguientes a la compra si no has completado ninguna sesión. Escribe a <a href="mailto:hello@solcaciencia.com?subject=Reembolso">hello@solcaciencia.com</a> con el asunto "Reembolso". Devolvemos el dinero al mismo medio de pago en un máximo de 14 días naturales.
+    </p>
+
+    <h2>5. Lo que el Simulador no promete</h2>
+    <p>
+      El Simulador es una práctica. No garantiza que te contraten ni el resultado de una entrevista real, y no sustituye la orientación de una persona que trabaje en la industria. Las preguntas y el reporte se generan con inteligencia artificial: se basan en patrones reales de entrevistas, pero no provienen de empresas específicas.
+    </p>
+
+    <h2>6. Tus datos</h2>
+    <p>
+      El tratamiento de tus datos se explica en el <a href="/privacidad">aviso de privacidad</a>.
+    </p>
+
+    <h2>7. Ley aplicable</h2>
+    <p>
+      Estos términos se rigen por las leyes de México. Si compras desde México, puedes acudir a la PROFECO. Si compras desde otro país, conservas los derechos que te da la ley de consumo de tu país.
+    </p>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      <div class="eyebrow eyebrow-light">
+        <span class="dot"></span>
+        <span>Solca · Ciencia y Consultoría</span>
+      </div>
+      <p>Acompañamiento profesional en la transición de academia a industria farmacéutica para profesionales en ciencias en LATAM y España.</p>
+    </div>
+    <div class="footer-links">
+      <h4>Recursos</h4>
+      <a href="/revisar-cv">Análisis de CV</a>
+      <a href="/#libros">Libros</a>
+      <a href="/#curso">Curso CV+LinkedIn</a>
+    </div>
+    <div class="footer-links">
+      <h4>Sitio</h4>
+      <a href="/">Inicio</a>
+      <a href="/#sobre">Sobre Solca</a>
+      <a href="/privacidad">Privacidad</a>
+      <a href="/terminos">Términos</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2026 Oscar Omar Solís Castro · Solca · Ciencia y Consultoría.</p>
+  </div>
+</footer>
+
+<style>
+  .legal-hero {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-deep) 100%);
+    color: var(--off-white);
+    padding: 60px 0 50px;
+  }
+  .legal-hero-inner { max-width: 820px; }
+  .legal-title {
+    font-family: 'Inter', sans-serif;
+    font-weight: 900;
+    font-size: clamp(32px, 5vw, 48px);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--off-white);
+    margin: 6px 0 8px;
+  }
+  .legal-lead {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--off-white-mute);
+  }
+
+  .legal-body { background: var(--bg); padding: 60px 0 90px; }
+  .legal-content {
+    max-width: 760px;
+    background: var(--off-white);
+    border-radius: var(--radius);
+    padding: 48px 44px;
+    box-shadow: var(--shadow-sm);
+  }
+  .legal-content p.intro {
+    font-size: 16px;
+    line-height: 1.65;
+    color: var(--text);
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 2px solid var(--rule);
+  }
+  .legal-content h2 {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: 20px;
+    color: var(--navy);
+    margin: 32px 0 12px;
+    letter-spacing: -0.005em;
+  }
+  .legal-content p {
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+  .legal-content ul {
+    margin: 8px 0 16px;
+    padding-left: 22px;
+  }
+  .legal-content li {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+  .legal-content a {
+    color: var(--blue-mid);
+    text-decoration: underline;
+    font-weight: 500;
+  }
+  .legal-content strong { font-weight: 700; color: var(--navy); }
+  .legal-footer-note {
+    margin-top: 40px;
+    padding-top: 22px;
+    border-top: 1px solid var(--rule);
+    font-size: 13px;
+    color: var(--text-mute);
+    font-style: italic;
+  }
+  @media (max-width: 720px) {
+    .legal-content { padding: 30px 24px; }
+  }
+</style>
+
+</BaseLayout>
