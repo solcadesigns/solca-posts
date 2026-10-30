@@ -180,6 +180,7 @@ interface WeeklyReport {
     }>;
     // 14 oct 2026: clics a libros en Hotmart en la semana, por id de producto.
     book_clicks_7d: Record<string, number>;
+    outbound_clicks_7d: Record<string, number>;
     // 14 oct 2026: visitas registradas por page_viewed en la semana (7 días),
     // con y sin UTM. Desde antes de esa fecha no hay datos.
     page_views_7d: { 'quiz-rol': number; 'revisar-cv': number; blog: number; vacantes: number; libro: number; con_utm: number };
@@ -1362,6 +1363,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
         ultimo_evento: string;
       }>(),
       book_clicks_7d: {} as Record<string, number>,
+      outbound_clicks_7d: {} as Record<string, number>,
       page_views_7d: { 'quiz-rol': 0, 'revisar-cv': 0, blog: 0, vacantes: 0, libro: 0, con_utm: 0 },
     };
     const campaignWindowStart = now - 30 * 24 * 60 * 60 * 1000;
@@ -1427,6 +1429,12 @@ export const GET: APIRoute = async ({ url, locals }) => {
           if (rec.event === 'book_clicked') {
             const prod = rec.product ?? 'desconocido';
             funnel.book_clicks_7d[prod] = (funnel.book_clicks_7d[prod] ?? 0) + 1;
+            return;
+          }
+          // 30 oct 2026: clics a LinkedIn o YouTube, por destino (host + ruta).
+          if (rec.event === 'outbound_clicked') {
+            const dest = rec.product ?? 'desconocido';
+            funnel.outbound_clicks_7d[dest] = (funnel.outbound_clicks_7d[dest] ?? 0) + 1;
             return;
           }
           funnel.disponible = true;
@@ -1765,6 +1773,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
           .map(([source, v]) => ({ source, paywall_viewed: v.paywall_viewed, actions: v.actions })),
         page_views_7d: funnel.page_views_7d,
         book_clicks_7d: funnel.book_clicks_7d,
+        outbound_clicks_7d: funnel.outbound_clicks_7d,
         por_campaign_30d: Array.from(funnel.by_campaign.values()).sort(
           (a, b) =>
             b.paywall_viewed + b.quiz_viewed + b.cv_viewed + b.blog_viewed -

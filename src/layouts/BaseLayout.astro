@@ -207,6 +207,22 @@ const ogImageURL = new URL(ogImage, siteUrl).toString();
         if (!a) return;
         var url = new URL(a.href, window.location.href);
         var param = url.hostname === 'pay.hotmart.com' ? 'sck' : url.hostname === 'go.hotmart.com' ? 'src' : null;
+        // 30 oct 2026: clics salientes a LinkedIn y YouTube (perfil, newsletter, canal).
+        if (!param && /(^|\.)(linkedin\.com|youtube\.com)$/.test(url.hostname)) {
+          var u0 = window.__utm || {};
+          var ob = JSON.stringify({
+            event: 'outbound_clicked',
+            product: (url.hostname.replace(/^www\./, '') + url.pathname).slice(0, 120),
+            path: window.location.pathname,
+            utm_source: u0.utm_source,
+            utm_medium: u0.utm_medium,
+            utm_campaign: u0.utm_campaign,
+            utm_content: u0.utm_content,
+            referrer: document.referrer || undefined,
+          });
+          if (navigator.sendBeacon) navigator.sendBeacon('/api/simulator-events', new Blob([ob], { type: 'application/json' }));
+          return;
+        }
         if (!param) return;
         var tag = url.searchParams.get(param) || originTag();
         if (!url.searchParams.get(param)) {
