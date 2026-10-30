@@ -57,7 +57,7 @@ Ejemplo: "Publiqué 3 artículos indexados" es dato de academia. Lo que industri
 
 Esta semana, si tienes 20 minutos, agarra tu CV y traduce tus experiencias al lenguaje pharma.
 
-Si quieres profundizar en cómo hacer una aplicación exitosa (desde CV a entrevista) te recomiendo nuestro curso en línea: CV para Ciencias Biológicas y de la Salud → https://go.hotmart.com/B104495115T
+Con el CV traducido, la siguiente prueba llega rápido: "cuéntame de ti". Es la pregunta más sencilla de la entrevista y la que más se improvisa. En el simulador la puedes ensayar junto con otras 4 de una llamada inicial; la primera sesión no tiene costo → https://solcaciencia.com/simulador-entrevistas/?utm_source=email&utm_medium=drip-cv&utm_campaign=drip-cv-d3&utm_content=simulador
 
 Oscar
 
@@ -81,7 +81,9 @@ Tres ajustes que sí pueden impactar inmediatamente:
 2. Incluir las habilidades solicitadas textualmente del posting.
 3. Verificar que tu PDF sea seleccionable (no imagen escaneada). Los ATS cada vez son mejores, pero no te arriesgues a que no pueda leer imágenes.
 
-Si quieres profundizar en cómo hacer una aplicación exitosa (desde CV a entrevista) te recomiendo nuestro curso en línea: CV para Ciencias Biológicas y de la Salud → https://go.hotmart.com/B104495115T
+Ajustar el CV para el ATS tiene una ventaja: puedes revisarlo tú. La entrevista no; es difícil notar tus propios puntos ciegos mientras hablas. Si ya tienes entrevista, el reporte del simulador te muestra cómo se lee tu respuesta desde el otro lado de la mesa. La primera sesión no tiene costo → https://solcaciencia.com/simulador-entrevistas/?utm_source=email&utm_medium=drip-cv&utm_campaign=drip-cv-d7&utm_content=simulador
+
+Si aún no sabes a qué rol apuntar, el quiz de rol te lo dice en unos minutos → https://solcaciencia.com/quiz-rol/?utm_source=email&utm_medium=drip-cv&utm_campaign=drip-cv-d7&utm_content=quiz
 
 Oscar
 

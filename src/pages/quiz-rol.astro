@@ -1206,6 +1206,20 @@ const QUESTIONS = [
     // En empate (margin 0) el subtítulo pide explorar ambos: se muestra la segunda tarjeta también.
     if (margin <= 2) renderRec(secondRole, false);
 
+    // 30 oct 2026 (EMB-4): siguiente paso gratuito, el simulador con el rol del resultado preseleccionado.
+    const SIM_MODULE = { PM: 'pm', MSL: 'msl', CR: 'cr', FV: 'fv', Consulting: 'consulting' };
+    const simRole = ROLE_DATA[topRole].name;
+    const simCard = document.createElement('div');
+    simCard.className = 'book-rec secondary';
+    const escSim = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    simCard.innerHTML = `
+      <div class="book-rec-eyebrow">Antes de tu entrevista</div>
+      <h4>Saber que ${escSim(simRole)} es tu rol no basta: hay que defenderlo</h4>
+      <p>Una de las primeras preguntas de un reclutador suele ser por qué quieres este rol. Ensaya tu respuesta en una llamada inicial de 5 preguntas y recibe en tu correo un reporte con lo que funcionó y lo que no. La primera sesión no tiene costo.</p>
+      <a href="/simulador-entrevistas/?modulo=${SIM_MODULE[topRole] ?? ''}&ref=quiz" data-next-step="quiz-simulador">Ensayar una entrevista de ${escSim(simRole)} →</a>
+    `;
+    bookRecs.appendChild(simCard);
+
     showScreen('result');
     progressWrap.hidden = true;
 

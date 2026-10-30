@@ -245,6 +245,13 @@ const atsBlogURL =
       <a href={cursoURL} class="btn btn-orange btn-large" target="_blank" rel="noopener">
         Ver el curso en Hotmart
       </a>
+      <div class="result-next-step">
+        <h4>Tu CV consigue la llamada. La llamada decide si sigues.</h4>
+        <p>
+          Muchas candidaturas pasan el filtro del CV y se caen en la primera entrevista. Ensaya esa llamada antes de que cuente: 5 preguntas de un reclutador y un reporte en PDF con lo que funcionó y lo que no. La primera sesión no tiene costo.
+        </p>
+        <a href="/simulador-entrevistas/?ref=cv" class="btn btn-secondary" data-next-step="cv-simulador">Ensayar mi primera llamada →</a>
+      </div>
       <p class="result-sign">
         — Oscar Solís · <em>Director general, Solca Ciencia y Consultoría</em>
       </p>
@@ -838,6 +845,13 @@ const atsBlogURL =
     line-height: 1.65;
     margin-bottom: 14px;
   }
+  .cv-result .result-next-step {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.25);
+  }
+  .cv-result .result-next-step h4 { margin: 0 0 8px; font-size: 17px; color: var(--off-white); }
+  .cv-result .result-next-step .btn { margin-top: 8px; }
   .cv-result .result-cta-note {
     font-size: 13px;
     color: var(--off-white-mute);

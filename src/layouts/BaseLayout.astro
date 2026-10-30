@@ -207,6 +207,23 @@ const ogImageURL = new URL(ogImage, siteUrl).toString();
         if (!a) return;
         var url = new URL(a.href, window.location.href);
         var param = url.hostname === 'pay.hotmart.com' ? 'sck' : url.hostname === 'go.hotmart.com' ? 'src' : null;
+        // 30 oct 2026 (EMB-4): clic al siguiente paso entre páginas propias (CV o quiz → simulador).
+        var ns = a.getAttribute('data-next-step');
+        if (ns) {
+          var u1 = window.__utm || {};
+          var nb = JSON.stringify({
+            event: 'next_step_clicked',
+            product: ns.slice(0, 60),
+            path: window.location.pathname,
+            utm_source: u1.utm_source,
+            utm_medium: u1.utm_medium,
+            utm_campaign: u1.utm_campaign,
+            utm_content: u1.utm_content,
+            referrer: document.referrer || undefined,
+          });
+          if (navigator.sendBeacon) navigator.sendBeacon('/api/simulator-events', new Blob([nb], { type: 'application/json' }));
+          return;
+        }
         // 30 oct 2026: clics salientes a LinkedIn y YouTube (perfil, newsletter, canal).
         if (!param && /(^|\.)(linkedin\.com|youtube\.com)$/.test(url.hostname)) {
           var u0 = window.__utm || {};
