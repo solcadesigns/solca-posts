@@ -444,10 +444,9 @@ async function processOneChunk(
             cta_variant: cta.variant,
           },
         });
+        console.log(`[pending-cron] report email sent ${pending.sessionId} cta_${cta.variant}`);
       } catch (err) {
-        if (err instanceof PostmarkError) {
-          console.error(`[pending-cron] Postmark failed for ${pending.sessionId}:`, err.status);
-        }
+        console.error(`[pending-cron] report email failed ${pending.sessionId}:`, err instanceof PostmarkError ? err.status : String(err));
       }
     }
 

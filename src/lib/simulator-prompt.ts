@@ -623,7 +623,8 @@ El feedback de cada respuesta va en el idioma de la pregunta correspondiente.`;
       return `Toda la sesión en español neutro LATAM.
 Acrónimos pharma quedan en inglés (ICH-GCP, SOPs, TMF) — regla de traducción aplica.
 Si el rol al que aplica el candidato típicamente requiere inglés, incluye al menos
-una pregunta sobre cómo manejaría una entrevista en inglés en una etapa posterior.`;
+una pregunta sobre cómo manejaría una entrevista en inglés en una etapa posterior.
+Esa pregunta también se formula en español: ninguna pregunta ni transición va en inglés.`;
   }
 }
 
