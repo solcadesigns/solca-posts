@@ -8,10 +8,9 @@ import { extractUtms, UTM_KEYS } from '../../lib/utm';
 export const prerender = false;
 
 // Roles del quiz. Ampliado 2026-09-28: se añaden Farmacovigilancia (FV) y
-// Life Sciences Consulting (Consulting) al quiz-rol. Los 4 primeros tienen
-// libro publicado en Hotmart (FV publicado oct 2026); Consulting apunta al
-// Simulador con módulo pre-seleccionado mientras se publica su libro
-// (roadmap editorial 2027Q1).
+// Consultoría en ciencias de la vida (Consulting) al quiz-rol. Los 5 tienen
+// libro publicado en Hotmart (FV oct 2026, Consultoría 28 oct 2026).
+// La clave interna 'Consulting' no cambia: la usan KV, quiz-stats y weekly-report.
 type QuizRole = 'PM' | 'MSL' | 'CR' | 'FV' | 'Consulting';
 
 // Etiquetas humanas para el rol que resulta del quiz. Usadas en el template welcome.
@@ -20,8 +19,12 @@ const ROLE_LABELS: Record<QuizRole, string> = {
   MSL: 'Medical Science Liaison',
   CR: 'Clinical Research',
   FV: 'Farmacovigilancia',
-  Consulting: 'Life Sciences Consulting',
+  Consulting: 'Consultoría en ciencias de la vida',
 };
+
+// Versión del quiz que manda el cliente (ver QUIZ_VERSION en quiz-rol.astro).
+// Sin versión = registros anteriores al 30 oct 2026.
+const QUIZ_VERSION_RE = /^[a-z0-9-]{1,20}$/;
 
 interface QuizSubscribeRequest {
   email: string;
@@ -32,6 +35,7 @@ interface QuizSubscribeRequest {
   consent?: boolean;
   stage?: 'gate' | 'complete';
   selfMatch?: QuizRole | 'NS';
+  quizVersion?: string;
   // UTMs opcionales: los agrega el cliente desde window.__utm (P1 sprint 2026-08-18).
   utm_source?: string;
   utm_medium?: string;
@@ -93,9 +97,9 @@ async function sendWelcomeQuiz(
   //
   // El template `welcome-solca-insight` en Postmark debe usar estos
   // campos nuevos: {{cta_url}}, {{cta_label}}, {{role_next_step}}.
-  // Para roles con libro publicado en Hotmart (PM/MSL/CR/FV), el CTA del
-  // welcome apunta directo al libro. Consulting sigue al simulador hasta que
-  // salga su libro (roadmap 2027Q1).
+  // Los 5 roles tienen libro publicado en Hotmart: el CTA del welcome apunta
+  // directo al libro. Consulting pasó del simulador al libro el 30 oct 2026.
+  // El tipo 'simulator' se conserva por si un rol futuro sale sin libro.
   type CTAConfig =
     | { kind: 'book'; label: string; next: string; url: string }
     | { kind: 'simulator'; label: string; next: string; module: string };
@@ -125,10 +129,10 @@ async function sendWelcomeQuiz(
       url: 'https://pay.hotmart.com/E107847432I',
     },
     Consulting: {
-      kind: 'simulator',
-      label: 'Practica preguntas de Life Sciences Consulting',
-      next: 'Simulador con módulo Strategy Consulting: preguntas de case interview + fit típicas en pharma consulting (freemium, sin costo).',
-      module: 'strategy-consulting',
+      kind: 'book',
+      label: 'Ver el libro Consultoría en ciencias de la vida',
+      next: 'Libro "Consultoría en ciencias de la vida" — herramientas del oficio, seis casos de entrevista resueltos, salarios con su fuente y un módulo de IA en consultoría.',
+      url: 'https://pay.hotmart.com/D108233272L',
     },
   };
   const ctaCfg = CTA_BY_ROLE[role];
@@ -215,6 +219,10 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
   const scores = body.scores;
   const stage = body.stage ?? 'gate';
   const selfMatch = body.selfMatch && VALID_SELF_MATCH.has(body.selfMatch) ? body.selfMatch : undefined;
+  const quizVersion =
+    typeof body.quizVersion === 'string' && QUIZ_VERSION_RE.test(body.quizVersion)
+      ? body.quizVersion
+      : undefined;
 
   if (!consent) {
     return jsonResponse(
@@ -267,6 +275,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     role,
     scores,
     country: country?.toLowerCase(),
+    quizVersion,
     ip,
     ts: new Date().toISOString(),
     ...utms,
@@ -285,6 +294,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
       role,
       scores,
       selfMatch,
+      quizVersion,
       country: country?.toLowerCase(),
       // Solo utm_campaign en el metric anónimo — suficiente para atribución
       // de conversión en weekly-report. Source/medium quedan solo en el

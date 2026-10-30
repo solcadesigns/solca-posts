@@ -3,7 +3,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import MarketSurvey from '../components/MarketSurvey.astro';
 
 // CTAs por rol. Los 5 roles tienen libro publicado y van a Hotmart
-// (Consulting desde el 28 oct 2026).
+// (Consulting desde el 28 oct 2026). Mismas URLs que index.astro y libros.ts.
+// Versión del quiz: viaja en el evento de completado para separar métricas
+// por versión (v1 = 8 preguntas y 3 roles; v2 = 11 preguntas y 5 roles,
+// 28 sep 2026; v3 = 12 preguntas, 30 oct 2026).
+const QUIZ_VERSION = 'v3-12q';
 const cta = {
   libroPM: 'https://pay.hotmart.com/R105710415P',
   libroMSL: 'https://pay.hotmart.com/Y105718405Y',
@@ -12,6 +16,8 @@ const cta = {
   libroConsulting: 'https://pay.hotmart.com/D108233272L',
 };
 
+// 30 oct 2026: P12 nueva (semana de trabajo) para separar FV de CR; copy de FV y
+// Consultoría alineado con los libros publicados (sin nombres de firmas).
 // Ampliado 2026-09-28: quiz pasa de 3 a 5 roles. Añadidos Farmacovigilancia
 // (puerta ancha en el pipeline curado + libro en borrador) y Life Sciences /
 // Strategy Consulting (rol solicitado por audiencia + módulo del simulador
@@ -61,8 +67,8 @@ const QUESTIONS = [
       { label: 'Visitar 6-8 sitios clínicos al mes, revisar source documents, asegurar calidad de data', scores: { CR: 3 } },
       { label: 'Liderar un equipo cross-functional para lanzar un producto o estudio nuevo', scores: { PM: 3 } },
       { label: 'Construir relaciones científicas con 20-30 KOLs en mi área terapéutica', scores: { MSL: 3 } },
-      { label: 'Procesar 20-30 casos de seguridad por semana con MedDRA y narrativa estandarizada', scores: { FV: 3 } },
-      { label: 'Entrevistar 8 payers en 2 semanas y armar un modelo de acceso al mercado para el cliente', scores: { Consulting: 3 } },
+      { label: 'Procesar entre 20 y 40 casos de seguridad por semana: codificar los eventos con MedDRA (el diccionario médico regulatorio) y escribir la narrativa', scores: { FV: 3 } },
+      { label: 'Entrevistar médicos y pagadores, construir un modelo de ingresos y presentar la recomendación al cliente', scores: { Consulting: 3 } },
     ],
   },
   {
@@ -123,11 +129,29 @@ const QUESTIONS = [
       { label: 'Un deck que cambia la decisión del que lo lee', scores: { Consulting: 3 } },
     ],
   },
+  // P12 · Semana de trabajo — nueva 2026-10-30. Separa FV de CR (que comparten
+  // opciones en P1, P4, P6, P7, P9, P10 y P11). Balanceada: cada rol tiene una
+  // sola opción de 3 puntos, así el máximo sube igual para los cinco.
+  // Fuentes: libro CR 1.4 (CRA viaja a sitios, informe de visita); libro FV
+  // 1.3 y 3.1 (DSA, sistema de seguridad, remoto o híbrido); libro MSL M2
+  // (visita científica en campo); libro PM 1.1 (cronograma, presupuesto,
+  // riesgos); libro Consultoría 1.2 y 2.1 (cambio de proyecto cada pocas
+  // semanas, entrevistas, modelos, presentaciones).
+  {
+    text: 'Así me imagino mi semana de trabajo:',
+    options: [
+      { label: 'En reuniones con equipos de varias áreas, siguiendo cronograma, presupuesto y riesgos del proyecto', scores: { PM: 3 } },
+      { label: 'En escritorio, presencial o remoto, revisando reportes de eventos adversos en el sistema de seguridad con plazos regulatorios', scores: { FV: 3 } },
+      { label: 'Visitando a médicos especialistas para conversar sobre la evidencia científica de mi área terapéutica', scores: { MSL: 3 } },
+      { label: 'En un equipo que cambia de cliente cada pocas semanas, entre entrevistas a expertos, modelos en Excel y presentaciones', scores: { Consulting: 3 } },
+      { label: 'Viajando a hospitales y centros de investigación para revisar en sitio cómo se conduce el estudio y escribir el informe de visita', scores: { CR: 3 } },
+    ],
+  },
 ];
 ---
 <BaseLayout
   title="¿Qué rol en pharma te queda? · Quiz de 3 minutos · Solca"
-  description="Quiz interactivo de 11 preguntas que te dice cuál rol pharma LATAM (PM clínico, MSL, Clinical Research, Farmacovigilancia o Life Sciences Consulting) es tu mejor match basado en cómo trabajas y qué te energiza."
+  description="Quiz interactivo de 12 preguntas que te dice cuál rol pharma LATAM (PM clínico, MSL, Clinical Research, Farmacovigilancia o Consultoría en ciencias de la vida) es tu mejor match basado en cómo trabajas y qué te energiza."
 >
 
 <nav class="nav">
@@ -150,8 +174,8 @@ const QUESTIONS = [
   <div class="container quiz-app-container">
     <div class="progress-wrap" id="progress-wrap" hidden>
       <div class="progress-meta">
-        <span id="progress-text">Pregunta 1 de 11</span>
-        <span id="progress-pct">9%</span>
+        <span id="progress-text">Pregunta 1 de {QUESTIONS.length}</span>
+        <span id="progress-pct">{Math.round(100 / QUESTIONS.length)}%</span>
       </div>
       <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
     </div>
@@ -164,7 +188,7 @@ const QUESTIONS = [
       </div>
       <h1 class="quiz-h1">¿Qué rol en pharma <em>te queda mejor</em>?</h1>
       <p class="quiz-lead">
-        Once preguntas sobre cómo trabajas, qué te energiza y qué prefieres. Al final te digo cuál de los cinco roles pharma LATAM más comunes es tu mejor match: <strong>Project Manager clínico</strong>, <strong>Medical Science Liaison</strong>, <strong>Clinical Research</strong>, <strong>Farmacovigilancia</strong> o <strong>Life Sciences Consulting</strong>.
+        Doce preguntas sobre cómo trabajas, qué te energiza y qué prefieres. Al final te digo cuál de los cinco roles pharma LATAM más comunes es tu mejor match: <strong>Project Manager clínico</strong>, <strong>Medical Science Liaison</strong>, <strong>Clinical Research</strong>, <strong>Farmacovigilancia</strong> o <strong>Consultoría en ciencias de la vida</strong>.
       </p>
       <ul class="quiz-features">
         <li>Resultado inmediato basado en tus respuestas</li>
@@ -229,12 +253,12 @@ const QUESTIONS = [
           <span class="option-btn-sub">Monitoreo de ensayos clínicos bajo ICH/GCP</span>
         </button>
         <button type="button" class="option-btn" data-self-match="FV">
-          <span class="option-btn-name">Farmacovigilancia (DSA / FV)</span>
-          <span class="option-btn-sub">Procesamiento de casos de seguridad, MedDRA, ICSR</span>
+          <span class="option-btn-name">Farmacovigilancia (Drug Safety Associate)</span>
+          <span class="option-btn-sub">Reportes de eventos adversos, codificación con MedDRA y plazos regulatorios</span>
         </button>
         <button type="button" class="option-btn" data-self-match="Consulting">
-          <span class="option-btn-name">Life Sciences Consulting</span>
-          <span class="option-btn-sub">Proyectos rotativos de estrategia para pharma/biotech</span>
+          <span class="option-btn-name">Consultoría en ciencias de la vida</span>
+          <span class="option-btn-sub">Proyectos de estrategia que rotan entre clientes de pharma y biotech</span>
         </button>
         <button type="button" class="option-btn" data-self-match="NS">
           <span class="option-btn-name">No tengo idea / no estoy seguro</span>
@@ -293,7 +317,7 @@ const QUESTIONS = [
 
       <div class="share-strip"
            data-share-url="https://solcaciencia.com/quiz-rol"
-           data-share-text="Tomé este quiz de 3 min para gente explorando industria farmacéutica LATAM — te dice si tu match es PM clínico, MSL, Clinical Research, Farmacovigilancia o Life Sciences Consulting.">
+           data-share-text="Tomé este quiz de 3 min para gente explorando industria farmacéutica LATAM — te dice si tu match es PM clínico, MSL, Clinical Research, Farmacovigilancia o Consultoría en ciencias de la vida.">
         <span class="share-strip-label">Compartir el quiz</span>
         <div class="share-strip-buttons">
           <button type="button" class="share-btn" data-share="linkedin" aria-label="Compartir en LinkedIn" title="LinkedIn">
@@ -868,7 +892,7 @@ const QUESTIONS = [
   }
 </style>
 
-<script define:vars={{ QUESTIONS, cta }}>
+<script define:vars={{ QUESTIONS, cta, QUIZ_VERSION }}>
   // ROLE_DATA · usa `ctaTitle`, `ctaDesc`, `ctaURL`, `ctaLabel` de forma
   // unificada. Los 5 roles apuntan a su libro en Hotmart.
   const ROLE_DATA = {
@@ -912,19 +936,19 @@ const QUESTIONS = [
       name: 'Farmacovigilancia',
       short: 'FV',
       explanation:
-        'Tu perfil encaja con farmacovigilancia: rol reactivo, altamente documentado, con reglas regulatorias claras. Es la puerta de entrada más ancha a pharma LATAM en CRO y BPO (ICON, IQVIA, Parexel, Syneos, Labcorp, Accenture, Cognizant, Genpact, Wipro). Como Drug Safety Associate procesas casos individuales (ICSR) con MedDRA coding, narrativa estandarizada y plazos regulatorios estrictos. Requiere licenciatura en ciencias de la vida, inglés B2 real y disciplina para volumen alto de casos por semana.',
+        'Tu perfil encaja con farmacovigilancia, el área que vigila la seguridad de los medicamentos a partir de los reportes de eventos adversos. Como Drug Safety Associate (DSA) procesas reportes individuales de seguridad (ICSR, Individual Case Safety Report): verificas los criterios mínimos del caso, codificas los eventos con MedDRA, evalúas la causalidad preliminar y escribes la narrativa, con plazos regulatorios estrictos. Contratan sobre todo CROs (organizaciones de investigación por contrato) y BPOs (empresas de tercerización de procesos), además de los laboratorios farmacéuticos. Acepta perfiles de licenciatura o maestría en ciencias de la vida y pide inglés técnico: B2 escrito y B1 hablado como mínimo real.',
       ctaEyebrow: 'Libro recomendado',
       ctaTitle: 'Farmacovigilancia LATAM · Guía para el primer empleo',
       ctaDesc:
-        '~79 páginas · 8 figuras. Cubre ICSR y MedDRA, agencias LATAM (COFEPRIS, ANMAT, INVIMA, ISP, DIGEMID) + España, salarios por país con fuentes (DataMéxico, SalaryExpert, Glassdoor), 15 preguntas de entrevista con respuestas modelo, y módulo de IA para FV con marco FDA/EMA enero 2026.',
+        '79 páginas · 8 figuras. Cubre ICSR y MedDRA, agencias LATAM (COFEPRIS, ANMAT, INVIMA, ISP, DIGEMID) + España, salarios por país con fuentes (DataMéxico, SalaryExpert, Glassdoor), 15 preguntas de entrevista con respuestas modelo, y módulo de IA para FV con marco FDA/EMA enero 2026.',
       ctaLabel: 'Ver en Hotmart →',
       ctaURL: cta.libroFV,
     },
     Consulting: {
-      name: 'Life Sciences Consulting',
-      short: 'Consulting',
+      name: 'Consultoría en ciencias de la vida',
+      short: 'Consultoría',
       explanation:
-        'Tu perfil encaja con consultoría de life sciences / strategy consulting para pharma: alta tolerancia a ambigüedad, rotación temática, deliverable ejecutivo, comunicación concisa. Firmas típicas: IQVIA Consulting, ZS Associates, Deloitte Life Sciences, Accenture, McKinsey/Bain/BCG con práctica pharma. Cada 6-12 semanas cambias de proyecto y de industria adyacente. Pide inglés C1 real y pensamiento estructurado bajo presión.',
+        'Tu perfil encaja con consultoría en ciencias de la vida: trabajas en una firma que atiende a varias farmacéuticas, biotecnológicas o empresas de dispositivos médicos, por proyectos con principio y fin. Según el caso entrevistas médicos y pagadores, haces investigación documental, construyes modelos de ingresos o analizas datos del cliente, y sintetizas los hallazgos en una presentación con una recomendación. Cambias de proyecto cada pocas semanas, así que aprendes rápido áreas terapéuticas nuevas y trabajas con problemas abiertos que no traen un marco claro. Lo razonable es esperar inglés de trabajo además del idioma local.',
       ctaEyebrow: 'Libro recomendado',
       ctaTitle: 'Consultoría en ciencias de la vida',
       ctaDesc:
@@ -1104,6 +1128,7 @@ const QUESTIONS = [
           role,
           scores,
           selfMatch: state.selfMatch,
+          quizVersion: QUIZ_VERSION,
           // UTM attribution (P1 sprint 2026-08-18).
           ...(window.__utm || {}),
         }),
@@ -1178,7 +1203,8 @@ const QUESTIONS = [
       bookRecs.appendChild(card);
     };
     renderRec(topRole, true);
-    if (margin <= 2 && margin > 0) renderRec(secondRole, false);
+    // En empate (margin 0) el subtítulo pide explorar ambos: se muestra la segunda tarjeta también.
+    if (margin <= 2) renderRec(secondRole, false);
 
     showScreen('result');
     progressWrap.hidden = true;

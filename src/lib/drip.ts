@@ -12,6 +12,8 @@
  *   - templateAliasFor: convierte (track, step) → alias Postmark canonical.
  */
 
+import { LIBROS } from './libros';
+
 export const DRIP_STEPS = [3, 7, 12, 20] as const;
 export type DripStep = typeof DRIP_STEPS[number];
 export type DripTrack = 'cv' | 'quiz';
@@ -118,14 +120,64 @@ export function templateAliasFor(track: DripTrack, step: DripStep): string {
 }
 
 /**
+ * Roles que puede asignar el quiz-rol. Ampliado de 3 a 5 el 30 oct 2026: FV y
+ * Consulting estaban en el quiz desde el 28 sep 2026, pero el drip los recibía
+ * sin etiqueta ({{role_label}} vacío).
+ */
+export const DRIP_QUIZ_ROLES = ['PM', 'MSL', 'CR', 'FV', 'Consulting'] as const;
+export type DripQuizRole = typeof DRIP_QUIZ_ROLES[number];
+
+export function isDripQuizRole(x: unknown): x is DripQuizRole {
+  return typeof x === 'string' && (DRIP_QUIZ_ROLES as readonly string[]).includes(x);
+}
+
+/**
  * Nombre humano de rol pharma. Duplica ROLE_LABELS de quiz-subscribe.ts a
  * propósito para no crear import cíclico con endpoints (drip vive en /lib/).
+ * PM se queda como 'Project Manager' (así lo reciben los leads desde ago 2026).
  */
-export const DRIP_ROLE_LABELS: Record<'PM' | 'MSL' | 'CR', string> = {
+export const DRIP_ROLE_LABELS: Record<DripQuizRole, string> = {
   PM: 'Project Manager',
   MSL: 'Medical Science Liaison',
   CR: 'Clinical Research',
+  FV: 'Farmacovigilancia',
+  Consulting: 'Consultoría en ciencias de la vida',
 };
+
+/** Rol del quiz → slug de la landing /libros/<slug> (src/lib/libros.ts). */
+const DRIP_ROLE_BOOK_SLUG: Record<DripQuizRole, string> = {
+  PM: 'project-manager',
+  MSL: 'msl',
+  CR: 'clinical-research',
+  FV: 'farmacovigilancia',
+  Consulting: 'consultoria',
+};
+
+/**
+ * Datos del libro del rol para el templateModel del drip quiz: book_title y
+ * book_url (landing /libros/<slug> con UTM por paso). Las plantillas de Postmark
+ * todavía no los usan; quedan disponibles para que el d3 y el d12 enlacen al
+ * libro del rol en vez de a la lista de tres libros o a /#libros.
+ */
+export function dripBookFor(
+  env: Record<string, unknown> | undefined,
+  role: DripQuizRole,
+  step: DripStep,
+): { book_title: string; book_url: string; book_slug: string } {
+  const slug = DRIP_ROLE_BOOK_SLUG[role];
+  const libro = LIBROS.find((l) => l.slug === slug);
+  const params = new URLSearchParams({
+    utm_source: 'email',
+    utm_medium: 'drip-quiz',
+    utm_campaign: `drip-quiz-d${step}`,
+    utm_content: `libro-${role.toLowerCase()}`,
+  });
+  return {
+    book_title: libro?.titulo ?? '',
+    book_url: `${siteOrigin(env)}/libros/${slug}/?${params.toString()}`,
+    book_slug: slug,
+  };
+}
 
 // ── Helpers internos ─────────────────────────────────────────────────────
 

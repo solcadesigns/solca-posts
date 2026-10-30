@@ -17,11 +17,14 @@
  *
  * Idempotente: si el alias ya existe, hace EDIT (PUT) en vez de POST.
  * --dry-run: no escribe; compara cada plantilla en Postmark con la del repo.
+ * --print <alias>: imprime Subject, TextBody y HtmlBody de esa plantilla sin token ni red.
  *
  * Merge tags que espera cada template (los envía drip-tick.ts):
  *   {{first_name}}   — primer nombre (puede venir vacío)
  *   {{role_label}}   — solo track quiz: "Medical Science Liaison", etc.
  *   {{role_slug}}    — solo track quiz: "msl", "cra", "pm"
+ *   {{book_title}}   — solo track quiz: título del libro del rol (src/lib/libros.ts, 30 oct 2026)
+ *   {{book_url}}     — solo track quiz: landing del libro del rol con UTM
  *   {{site_origin}}  — https://solcaciencia.com
  *   {{unsub_url}}    — URL absoluto al kill switch, firmado con HMAC
  */
@@ -29,8 +32,9 @@
 const API = 'https://api.postmarkapp.com';
 const TOKEN = process.env.POSTMARK_SERVER_TOKEN;
 const DRY_RUN = process.argv.includes('--dry-run');
+const PRINT_ALIAS = process.argv.includes('--print') ? process.argv[process.argv.indexOf('--print') + 1] : null;
 
-if (!TOKEN) {
+if (!TOKEN && !PRINT_ALIAS) {
   console.error('ERROR: POSTMARK_SERVER_TOKEN no está en env.');
   console.error('Uso: POSTMARK_SERVER_TOKEN=<token> node scripts/create-drip-templates.mjs');
   console.error('Sacar token de: https://account.postmarkapp.com/servers/20030569/credentials');
@@ -100,7 +104,7 @@ Hice un curso de CV pharma con:
 - Plantillas ATS-friendly.
 - Sección sobre entrevistas y estrategias para responder.
 
-Precio de lanzamiento: MXN $999 (regular $1,499). Garantía 30 días completos: si el curso no te sirve, te devuelvo el dinero sin preguntas.
+Precio: MXN $999.92 con IVA incluido. Garantía 30 días completos: si el curso no te sirve, te devuelvo el dinero sin preguntas.
 
 CV para Ciencias Biológicas y de la Salud → https://go.hotmart.com/B104495115T
 
@@ -150,11 +154,11 @@ Tres días desde que hiciste el quiz. El rol que más se ajusta a tu perfil fue 
 
 Un rol no es un título. Es una decisión diaria sobre en qué invertir tu tiempo. {{role_label}} implica un tipo específico de trabajo que quizás no viste en la descripción corta del resultado del quiz.
 
-Escribí unas guías introductorias para tres roles comunes en la industria pharma con las que puedes iniciar tu camino. Cada guía incluye información para iniciar tu formación y prepararte para adaptar y transformar tus habilidades a lo que cada rol necesita.
+Escribí guías introductorias para cinco roles comunes en la industria pharma con las que puedes iniciar tu camino. Cada guía incluye información para iniciar tu formación y prepararte para adaptar y transformar tus habilidades a lo que cada rol necesita.
 
-Project Manager → https://pay.hotmart.com/R105710415P
-MSL → https://pay.hotmart.com/Y105718405Y
-Clinical Research → https://pay.hotmart.com/U105724060O
+La guía de tu rol, {{book_title}}: {{book_url}}
+
+Las de los otros roles están en {{site_origin}}/#libros
 
 Si después de leerla el rol no te queda tan bien como el quiz sugirió, es información valiosa. El quiz es una hipótesis; la guía es el reality check.
 
@@ -196,14 +200,14 @@ Doce días. Si {{role_label}} sigue en tu radar como opción real, y estás junt
 
 Como te comenté hace unos días, hice un libro dedicado al rol {{role_label}} con:
 
-- Radiografía completa del rol en LATAM (México, Argentina, Colombia, Chile).
+- Radiografía del rol en LATAM.
 - Fundamentos teóricos, lenguaje clave, el día a día operativo del rol.
-- Módulo de aplicaciones para vacantes.
+- Preparación para aplicar a vacantes y para la entrevista.
 - Las herramientas de IA que se utilizan en el rol.
 
-Precio de lanzamiento: MXN $599 (regular $799). En Hotmart, entrega inmediata, garantía 7 días.
+Precio: MXN $599 con IVA incluido. En Hotmart, entrega inmediata, garantía 15 días.
 
-{{site_origin}}/#libros
+{{book_title}}: {{book_url}}
 
 Oscar
 
@@ -226,7 +230,7 @@ Puedes encontrarlo en nuestra página. Te comparto un cupón de descuento para q
 
 Cupón: BIENVENIDA50
 
-Selecciona el libro en {{site_origin}}/#libros
+El libro de tu rol, {{book_title}}: {{book_url}}
 
 Si algo de todo esto (quiz, blog, libros, contenido gratis) te ha servido, te agradecería recomendarlos.
 
@@ -265,7 +269,8 @@ function textToHtml(text) {
     const linked = withBreaks
       .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" style="color:#0ea5e9;">$1</a>')
       .replace(/{{site_origin}}(\/[^\s<]*)?/g, (match) => `<a href="${match}" style="color:#0ea5e9;">${match}</a>`)
-      .replace(/{{unsub_url}}/g, '<a href="{{unsub_url}}" style="color:#0ea5e9;">{{unsub_url}}</a>');
+      .replace(/{{unsub_url}}/g, '<a href="{{unsub_url}}" style="color:#0ea5e9;">{{unsub_url}}</a>')
+      .replace(/{{book_url}}/g, '<a href="{{book_url}}" style="color:#0ea5e9;">{{book_url}}</a>');
     return `<p style="margin:0 0 16px;">${linked}</p>`;
   });
   return paragraphs.join('\n');
@@ -366,6 +371,12 @@ async function upsertTemplate(tpl) {
 // ── main ─────────────────────────────────────────────────────────────
 
 async function main() {
+  if (PRINT_ALIAS) {
+    const tpl = TEMPLATES.find((t) => t.alias === PRINT_ALIAS);
+    if (!tpl) throw new Error(`alias desconocido: ${PRINT_ALIAS}`);
+    console.log(JSON.stringify({ Subject: tpl.subject, TextBody: tpl.textBody, HtmlBody: wrapHtml(textToHtml(tpl.textBody), tpl.subject) }));
+    return;
+  }
   console.log(`Postmark server: querying...`);
   const server = await pmFetch('/server', 'GET');
   console.log(`Postmark server: ${server.Name} (id ${server.ID})`);

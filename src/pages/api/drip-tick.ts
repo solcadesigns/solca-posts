@@ -20,8 +20,10 @@
  *
  * Tracks:
  *   - `cv`: leads de KV EMAILS prefix `email:`. templateModel simple.
- *   - `quiz`: leads de KV EMAILS prefix `quiz:`. Requiere `role ∈ {PM,MSL,CR}`
- *      del record. Si no hay rol (gate sin complete), skip.
+ *   - `quiz`: leads de KV EMAILS prefix `quiz:`. Requiere `role ∈ {PM,MSL,CR,FV,Consulting}`
+ *      del record (DRIP_QUIZ_ROLES). Si no hay rol (gate sin complete), skip.
+ *      Desde el 30 oct 2026 el templateModel lleva también book_title, book_url
+ *      y book_slug (libro del rol, landing /libros/<slug> con UTM).
  *
  * Dedupe por (email, track): un email puede estar en ambos tracks si se
  * registró por CV y por Quiz. Ambos drips corren independientes.
@@ -41,6 +43,9 @@ import {
   hasRecentTagForRecipient,
   templateAliasFor,
   DRIP_ROLE_LABELS,
+  type DripQuizRole,
+  isDripQuizRole,
+  dripBookFor,
   siteOrigin,
 } from '../../lib/drip';
 
@@ -55,7 +60,7 @@ interface EmailRec {
   email?: string;
   ts?: string;
   name?: string;
-  role?: 'PM' | 'MSL' | 'CR';
+  role?: string;
   stage?: 'gate' | 'complete';
   country?: string;
 }
@@ -65,7 +70,7 @@ interface Candidate {
   track: DripTrack;
   firstSeenMs: number;
   firstName?: string;
-  role?: 'PM' | 'MSL' | 'CR';
+  role?: DripQuizRole;
   country?: string;
 }
 
@@ -151,14 +156,14 @@ async function collectCandidates(
           track,
           firstSeenMs: tsMs,
           firstName: rec.name?.trim().split(/\s+/)[0],
-          role: rec.role && ['PM', 'MSL', 'CR'].includes(rec.role) ? rec.role : undefined,
+          role: isDripQuizRole(rec.role) ? rec.role : undefined,
           country: rec.country,
         });
       } else {
         if (tsMs < existing.firstSeenMs) existing.firstSeenMs = tsMs;
         // Upgrade con metadata más rica (rol o nombre) cuando aparezca en un
         // record posterior. En Quiz gate viene name; en complete viene role.
-        if (!existing.role && rec.role) existing.role = rec.role;
+        if (!existing.role && isDripQuizRole(rec.role)) existing.role = rec.role;
         if (!existing.firstName && rec.name) existing.firstName = rec.name.split(/\s+/)[0];
         if (!existing.country && rec.country) existing.country = rec.country;
       }
@@ -232,6 +237,7 @@ async function processOne(
     role_slug: candidate.role?.toLowerCase() ?? '',
     site_origin: siteOrigin(ctx.env),
     unsub_url: unsubUrl,
+    ...(candidate.role ? dripBookFor(ctx.env, candidate.role, step) : {}),
   };
 
   if (ctx.dry) {
