@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { sendEmailWithTemplate, PostmarkError } from '../../lib/postmark';
 import { extractUtms, UTM_KEYS } from '../../lib/utm';
+import { extractAttribution, emailHashFull } from '../../lib/attribution';
 // Postmark reemplaza a Brevo (jul 2026). Ver _docs/que-rompimos-brevo-mailerlite.md.
 // El opt-in vive en KV EMAILS. La segmentación por rol (PM/MSL/CR/FV/Consulting) vive en el record
 // del KV — Postmark no maneja listas.
@@ -42,6 +43,11 @@ interface QuizSubscribeRequest {
   utm_campaign?: string;
   utm_content?: string;
   utm_term?: string;
+  // 30 oct 2026 (P2): aid, primer/último toque y bandera interna (BaseLayout window.__attr).
+  aid?: string;
+  ft?: unknown;
+  lt?: unknown;
+  interno?: boolean;
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -138,8 +144,8 @@ async function sendWelcomeQuiz(
   const ctaCfg = CTA_BY_ROLE[role];
   const ctaUrl =
     ctaCfg.kind === 'book'
-      ? `${ctaCfg.url}?utm_source=email&utm_medium=welcome-quiz` +
-        `&utm_campaign=welcome-quiz-cta&utm_content=libro-${role.toLowerCase()}`
+      ? // 30 oct 2026 (P3): Hotmart guarda sck, no utm_*. Convención sck=<medium>-<campaign>-<content>.
+        `${ctaCfg.url}?sck=drip-quiz-d0-${role.toLowerCase()}`
       : `https://solcaciencia.com/simulador-entrevistas/` +
         `?modulo=${ctaCfg.module}` +
         `&utm_source=email&utm_medium=welcome-quiz` +
@@ -279,6 +285,9 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     ip,
     ts: new Date().toISOString(),
     ...utms,
+    // 30 oct 2026 (P2): llave de unión con ventas (sha256 completo) + aid/ft/lt/interno.
+    email_hash: await emailHashFull(email),
+    ...extractAttribution(body),
   };
 
   waitUntil(

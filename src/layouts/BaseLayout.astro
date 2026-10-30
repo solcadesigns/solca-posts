@@ -131,6 +131,62 @@ const ogImageURL = new URL(ogImage, siteUrl).toString();
     } catch (_) {
       window.__utm = {};
     }
+
+    // ── Atribución persistente · 30 oct 2026 (P2/P6 consultoría) ──
+    // window.__utm (arriba) NO cambia: sigue siendo el UTM de la sesión.
+    // Además, en localStorage:
+    //   solca_aid      UUID anónimo (el mismo que ya usan /vacantes y la encuesta)
+    //   solca_ft       primer toque con fuente (UTM o referrer externo); no se sobrescribe
+    //   solca_lt       último toque con fuente
+    //   solca_interno  '1' tras abrir cualquier página con ?interno=1 (?interno=0 lo quita)
+    // Expuestos como window.__aid, __ft, __lt, __interno y window.__attr() para los POST.
+    function getJson(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (_) { return null; } }
+    function putJson(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} }
+    try {
+      var p2 = new URLSearchParams(window.location.search);
+      var touch = {}, hasSource = false;
+      UTM_KEYS.forEach(function (k) {
+        var v = sanitize(p2.get(k));
+        if (v) { touch[k] = v.slice(0, 100); if (k === 'utm_source' || k === 'utm_campaign') hasSource = true; }
+      });
+      try {
+        if (document.referrer) {
+          var rh = new URL(document.referrer).hostname.toLowerCase().replace(/^www\./, '');
+          if (rh && rh !== window.location.hostname.replace(/^www\./, '') && !/(^|\.)solcaciencia\.com$/.test(rh) && !/(^|\.)stripe\.com$/.test(rh) && !/(^|\.)hotmart\.(com|host)$/.test(rh)) {
+            touch.ref_host = rh.slice(0, 100); hasSource = true;
+          }
+        }
+      } catch (_) {}
+      if (hasSource) { touch.landing_path = window.location.pathname.slice(0, 100); touch.ts = new Date().toISOString(); }
+
+      var aid = null;
+      try {
+        aid = localStorage.getItem('solca_aid');
+        if (!aid && window.crypto && crypto.randomUUID) { aid = crypto.randomUUID(); localStorage.setItem('solca_aid', aid); }
+      } catch (_) { aid = null; }
+
+      var flag = p2.get('interno');
+      try {
+        if (flag === '1') localStorage.setItem('solca_interno', '1');
+        else if (flag === '0') localStorage.removeItem('solca_interno');
+      } catch (_) {}
+
+      var ft = getJson('solca_ft');
+      if (!ft && hasSource) { ft = touch; putJson('solca_ft', ft); }
+      var lt = getJson('solca_lt');
+      if (hasSource) { lt = touch; putJson('solca_lt', lt); }
+
+      var interno = false;
+      try { interno = localStorage.getItem('solca_interno') === '1'; } catch (_) {}
+      window.__aid = aid || undefined;
+      window.__ft = ft || undefined;
+      window.__lt = lt || undefined;
+      window.__interno = interno;
+    } catch (_) {}
+    // Campos que viajan en cada evento, lead y checkout.
+    window.__attr = function () {
+      return { aid: window.__aid, ft: window.__ft, lt: window.__lt, interno: window.__interno ? true : undefined };
+    };
   })();
 </script>
 
@@ -167,6 +223,7 @@ const ogImageURL = new URL(ogImage, siteUrl).toString();
         utm_content: utm.utm_content,
         utm_term: utm.utm_term,
         referrer: document.referrer || undefined,
+        ...(window.__attr ? window.__attr() : {}),
       });
       if (navigator.sendBeacon) {
         navigator.sendBeacon('/api/simulator-events', new Blob([body], { type: 'application/json' }));
@@ -181,25 +238,29 @@ const ogImageURL = new URL(ogImage, siteUrl).toString();
   Origen de ventas en Hotmart · 14 oct 2026.
   Al hacer clic en un enlace a Hotmart, agrega la etiqueta de origen que Hotmart
   muestra en Ventas > Dashboard Origen de Ventas: sck en pay.hotmart.com (página
-  de pago) y src en go.hotmart.com (HotLink). Valor: "<fuente>|<campaña>" si la
-  visita trae UTM, o "web|<página>" si no. Máx. 30 caracteres, sin "_" (reservado
-  por Hotmart). Registra book_clicked. Delegado en document para cubrir enlaces
-  que se pintan después (resultado del Quiz, reporte del simulador).
+  de pago) y src en go.hotmart.com (HotLink). Valor (convención del 30 oct 2026,
+  tracking-plan.md §3): "<medium>-<campaña>-<content>" con el UTM de la sesión o,
+  si no hay, el último toque guardado (solca_lt); sin UTM, "web-<página>". Máx. 30
+  caracteres, sin "_" (reservado por Hotmart). Las etiquetas viejas "<fuente>|<campaña>"
+  y "web|<página>" quedan en el histórico; el reporte entiende ambas. Registra
+  book_clicked. Delegado en document para cubrir enlaces que se pintan después
+  (resultado del Quiz, reporte del simulador).
 -->
 <script is:inline>
   (function () {
     function clean(s) {
-      return String(s || '').toLowerCase().replace(/_/g, '-').replace(/[^a-z0-9|-]/g, '');
+      return String(s || '').toLowerCase().replace(/_/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '');
     }
     function originTag() {
       var utm = window.__utm || {};
+      if (!utm.utm_campaign && !utm.utm_source) utm = window.__lt || {};
       var path = window.location.pathname.replace(/\/+$/, '') || '/';
       if (utm.utm_campaign || utm.utm_source) {
-        var src = utm.utm_source === 'linkedin' ? 'li' : clean(utm.utm_source || 'utm').slice(0, 6);
-        return (src + '|' + clean(utm.utm_campaign || '')).slice(0, 30);
+        var parts = [clean(utm.utm_medium || utm.utm_source || 'utm').slice(0, 10), clean(utm.utm_campaign || '').slice(0, 30), clean(utm.utm_content || '').slice(0, 12)];
+        return parts.filter(Boolean).join('-').slice(0, 30).replace(/-$/, '');
       }
       var page = path === '/' ? 'home' : path.split('/').filter(Boolean).pop();
-      return ('web|' + clean(page)).slice(0, 30);
+      return ('web-' + clean(page)).slice(0, 30).replace(/-$/, '');
     }
     document.addEventListener('click', function (e) {
       try {
@@ -220,6 +281,7 @@ const ogImageURL = new URL(ogImage, siteUrl).toString();
             utm_campaign: u1.utm_campaign,
             utm_content: u1.utm_content,
             referrer: document.referrer || undefined,
+            ...(window.__attr ? window.__attr() : {}),
           });
           if (navigator.sendBeacon) navigator.sendBeacon('/api/simulator-events', new Blob([nb], { type: 'application/json' }));
           return;
@@ -236,6 +298,7 @@ const ogImageURL = new URL(ogImage, siteUrl).toString();
             utm_campaign: u0.utm_campaign,
             utm_content: u0.utm_content,
             referrer: document.referrer || undefined,
+            ...(window.__attr ? window.__attr() : {}),
           });
           if (navigator.sendBeacon) navigator.sendBeacon('/api/simulator-events', new Blob([ob], { type: 'application/json' }));
           return;
@@ -258,6 +321,7 @@ const ogImageURL = new URL(ogImage, siteUrl).toString();
           utm_content: utm.utm_content,
           utm_term: utm.utm_term,
           referrer: document.referrer || undefined,
+          ...(window.__attr ? window.__attr() : {}),
         });
         if (navigator.sendBeacon) {
           navigator.sendBeacon('/api/simulator-events', new Blob([body], { type: 'application/json' }));

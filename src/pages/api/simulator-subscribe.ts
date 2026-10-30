@@ -32,6 +32,7 @@
 import type { APIRoute } from 'astro';
 import { sendEmailWithTemplate, PostmarkError } from '../../lib/postmark';
 import { extractUtms } from '../../lib/utm';
+import { extractAttribution, emailHashFull } from '../../lib/attribution';
 
 export const prerender = false;
 
@@ -45,6 +46,11 @@ interface SubscribeRequest {
   utm_campaign?: string;
   utm_content?: string;
   utm_term?: string;
+  // 30 oct 2026 (P2): aid, primer/último toque y bandera interna (BaseLayout window.__attr).
+  aid?: string;
+  ft?: unknown;
+  lt?: unknown;
+  interno?: boolean;
 }
 
 interface BetaCodeRecord {
@@ -313,6 +319,9 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     expires_at: PREPAYWALL_EXPIRES_ISO,
     max_sessions: PREPAYWALL_MAX_SESSIONS,
     ...utms,
+    // 30 oct 2026 (P2): llave de unión con ventas (sha256 completo) + aid/ft/lt/interno.
+    email_hash: await emailHashFull(email),
+    ...extractAttribution(body),
   };
 
   // Escritura del lead + envío de Postmark en background (waitUntil).

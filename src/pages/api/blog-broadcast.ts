@@ -233,9 +233,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   // 5. Registrar reporte para métricas semanales
   try {
-    await emailsKv.put(`broadcast-report:${startedIso}`, JSON.stringify(report), {
-      expirationTtl: 60 * 60 * 24 * 90, // 90 días
-    });
+    // Sin TTL desde el 30 oct 2026 (antes 90 días): conteos del envío, sin correos. Se conserva la historia.
+    await emailsKv.put(`broadcast-report:${startedIso}`, JSON.stringify(report));
   } catch (err) {
     console.error('broadcast:report-persist-failed', err);
   }

@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 
-const lastUpdated = 'Octubre 2026';
+const lastUpdated = '30 de octubre de 2026';
 ---
 <BaseLayout
   title="Aviso de privacidad · Solca"
@@ -38,38 +38,42 @@ const lastUpdated = 'Octubre 2026';
 <section class="legal-body">
   <div class="container legal-content">
     <p class="intro">
-      Este aviso describe cómo Solca · Ciencia y Consultoría trata los datos personales que nos compartes al usar nuestro sitio web, herramientas (incluido el análisis de CV asistido por IA) y suscribirte a comunicaciones. Está redactado en cumplimiento con la Ley Federal de Protección de Datos Personales en Posesión de los Particulares de México (LFPDPPP) y aplica los principios del RGPD europeo para usuarios en España.
+      Este aviso describe cómo Solca · Ciencia y Consultoría trata los datos personales que nos compartes al usar nuestro sitio web y nuestras herramientas (análisis de CV, quiz de rol, Simulador de Entrevistas y buscador de vacantes), al comprar alguno de nuestros productos y al suscribirte a nuestras comunicaciones. Está redactado conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares publicada en el Diario Oficial de la Federación el 20 de marzo de 2025. La sección 7 incluye lo que aplica si vives en Argentina, Colombia, Chile o España.
     </p>
 
     <h2>1. Responsable del tratamiento</h2>
     <p>
-      Oscar Omar Solís Castro, operando como Solca · Ciencia y Consultoría.
-      Contacto: <a href="mailto:hello@solcaciencia.com">hello@solcaciencia.com</a>.
-      Ubicación: Mérida, Yucatán, México.
+      Solca · Ciencia y Consultoría.<br />
+      Domicilio: Calle 18 No. 106B, Colonia Yucatán, C.P. 97050, Mérida, Yucatán, México.<br />
+      Teléfono: <a href="tel:+525660875885">56 6087 5885</a>.<br />
+      Correo: <a href="mailto:hello@solcaciencia.com">hello@solcaciencia.com</a>.
     </p>
 
     <h2>2. Datos que recopilamos</h2>
     <p>Dependiendo del servicio que uses, recopilamos:</p>
     <ul>
       <li><strong>Email.</strong> Cuando solicitas el análisis de CV o te suscribes al newsletter.</li>
+      <li><strong>Nombre.</strong> Cuando te registras en el quiz de rol o en el Simulador de Entrevistas, para dirigirnos a ti en los correos.</li>
       <li><strong>País (opcional).</strong> Para contextualizar el análisis o personalizar contenido.</li>
       <li><strong>Texto de tu CV (procesamiento efímero).</strong> Lo procesamos en memoria al momento de generar el análisis y <strong>no lo conservamos</strong> después de entregarte el resultado. No se guarda en bases de datos, no se usa para entrenar modelos, no se comparte con terceros más allá del procesamiento descrito en la sección 4.</li>
       <li><strong>Respuestas y configuración del Simulador de Entrevistas (procesamiento efímero).</strong> Tus respuestas durante la sesión se procesan en memoria para generar el feedback y se descartan al cierre. El detalle completo del flujo del simulador (qué se guarda como métrica anónima y qué no) está en la sección 6.</li>
       <li><strong>Encuesta de mercado (opcional y anónima).</strong> Después del análisis de CV, del quiz de rol o del simulador te podemos hacer hasta 3 preguntas (por ejemplo, tu etapa profesional o qué te frena para entrar a la industria). Junto con ellas guardamos una copia anónima de datos generales que ya diste en la herramienta (país, formación, nivel académico y rango de años de experiencia, rol de interés, el rol que te sugirió el quiz, y rango de edad y género si los compartiste) y de dónde llegaste al sitio. <strong>Nunca se guarda tu email, tu nombre, tu CV ni texto libre</strong> junto con estas respuestas.</li>
-      <li><strong>Identificador anónimo del navegador.</strong> Un número aleatorio que se guarda en tu navegador (no es una cookie de rastreo ni se comparte con terceros) para contar personas y no usos, y para no repetirte preguntas que ya contestaste. No se vincula con tu email ni con tu identidad.</li>
-      <li><strong>Origen de la visita.</strong> La página desde la que llegaste y los parámetros de campaña (UTM) del enlace, para saber qué canales funcionan.</li>
+      <li><strong>Identificador anónimo del navegador.</strong> Un número aleatorio que se guarda en tu navegador (no es una cookie de rastreo ni se comparte con terceros) para contar personas y no usos, y para no repetirte preguntas que ya contestaste. Si dejas tu correo en alguna herramienta, este identificador se guarda junto con tu registro para saber por qué canal llegaste.</li>
+      <li><strong>Origen de la visita.</strong> El sitio o la campaña por la que llegaste la primera vez y la más reciente (página de origen y parámetros UTM del enlace), para saber qué canales funcionan.</li>
+      <li><strong>Identificador cifrado de tu correo.</strong> Una huella irreversible de tu correo (no el correo en sí) que usamos para relacionar tu registro con una compra y saber qué canales generan ventas.</li>
+      <li><strong>Compras.</strong> El Simulador de Entrevistas se paga con Stripe y los libros y el curso se compran en Hotmart. Nosotros no recibimos ni guardamos los datos de tu tarjeta. De cada compra guardamos el producto, el precio, el país, el origen de la venta y el identificador cifrado de tu correo.</li>
       <li><strong>Dirección IP.</strong> Registrada únicamente para prevenir abuso de servicios (rate-limiting) y diagnosticar errores. No se vincula a tu identidad para fines comerciales.</li>
       <li><strong>Datos técnicos básicos.</strong> Logs del servidor (navegador, tipo de dispositivo, timestamp) recopilados automáticamente por Cloudflare (nuestro proveedor de hosting) para seguridad y rendimiento.</li>
     </ul>
     <p>
-      <strong>No recopilamos</strong>: datos bancarios, números de identificación oficial, ni datos sensibles. Las compras de libros y cursos se procesan en plataformas externas (Hotmart, Amazon) — esas tienen sus propios avisos de privacidad.
+      <strong>No recopilamos</strong> números de identificación oficial ni datos sensibles.
     </p>
 
     <h2>3. Finalidades del tratamiento</h2>
     <p>Tus datos se usan para:</p>
     <ul>
       <li><strong>Finalidades primarias:</strong> generar tu análisis de CV; enviarte el resultado y comunicaciones que solicitaste (newsletter, tips de la transición academia → industria).</li>
-      <li><strong>Finalidades secundarias:</strong> mejorar nuestros servicios; medir métricas agregadas y anónimas de uso (cuántas personas usan el análisis y el simulador, en qué países, qué roles practican, qué vocabulario falta); generar contenido editorial agregado para el newsletter Solca Insight.</li>
+      <li><strong>Finalidades secundarias:</strong> mejorar nuestros servicios; medir métricas agregadas y anónimas de uso (cuántas personas usan el análisis y el simulador, en qué países, qué roles practican, qué vocabulario falta); generar contenido editorial agregado para el newsletter Solca Insight; medir qué canales y campañas generan registros y compras, relacionando el origen de tu visita con tu registro y, si compras, con tu compra mediante el identificador cifrado de tu correo.</li>
     </ul>
     <p>
       Si no quieres recibir comunicaciones secundarias, puedes manifestarlo respondiendo cualquier email con "baja" o usando el link de desuscripción al pie de cada correo.
@@ -79,15 +83,21 @@ const lastUpdated = 'Octubre 2026';
     <p>Para operar el servicio dependemos de proveedores externos:</p>
     <ul>
       <li>
-        <strong>Anthropic (Claude API).</strong> El texto de tu CV se envía a la API de Anthropic para generar el análisis. Anthropic <a href="https://www.anthropic.com/legal/commercial-terms" target="_blank" rel="noopener">declara públicamente</a> que los inputs procesados vía API no se usan para entrenar sus modelos. Los datos se retienen hasta 30 días para detección de abuso y luego se eliminan.
+        <strong>Anthropic (Claude API).</strong> Procesa el texto de tu CV y tus respuestas del simulador para generar el análisis. Anthropic declara que no usa los datos enviados por su API para entrenar sus modelos y que los <a href="https://privacy.anthropic.com/en/articles/7996866-how-long-do-you-store-personal-data" target="_blank" rel="noopener">elimina en un plazo de 30 días</a>, salvo las excepciones de su política (por ejemplo, contenido marcado por infringir su política de uso).
       </li>
       <li>
-        <strong>Cloudflare.</strong> Hosting del sitio y procesamiento de solicitudes. Recopila logs técnicos de acceso (IP, user-agent, timestamps) según su <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">aviso de privacidad</a>.
+        <strong>Cloudflare.</strong> Hosting del sitio, procesamiento de solicitudes y bases de datos donde guardamos registros y métricas. Recopila logs técnicos de acceso (IP, user-agent, timestamps) según su <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">aviso de privacidad</a>.
       </li>
+      <li><strong>Postmark.</strong> Envío de correos (análisis, códigos de acceso, reportes y newsletter).</li>
+      <li><strong>Stripe.</strong> Procesamiento de pagos del Simulador de Entrevistas.</li>
+      <li><strong>Hotmart.</strong> Venta y entrega de los libros y el curso.</li>
       <li>
         <strong>GitHub.</strong> Almacenamiento del código del sitio (no de tus datos personales).
       </li>
     </ul>
+    <p>
+      Estos proveedores pueden procesar tus datos fuera de México, por ejemplo en Estados Unidos. Al usar nuestros servicios aceptas esa transferencia, que es necesaria para prestarlos.
+    </p>
     <p>
       No vendemos, alquilamos ni compartimos tus datos personales con anunciantes ni terceros con fines comerciales distintos de los descritos arriba.
     </p>
@@ -103,6 +113,8 @@ const lastUpdated = 'Octubre 2026';
       <li><strong>Respuestas del simulador:</strong> efímeras. Se procesan, se entrega el reporte final, se descartan.</li>
       <li><strong>Sesiones del simulador (metadata anónima en almacenamiento clave-valor):</strong> 90 días, después se elimina automáticamente.</li>
       <li><strong>Métricas anónimas agregadas del simulador (en base de datos interna Cloudflare D1):</strong> retención indefinida solo para análisis de producto y contenido editorial; al no contener identificadores no permiten reidentificarte.</li>
+      <li><strong>Eventos de uso del sitio</strong> (páginas vistas y clics, con el identificador anónimo del navegador y el origen de la visita, sin nombre ni correo): retención indefinida, para comparar la evolución del sitio a lo largo del tiempo.</li>
+      <li><strong>Registros de compra</strong> (producto, precio, país, origen e identificador cifrado del correo): retención indefinida para fines contables y de medición.</li>
     </ul>
 
     <h2>6. Simulador de Entrevistas con IA</h2>
@@ -144,10 +156,18 @@ const lastUpdated = 'Octubre 2026';
     <p>
       Si estás en la Unión Europea, también tienes derechos adicionales bajo el RGPD (portabilidad de datos, restricción del tratamiento, presentar reclamación ante la autoridad nacional de protección de datos). El proceso de solicitud es el mismo.
     </p>
+    <ul>
+      <li><strong>México.</strong> Puedes acudir ante la Secretaría Anticorrupción y Buen Gobierno, autoridad de protección de datos personales.</li>
+      <li><strong>Argentina.</strong> Tus derechos se rigen por la Ley 25.326. La autoridad es la Agencia de Acceso a la Información Pública.</li>
+      <li><strong>Colombia.</strong> Tus derechos se rigen por la Ley 1581 de 2012. La autoridad es la Superintendencia de Industria y Comercio.</li>
+      <li><strong>Chile.</strong> Tus derechos se rigen por la Ley 21.719 desde el 1 de diciembre de 2026. La autoridad es la Agencia de Protección de Datos Personales.</li>
+      <li><strong>España.</strong> Además de los derechos de la sección anterior tienes derecho a la portabilidad y a la limitación del tratamiento, y puedes reclamar ante la Agencia Española de Protección de Datos.</li>
+    </ul>
+    <p>En todos los casos la solicitud se hace igual: escribe a <a href="mailto:hello@solcaciencia.com">hello@solcaciencia.com</a>.</p>
 
     <h2>8. Cookies y rastreadores</h2>
     <p>
-      Actualmente Solca <strong>no usa cookies de rastreo, analytics de terceros ni pixels de redes sociales</strong>. Cloudflare usa cookies estrictamente técnicas para enrutamiento y seguridad (no rastreables a tu identidad). Usamos el almacenamiento local de tu navegador para dos cosas: recordar los parámetros de campaña y la página de origen de tu visita, y guardar el identificador anónimo descrito en la sección 2. Ninguno se comparte con terceros ni se vincula con tu identidad; puedes borrarlos limpiando los datos del sitio en tu navegador. Si en el futuro agregamos analytics anónimas (por ejemplo Cloudflare Web Analytics), actualizaremos este aviso.
+      Actualmente Solca <strong>no usa cookies de rastreo, analytics de terceros ni pixels de redes sociales</strong>. Cloudflare usa cookies estrictamente técnicas para enrutamiento y seguridad (no rastreables a tu identidad). Usamos el almacenamiento local de tu navegador para tres cosas: recordar el origen de tu primera y de tu última visita, guardar el identificador anónimo descrito en la sección 2 y no repetirte preguntas que ya contestaste. Ninguno se comparte con terceros; puedes borrarlos limpiando los datos del sitio en tu navegador. Si en el futuro agregamos analytics anónimas (por ejemplo Cloudflare Web Analytics), actualizaremos este aviso.
     </p>
 
     <h2>9. Seguridad</h2>
@@ -166,7 +186,7 @@ const lastUpdated = 'Octubre 2026';
     </p>
 
     <p class="legal-footer-note">
-      Solca · Ciencia y Consultoría · Oscar Omar Solís Castro · Mérida, Yucatán, México.
+      Solca · Ciencia y Consultoría · Mérida, Yucatán, México.
     </p>
   </div>
 </section>

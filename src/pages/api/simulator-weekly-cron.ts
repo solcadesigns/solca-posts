@@ -264,11 +264,10 @@ async function runWeeklyDigest(env: Record<string, unknown>): Promise<WeeklyDige
     ...partial,
   };
 
-  // Guardar en KV con TTL 365 días
+  // Guardar en KV sin TTL (30 oct 2026: antes 365 días). Es un agregado anónimo de la semana; se conserva
+  // para comparar toda la historia. Una llave por semana ISO (~1-2 KB), crecimiento despreciable.
   if (kv) {
-    await kv.put(`digest:${weekIso}`, JSON.stringify(digest), {
-      expirationTtl: 365 * 24 * 3600,
-    });
+    await kv.put(`digest:${weekIso}`, JSON.stringify(digest));
   }
 
   // TODO opcional · envío de email via Postmark (transactional)

@@ -4,6 +4,8 @@ import { chatCompletion, extractText, AnthropicError } from '../../lib/anthropic
 import { checkCvSubmitLimit, incrementCvSubmitCount } from '../../lib/rate-limit';
 import { sendEmail, sendEmailWithTemplate, PostmarkError } from '../../lib/postmark';
 import { extractUtms, type UtmRecord } from '../../lib/utm';
+import { extractAttribution, emailHashFull, type Attribution } from '../../lib/attribution';
+import { guardarEventoD1 } from '../../lib/eventos-d1';
 // Postmark reemplaza a Brevo (jul 2026). Ver _docs/que-rompimos-brevo-mailerlite.md.
 
 export const prerender = false;
@@ -21,6 +23,11 @@ interface CVReviewRequest {
   utm_term?: string;
   // Página de origen externa (document.referrer al aterrizar). Ver revisar-cv.astro.
   referrer?: string;
+  // 30 oct 2026 (P2): aid, primer/último toque y bandera interna (BaseLayout window.__attr).
+  aid?: string;
+  ft?: unknown;
+  lt?: unknown;
+  interno?: boolean;
 }
 
 interface Observacion {
@@ -93,6 +100,7 @@ async function storeEmail(
   ip: string | null,
   utms: UtmRecord,
   referrer?: string,
+  attr: Attribution = {},
 ): Promise<void> {
   // Si hay KV namespace `EMAILS` configurado, guardamos. Si no, log a console (visible vía `wrangler tail`).
   const kv = runtime?.env?.EMAILS as KVNamespace | undefined;
@@ -103,6 +111,9 @@ async function storeEmail(
     ts: new Date().toISOString(),
     ...(referrer ? { referrer } : {}),
     ...utms,
+    // 30 oct 2026 (P2): llave de unión con ventas (sha256 completo) + aid/ft/lt/interno.
+    email_hash: await emailHashFull(email),
+    ...attr,
   };
   if (kv && typeof kv.put === 'function') {
     const key = `email:${record.ts}:${record.email}`;
@@ -279,8 +290,34 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     cvLength: cv.length,
     ...(referrer ? { referrer } : {}),
     ...extractUtms(body as unknown as Record<string, unknown>),
+    ...extractAttribution(body),
   };
-  await putAttempt(emailsKV, attemptKey, { ...attemptBase, status: 'started' });
+  // 30 oct 2026: el registro `attempt:` (KV, 180 días) lleva el correo, así que no se vuelve permanente.
+  // La parte anónima (estado, largo del CV, país, fuente, aid) se copia a D1 `eventos` como cv_attempt, sin TTL.
+  const attemptDb = runtime?.env?.SIMULATOR_METRICS_DB as D1Database | undefined;
+  const attemptTag = (await emailHashFull(email)).slice(0, 12);
+  const attr = extractAttribution(body);
+  const saveAttempt = async (rec: Record<string, unknown>): Promise<void> => {
+    await putAttempt(emailsKV, attemptKey, rec);
+    const status = String(rec.status ?? 'desconocido').slice(0, 30);
+    const u = rec as { utm_source?: string; utm_medium?: string; utm_campaign?: string; utm_content?: string; utm_term?: string };
+    await guardarEventoD1(attemptDb, `cvat:${attemptTs}:${attemptTag}:${status}`, {
+      ts: new Date().toISOString(),
+      event: 'cv_attempt',
+      utm_source: u.utm_source, utm_medium: u.utm_medium, utm_campaign: u.utm_campaign,
+      utm_content: u.utm_content, utm_term: u.utm_term,
+      referrer, country: request.headers.get('cf-ipcountry') ?? undefined, // país de la IP (Cloudflare), como en eventos
+      ...attr,
+      extra: {
+        status,
+        pais_form: country ? country.slice(0, 40) : undefined, // país elegido en el formulario
+        cv_length: cv.length,
+        output_tokens: typeof rec.outputTokens === 'number' ? rec.outputTokens : undefined,
+        intento: attemptTag, // une started con su resultado; es un prefijo de 12 caracteres del hash, no el correo
+      },
+    });
+  };
+  await saveAttempt({ ...attemptBase, status: 'started' });
 
   // Build user message
   const userMessage = `País del candidato: ${country || 'no especificado'}\n\n--- INICIO DEL CV ---\n${cv}\n--- FIN DEL CV ---\n\nGenera el análisis ahora siguiendo exactamente el formato JSON especificado.`;
@@ -305,7 +342,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     } else {
       console.error('Unexpected error calling Anthropic', err);
     }
-    await putAttempt(emailsKV, attemptKey, {
+    await saveAttempt({
       ...attemptBase,
       status: 'llm_error',
       httpStatus: err instanceof AnthropicError ? err.status : undefined,
@@ -329,7 +366,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     parsed = JSON.parse(jsonString) as CVReviewResult;
   } catch (err) {
     console.error('LLM returned non-JSON:', jsonString.slice(0, 500));
-    await putAttempt(emailsKV, attemptKey, {
+    await saveAttempt({
       ...attemptBase,
       status: 'parse_error',
       outputTokens: completion.usage?.output_tokens,
@@ -352,7 +389,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     parsed.observaciones.length === 0
   ) {
     console.error('LLM returned malformed structure:', JSON.stringify(parsed).slice(0, 500));
-    await putAttempt(emailsKV, attemptKey, {
+    await saveAttempt({
       ...attemptBase,
       status: 'incomplete_result',
       outputTokens: completion.usage?.output_tokens,
@@ -384,10 +421,11 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
       ip,
       utms,
       referrer,
+      extractAttribution(body),
     ).catch((err) => console.error('storeEmail failed', err)),
   );
   waitUntil(
-    putAttempt(emailsKV, attemptKey, {
+    saveAttempt({
       ...attemptBase,
       status: 'ok',
       outputTokens: completion.usage?.output_tokens,

@@ -23,6 +23,7 @@
 
 import type { APIRoute } from 'astro';
 import { DRIP_STEPS } from '../../lib/drip';
+import { LeadAttribution, type AtribucionReport } from '../../lib/report-atribucion';
 
 export const prerender = false;
 
@@ -121,6 +122,15 @@ interface WeeklyReport {
   vacantes: VacantesStats | null;
   // Ventas de Hotmart por webhook (28 oct 2026) · D1 hotmart_eventos. Sin datos antes de activar el webhook.
   hotmart: HotmartStats | null;
+  // 30 oct 2026 (P2/P1/P3/P6): leads únicos con fuente, ventas Stripe+Hotmart unidas a lead, cohortes de valor.
+  // Ver src/lib/report-atribucion.ts para las definiciones.
+  atribucion: AtribucionReport | null;
+  // 30 oct 2026 (P6): tráfico excluido de todas las cuentas de este reporte.
+  trafico_excluido: {
+    eventos_internos_7d: number;     // eventos con interno=1 (?interno=1), guardados pero no contados
+    leads_internos_registros: number; // registros de EMAILS con interno=1, fuera de subscripciones/utm
+    eventos_bot_7d: number;          // eventos rechazados por user-agent de bot (contador evt-bot:)
+  };
   simulator: {
     sesiones_acumuladas: number;
     esta_semana: number;
@@ -281,6 +291,11 @@ interface EmailRec {
   utm_campaign?: string;
   utm_content?: string;
   utm_term?: string;
+  // 30 oct 2026 (P2)
+  referrer?: string;
+  interno?: boolean;
+  aid?: string;
+  ft?: { utm_source?: string; utm_campaign?: string; ref_host?: string };
 }
 
 interface QuizRec {
@@ -778,7 +793,8 @@ interface HotmartStats {
   otros_estados_7d: Record<string, number>;   // ventas aprobadas que en la semana pasaron a otro estado (cancelada, disputa...)
   ingreso_productor_7d: Record<string, number>; // comisión del productor por moneda
   por_libro_7d: Record<string, number>;
-  por_origen_7d: Record<string, number>;      // sck sin el sufijo |libro; 'afiliado' y 'sin_sck' aparte
+  por_origen_7d: Record<string, number>;      // sck viejo: antes de "|"; sck nuevo: medium (antes del primer "-")
+  por_sck_7d: Record<string, number>;         // 30 oct 2026: sck completo (p. ej. drip-cv-d12, post-qa-embudo)
   con_afiliado_7d: number;
   sin_afiliado_7d: number;
   por_afiliado_7d: Array<{ afiliado: string; ventas: number; comision: number; moneda: string | null }>;
@@ -836,6 +852,7 @@ async function buildHotmart(db: D1Database, weekAgo: number, twoWeeksAgo: number
     ingreso_productor_7d: {},
     por_libro_7d: {},
     por_origen_7d: {},
+    por_sck_7d: {},
     con_afiliado_7d: 0,
     sin_afiliado_7d: 0,
     por_afiliado_7d: [],
@@ -857,8 +874,11 @@ async function buildHotmart(db: D1Database, weekAgo: number, twoWeeksAgo: number
       const m = t.moneda_c ?? t.moneda ?? 'sin_moneda';
       out.ingreso_productor_7d[m] = +((out.ingreso_productor_7d[m] ?? 0) + t.comision_productor).toFixed(2);
     }
-    const origen = t.afiliado ? 'afiliado' : t.sck ? t.sck.split('|')[0] : 'sin_sck';
+    // sck viejo "<fuente>|<campaña>" → fuente; nuevo (30 oct 2026) "<medium>-<campaña>-<content>" → medium.
+    const origen = t.afiliado ? 'afiliado' : t.sck ? (t.sck.includes('|') ? t.sck.split('|')[0] : t.sck.split('-')[0]) : 'sin_sck';
     out.por_origen_7d[origen] = (out.por_origen_7d[origen] ?? 0) + 1;
+    const sckCompleto = t.afiliado ? 'afiliado' : t.sck ?? 'sin_sck';
+    out.por_sck_7d[sckCompleto] = (out.por_sck_7d[sckCompleto] ?? 0) + 1;
     if (t.afiliado) {
       out.con_afiliado_7d++;
       const moneda = t.moneda_c_afiliado ?? t.moneda;
@@ -1115,8 +1135,19 @@ export const GET: APIRoute = async ({ url, locals }) => {
       total_records: 0,
     };
 
+    // 30 oct 2026: atribución por lead único (incluye sim:) y exclusión de tráfico interno.
+    const atrib = new LeadAttribution();
+    let leadsInternosRegistros = 0;
+
     if (emailsKv) {
       await walkKv<EmailRec>(emailsKv, '', (rec, key) => {
+        if (key.startsWith('email:') || key.startsWith('quiz:') || key.startsWith('sim:')) {
+          atrib.add({ ...rec, key });
+          if (rec.interno === true) {
+            leadsInternosRegistros++;
+            return; // tráfico propio de Oscar: fuera de todas las cuentas de abajo
+          }
+        }
         // Filtrar solo registros de suscripción
         const isEmail = key.startsWith('email:');   // CV Review lead
         const isQuiz = key.startsWith('quiz:');     // Quiz gate/complete
@@ -1367,6 +1398,8 @@ export const GET: APIRoute = async ({ url, locals }) => {
       outbound_clicks_7d: {} as Record<string, number>,
       next_step_clicks_7d: {} as Record<string, number>,
       page_views_7d: { 'quiz-rol': 0, 'revisar-cv': 0, blog: 0, vacantes: 0, libro: 0, con_utm: 0 },
+      eventos_internos_7d: 0,
+      eventos_bot_7d: 0,
     };
     const campaignWindowStart = now - 30 * 24 * 60 * 60 * 1000;
 
@@ -1383,9 +1416,15 @@ export const GET: APIRoute = async ({ url, locals }) => {
           page?: 'quiz-rol' | 'revisar-cv' | 'blog' | 'vacantes' | 'libro';
           product?: string;
           path?: string;
+          interno?: boolean;
         }>(simMetricsKv, 'evt:', (rec) => {
           const tsMs = rec.ts ? Date.parse(rec.ts) : NaN;
           if (isNaN(tsMs) || tsMs > now) return;
+          // 30 oct 2026 (P6): eventos de navegadores marcados con ?interno=1 no cuentan.
+          if (rec.interno === true) {
+            if (tsMs >= weekAgo) funnel.eventos_internos_7d++;
+            return;
+          }
           // Vacantes y landings de libros: antes del lanzamiento el tráfico fue de pruebas internas.
           const esLanzamiento = (rec.event === 'page_viewed' && (rec.page === 'vacantes' || rec.page === 'libro'))
             || (rec.event === 'book_clicked' && /^\/(libros|vacantes)\b/.test(rec.path ?? ''));
@@ -1464,6 +1503,15 @@ export const GET: APIRoute = async ({ url, locals }) => {
       } catch (err) {
         console.warn('weekly-report: funnel walk failed', err);
       }
+      // 30 oct 2026 (P6): eventos de bots rechazados, contador diario evt-bot:AAAA-MM-DD.
+      for (let d = 0; d < 7; d++) {
+        const dia = new Date(now - d * 86_400_000).toISOString().slice(0, 10);
+        try {
+          funnel.eventos_bot_7d += parseInt((await simMetricsKv.get(`evt-bot:${dia}`)) ?? '0', 10) || 0;
+        } catch {
+          /* best-effort */
+        }
+      }
     }
 
     // ── 4. Simulator (D1) ─────────────────────────────────────────
@@ -1540,6 +1588,12 @@ export const GET: APIRoute = async ({ url, locals }) => {
       console.error('hotmart stats failed', err);
       return null;
     }) : null;
+
+    // ── 4e. Atribución de leads y ventas (30 oct 2026) ───────────
+    const atribucion = await atrib.build(simDb, now).catch((err) => {
+      console.error('atribucion failed', err);
+      return null;
+    });
 
     // ── 5. Email health (Postmark Analytics API) ─────────────────
     // Consulta por tag los últimos 30 días. Data útil solo si Open+Link
@@ -1751,6 +1805,12 @@ export const GET: APIRoute = async ({ url, locals }) => {
       market_survey,
       vacantes,
       hotmart,
+      atribucion,
+      trafico_excluido: {
+        eventos_internos_7d: funnel.eventos_internos_7d,
+        leads_internos_registros: leadsInternosRegistros,
+        eventos_bot_7d: funnel.eventos_bot_7d,
+      },
       simulator: {
         sesiones_acumuladas: sim.total,
         esta_semana: sim.cur,
@@ -1793,6 +1853,26 @@ export const GET: APIRoute = async ({ url, locals }) => {
       traffic,
       gsc,
     };
+
+    // 30 oct 2026: historia permanente. Cada corrida guarda el JSON completo en D1 `reportes_semanales`
+    // (migrations/0011), incluidas las métricas de Postmark que Postmark borra a los 45 días.
+    // ?guardar=0 lo omite (pruebas). Best-effort: si falla, el reporte se devuelve igual.
+    if (simDb && url.searchParams.get('guardar') !== '0') {
+      try {
+        const json = JSON.stringify(report);
+        const jsonBytes = new TextEncoder().encode(json).length;
+        if (jsonBytes < 1_900_000) {
+          await simDb
+            .prepare('INSERT INTO reportes_semanales (generado, semana_inicio, semana_fin, bytes, json) VALUES (?, ?, ?, ?, ?)')
+            .bind(nowIso, weekAgoIso, nowIso, jsonBytes, json)
+            .run();
+        } else {
+          console.warn('weekly-report: JSON demasiado grande para D1, no se guardó', jsonBytes);
+        }
+      } catch (err) {
+        console.warn('weekly-report: no se guardó en reportes_semanales (¿falta migración 0011?)', err);
+      }
+    }
 
     return jsonResponse(report, 200);
   } catch (err) {

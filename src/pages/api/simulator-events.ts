@@ -16,13 +16,16 @@
  *   evt:{iso_ts}:{event_name}:{rand}
  *
  * PII: cero. Se guarda event, plan (si aplica), utm_*, country
- * (Cloudflare header), y timestamp. Ni email ni IP.
+ * (Cloudflare header), y timestamp. Ni email ni IP. Desde el 30 oct 2026 también
+ * aid (UUID anónimo del navegador), ft/lt (primer y último toque) e interno.
  *
  * Auth: público (POST, client-side). El endpoint tiene throttle simple
  * por IP para evitar flood (max 60 eventos/min por IP).
  */
 
 import type { APIRoute } from 'astro';
+import { extractAttribution, isBotUserAgent } from '../../lib/attribution';
+import { guardarEventoD1 } from '../../lib/eventos-d1';
 
 export const prerender = false;
 
@@ -52,6 +55,11 @@ interface EventBody {
   utm_content?: string;
   utm_term?: string;
   referrer?: string;
+  // 30 oct 2026 (P2/P6): id anónimo del navegador, primer/último toque y bandera de tráfico interno.
+  aid?: string;
+  ft?: unknown;
+  lt?: unknown;
+  interno?: boolean;
 }
 
 const ALLOWED_EVENTS = new Set([
@@ -135,6 +143,19 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     // rate limit soft-fail; seguimos
   }
 
+  // 30 oct 2026 (P6): bots, previsualizadores y navegadores sin cabeza no se guardan como evento;
+  // solo suben un contador diario (evt-bot:AAAA-MM-DD, sin TTL: es un número por día) que el reporte semanal suma.
+  if (isBotUserAgent(request.headers.get('user-agent'))) {
+    const botKey = `evt-bot:${new Date().toISOString().slice(0, 10)}`;
+    try {
+      const n = parseInt((await kv.get(botKey)) ?? '0', 10) || 0;
+      await kv.put(botKey, String(n + 1));
+    } catch {
+      // contador best-effort
+    }
+    return jsonResponse({ ok: true, stored: false, reason: 'bot' });
+  }
+
   const country = request.headers.get('cf-ipcountry') ?? undefined;
   const ts = new Date().toISOString();
   const rand = Math.random().toString(36).slice(2, 8);
@@ -156,6 +177,8 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     utm_term: truncate(body.utm_term),
     referrer: truncate(body.referrer),
     country,
+    // 30 oct 2026 (P2/P6): validados en lib/attribution (aid UUID, ft/lt con allow-list, interno booleano).
+    ...extractAttribution(body),
   };
 
   try {
@@ -165,6 +188,9 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     console.error('simulator-events:kv-put-failed', err);
     return jsonResponse({ error: 'store_failed' }, 500);
   }
+
+  // 30 oct 2026: copia permanente en D1 `eventos` (misma llave que KV; best-effort, no cambia la respuesta).
+  await guardarEventoD1(env.SIMULATOR_METRICS_DB as D1Database | undefined, key, record);
 
   return jsonResponse({ ok: true, stored: true });
 };

@@ -1023,6 +1023,8 @@ const QUESTIONS = [
       stage: 'gate',
       // UTM attribution (P1 sprint 2026-08-18): window.__utm lo llena BaseLayout.
       ...(window.__utm || {}),
+      // 30 oct 2026 (P2): aid, primer/último toque y bandera interna.
+      ...(window.__attr ? window.__attr() : {}),
     };
     if (!payload.consent) {
       alert('Necesitamos tu consentimiento para enviarte los emails.');
@@ -1131,6 +1133,7 @@ const QUESTIONS = [
           quizVersion: QUIZ_VERSION,
           // UTM attribution (P1 sprint 2026-08-18).
           ...(window.__utm || {}),
+          ...(window.__attr ? window.__attr() : {}),
         }),
       });
     } catch (err) {

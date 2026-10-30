@@ -23,6 +23,7 @@
  */
 
 import type { APIRoute } from 'astro';
+import { extractAttribution } from '../../lib/attribution';
 
 export const prerender = false;
 
@@ -32,6 +33,11 @@ interface CheckoutRequest {
   plan: PaidPlan;
   email: string;
   name?: string;
+  // 30 oct 2026 (P1/P2): fuente de la venta. Se validan en lib/attribution y viajan en metadata.
+  aid?: string;
+  ft?: unknown;
+  lt?: unknown;
+  interno?: boolean;
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -122,6 +128,29 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const priceId = body.plan === 'basico' ? priceBasico : pricePremium;
   const firstName = (body.name ?? '').trim().split(/\s+/)[0] || '';
 
+  // 30 oct 2026 (P1): fuente en metadata para que el webhook la escriba en D1 `ventas`.
+  // Stripe: máx. 50 llaves y 500 caracteres por valor; los valores ya vienen recortados a 100.
+  // Las llaves vacías no se mandan (Stripe guarda '' como valor).
+  const attr = extractAttribution(body);
+  const fuente: Record<string, string> = {};
+  const put = (k: string, v: string | undefined) => {
+    if (v) fuente[k] = v.slice(0, 200);
+  };
+  put('aid', attr.aid);
+  put('ft_source', attr.ft?.utm_source);
+  put('ft_medium', attr.ft?.utm_medium);
+  put('ft_campaign', attr.ft?.utm_campaign);
+  put('ft_content', attr.ft?.utm_content);
+  put('ft_ref_host', attr.ft?.ref_host);
+  put('ft_landing', attr.ft?.landing_path);
+  put('ft_ts', attr.ft?.ts);
+  put('lt_source', attr.lt?.utm_source);
+  put('lt_medium', attr.lt?.utm_medium);
+  put('lt_campaign', attr.lt?.utm_campaign);
+  put('lt_content', attr.lt?.utm_content);
+  put('lt_ref_host', attr.lt?.ref_host);
+  if (attr.interno) fuente.interno = '1';
+
   try {
     const session = (await stripe(stripeKey, 'checkout/sessions', 'POST', {
       mode: 'payment', // one-shot, no subscription
@@ -132,6 +161,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         plan: body.plan,
         source: 'simulator_landing',
         first_name: firstName,
+        ...fuente,
       },
       // Success page pasa session_id vía query; la página `/gracias` puede pintarlo.
       success_url:

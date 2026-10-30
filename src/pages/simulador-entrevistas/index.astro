@@ -325,6 +325,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           utm_content: utm.utm_content,
           utm_term: utm.utm_term,
           referrer: document.referrer || undefined,
+          // 30 oct 2026 (P2): aid, primer/último toque y bandera interna (BaseLayout).
+          ...((window as unknown as { __attr?: () => Record<string, unknown> }).__attr?.() ?? {}),
         };
         const body = JSON.stringify(payload);
         // sendBeacon si está disponible (mejor para eventos al descargar página)
@@ -493,7 +495,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             const res = await fetch('/api/simulator-subscribe', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ name, email, consent, plan: 'gratis', ...utm }),
+              body: JSON.stringify({ name, email, consent, plan: 'gratis', ...utm, ...((window as unknown as { __attr?: () => Record<string, unknown> }).__attr?.() ?? {}) }),
             });
             const data = (await res.json()) as { ok?: boolean; message?: string; error?: string };
             if (res.ok && data.ok) {
@@ -520,7 +522,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             const res = await fetch('/api/simulator-checkout', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ plan, email, name }),
+              body: JSON.stringify({ plan, email, name, ...((window as unknown as { __attr?: () => Record<string, unknown> }).__attr?.() ?? {}) }),
             });
             const data = (await res.json()) as { ok?: boolean; url?: string; error?: string };
             if (res.ok && data.ok && data.url) {
