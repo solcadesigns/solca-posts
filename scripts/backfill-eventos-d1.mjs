@@ -42,7 +42,7 @@ function kvBulkGet(binding, keys) {
     const f = join(OUT, '.bulk-keys.json');
     writeFileSync(f, JSON.stringify(keys.slice(i, i + 100)));
     const raw = wrangler(['kv', 'bulk', 'get', f, '--binding', binding, '--remote']);
-    const parsed = JSON.parse(raw.slice(raw.indexOf('{')));
+    const parsed = JSON.parse(raw.slice(raw.indexOf('\n{') + 1, raw.lastIndexOf('}') + 1));
     for (const [k, v] of Object.entries(parsed)) {
       // La salida trae el valor como string o como { value, metadata } según la versión de wrangler.
       const val = v && typeof v === 'object' && 'value' in v ? v.value : v;
