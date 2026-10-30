@@ -161,7 +161,7 @@ Hice un curso de CV pharma con:
 - Plantillas ATS-friendly.
 - Sección sobre entrevistas y estrategias para responder.
 
-Precio de lanzamiento: MXN $999 (regular $1,499). Garantía 30 días completos:
+Precio: MXN $999.92 con IVA incluido. Garantía 30 días completos:
 si el curso no te sirve, te devuelvo el dinero sin preguntas.
 
 CV para Ciencias Biológicas y de la Salud → https://go.hotmart.com/B104495115T
@@ -305,8 +305,8 @@ con:
 - Módulo de aplicaciones para vacantes.
 - Las herramientas de IA que se utilizan en el rol.
 
-Precio de lanzamiento: MXN $599 (regular $799). En Hotmart, entrega inmediata,
-garantía 7 días.
+Precio: MXN $599 con IVA incluido. En Hotmart, entrega inmediata,
+garantía 15 días.
 
 {{site_origin}}/#libros
 
