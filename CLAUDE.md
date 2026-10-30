@@ -10,4 +10,6 @@ Este archivo solo indica qué leer y en qué orden. El contenido vive en cada ar
 4. `_docs/NEWSLETTER_TOPICS_REGISTRY.md`: newsletter y cadencia de vacantes.
 5. `README.md`: el sitio.
 
+Diagnóstico de consultoría vigente (prioridades P1-P5 con métricas): leer primero `../consultoria/2026-10-30/CORRECCIONES-OSCAR.md` y después `../consultoria/2026-10-30/RESUMEN.md`.
+
 Libro más reciente: `../libro4/README.md`. Contexto transversal: skill `oscar-context`.

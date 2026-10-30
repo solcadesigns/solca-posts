@@ -284,9 +284,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
     };
   }
 
-  // Marcar el evento antes de escribir créditos: un reintento por error posterior no los duplica.
-  await dedupKv.put(dedupKey, '1', { expirationTtl: 60 * 60 * 24 * 7 });
-
   await creditsKv.put(creditsKey, JSON.stringify(record), {
     expirationTtl: 60 * 60 * 24 * cfg.vigenciaDias, // TTL alineado con vigencia declarada
   });
@@ -332,6 +329,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
   } catch (err) {
     console.error('[stripe-webhook] stripe_session index write failed:', err);
   }
+
+  // Marcar dedup ANTES de enviar email (si el email falla no queremos duplicar créditos).
+  // Si falla la escritura de créditos, el evento queda sin marcar y Stripe reintenta.
+  await dedupKv.put(dedupKey, '1', { expirationTtl: 60 * 60 * 24 * 7 });
 
   // Email de confirmación via Postmark.
   if (postmarkToken) {
