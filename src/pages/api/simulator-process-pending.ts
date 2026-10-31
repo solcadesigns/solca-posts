@@ -33,6 +33,11 @@ import { sendEmail, sendEmailWithTemplate, PostmarkError } from '../../lib/postm
 import { writeMetricsToD1 } from '../../lib/simulator-metrics-writer';
 import { getRoleCta } from '../../lib/simulator-defaults';
 import type { SessionState, ChatMessage, FinalReport } from '../../lib/simulator-types';
+import {
+  buildAsyncFinalMetrics,
+  EXISTING_SESSION_ROW_SQL,
+  type ExistingSessionRow,
+} from '../../lib/simulator-async-metrics';
 
 export const prerender = false;
 
@@ -335,6 +340,24 @@ function mergeChunks(state: SessionState): FinalReport | null {
 }
 
 /**
+ * Métricas finales del camino async → D1, con el mismo writer (UPSERT por
+ * session_id + borrar/reinsertar tags) que usa el camino sync. Las reglas de
+ * mapeo viven en src/lib/simulator-async-metrics.ts (compartidas con el
+ * script de respaldo).
+ */
+async function writeAsyncFinalMetrics(db: D1Database, state: SessionState): Promise<void> {
+  const existing = await db
+    .prepare(EXISTING_SESSION_ROW_SQL)
+    .bind(state.sessionId)
+    .first<ExistingSessionRow>();
+  await writeMetricsToD1(db, {
+    sessionId: state.sessionId,
+    metrics: buildAsyncFinalMetrics(state, existing ?? null),
+    hasCvSummary: Boolean(state.cvSummary),
+  });
+}
+
+/**
  * Procesa 1 pending: hace 1 chunk por corrida para no exceder budget de time.
  * Si aún faltan más chunks, deja progreso en el state para que la próxima
  * corrida del cron continúe.
@@ -397,10 +420,6 @@ async function processOneChunk(
     });
     await kv.delete(pendingKey);
 
-    // Escribir métricas a D1 si el summary trae metrics_anonymous (chunk summary lo omite,
-    // pero podemos derivar métricas mínimas de scores promedio)
-    // Se omite por brevedad — puede agregarse después.
-
     // Enviar email al usuario
     // v3 (11 sept 2026):
     //  - access_code embebido en URL (auto-login al panel · limpia URL en JS)
@@ -448,6 +467,18 @@ async function processOneChunk(
       } catch (err) {
         console.error(`[pending-cron] report email failed ${pending.sessionId}:`, err instanceof PostmarkError ? err.status : String(err));
       }
+    }
+
+    // Métricas finales a D1 (30 oct 2026). Antes se omitía y las sesiones
+    // async quedaban con la fila inicial y scores NULL. Best-effort y DESPUÉS
+    // del correo: si D1 falla, el reporte y el email ya salieron.
+    try {
+      const db = env.SIMULATOR_METRICS_DB as D1Database | undefined;
+      if (db) {
+        await writeAsyncFinalMetrics(db, state);
+      }
+    } catch (writeErr) {
+      console.error(`[pending-cron] D1 final metrics write failed ${pending.sessionId}:`, writeErr);
     }
 
     return { ok: true, status: 'ready · email sent' };

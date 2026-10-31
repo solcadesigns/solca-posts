@@ -341,7 +341,7 @@ async function computeStats(db: D1Database): Promise<SimulatorStats> {
     .prepare(
       `SELECT etapa,
               AVG(score_tecnico) AS tec, AVG(score_estructura) AS est,
-              AVG(score_especificidad) AS esp, COUNT(*) AS n
+              AVG(score_especificidad) AS esp, COUNT(score_tecnico) AS n
        FROM sessions
        WHERE completed = 1
        GROUP BY etapa`,
