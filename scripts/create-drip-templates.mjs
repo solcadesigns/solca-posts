@@ -108,7 +108,7 @@ Hice un curso de CV pharma con:
 
 Precio: MXN $999.92 con IVA incluido. Garantía 30 días completos: si el curso no te sirve, te devuelvo el dinero sin preguntas.
 
-CV para Ciencias Biológicas y de la Salud → https://go.hotmart.com/B104495115T
+CV para Ciencias Biológicas y de la Salud → https://go.hotmart.com/B104495115T?src=drip-cv-d12
 
 Oscar
 
