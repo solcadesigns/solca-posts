@@ -1068,6 +1068,8 @@ import MarketSurvey from '../../components/MarketSurvey.astro';
             cvSummary: parsedCvSummary || undefined,
             betaCode,
             email,
+            // 2 nov 2026: bandera interna (?interno=1) para marcar la sesión como prueba en D1.
+            interno: (window as unknown as { __interno?: boolean }).__interno ? true : undefined,
           }),
         });
 

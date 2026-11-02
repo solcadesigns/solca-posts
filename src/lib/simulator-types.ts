@@ -252,6 +252,9 @@ export interface SessionState {
   // Email plano — necesario para dispatch de email cuando reporte esté listo.
   // Se guarda solo si el usuario proveyó email (paywall Stripe o freemium landing).
   userEmail?: string;
+  // 2 nov 2026: 1 = sesión de prueba (bandera interna del navegador o correo de prueba).
+  // Se escribe en sessions.es_prueba; las estadísticas la excluyen. Nunca se guarda el correo por esto.
+  esPrueba?: 0 | 1;
   // Reporte async v0.8 (3 sept 2026): estado del reporte generado por chunks.
   //  - 'queued': encolado en pending, cron aún no procesó
   //  - 'processing': chunks parciales completados, faltan más
@@ -403,6 +406,7 @@ export interface SessionEndpointRequest {
   userAnswerSeconds?: number; // opcional pero recomendado en 'next'
   betaCode?: string; // opcional · valida acceso si está presente (legacy)
   email?: string; // opcional · si viene, se hace lookup en SIMULATOR_CREDITS
+  interno?: boolean | number | string; // opcional · bandera interna del navegador (window.__interno), solo en 'init'
   sessionId?: string; // requerido para 'resume' y 'retry_report'
 }
 

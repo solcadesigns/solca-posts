@@ -23,6 +23,7 @@ import { buildSystemPrompt } from '../../lib/simulator-prompt';
 import { inferRole, getStageInfo, getRoleCta } from '../../lib/simulator-defaults';
 import { parseFinalOutput } from '../../lib/simulator-metrics-parser';
 import { writeMetricsToD1, writeSessionInitialToD1 } from '../../lib/simulator-metrics-writer';
+import { esBanderaInterna, esCorreoDePrueba } from '../../lib/simulator-test-sessions';
 import { sendEmail, PostmarkError } from '../../lib/postmark';
 import type {
   CandidateProfile,
@@ -493,6 +494,12 @@ async function handleInit(
     // email plano guardado en el beta record. Permite que el cron async envíe
     // el reporte por Postmark cuando el sync path falla.
     userEmail: email || paywallCodeRecord?.email || undefined,
+    // 2 nov 2026: sesión de prueba si el navegador trae la bandera interna (?interno=1) o el correo
+    // (del body o del código) es de prueba. Solo se guarda la marca, nunca el correo.
+    esPrueba:
+      esBanderaInterna(body.interno) || esCorreoDePrueba(email) || esCorreoDePrueba(paywallCodeRecord?.email)
+        ? 1
+        : undefined,
   };
 
   const messages = buildMessagesFromState(state);
@@ -694,6 +701,7 @@ async function trySyncFinalReport(
             sessionId: state.sessionId,
             metrics: parsed.metricsAnonymous,
             hasCvSummary: Boolean(state.cvSummary),
+            esPrueba: state.esPrueba,
           });
         }
       } catch (writeErr) {
@@ -850,6 +858,7 @@ async function handleNext(
           sesionDuracionTotalSeg,
           respuestaPromedioSeg,
           hasCvSummary: Boolean(cvSummary),
+          esPrueba: state.esPrueba,
         });
       }
     } catch (initErr) {

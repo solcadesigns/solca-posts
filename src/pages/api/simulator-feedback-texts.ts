@@ -16,6 +16,7 @@
  */
 
 import type { APIRoute } from 'astro';
+import { filtroSesionesReales } from '../../lib/simulator-test-sessions';
 
 export const prerender = false;
 
@@ -67,11 +68,14 @@ export const GET: APIRoute = async ({ url, locals }) => {
   }
 
   try {
+    // 2 nov 2026: fuera el feedback de sesiones de prueba (es_prueba <> 0). Tolerante a la migración 0012.
+    const f = await filtroSesionesReales(db);
     const result = await db
       .prepare(
         `SELECT session_id, submitted_at, realismo, utilidad, facilidad,
                 pago_disposicion, sorpresa, mejora
          FROM beta_feedback
+         WHERE ${f.ligadas}
          ORDER BY submitted_at DESC`
       )
       .all();

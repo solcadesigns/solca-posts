@@ -18,6 +18,7 @@
  */
 
 import type { APIRoute } from 'astro';
+import { contarSesionesPrueba, filtroSesionesReales, type ConteoSesionesPrueba } from '../../lib/simulator-test-sessions';
 
 export const prerender = false;
 
@@ -39,6 +40,8 @@ interface SimulatorStats {
   generated_at: string;
   range: { earliest_ts: number | null; latest_ts: number | null };
   total_sessions: number;
+  // 2 nov 2026: sesiones con es_prueba <> 0, fuera de todas las cifras. null si la migración 0012 no está aplicada.
+  sesiones_prueba_excluidas: ConteoSesionesPrueba | null;
   // 1. Uso del producto
   uso: {
     iniciadas: number;
@@ -101,6 +104,7 @@ function emptyStats(): SimulatorStats {
     generated_at: new Date().toISOString(),
     range: { earliest_ts: null, latest_ts: null },
     total_sessions: 0,
+    sesiones_prueba_excluidas: null,
     uso: {
       iniciadas: 0,
       completadas: 0,
@@ -162,6 +166,9 @@ function rowsToTopTags(rows: Array<Record<string, unknown>>): TopTag[] {
 
 async function computeStats(db: D1Database): Promise<SimulatorStats> {
   const stats = emptyStats();
+  // 2 nov 2026: solo sesiones reales (es_prueba = 0). Tolerante a la migración 0012 sin aplicar.
+  const f = await filtroSesionesReales(db);
+  stats.sesiones_prueba_excluidas = await contarSesionesPrueba(db, f);
 
   // ───── Totals & rango temporal ─────
   const totalsRow = await db
@@ -173,7 +180,8 @@ async function computeStats(db: D1Database): Promise<SimulatorStats> {
         AVG(respuesta_promedio_seg) AS resp_avg,
         MIN(ts) AS earliest,
         MAX(ts) AS latest
-      FROM sessions`,
+      FROM sessions
+      WHERE ${f.sesiones}`,
     )
     .first<{
       total: number;
@@ -201,7 +209,7 @@ async function computeStats(db: D1Database): Promise<SimulatorStats> {
 
   // ───── 1. Uso del producto ─────
   const etapaRows = await db
-    .prepare('SELECT etapa, COUNT(*) AS n FROM sessions GROUP BY etapa')
+    .prepare(`SELECT etapa, COUNT(*) AS n FROM sessions WHERE ${f.sesiones} GROUP BY etapa`)
     .all();
   stats.uso.por_etapa = rowsToDistribution(etapaRows.results as Array<Record<string, unknown>>, 'etapa');
 
@@ -210,6 +218,7 @@ async function computeStats(db: D1Database): Promise<SimulatorStats> {
     .prepare(
       `SELECT strftime('%Y-W%W', ts / 1000, 'unixepoch') AS semana, COUNT(*) AS n
        FROM sessions
+       WHERE ${f.sesiones}
        GROUP BY semana
        ORDER BY semana DESC
        LIMIT 12`,
@@ -228,7 +237,7 @@ async function computeStats(db: D1Database): Promise<SimulatorStats> {
         AVG(score_especificidad) AS esp_avg, COUNT(score_especificidad) AS esp_n,
         AVG(alertas_count) AS alertas_avg
       FROM sessions
-      WHERE completed = 1`,
+      WHERE completed = 1 AND ${f.sesiones}`,
     )
     .first<{
       tec_avg: number | null; tec_n: number;
@@ -244,7 +253,7 @@ async function computeStats(db: D1Database): Promise<SimulatorStats> {
   }
 
   const matchRows = await db
-    .prepare('SELECT rol_y_match, COUNT(*) AS n FROM sessions WHERE rol_y_match IS NOT NULL GROUP BY rol_y_match')
+    .prepare(`SELECT rol_y_match, COUNT(*) AS n FROM sessions WHERE rol_y_match IS NOT NULL AND ${f.sesiones} GROUP BY rol_y_match`)
     .all();
   stats.calidad.rol_y_match = rowsToDistribution(matchRows.results as Array<Record<string, unknown>>, 'rol_y_match');
 
@@ -252,7 +261,7 @@ async function computeStats(db: D1Database): Promise<SimulatorStats> {
     .prepare(
       `SELECT tag_value, COUNT(*) AS n
        FROM session_tags
-       WHERE tag_type = 'vocab_ausente'
+       WHERE tag_type = 'vocab_ausente' AND ${f.ligadas}
        GROUP BY tag_value
        ORDER BY n DESC
        LIMIT 10`,
@@ -264,7 +273,7 @@ async function computeStats(db: D1Database): Promise<SimulatorStats> {
     .prepare(
       `SELECT tag_value, COUNT(*) AS n
        FROM session_tags
-       WHERE tag_type = 'pregunta_reprobada'
+       WHERE tag_type = 'pregunta_reprobada' AND ${f.ligadas}
        GROUP BY tag_value
        ORDER BY n DESC
        LIMIT 10`,
@@ -276,7 +285,7 @@ async function computeStats(db: D1Database): Promise<SimulatorStats> {
     .prepare(
       `SELECT tag_value, COUNT(*) AS n
        FROM session_tags
-       WHERE tag_type = 'gap'
+       WHERE tag_type = 'gap' AND ${f.ligadas}
        GROUP BY tag_value
        ORDER BY n DESC
        LIMIT 10`,
@@ -290,7 +299,7 @@ async function computeStats(db: D1Database): Promise<SimulatorStats> {
     .prepare(
       `SELECT COUNT(DISTINCT session_id) AS n
        FROM session_tags
-       WHERE tag_type = 'vocab_ausente' AND tag_value LIKE 'ICH-GCP%'`,
+       WHERE tag_type = 'vocab_ausente' AND tag_value LIKE 'ICH-GCP%' AND ${f.ligadas}`,
     )
     .first<{ n: number }>();
   stats.editoriales.pct_sin_ich_gcp =
@@ -300,14 +309,14 @@ async function computeStats(db: D1Database): Promise<SimulatorStats> {
     .prepare(
       `SELECT COUNT(DISTINCT session_id) AS n
        FROM session_tags
-       WHERE tag_type = 'gap' AND (tag_value LIKE '%STAR%' OR tag_value LIKE '%star%')`,
+       WHERE tag_type = 'gap' AND (tag_value LIKE '%STAR%' OR tag_value LIKE '%star%') AND ${f.ligadas}`,
     )
     .first<{ n: number }>();
   stats.editoriales.pct_sin_star =
     stats.total_sessions > 0 && starRow ? +((starRow.n / stats.total_sessions) * 100).toFixed(1) : null;
 
   const areaRows = await db
-    .prepare('SELECT area_formacion, COUNT(*) AS n FROM sessions GROUP BY area_formacion ORDER BY n DESC')
+    .prepare(`SELECT area_formacion, COUNT(*) AS n FROM sessions WHERE ${f.sesiones} GROUP BY area_formacion ORDER BY n DESC`)
     .all();
   stats.editoriales.distribucion_area_formacion = rowsToDistribution(
     areaRows.results as Array<Record<string, unknown>>,
@@ -315,7 +324,7 @@ async function computeStats(db: D1Database): Promise<SimulatorStats> {
   );
 
   const expRows = await db
-    .prepare('SELECT anios_experiencia, COUNT(*) AS n FROM sessions GROUP BY anios_experiencia')
+    .prepare(`SELECT anios_experiencia, COUNT(*) AS n FROM sessions WHERE ${f.sesiones} GROUP BY anios_experiencia`)
     .all();
   stats.editoriales.distribucion_anios_experiencia = rowsToDistribution(
     expRows.results as Array<Record<string, unknown>>,
@@ -323,7 +332,7 @@ async function computeStats(db: D1Database): Promise<SimulatorStats> {
   );
 
   const paisRows = await db
-    .prepare('SELECT pais_inferido, COUNT(*) AS n FROM sessions WHERE pais_inferido IS NOT NULL GROUP BY pais_inferido')
+    .prepare(`SELECT pais_inferido, COUNT(*) AS n FROM sessions WHERE pais_inferido IS NOT NULL AND ${f.sesiones} GROUP BY pais_inferido`)
     .all();
   stats.editoriales.distribucion_pais = rowsToDistribution(
     paisRows.results as Array<Record<string, unknown>>,
@@ -332,7 +341,7 @@ async function computeStats(db: D1Database): Promise<SimulatorStats> {
 
   // ───── 4. Conversión y negocio ─────
   const cvRow = await db
-    .prepare('SELECT SUM(has_cv_summary) AS n_cv, COUNT(*) AS n_total FROM sessions')
+    .prepare(`SELECT SUM(has_cv_summary) AS n_cv, COUNT(*) AS n_total FROM sessions WHERE ${f.sesiones}`)
     .first<{ n_cv: number; n_total: number }>();
   stats.negocio.pct_con_cv_personalizado =
     cvRow && cvRow.n_total > 0 ? +((cvRow.n_cv / cvRow.n_total) * 100).toFixed(1) : null;
@@ -343,7 +352,7 @@ async function computeStats(db: D1Database): Promise<SimulatorStats> {
               AVG(score_tecnico) AS tec, AVG(score_estructura) AS est,
               AVG(score_especificidad) AS esp, COUNT(score_tecnico) AS n
        FROM sessions
-       WHERE completed = 1
+       WHERE completed = 1 AND ${f.sesiones}
        GROUP BY etapa`,
     )
     .all();
@@ -358,20 +367,20 @@ async function computeStats(db: D1Database): Promise<SimulatorStats> {
     };
   }
 
-  const focusRows = await db.prepare('SELECT focus, COUNT(*) AS n FROM sessions GROUP BY focus').all();
+  const focusRows = await db.prepare(`SELECT focus, COUNT(*) AS n FROM sessions WHERE ${f.sesiones} GROUP BY focus`).all();
   stats.negocio.distribucion_focus = rowsToDistribution(
     focusRows.results as Array<Record<string, unknown>>,
     'focus',
   );
 
-  const idiomaRows = await db.prepare('SELECT idioma, COUNT(*) AS n FROM sessions GROUP BY idioma').all();
+  const idiomaRows = await db.prepare(`SELECT idioma, COUNT(*) AS n FROM sessions WHERE ${f.sesiones} GROUP BY idioma`).all();
   stats.negocio.distribucion_idioma = rowsToDistribution(
     idiomaRows.results as Array<Record<string, unknown>>,
     'idioma',
   );
 
   const nPregRows = await db
-    .prepare('SELECT numero_preguntas, COUNT(*) AS n FROM sessions GROUP BY numero_preguntas')
+    .prepare(`SELECT numero_preguntas, COUNT(*) AS n FROM sessions WHERE ${f.sesiones} GROUP BY numero_preguntas`)
     .all();
   stats.negocio.distribucion_numero_preguntas = rowsToDistribution(
     nPregRows.results as Array<Record<string, unknown>>,
@@ -380,7 +389,7 @@ async function computeStats(db: D1Database): Promise<SimulatorStats> {
 
   // ───── 5. Demográficos ─────
   const demoRow = await db
-    .prepare('SELECT COUNT(*) AS n FROM sessions WHERE demographics_submitted_at IS NOT NULL')
+    .prepare(`SELECT COUNT(*) AS n FROM sessions WHERE demographics_submitted_at IS NOT NULL AND ${f.sesiones}`)
     .first<{ n: number }>();
   stats.demograficos.submitted_count = demoRow?.n ?? 0;
   stats.demograficos.submitted_pct =
@@ -389,7 +398,7 @@ async function computeStats(db: D1Database): Promise<SimulatorStats> {
       : null;
 
   const edadRows = await db
-    .prepare('SELECT edad_rango, COUNT(*) AS n FROM sessions WHERE edad_rango IS NOT NULL GROUP BY edad_rango')
+    .prepare(`SELECT edad_rango, COUNT(*) AS n FROM sessions WHERE edad_rango IS NOT NULL AND ${f.sesiones} GROUP BY edad_rango`)
     .all();
   stats.demograficos.distribucion_edad = rowsToDistribution(
     edadRows.results as Array<Record<string, unknown>>,
@@ -397,7 +406,7 @@ async function computeStats(db: D1Database): Promise<SimulatorStats> {
   );
 
   const generoRows = await db
-    .prepare('SELECT genero, COUNT(*) AS n FROM sessions WHERE genero IS NOT NULL GROUP BY genero')
+    .prepare(`SELECT genero, COUNT(*) AS n FROM sessions WHERE genero IS NOT NULL AND ${f.sesiones} GROUP BY genero`)
     .all();
   stats.demograficos.distribucion_genero = rowsToDistribution(
     generoRows.results as Array<Record<string, unknown>>,
@@ -408,7 +417,7 @@ async function computeStats(db: D1Database): Promise<SimulatorStats> {
     .prepare(
       `SELECT edad_rango, rol_y_match, COUNT(*) AS n
        FROM sessions
-       WHERE edad_rango IS NOT NULL AND rol_y_match IS NOT NULL
+       WHERE edad_rango IS NOT NULL AND rol_y_match IS NOT NULL AND ${f.sesiones}
        GROUP BY edad_rango, rol_y_match`,
     )
     .all();

@@ -354,6 +354,7 @@ async function writeAsyncFinalMetrics(db: D1Database, state: SessionState): Prom
     sessionId: state.sessionId,
     metrics: buildAsyncFinalMetrics(state, existing ?? null),
     hasCvSummary: Boolean(state.cvSummary),
+    esPrueba: state.esPrueba,
   });
 }
 

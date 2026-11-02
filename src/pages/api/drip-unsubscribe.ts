@@ -8,6 +8,10 @@
  * skipea a este lead. NO afecta welcomes ni broadcasts del blog — el lector
  * puede pedir salirse del drip sin perder Solca Insight.
  *
+ * Con `&scope=newsletter` (enlace "salir también del newsletter" de la página de
+ * confirmación, no del correo, para que los escáneres de enlaces no lo disparen)
+ * setea además `unsub:<email>:newsletter`, que `blog-broadcast.ts` excluye.
+ *
  * Auth: solo por HMAC firmado. Sin sesión, sin form. Un enlace de un clic.
  *
  * Responde HTML de confirmación (o error) porque el usuario aterriza aquí
@@ -67,6 +71,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
 
   const email = (url.searchParams.get('email') ?? '').trim().toLowerCase();
   const sig = url.searchParams.get('sig') ?? '';
+  const alsoNewsletter = url.searchParams.get('scope') === 'newsletter';
 
   if (!email || !EMAIL_RE.test(email)) {
     return htmlResponse(
@@ -97,10 +102,9 @@ export const GET: APIRoute = async ({ url, locals }) => {
   }
 
   try {
-    await kv.put(
-      `unsub:${email}:drip`,
-      JSON.stringify({ ts: new Date().toISOString(), via: 'drip-unsubscribe' }),
-    );
+    const value = JSON.stringify({ ts: new Date().toISOString(), via: 'drip-unsubscribe' });
+    await kv.put(`unsub:${email}:drip`, value);
+    if (alsoNewsletter) await kv.put(`unsub:${email}:newsletter`, value);
   } catch (err) {
     console.error('drip-unsubscribe KV put failed', err);
     return htmlResponse(
@@ -109,12 +113,23 @@ export const GET: APIRoute = async ({ url, locals }) => {
     );
   }
 
+  if (alsoNewsletter) {
+    return htmlResponse(
+      200,
+      page(
+        'Baja registrada',
+        'Listo. Ya no vas a recibir la secuencia de bienvenida ni el newsletter Solca Insight.',
+      ),
+    );
+  }
+
+  const newsletterHref = `/api/drip-unsubscribe?email=${encodeURIComponent(email)}&sig=${encodeURIComponent(sig)}&scope=newsletter`;
   return htmlResponse(
     200,
     page(
       'Baja registrada',
       `Listo. Ya no vas a recibir más emails de la secuencia de bienvenida.`,
-      `<p>Sigues suscrito al newsletter Solca Insight (los emails semanales del blog). Si también quieres salir de esa lista, contesta a cualquier newsletter con "unsub".</p>`,
+      `<p>Sigues suscrito al newsletter Solca Insight (los emails semanales del blog). Si también quieres salir de esa lista, <a href="${newsletterHref}">date de baja del newsletter aquí</a>.</p>`,
     ),
   );
 };

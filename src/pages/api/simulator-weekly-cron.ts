@@ -29,6 +29,7 @@
  */
 
 import type { APIRoute } from 'astro';
+import { contarSesionesPrueba, filtroSesionesReales, type ConteoSesionesPrueba } from '../../lib/simulator-test-sessions';
 
 export const prerender = false;
 
@@ -42,6 +43,8 @@ interface WeeklyDigest {
     completitud_pct: number | null;
     duracion_promedio_seg: number | null;
   };
+  // 2 nov 2026: sesiones de prueba de la ventana, fuera de todas las cifras. null si falta la migración 0012.
+  sesiones_prueba_excluidas: ConteoSesionesPrueba | null;
   scores: {
     tecnico: number | null;
     estructura: number | null;
@@ -106,6 +109,9 @@ function getIsoYearWeek(date: Date): { year: number; week: number } {
 }
 
 async function computeWeeklyDigest(db: D1Database, startMs: number, endMs: number): Promise<Omit<WeeklyDigest, 'generated_at' | 'week_iso' | 'range' | 'notas'>> {
+  // 2 nov 2026: solo sesiones reales (es_prueba = 0). Tolerante a la migración 0012 sin aplicar.
+  const f = await filtroSesionesReales(db);
+  const sesionesPruebaExcluidas = await contarSesionesPrueba(db, f, startMs, endMs);
   // Totales y duración
   const totals = await db
     .prepare(
@@ -114,7 +120,7 @@ async function computeWeeklyDigest(db: D1Database, startMs: number, endMs: numbe
         SUM(CASE WHEN completed = 1 THEN 1 ELSE 0 END) AS completadas,
         AVG(CASE WHEN completed = 1 THEN sesion_duracion_total_seg END) AS dur_avg
        FROM sessions
-       WHERE ts >= ? AND ts <= ?`,
+       WHERE ts >= ? AND ts <= ? AND ${f.sesiones}`,
     )
     .bind(startMs, endMs)
     .first<{ total: number; completadas: number; dur_avg: number | null }>();
@@ -125,7 +131,7 @@ async function computeWeeklyDigest(db: D1Database, startMs: number, endMs: numbe
       `SELECT AVG(score_tecnico) tec, AVG(score_estructura) est,
               AVG(score_especificidad) esp, AVG(alertas_count) alertas
        FROM sessions
-       WHERE ts >= ? AND ts <= ? AND completed = 1`,
+       WHERE ts >= ? AND ts <= ? AND ${f.sesiones} AND completed = 1`,
     )
     .bind(startMs, endMs)
     .first<{ tec: number | null; est: number | null; esp: number | null; alertas: number | null }>();
@@ -136,7 +142,7 @@ async function computeWeeklyDigest(db: D1Database, startMs: number, endMs: numbe
       `SELECT t.tag_value, COUNT(*) AS n
        FROM session_tags t
        JOIN sessions s ON s.session_id = t.session_id
-       WHERE t.tag_type = 'vocab_ausente' AND s.ts >= ? AND s.ts <= ?
+       WHERE t.tag_type = 'vocab_ausente' AND s.ts >= ? AND s.ts <= ? AND ${f.sesionesAlias}
        GROUP BY t.tag_value
        ORDER BY n DESC LIMIT 10`,
     )
@@ -148,7 +154,7 @@ async function computeWeeklyDigest(db: D1Database, startMs: number, endMs: numbe
       `SELECT t.tag_value, COUNT(*) AS n
        FROM session_tags t
        JOIN sessions s ON s.session_id = t.session_id
-       WHERE t.tag_type = 'pregunta_reprobada' AND s.ts >= ? AND s.ts <= ?
+       WHERE t.tag_type = 'pregunta_reprobada' AND s.ts >= ? AND s.ts <= ? AND ${f.sesionesAlias}
        GROUP BY t.tag_value
        ORDER BY n DESC LIMIT 10`,
     )
@@ -160,7 +166,7 @@ async function computeWeeklyDigest(db: D1Database, startMs: number, endMs: numbe
       `SELECT t.tag_value, COUNT(*) AS n
        FROM session_tags t
        JOIN sessions s ON s.session_id = t.session_id
-       WHERE t.tag_type = 'gap' AND s.ts >= ? AND s.ts <= ?
+       WHERE t.tag_type = 'gap' AND s.ts >= ? AND s.ts <= ? AND ${f.sesionesAlias}
        GROUP BY t.tag_value
        ORDER BY n DESC LIMIT 10`,
     )
@@ -171,7 +177,7 @@ async function computeWeeklyDigest(db: D1Database, startMs: number, endMs: numbe
     .prepare(
       `SELECT area_formacion, COUNT(*) AS n
        FROM sessions
-       WHERE ts >= ? AND ts <= ?
+       WHERE ts >= ? AND ts <= ? AND ${f.sesiones}
        GROUP BY area_formacion ORDER BY n DESC`,
     )
     .bind(startMs, endMs)
@@ -181,7 +187,7 @@ async function computeWeeklyDigest(db: D1Database, startMs: number, endMs: numbe
     .prepare(
       `SELECT rol_apuntado, COUNT(*) AS n
        FROM sessions
-       WHERE ts >= ? AND ts <= ?
+       WHERE ts >= ? AND ts <= ? AND ${f.sesiones}
        GROUP BY rol_apuntado ORDER BY n DESC`,
     )
     .bind(startMs, endMs)
@@ -191,7 +197,7 @@ async function computeWeeklyDigest(db: D1Database, startMs: number, endMs: numbe
     .prepare(
       `SELECT etapa, COUNT(*) AS n
        FROM sessions
-       WHERE ts >= ? AND ts <= ?
+       WHERE ts >= ? AND ts <= ? AND ${f.sesiones}
        GROUP BY etapa ORDER BY n DESC`,
     )
     .bind(startMs, endMs)
@@ -220,6 +226,7 @@ async function computeWeeklyDigest(db: D1Database, startMs: number, endMs: numbe
       completitud_pct: total > 0 ? +((completadas / total) * 100).toFixed(1) : null,
       duracion_promedio_seg: totals?.dur_avg ?? null,
     },
+    sesiones_prueba_excluidas: sesionesPruebaExcluidas,
     scores: {
       tecnico: scoresRow?.tec ?? null,
       estructura: scoresRow?.est ?? null,

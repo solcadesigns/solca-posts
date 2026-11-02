@@ -13,6 +13,7 @@
  */
 
 import type { MetricsAnonymous } from './simulator-types';
+import { esErrorSinColumnaEsPrueba } from './simulator-test-sessions';
 
 export interface WriteMetricsInput {
   sessionId: string;
@@ -21,6 +22,8 @@ export interface WriteMetricsInput {
   // Demográficos opcionales · típicamente vienen en una segunda llamada
   edadRango?: string | null;
   genero?: string | null;
+  // 2 nov 2026: 1 = sesión de prueba. Solo sube la marca (nunca la baja a 0).
+  esPrueba?: 0 | 1;
 }
 
 export async function writeMetricsToD1(
@@ -97,6 +100,9 @@ export async function writeMetricsToD1(
     )
     .run();
 
+  // 2 nov 2026: marca de prueba aparte, para que la escritura principal no dependa de la migración 0012.
+  if (body.esPrueba === 1) await marcarSesionPrueba(db, body.sessionId);
+
   // Tags multivaluados: borrar previos y reinsertar (idempotente)
   await db
     .prepare('DELETE FROM session_tags WHERE session_id = ?')
@@ -155,6 +161,8 @@ export interface WriteInitialSessionInput {
   sesionDuracionTotalSeg?: number | null;
   respuestaPromedioSeg?: number | null;
   hasCvSummary?: boolean;
+  // 2 nov 2026: 1 = sesión de prueba (bandera interna o correo de prueba). Va en la fila inicial.
+  esPrueba?: 0 | 1;
 }
 
 export async function writeSessionInitialToD1(
@@ -165,7 +173,10 @@ export async function writeSessionInitialToD1(
 
   // INSERT ... ON CONFLICT DO NOTHING: si la sesión ya existe (por retry),
   // no la sobreescribimos con scores NULL. writeMetricsToD1 hace la actualización.
-  const sql = `
+  // 2 nov 2026: con esPrueba = 1 la fila nace con es_prueba = 1. Si la columna aún no existe
+  // (migración 0012 sin aplicar), se reintenta sin ella para no perder la sesión.
+  const conPrueba = body.esPrueba === 1;
+  const buildSql = (incluirPrueba: boolean) => `
     INSERT INTO sessions (
       session_id, ts,
       area_formacion, anios_experiencia, pais_inferido, rol_apuntado,
@@ -173,7 +184,7 @@ export async function writeSessionInitialToD1(
       sesion_duracion_total_seg, respuesta_promedio_seg,
       score_tecnico, score_estructura, score_especificidad,
       alertas_count, rol_y_match,
-      completed, has_cv_summary
+      completed, has_cv_summary${incluirPrueba ? ', es_prueba' : ''}
     ) VALUES (
       ?, ?,
       ?, ?, ?, ?,
@@ -181,13 +192,13 @@ export async function writeSessionInitialToD1(
       ?, ?,
       NULL, NULL, NULL,
       NULL, NULL,
-      1, ?
+      1, ?${incluirPrueba ? ', 1' : ''}
     )
-    ON CONFLICT(session_id) DO NOTHING;
+    ON CONFLICT(session_id) DO ${incluirPrueba ? 'UPDATE SET es_prueba = 1' : 'NOTHING'};
   `;
 
-  await db
-    .prepare(sql)
+  const run = (incluirPrueba: boolean) => db
+    .prepare(buildSql(incluirPrueba))
     .bind(
       body.sessionId,
       tsEpoch,
@@ -204,6 +215,30 @@ export async function writeSessionInitialToD1(
       body.hasCvSummary ? 1 : 0,
     )
     .run();
+
+  try {
+    await run(conPrueba);
+  } catch (err) {
+    if (!conPrueba || !esErrorSinColumnaEsPrueba(err)) throw err;
+    console.warn('[simulator-metrics-writer] es_prueba no existe (migración 0012 pendiente); fila sin marca');
+    await run(false);
+  }
+}
+
+/** Marca una sesión existente como prueba. Best-effort: si la columna no existe, solo avisa. */
+export async function marcarSesionPrueba(db: D1Database, sessionId: string): Promise<void> {
+  try {
+    await db
+      .prepare('UPDATE sessions SET es_prueba = 1 WHERE session_id = ? AND es_prueba <> 1')
+      .bind(sessionId)
+      .run();
+  } catch (err) {
+    if (esErrorSinColumnaEsPrueba(err)) {
+      console.warn('[simulator-metrics-writer] es_prueba no existe (migración 0012 pendiente)');
+      return;
+    }
+    console.error('[simulator-metrics-writer] marcarSesionPrueba falló:', err);
+  }
 }
 
 /**

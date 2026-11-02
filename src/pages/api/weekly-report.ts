@@ -24,6 +24,7 @@
 import type { APIRoute } from 'astro';
 import { DRIP_STEPS } from '../../lib/drip';
 import { LeadAttribution, type AtribucionReport } from '../../lib/report-atribucion';
+import { contarSesionesPrueba, filtroSesionesReales } from '../../lib/simulator-test-sessions';
 
 export const prerender = false;
 
@@ -141,6 +142,14 @@ interface WeeklyReport {
     avg_realismo: number | null;
     avg_utilidad: number | null;
     avg_facilidad: number | null;
+    // 2 nov 2026: sesiones con es_prueba <> 0 (1 = prueba confirmada, 2 = dudosa), fuera de todas las
+    // cifras de arriba y de su feedback. null si la migración 0012 no está aplicada (entonces se cuenta todo).
+    sesiones_prueba_excluidas: {
+      acumuladas: number;
+      esta_semana: number;
+      confirmadas: number;
+      dudosas: number;
+    } | null;
   };
   // Funnel de la landing del simulador · fire-and-forget desde el cliente vía
   // /api/simulator-events → SIMULATOR_METRICS KV prefix `evt:`. Añadido
@@ -1526,16 +1535,33 @@ export const GET: APIRoute = async ({ url, locals }) => {
       avg_realismo: null as number | null,
       avg_utilidad: null as number | null,
       avg_facilidad: null as number | null,
+      prueba_excluidas: null as WeeklyReport['simulator']['sesiones_prueba_excluidas'],
     };
 
     if (simDb) {
+      // 2 nov 2026: solo sesiones reales. Tolerante a la migración 0012 sin aplicar.
+      const fSim = await filtroSesionesReales(simDb);
+      const [pruebaTot, pruebaSem] = await Promise.all([
+        contarSesionesPrueba(simDb, fSim),
+        contarSesionesPrueba(simDb, fSim, weekAgo),
+      ]);
+      if (pruebaTot) {
+        sim.prueba_excluidas = {
+          acumuladas: pruebaTot.total,
+          esta_semana: pruebaSem?.total ?? 0,
+          confirmadas: pruebaTot.confirmadas,
+          dudosas: pruebaTot.dudosas,
+        };
+      }
+
       const totalsRow = await simDb
         .prepare(
           `SELECT COUNT(*) AS total,
                   SUM(CASE WHEN completed = 1 THEN 1 ELSE 0 END) AS completadas,
                   AVG(sesion_duracion_total_seg) AS dur_avg,
                   SUM(CASE WHEN ts >= ? THEN 1 ELSE 0 END) AS cur_week
-           FROM sessions`,
+           FROM sessions
+           WHERE ${fSim.sesiones}`,
         )
         .bind(weekAgo)
         .first<{
@@ -1560,7 +1586,8 @@ export const GET: APIRoute = async ({ url, locals }) => {
                   AVG(realismo) AS r,
                   AVG(utilidad) AS u,
                   AVG(facilidad) AS f
-           FROM beta_feedback`,
+           FROM beta_feedback
+           WHERE ${fSim.ligadas}`,
         )
         .first<{ total: number; util: number; r: number | null; u: number | null; f: number | null }>();
 
@@ -1821,6 +1848,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
         avg_realismo: sim.avg_realismo,
         avg_utilidad: sim.avg_utilidad,
         avg_facilidad: sim.avg_facilidad,
+        sesiones_prueba_excluidas: sim.prueba_excluidas,
       },
       simulator_funnel: {
         disponible: funnel.disponible,
