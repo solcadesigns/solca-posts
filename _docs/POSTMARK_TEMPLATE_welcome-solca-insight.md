@@ -8,7 +8,9 @@ Fuente de verdad del contenido del welcome email disparado desde:
 
 ---
 
-## Cambio pendiente · 2 nov 2026 (casilla separada para correos comerciales)
+## Cambio aplicado en Postmark el 2 nov 2026 (casilla separada para correos comerciales)
+
+Aplicado por Claude con OK de Oscar sobre la plantilla viva (que difería de este runbook): en `is_quiz`, la línea "Con esto quedas suscrito", el bloque de Solca Insight, el siguiente paso con el CTA y "Nos leemos el viernes" van dentro de `{{#marketing}}`; el pie de opt-in solo con `marketing` y, sin él, "Recibiste este correo porque hiciste el quiz de rol en solcaciencia.com." La rama `is_cv` no cambió (no decía que el análisis se enviaba aparte).
 
 Desde el despliegue de `src/lib/consent.ts`:
 
