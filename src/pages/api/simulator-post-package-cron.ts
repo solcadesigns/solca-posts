@@ -18,10 +18,15 @@
  *
  * Cupón: variable env HOTMART_COUPON_FEEDBACK (default `FEEDBACK25`).
  * El link al curso Solca puede incluir el cupón preapplicado en URL o solo mencionarlo.
+ *
+ * 2 nov 2026: el cupón y el link al curso solo van a quien aceptó correos comerciales
+ * (marketingDecisionForEmail, src/lib/consent.ts). Sin consentimiento, o si la verificación falla, el correo
+ * de feedback sale igual con `marketing: false` y las variables de oferta vacías.
  */
 
 import type { APIRoute } from 'astro';
 import { sendEmailWithTemplate, PostmarkError } from '../../lib/postmark';
+import { ConsentLookup, legacyPolicy, marketingDecisionForEmail } from '../../lib/consent';
 
 export const prerender = false;
 
@@ -80,6 +85,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
   }
 
   const nowMs = Date.now();
+  // Un solo índice de consentimiento por corrida (hasta 50 destinatarios), no un listado completo por correo.
+  const consentLookup = new ConsentLookup(env.EMAILS as KVNamespace | undefined, legacyPolicy(env), db);
   const cutoffAgeMs = 24 * 60 * 60 * 1000; // 24h de espera antes de enviar
   const results: Array<{ sessionId: string; status: string }> = [];
 
@@ -128,8 +135,24 @@ export const GET: APIRoute = async ({ request, locals }) => {
       results.push({ sessionId, status: 'postmark_missing' });
       continue;
     }
+    const planLabel = target.plan === 'premium' ? 'Premium' : 'Básico';
+    const mk = await marketingDecisionForEmail(
+      env.EMAILS as KVNamespace | undefined,
+      target.email,
+      legacyPolicy(env),
+      db,
+      consentLookup,
+    );
+    // 2 nov 2026: se borra el pkg_end ANTES de enviar, así un fallo al borrar después del envío ya no provoca reenvío.
+    // Si el envío falla, se restaura (con su caducidad original) para reintentar; un timeout después de que Postmark
+    // aceptó el correo sí puede reenviarlo, igual que antes. Errores permanentes del destinatario (406 inactivo, 300 correo inválido) no se restauran.
     try {
-      const planLabel = target.plan === 'premium' ? 'Premium' : 'Básico';
+      await kv.delete(k.name);
+    } catch {
+      results.push({ sessionId, status: 'delete_failed · not_sent' });
+      continue;
+    }
+    try {
       await sendEmailWithTemplate(postmarkToken, {
         from: 'Oscar Solís <hola@solcaciencia.com>',
         to: target.email,
@@ -140,25 +163,36 @@ export const GET: APIRoute = async ({ request, locals }) => {
           first_name: target.firstName || 'ahí',
           plan_label: planLabel,
           role_practiced: target.role || 'tu rol',
-          coupon_code: couponCode,
-          course_url: courseUrl,
+          marketing: mk.allowed,
+          coupon_code: mk.allowed ? couponCode : '',
+          course_url: mk.allowed ? courseUrl : '',
           feedback_url: `https://solcaciencia.com/simulador-entrevistas/sesion?email=${encodeURIComponent(target.email)}&feedback=1`,
         },
         metadata: {
           source: 'post-package-cron',
           session_id: sessionId,
           plan: target.plan,
+          marketing: mk.allowed ? '1' : '0',
+          marketing_decision: mk.decision,
         },
       });
-      results.push({ sessionId, status: 'sent · deleted' });
-      await kv.delete(k.name);
+      results.push({ sessionId, status: `sent${mk.allowed ? '' : ' · sin_oferta'} · deleted` });
     } catch (err) {
-      if (err instanceof PostmarkError) {
-        results.push({ sessionId, status: `postmark_${err.status}` });
-      } else {
-        results.push({ sessionId, status: 'send_error' });
+      const why = err instanceof PostmarkError ? `postmark_${err.status}` : 'send_error';
+      const errorCode = err instanceof PostmarkError ? (err.body as { ErrorCode?: number } | undefined)?.ErrorCode : undefined;
+      // Solo destinatario inactivo (406) o correo inválido (300); otros 422 (p. ej. plantilla) se reintentan.
+      const permanente = err instanceof PostmarkError && (errorCode === 406 || errorCode === 300);
+      if (permanente) {
+        results.push({ sessionId, status: `${why} · permanent_fail · deleted` });
+        continue;
       }
-      // No borramos el target para reintentar en la próxima corrida
+      let restored = true;
+      try {
+        await kv.put(k.name, raw, k.expiration ? { expiration: k.expiration } : { expirationTtl: 60 * 60 * 24 * 3 });
+      } catch {
+        restored = false;
+      }
+      results.push({ sessionId, status: `${why}${restored ? ' · restored' : ' · restore_failed'}` });
     }
   }
 

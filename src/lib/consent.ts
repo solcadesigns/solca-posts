@@ -18,11 +18,12 @@
  */
 
 import { guardarEventoD1 } from './eventos-d1';
-import type { Attribution } from './attribution';
+import { emailHashFull, type Attribution } from './attribution';
 
 export const CONSENT_VERSION = 'v2-2026-11';
 
-export type ConsentForm = 'simulador' | 'simulador-pago' | 'quiz' | 'cv';
+// 'reconfirmacion-es': opt-in desde /api/confirmar-correos (correo único aviso-privacidad-2026-11, legado España).
+export type ConsentForm = 'simulador' | 'simulador-pago' | 'quiz' | 'cv' | 'reconfirmacion-es';
 export type FormKey = 'simulador' | 'quiz' | 'cv';
 
 export const CONSENT_TEXT: Record<FormKey, { privacidad: string; marketing: string; nota: string }> = {
@@ -164,6 +165,200 @@ export function isMarketingAllowed(d: MarketingDecision): boolean {
 
 /** Bajas en KV que cortan todo lo comercial (las mismas que respeta blog-broadcast). */
 export const COMMERCIAL_UNSUB_SCOPES = ['newsletter', 'comercial', 'all'] as const;
+
+// ── Decisión por correo dentro de correos de servicio (ofertas) ────────────────────────────────────
+
+/**
+ * Tope de operaciones KV que una ConsentLookup gasta por invocación (índice + lecturas legado).
+ * Workers KV permite 1,000 por invocación; el resto queda para el endpoint que la usa.
+ */
+const LOOKUP_MAX_KV_OPS = 400;
+const LOOKUP_MAX_LIST_PAGES = 50; // por prefijo (50k llaves)
+const LOOKUP_MAX_LEGACY_GETS_PER_EMAIL = 5;
+const ONE_LEAD_KEY_RE = /^(email|quiz|sim):\d{4}-\d{2}-\d{2}T[0-9:.]+Z:(.+)$/;
+const ONE_UNSUB_KEY_RE = /^unsub:(.+):([a-z_-]+)$/;
+
+export type OneEmailDecision = MarketingDecision | 'unsub' | 'over_budget' | 'error' | 'sin_kv';
+export interface OneEmailResult {
+  allowed: boolean;
+  decision: OneEmailDecision;
+}
+
+interface IndexEntry {
+  signals: ConsentSignal[];
+  legacyKeys: string[]; // email:/quiz: sin metadata (sim: legado no trae país)
+}
+
+/**
+ * ¿Se le puede incluir una oferta comercial a un correo? Misma regla que blog-broadcast, pensada para
+ * varios destinatarios en una misma invocación (cron):
+ * - El índice de KV EMAILS (`email:`/`quiz:`/`sim:` con su metadata `{cv, mk}` y las bajas `unsub:`) se arma
+ *   UNA vez por instancia, con `list` paginado (sin `get`): ~4 operaciones por cada 1,000 llaves por prefijo.
+ *   Las llaves llevan el correo al final, así que no se puede listar por correo: por eso el mapa en memoria.
+ * - Por correo: bajas `unsub:<email>:newsletter|comercial|all` ganan siempre; señales de D1 `consentimientos`
+ *   por `email_hash` (marketing = 0 siempre; marketing = 1 si no fue revocado), que cubren al comprador que
+ *   dejó la casilla sin marcar en el checkout (Stripe no escribe en KV); `decideMarketing` con la política
+ *   legado; y, solo si queda en 'legacy', `get` de sus registros legado para el país (tope por correo).
+ * - Tolerante a fallos: si algo falla o se agota el tope de operaciones, `allowed: false` (sin oferta).
+ * Crear una instancia por invocación (no a nivel de módulo: el isolate se reutiliza entre requests).
+ */
+export class ConsentLookup {
+  private index: Map<string, IndexEntry> | null = null;
+  private unsub: Map<string, Set<string>> | null = null;
+  private buildState: 'pending' | 'ok' | 'over_budget' | 'error' = 'pending';
+  private building: Promise<void> | null = null;
+  ops = 0;
+
+  constructor(
+    private kv: KVNamespace | undefined,
+    private policy: LegacyPolicy,
+    private db?: D1Database,
+    private maxOps = LOOKUP_MAX_KV_OPS,
+  ) {}
+
+  private async listPrefix(prefix: string, onKey: (name: string, meta: unknown) => void): Promise<boolean> {
+    let cursor: string | undefined;
+    for (let page = 0; page < LOOKUP_MAX_LIST_PAGES; page++) {
+      if (this.ops >= this.maxOps) return false;
+      const res = await this.kv!.list({ prefix, limit: 1000, ...(cursor ? { cursor } : {}) });
+      this.ops++;
+      for (const k of res.keys) onKey(k.name, k.metadata);
+      if (res.list_complete) return true;
+      cursor = (res as { cursor?: string }).cursor;
+      if (!cursor) return true;
+    }
+    return false;
+  }
+
+  private async build(): Promise<void> {
+    const index = new Map<string, IndexEntry>();
+    const unsub = new Map<string, Set<string>>();
+    try {
+      for (const prefix of ['email:', 'quiz:', 'sim:'] as const) {
+        const ok = await this.listPrefix(prefix, (name, metadata) => {
+          const m = ONE_LEAD_KEY_RE.exec(name);
+          if (!m) return;
+          const email = m[2].toLowerCase().trim();
+          const e = index.get(email) ?? { signals: [], legacyKeys: [] };
+          const meta = readConsentKvMeta(metadata);
+          if (meta) e.signals.push({ consent_version: meta.cv, marketing_optin: meta.mk === 1 });
+          else {
+            e.signals.push({});
+            if (prefix !== 'sim:') e.legacyKeys.push(name);
+          }
+          index.set(email, e);
+        });
+        if (!ok) {
+          this.buildState = 'over_budget';
+          return;
+        }
+      }
+      const ok = await this.listPrefix('unsub:', (name) => {
+        const m = ONE_UNSUB_KEY_RE.exec(name);
+        if (!m) return;
+        const email = m[1].toLowerCase().trim();
+        const s = unsub.get(email) ?? new Set<string>();
+        s.add(m[2]);
+        unsub.set(email, s);
+      });
+      if (!ok) {
+        this.buildState = 'over_budget';
+        return;
+      }
+      this.index = index;
+      this.unsub = unsub;
+      this.buildState = 'ok';
+    } catch (err) {
+      console.warn('consent: ConsentLookup build failed', String((err as Error)?.message ?? err).slice(0, 200));
+      this.buildState = 'error';
+    }
+  }
+
+  async decide(email: string): Promise<OneEmailResult> {
+    const target = (email ?? '').trim().toLowerCase();
+    if (!this.kv || !target) return { allowed: false, decision: 'sin_kv' };
+    if (this.buildState === 'pending') {
+      this.building ??= this.build();
+      await this.building;
+    }
+    if (this.buildState !== 'ok' || !this.index || !this.unsub) {
+      return { allowed: false, decision: this.buildState === 'over_budget' ? 'over_budget' : 'error' };
+    }
+    try {
+      const scopes = this.unsub.get(target);
+      if (scopes && [...scopes].some((s) => (COMMERCIAL_UNSUB_SCOPES as readonly string[]).includes(s))) {
+        return { allowed: false, decision: 'unsub' };
+      }
+      const entry = this.index.get(target);
+      const signals: ConsentSignal[] = [...(entry?.signals ?? [])];
+      if (this.db) {
+        try {
+          const rows = await this.db
+            .prepare('SELECT consent_version, marketing, revocado_at FROM consentimientos WHERE email_hash = ? LIMIT 50')
+            .bind(await emailHashFull(target))
+            .all<{ consent_version: string; marketing: number; revocado_at: string | null }>();
+          for (const r of rows.results ?? []) {
+            if (!r.consent_version) continue;
+            if (Number(r.marketing) === 1) {
+              if (!r.revocado_at) signals.push({ consent_version: r.consent_version, marketing_optin: true });
+            } else {
+              signals.push({ consent_version: r.consent_version, marketing_optin: false });
+            }
+          }
+        } catch {
+          // sin D1 o sin migración 0013: se decide solo con KV
+        }
+      }
+      let decision: MarketingDecision = decideMarketing(signals, this.policy);
+      if (decision === 'legacy') {
+        const keys = entry?.legacyKeys ?? [];
+        for (let i = 0; i < keys.length; i++) {
+          if (i >= LOOKUP_MAX_LEGACY_GETS_PER_EMAIL || this.ops >= this.maxOps) {
+            return { allowed: false, decision: 'over_budget' };
+          }
+          this.ops++;
+          const raw = await this.kv.get(keys[i]);
+          let country: string | undefined;
+          try {
+            country = raw ? (JSON.parse(raw) as { country?: string }).country : undefined;
+          } catch {
+            country = undefined;
+          }
+          if (isSpain(country)) {
+            decision = 'legacy_es';
+            break;
+          }
+        }
+      }
+      return { allowed: isMarketingAllowed(decision), decision };
+    } catch (err) {
+      console.warn('consent: ConsentLookup decide failed', String((err as Error)?.message ?? err).slice(0, 200));
+      return { allowed: false, decision: 'error' };
+    }
+  }
+}
+
+/** Un solo correo (arma su propio índice). Para varios en la misma invocación, reutiliza una ConsentLookup. */
+export async function marketingDecisionForEmail(
+  kv: KVNamespace | undefined,
+  email: string,
+  policy: LegacyPolicy,
+  db?: D1Database,
+  lookup?: ConsentLookup,
+): Promise<OneEmailResult> {
+  return (lookup ?? new ConsentLookup(kv, policy, db)).decide(email);
+}
+
+/** Atajo booleano de marketingDecisionForEmail. */
+export async function marketingAllowedForEmail(
+  kv: KVNamespace | undefined,
+  email: string,
+  policy: LegacyPolicy,
+  db?: D1Database,
+  lookup?: ConsentLookup,
+): Promise<boolean> {
+  return (await marketingDecisionForEmail(kv, email, policy, db, lookup)).allowed;
+}
 
 // ── Registro permanente en D1 (migrations/0013_consentimientos.sql) ────────────────────────────────
 

@@ -1,14 +1,17 @@
 import type { APIRoute } from 'astro';
-import { sendEmail, sendEmailWithTemplate, PostmarkError } from '../../lib/postmark';
+import { sendEmailWithTemplate, PostmarkError } from '../../lib/postmark';
 import { getCollection } from 'astro:content';
+import { decideMarketing, legacyPolicy, type LegacyPolicy } from '../../lib/consent';
 import {
-  decideMarketing,
-  isSpain,
-  legacyPolicy,
-  readConsentKvMeta,
-  type ConsentSignal,
-  type LegacyPolicy,
-} from '../../lib/consent';
+  KV_OP_BUDGET,
+  alertOscar,
+  collectLeadBase,
+  hasNewsletterUnsub,
+  isBroadcastAuthorized,
+  isTooOld,
+  legacySpainCheck,
+  type Lead,
+} from '../../lib/broadcast-audience';
 
 export const prerender = false;
 
@@ -50,21 +53,10 @@ export const prerender = false;
  * las exclusiones sin enviar ni escribir nada.
  *
  * NO importa listas externas. Solo usa KV EMAILS que crece por opt-in nativo.
+ *
+ * Helpers de audiencia (listado, dedup, bajas, supresiones) en src/lib/broadcast-audience.ts desde el 2 nov 2026,
+ * compartidos con /api/aviso-privacidad-2026-11. El comportamiento de este endpoint no cambió.
  */
-
-const SUBSCRIBER_PREFIXES = ['email:', 'quiz:', 'sim:'] as const;
-const NEWSLETTER_UNSUB_SCOPES = new Set(['newsletter', 'comercial', 'all']);
-const LEAD_KEY_RE = /^(email|quiz|sim):(\d{4}-\d{2}-\d{2}T[0-9:.]+Z):(.+)$/;
-const UNSUB_KEY_RE = /^unsub:(.+):([a-z_-]+)$/;
-const POSTMARK_BASE = 'https://api.postmarkapp.com';
-// Workers KV: 1,000 operaciones por invocación (https://developers.cloudflare.com/kv/platform/limits/).
-// Las lecturas de registros legado paran antes, con margen para el candado y el reporte.
-const KV_OP_BUDGET = 980;
-
-interface Lead {
-  email: string;
-  ts: string; // ISO de opt-in (del nombre de la llave)
-}
 
 interface Exclusions {
   attempt_only: number; // correos con `attempt:` y sin registro de suscriptor (antes sí recibían)
@@ -115,112 +107,15 @@ interface BroadcastReport {
 }
 
 const THROTTLE_MS = 100; // ~10 emails/segundo — bajo el límite Postmark
-const MAX_AGE_DAYS = 730; // 2 años · alineado con política Brevo aprendida
 // Envío secuencial ~0.3 s por correo: 2,500 caben en el límite de 15 min del cron y
 // quedan muy debajo de 10,000 subrequests. Si se rebasa, se avisa (no se corta en silencio).
 const MAX_SENDS_PER_RUN = 2500;
-const MAX_LIST_PAGES = 100; // 100k llaves por prefijo; tope de seguridad
-const SUPPRESSION_DUMP_SUSPECT = 500; // si el dump regresa justo eso o más, podría venir cortado
 
 function jsonResponse(data: unknown, status = 200) {
   return new Response(JSON.stringify(data, null, 2), {
     status,
     headers: { 'Content-Type': 'application/json; charset=utf-8' },
   });
-}
-
-/**
- * Auth: verifica que el request tiene el header X-Broadcast-Secret que coincide con
- * el secret BROADCAST_SECRET. Impide que endpoint sea llamado desde fuera del cron.
- */
-function isAuthorized(request: Request, env: Record<string, unknown>): boolean {
-  const provided = request.headers.get('x-broadcast-secret');
-  const expected = env.BROADCAST_SECRET as string | undefined;
-  if (!expected) return false;
-  return provided === expected;
-}
-
-interface KvCounter {
-  calls: number; // kv.list
-  gets: number; // kv.get
-  truncated: boolean;
-}
-
-interface KeyInfo {
-  name: string;
-  metadata?: unknown;
-}
-
-/** Lista todas las llaves de un prefijo (con su metadata), paginando con cursor. */
-async function listAllKeys(kv: KVNamespace, prefix: string, counter: KvCounter): Promise<KeyInfo[]> {
-  const names: KeyInfo[] = [];
-  let cursor: string | undefined;
-  for (let page = 0; page < MAX_LIST_PAGES; page++) {
-    const res = await kv.list({ prefix, limit: 1000, ...(cursor ? { cursor } : {}) });
-    counter.calls++;
-    for (const k of res.keys) names.push({ name: k.name, metadata: k.metadata });
-    if (res.list_complete) return names;
-    cursor = (res as { cursor?: string }).cursor;
-    if (!cursor) return names;
-  }
-  counter.truncated = true;
-  console.error(`broadcast:list-truncated prefix=${prefix} pages=${MAX_LIST_PAGES}`);
-  return names;
-}
-
-/** Correo + ts del nombre de la llave; si el formato no cuadra, lee el registro. */
-async function leadFromKey(kv: KVNamespace, name: string, counter: KvCounter): Promise<Lead | null> {
-  const m = LEAD_KEY_RE.exec(name);
-  if (m) return { email: m[3].toLowerCase().trim(), ts: m[2] };
-  try {
-    counter.gets++;
-    const raw = await kv.get(name);
-    if (!raw) return null;
-    const rec = JSON.parse(raw) as { email?: string; ts?: string; optedInAt?: string };
-    const email = rec.email?.toLowerCase().trim();
-    const ts = rec.optedInAt ?? rec.ts;
-    return email && ts ? { email, ts } : null;
-  } catch {
-    return null;
-  }
-}
-
-/** Descarga la lista de supresiones de un stream de Postmark. Lanza si falla. */
-async function fetchSuppressions(
-  token: string,
-  stream: string,
-  reasons?: Set<string>,
-): Promise<{ emails: Set<string>; raw: number }> {
-  const res = await fetch(`${POSTMARK_BASE}/message-streams/${stream}/suppressions/dump`, {
-    headers: { Accept: 'application/json', 'X-Postmark-Server-Token': token },
-  });
-  if (!res.ok) throw new Error(`suppressions ${stream} → ${res.status}`);
-  const data = (await res.json()) as {
-    Suppressions?: Array<{ EmailAddress?: string; SuppressionReason?: string }>;
-  };
-  if (!Array.isArray(data.Suppressions)) throw new Error(`suppressions ${stream} → sin arreglo`);
-  const emails = new Set<string>();
-  for (const s of data.Suppressions) {
-    const e = s.EmailAddress?.toLowerCase().trim();
-    if (!e) continue;
-    if (reasons && !reasons.has(s.SuppressionReason ?? '')) continue;
-    emails.add(e);
-  }
-  return { emails, raw: data.Suppressions.length };
-}
-
-async function alertOscar(token: string, subject: string, text: string): Promise<void> {
-  try {
-    await sendEmail(token, {
-      from: 'hello@solcaciencia.com',
-      to: 'hello@solcaciencia.com',
-      subject,
-      textBody: text,
-      tag: 'broadcast-alert',
-    });
-  } catch (err) {
-    console.error('broadcast:alert-failed', err);
-  }
 }
 
 interface Audience {
@@ -244,111 +139,34 @@ async function buildAudience(
   nowMs: number,
   policy: LegacyPolicy,
 ): Promise<Audience> {
-  const counter: KvCounter = { calls: 0, gets: 0, truncated: false };
+  // Pasos 1-4 (suscriptores, intentos, bajas, supresiones): src/lib/broadcast-audience.ts.
+  const base = await collectLeadBase(kv, token);
+  const { counter, byEmail, signalsByEmail, legacyKeysByEmail, broadcastSupp, outboundSupp } = base;
   const excluded: Exclusions = {
-    attempt_only: 0,
-    duplicate: 0,
+    attempt_only: base.attemptOnly,
+    duplicate: base.duplicate,
     too_old: 0,
     unsub_kv: 0,
     suppressed_broadcast: 0,
     suppressed_outbound: 0,
     over_cap: 0,
-    unparsable_key: 0,
+    unparsable_key: base.unparsableKey,
     no_marketing_optin: 0,
     legacy_es: 0,
     legacy_bloqueado: 0,
     legacy_unread: 0,
   };
   const consent: ConsentStats = { policy, optin: 0, legacy_allowed: 0, legacy_reads: 0 };
-  // Consentimiento por correo: señales de la metadata (registros nuevos) y llaves legado por leer.
-  const signalsByEmail = new Map<string, ConsentSignal[]>();
-  const legacyKeysByEmail = new Map<string, string[]>(); // solo email:/quiz: (sim: no trae país)
-
-  // 1. Suscriptores por prefijo; dedup por correo conservando el opt-in más reciente.
-  const byEmail = new Map<string, Lead>();
-  const candidatesByPrefix: Record<string, number> = {};
-  let candidates = 0;
-  for (const prefix of SUBSCRIBER_PREFIXES) {
-    const names = await listAllKeys(kv, prefix, counter);
-    candidatesByPrefix[prefix.slice(0, -1)] = names.length;
-    candidates += names.length;
-    for (const { name, metadata } of names) {
-      const lead = await leadFromKey(kv, name, counter);
-      if (!lead) {
-        excluded.unparsable_key++;
-        continue;
-      }
-      const meta = readConsentKvMeta(metadata);
-      const sigs = signalsByEmail.get(lead.email) ?? [];
-      if (meta) {
-        sigs.push({ consent_version: meta.cv, marketing_optin: meta.mk === 1 });
-      } else {
-        sigs.push({}); // legado: el país, si hace falta, se lee después
-        if (prefix !== 'sim:') {
-          const arr = legacyKeysByEmail.get(lead.email) ?? [];
-          arr.push(name);
-          legacyKeysByEmail.set(lead.email, arr);
-        }
-      }
-      signalsByEmail.set(lead.email, sigs);
-      const prev = byEmail.get(lead.email);
-      if (prev) {
-        excluded.duplicate++;
-        if (new Date(lead.ts).getTime() > new Date(prev.ts).getTime()) byEmail.set(lead.email, lead);
-      } else {
-        byEmail.set(lead.email, lead);
-      }
-    }
-  }
-
-  // 2. Solo para medir: correos con intento de CV y sin registro de suscriptor.
-  const attemptEmails = new Set<string>();
-  for (const { name } of await listAllKeys(kv, 'attempt:', counter)) {
-    const m = /^attempt:\d{4}-\d{2}-\d{2}T[0-9:.]+Z:(.+)$/.exec(name);
-    if (m) attemptEmails.add(m[1].toLowerCase().trim());
-  }
-  for (const e of attemptEmails) if (!byEmail.has(e)) excluded.attempt_only++;
-
-  // 3. Bajas guardadas en KV.
-  const unsubNewsletter = new Set<string>();
-  const unsubDrip = new Set<string>();
-  for (const { name } of await listAllKeys(kv, 'unsub:', counter)) {
-    const m = UNSUB_KEY_RE.exec(name);
-    if (!m) continue;
-    const e = m[1].toLowerCase().trim();
-    if (NEWSLETTER_UNSUB_SCOPES.has(m[2])) unsubNewsletter.add(e);
-    else if (m[2] === 'drip') unsubDrip.add(e);
-  }
-
-  // 4. Supresiones de Postmark. Un fallo no bloquea: Postmark igual rechaza esos envíos.
-  const suppressionErrors: string[] = [];
-  let suppressionMaybeTruncated = false;
-  let broadcastSupp = new Set<string>();
-  let outboundSupp = new Set<string>();
-  try {
-    const r = await fetchSuppressions(token, 'broadcast');
-    broadcastSupp = r.emails;
-    if (r.raw >= SUPPRESSION_DUMP_SUSPECT) suppressionMaybeTruncated = true;
-  } catch (err) {
-    suppressionErrors.push((err as Error).message);
-  }
-  try {
-    const r = await fetchSuppressions(token, 'outbound', new Set(['HardBounce', 'SpamComplaint']));
-    outboundSupp = r.emails;
-  } catch (err) {
-    suppressionErrors.push((err as Error).message);
-  }
 
   // 5. Filtro final. Cada correo cuenta en un solo motivo, en este orden.
   const eligible: Lead[] = [];
   let dripUnsubStillSent = 0;
   for (const lead of byEmail.values()) {
-    const optInMs = new Date(lead.ts).getTime();
-    if (isNaN(optInMs) || (nowMs - optInMs) / 86_400_000 > MAX_AGE_DAYS) {
+    if (isTooOld(lead, nowMs)) {
       excluded.too_old++;
       continue;
     }
-    if (unsubNewsletter.has(lead.email)) {
+    if (hasNewsletterUnsub(base, lead.email)) {
       excluded.unsub_kv++;
       continue;
     }
@@ -365,26 +183,11 @@ async function buildAudience(
     let decision = decideMarketing(sigs, policy);
     if (decision === 'legacy') {
       // permitir_sin_es: falta saber si algún registro legado es de España. Se lee con `get` (con tope).
-      let unread = false;
-      for (const key of legacyKeysByEmail.get(lead.email) ?? []) {
-        if (counter.calls + counter.gets >= KV_OP_BUDGET) {
-          unread = true;
-          break;
-        }
-        counter.gets++;
+      const es = await legacySpainCheck(kv, legacyKeysByEmail.get(lead.email) ?? [], counter, KV_OP_BUDGET, () => {
         consent.legacy_reads++;
-        try {
-          const raw = await kv.get(key);
-          const country = raw ? (JSON.parse(raw) as { country?: string }).country : undefined;
-          if (isSpain(country)) {
-            decision = 'legacy_es';
-            break;
-          }
-        } catch {
-          // registro ilegible: no aporta país
-        }
-      }
-      if (unread && decision === 'legacy') {
+      });
+      if (es === 'es') decision = 'legacy_es';
+      else if (es === 'unread') {
         excluded.legacy_unread++;
         continue;
       }
@@ -403,7 +206,7 @@ async function buildAudience(
     }
     if (decision === 'optin') consent.optin++;
     else consent.legacy_allowed++;
-    if (unsubDrip.has(lead.email)) dripUnsubStillSent++;
+    if (base.unsubScopesByEmail.get(lead.email)?.has('drip')) dripUnsubStillSent++;
     eligible.push(lead);
   }
   if (eligible.length > MAX_SENDS_PER_RUN) {
@@ -413,15 +216,15 @@ async function buildAudience(
 
   return {
     eligible,
-    candidates,
-    candidatesByPrefix,
+    candidates: base.candidates,
+    candidatesByPrefix: base.candidatesByPrefix,
     uniqueEmails: byEmail.size,
     excluded,
     consent,
     dripUnsubStillSent,
-    suppressionCheck: suppressionErrors.length ? 'failed' : 'ok',
-    suppressionErrors,
-    suppressionMaybeTruncated,
+    suppressionCheck: base.suppressionErrors.length ? 'failed' : 'ok',
+    suppressionErrors: base.suppressionErrors,
+    suppressionMaybeTruncated: base.suppressionMaybeTruncated,
     kvListCalls: counter.calls,
     kvListTruncated: counter.truncated,
   };
@@ -489,7 +292,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
   const runtime = (locals as { runtime?: { env?: Record<string, unknown> } }).runtime;
   const env = runtime?.env ?? {};
 
-  if (!isAuthorized(request, env)) {
+  if (!isBroadcastAuthorized(request, env)) {
     return jsonResponse({ error: 'unauthorized' }, 401);
   }
 

@@ -328,6 +328,24 @@ interface ConsentimientoComercial {
     skip_legacy_es: number;
     skip_legacy_bloqueado: number;
   } | null;
+  // Correo único aviso-privacidad-2026-11 (2 nov 2026). Aperturas y clics: email_health.por_tag['aviso-privacidad-2026-11'].
+  aviso_privacidad_2026_11: {
+    envio: AvisoEnvio | null; // suma de todas las corridas KV aviso-report:* (sin caducidad; varias si hubo ?resume=1)
+    confirmaciones_es: { total: number; esta_semana: number; semana_anterior: number } | null; // D1 consentimientos, form reconfirmacion-es, sin internos
+    pct_confirmacion_es: number | null; // confirmaciones_es.total / envio.sent_es
+  };
+}
+
+interface AvisoEnvio {
+  corridas: number;
+  started_at: string; // primera corrida
+  finished_at: string; // última corrida
+  eligible: number; // de la primera corrida
+  eligible_es: number;
+  sent: number;
+  sent_es: number;
+  failed: number;
+  failed_inactive: number;
 }
 
 function ventanaOptin(leads: number, optin: number): VentanaOptin {
@@ -342,6 +360,7 @@ async function buildConsentimiento(
   signals: Map<string, ConsentSignal[]>,
   policy: LegacyPolicy,
   ultimoBroadcast: ConsentimientoComercial['ultimo_broadcast'],
+  ultimoAviso: AvisoEnvio | null = null,
 ): Promise<ConsentimientoComercial> {
   const por_formulario: ConsentimientoComercial['por_formulario'] = {};
   let curL = 0, curO = 0, prevL = 0, prevO = 0;
@@ -358,6 +377,7 @@ async function buildConsentimiento(
                     MAX(COALESCE(json_extract(extra,'$.marketing'), 0)) AS mk
                FROM eventos
               WHERE evento = 'lead_captured' AND interno = 0 AND ts >= ? AND ts <= ?
+                AND COALESCE(json_extract(extra,'$.form'), '') != 'reconfirmacion-es'
               GROUP BY form, win, h)
             GROUP BY form, win`,
         )
@@ -401,6 +421,25 @@ async function buildConsentimiento(
       console.warn('weekly-report: drip_tick_resumen query failed', err);
     }
   }
+  // Reconfirmaciones de España (no son leads nuevos: van aparte del conteo por formulario).
+  let confirmaciones_es: ConsentimientoComercial['aviso_privacidad_2026_11']['confirmaciones_es'] = null;
+  if (db) {
+    try {
+      const r = await db
+        .prepare(
+          `SELECT COUNT(DISTINCT email_hash) AS total,
+                  COUNT(DISTINCT CASE WHEN ts >= ? THEN email_hash END) AS cur,
+                  COUNT(DISTINCT CASE WHEN ts >= ? AND ts < ? THEN email_hash END) AS prev
+             FROM consentimientos
+            WHERE form = 'reconfirmacion-es' AND interno = 0 AND ts <= ?`,
+        )
+        .bind(weekAgoIso, twoWeeksAgoIso, weekAgoIso, nowIso)
+        .first<{ total: number; cur: number; prev: number }>();
+      confirmaciones_es = { total: Number(r?.total) || 0, esta_semana: Number(r?.cur) || 0, semana_anterior: Number(r?.prev) || 0 };
+    } catch (err) {
+      console.warn('weekly-report: reconfirmacion-es query failed', err);
+    }
+  }
   const lista = { optin_activos: 0, legado_activos: 0, legado_excluidos_es: 0, legado_bloqueados: 0, sin_optin: 0 };
   for (const sigs of signals.values()) {
     const dec = decideMarketing(sigs, policy);
@@ -417,6 +456,14 @@ async function buildConsentimiento(
     lista,
     ultimo_broadcast: ultimoBroadcast,
     ultimo_drip,
+    aviso_privacidad_2026_11: {
+      envio: ultimoAviso,
+      confirmaciones_es,
+      pct_confirmacion_es:
+        confirmaciones_es && ultimoAviso && ultimoAviso.sent_es > 0
+          ? +((confirmaciones_es.total / ultimoAviso.sent_es) * 100).toFixed(1)
+          : null,
+    },
   };
 }
 
@@ -1286,9 +1333,34 @@ export const GET: APIRoute = async ({ url, locals }) => {
     const consentSignals = new Map<string, ConsentSignal[]>();
     let ultimoBroadcastKey = '';
     let ultimoBroadcast: ConsentimientoComercial['ultimo_broadcast'] = null;
+    let ultimoAviso: AvisoEnvio | null = null; // acumulado de todas las corridas
 
     if (emailsKv) {
       await walkKv<EmailRec>(emailsKv, '', (rec, key) => {
+        if (key.startsWith('aviso-report:')) {
+          // Correo único aviso-privacidad-2026-11: una llave por corrida (varias si se retomó con ?resume=1). Se suman.
+          // `failed` de una corrida puede reintentarse en la siguiente: el total de fallidos es el de la última.
+          const a = rec as unknown as Partial<AvisoEnvio> & { finished_at?: string };
+          const st = a.started_at ?? key.split(':').slice(2).join(':');
+          const prev: AvisoEnvio = ultimoAviso ?? {
+            corridas: 0, started_at: st, finished_at: '', eligible: a.eligible ?? 0, eligible_es: a.eligible_es ?? 0,
+            sent: 0, sent_es: 0, failed: 0, failed_inactive: 0,
+          };
+          const esPrimera = st <= prev.started_at;
+          const esUltima = (a.finished_at ?? st) >= prev.finished_at;
+          ultimoAviso = {
+            corridas: prev.corridas + 1,
+            started_at: esPrimera ? st : prev.started_at,
+            finished_at: esUltima ? a.finished_at ?? st : prev.finished_at,
+            eligible: esPrimera ? a.eligible ?? 0 : prev.eligible,
+            eligible_es: esPrimera ? a.eligible_es ?? 0 : prev.eligible_es,
+            sent: prev.sent + (a.sent ?? 0),
+            sent_es: prev.sent_es + (a.sent_es ?? 0),
+            failed: esUltima ? a.failed ?? 0 : prev.failed,
+            failed_inactive: prev.failed_inactive + (a.failed_inactive ?? 0),
+          };
+          return;
+        }
         if (key.startsWith('broadcast-report:')) {
           if (key > ultimoBroadcastKey) {
             const b = rec as unknown as {
@@ -1788,7 +1860,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
 
     // ── 4f. Consentimiento comercial (2 nov 2026) ────────────────
     const consentimiento_comercial = await buildConsentimiento(
-      simDb, weekAgoIso, twoWeeksAgoIso, nowIso, consentSignals, legacyPolicy(env), ultimoBroadcast,
+      simDb, weekAgoIso, twoWeeksAgoIso, nowIso, consentSignals, legacyPolicy(env), ultimoBroadcast, ultimoAviso,
     ).catch((err) => {
       console.error('consentimiento_comercial failed', err);
       return null;
@@ -1807,7 +1879,9 @@ export const GET: APIRoute = async ({ url, locals }) => {
 
     if (postmarkToken) {
       // 13 oct 2026: + correos del simulador, secuencia drip (drip-<track>-d<step>)
-      // y el reenvío único blog-resend-clickers. Tags sin envíos en la ventana no salen.
+      // y el reenvío único blog-resend-clickers (endpoint borrado el 2 nov 2026; el tag queda solo como
+      // histórico y deja de salir cuando no hay envíos en la ventana). Tags sin envíos en la ventana no salen.
+      // 2 nov 2026: + aviso-privacidad-2026-11 (correo único) y el reporte del simulador con y sin oferta.
       const tags = [
         'welcome-cv',
         'welcome-quiz',
@@ -1816,6 +1890,11 @@ export const GET: APIRoute = async ({ url, locals }) => {
         'welcome-simulator-code',
         'simulator-purchase',
         'simulator-post-package',
+        'simulator-report-ready-cta-a',
+        'simulator-report-ready-cta-b',
+        'simulator-report-ready-cta-c',
+        'simulator-report-ready-sin-oferta',
+        'aviso-privacidad-2026-11',
         ...(['cv', 'quiz'] as const).flatMap((track) =>
           DRIP_STEPS.map((step) => `drip-${track}-d${step}`),
         ),

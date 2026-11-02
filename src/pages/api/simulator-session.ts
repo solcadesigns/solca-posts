@@ -25,6 +25,7 @@ import { parseFinalOutput } from '../../lib/simulator-metrics-parser';
 import { writeMetricsToD1, writeSessionInitialToD1 } from '../../lib/simulator-metrics-writer';
 import { esBanderaInterna, esCorreoDePrueba } from '../../lib/simulator-test-sessions';
 import { sendEmail, PostmarkError } from '../../lib/postmark';
+import { legacyPolicy, marketingDecisionForEmail } from '../../lib/consent';
 import type {
   CandidateProfile,
   CreditsRecord,
@@ -913,7 +914,14 @@ async function handleNext(
         const emailTo = state.userEmail;
         if (postmarkToken && emailTo && syncResult.finalReport) {
           const firstName = emailTo.split('@')[0];
-          const cta = buildCtaContent();
+          // 2 nov 2026: oferta de planes solo con consentimiento comercial (igual que simulator-process-pending).
+          const mk = await marketingDecisionForEmail(
+            env.EMAILS as KVNamespace | undefined,
+            emailTo,
+            legacyPolicy(env),
+            env.SIMULATOR_METRICS_DB as D1Database | undefined,
+          );
+          const cta = mk.allowed ? buildCtaContent() : null;
           const code = state.betaCode ?? '';
           const codeQuery = code ? `&codigo=${encodeURIComponent(code)}` : '';
           try {
@@ -923,7 +931,8 @@ async function handleNext(
               to: emailTo,
               templateAlias: 'simulator-report-ready',
               messageStream: 'outbound',
-              tag: `simulator-report-ready-cta-${cta.variant}`,
+              tag: cta ? `simulator-report-ready-cta-${cta.variant}` : 'simulator-report-ready-sin-oferta',
+              metadata: { marketing: mk.allowed ? '1' : '0', marketing_decision: mk.decision },
               templateModel: {
                 first_name: firstName,
                 rol: syncResult.finalReport.rol,
@@ -938,11 +947,12 @@ async function handleNext(
                   : 'https://solcaciencia.com/simulador-entrevistas/',
                 session_id: state.sessionId,
                 access_code: code,
-                cta_body: cta.bodyHtml,
-                cta_body_text: cta.bodyText,
-                cta_url: cta.ctaUrl,
-                cta_button_label: cta.buttonLabel,
-                cta_variant: cta.variant,
+                marketing: mk.allowed,
+                cta_body: cta?.bodyHtml ?? '',
+                cta_body_text: cta?.bodyText ?? '',
+                cta_url: cta?.ctaUrl ?? '',
+                cta_button_label: cta?.buttonLabel ?? '',
+                cta_variant: cta?.variant ?? '',
               },
             });
           } catch (mailErr) {

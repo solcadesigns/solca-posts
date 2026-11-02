@@ -32,6 +32,7 @@ import { parseFinalOutput } from '../../lib/simulator-metrics-parser';
 import { sendEmail, sendEmailWithTemplate, PostmarkError } from '../../lib/postmark';
 import { writeMetricsToD1 } from '../../lib/simulator-metrics-writer';
 import { getRoleCta } from '../../lib/simulator-defaults';
+import { ConsentLookup, legacyPolicy, marketingDecisionForEmail } from '../../lib/consent';
 import type { SessionState, ChatMessage, FinalReport } from '../../lib/simulator-types';
 import {
   buildAsyncFinalMetrics,
@@ -367,6 +368,7 @@ async function processOneChunk(
   env: Record<string, unknown>,
   pendingKey: string,
   pending: PendingRecord,
+  consentLookup?: ConsentLookup,
 ): Promise<{ ok: boolean; status: string }> {
   const kv = env.SIMULATOR_SESSIONS as KVNamespace | undefined;
   const apiKey = env.ANTHROPIC_API_KEY as string | undefined;
@@ -429,7 +431,16 @@ async function processOneChunk(
     const email = pending.userEmail || state.userEmail;
     const firstName = pending.userFirstName || (email ? email.split('@')[0] : 'ahí');
     if (postmarkToken && email) {
-      const cta = buildCtaContent();
+      // 2 nov 2026: la oferta de planes solo va a quien aceptó correos comerciales (src/lib/consent.ts).
+      // Sin consentimiento (o si la verificación falla) el correo sale igual, sin el bloque de oferta.
+      const mk = await marketingDecisionForEmail(
+        env.EMAILS as KVNamespace | undefined,
+        email,
+        legacyPolicy(env),
+        env.SIMULATOR_METRICS_DB as D1Database | undefined,
+        consentLookup,
+      );
+      const cta = mk.allowed ? buildCtaContent() : null;
       const code = state.betaCode ?? '';
       const codeQuery = code ? `&codigo=${encodeURIComponent(code)}` : '';
       try {
@@ -438,7 +449,8 @@ async function processOneChunk(
           to: email,
           templateAlias: 'simulator-report-ready',
           messageStream: 'outbound',
-          tag: `simulator-report-ready-cta-${cta.variant}`,
+          tag: cta ? `simulator-report-ready-cta-${cta.variant}` : 'simulator-report-ready-sin-oferta',
+          metadata: { marketing: mk.allowed ? '1' : '0', marketing_decision: mk.decision },
           templateModel: {
             first_name: firstName,
             rol: finalReport.rol,
@@ -457,14 +469,15 @@ async function processOneChunk(
               : 'https://solcaciencia.com/simulador-entrevistas/',
             session_id: state.sessionId,
             access_code: code,
-            cta_body: cta.bodyHtml,
-            cta_body_text: cta.bodyText,
-            cta_url: cta.ctaUrl,
-            cta_button_label: cta.buttonLabel,
-            cta_variant: cta.variant,
+            marketing: mk.allowed,
+            cta_body: cta?.bodyHtml ?? '',
+            cta_body_text: cta?.bodyText ?? '',
+            cta_url: cta?.ctaUrl ?? '',
+            cta_button_label: cta?.buttonLabel ?? '',
+            cta_variant: cta?.variant ?? '',
           },
         });
-        console.log(`[pending-cron] report email sent ${pending.sessionId} cta_${cta.variant}`);
+        console.log(`[pending-cron] report email sent ${pending.sessionId} ${cta ? `cta_${cta.variant}` : `sin_oferta (${mk.decision})`}`);
       } catch (err) {
         console.error(`[pending-cron] report email failed ${pending.sessionId}:`, err instanceof PostmarkError ? err.status : String(err));
       }
@@ -645,6 +658,12 @@ export const GET: APIRoute = async ({ request, locals }) => {
   // pendings quedaban en attempts=0, chunks=0. Ahora esperamos el chunk (~15-25s)
   // dentro del handler; el cron externo tolera 30s, así que cabe.
   const enqueued: Array<{ sessionId: string; status: string }> = [];
+  // 2 nov 2026: un solo índice de consentimiento por corrida (se arma solo si algún reporte se envía).
+  const consentLookup = new ConsentLookup(
+    env.EMAILS as KVNamespace | undefined,
+    legacyPolicy(env),
+    env.SIMULATOR_METRICS_DB as D1Database | undefined,
+  );
 
   for (const k of list.keys) {
     const raw = await kv.get(k.name);
@@ -717,7 +736,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
     // Await SÍNCRONO — 1 chunk por pending por corrida. Rompe si excede
     // el subrequest timeout, pero el chunk está diseñado para <25s.
-    const r = await processOneChunk(env, k.name, pending);
+    const r = await processOneChunk(env, k.name, pending, consentLookup);
     enqueued.push({ sessionId: pending.sessionId, status: r.status });
   }
 
