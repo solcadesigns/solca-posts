@@ -15,6 +15,11 @@
 // La página es pública e indexable (sin noindex): es la puerta canónica al producto.
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
+// 2 nov 2026: textos de las casillas en src/lib/consent.ts (lo que se guarda corresponde a lo que se ve).
+import { CONSENT_TEXT, CONSENT_COMMON, CONSENT_MSG, privacidadHtml } from '../../lib/consent';
+const consentSim = CONSENT_TEXT.simulador;
+const consentPrivacidadHtml = privacidadHtml('simulador');
+const consentErrMsg = CONSENT_MSG.privacidad_requerida;
 ---
 <BaseLayout
   title="Simulador de Entrevistas Pharma · Solca Ciencia"
@@ -219,7 +224,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           Pago único, sin suscripciones automáticas. Vigencia 240 días.
         </span>
       </p>
-      <form id="subscribe-form" class="signup-form" novalidate>
+      <form id="subscribe-form" class="signup-form" novalidate data-consent-err={consentErrMsg}>
         <input type="hidden" name="plan" id="selected-plan" value="gratis" />
         <div class="field">
           <label for="sub-name">Nombre</label>
@@ -246,11 +251,14 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         </div>
         <div class="field checkbox">
           <input type="checkbox" id="sub-consent" name="consent" required />
-          <label for="sub-consent">
-            Acepto la <a href="/privacidad" target="_blank" rel="noopener">política de datos</a> y
-            recibir emails de Solca Ciencia.
-          </label>
+          <label for="sub-consent" set:html={consentPrivacidadHtml} />
         </div>
+        <div class="field checkbox">
+          <input type="checkbox" id="sub-marketing" name="marketing" />
+          <label for="sub-marketing">{consentSim.marketing}</label>
+        </div>
+        <p class="consent-note">{consentSim.nota}</p>
+        <p class="consent-common">{CONSENT_COMMON}</p>
         <button type="submit" class="btn btn-primary btn-lg" id="signup-submit">
           Continuar
         </button>
@@ -474,6 +482,17 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         const email = String(fd.get('email') ?? '').trim();
         const emailConfirm = String(fd.get('email_confirm') ?? '').trim();
         const consent = subForm.querySelector<HTMLInputElement>('#sub-consent')?.checked ?? false;
+        // 2 nov 2026: casilla comercial opcional; no condiciona el código ni el pago.
+        const marketing = subForm.querySelector<HTMLInputElement>('#sub-marketing')?.checked === true;
+        const consentErr = subForm.dataset.consentErr ?? '';
+        if (!consent) {
+          subMsg.textContent = consentErr;
+          subMsg.classList.remove('ok');
+          subMsg.classList.add('err');
+          subMsg.hidden = false;
+          if (btn) btn.disabled = false;
+          return;
+        }
 
         // Validación de coincidencia de correos (case-insensitive).
         if (email.toLowerCase() !== emailConfirm.toLowerCase()) {
@@ -495,7 +514,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             const res = await fetch('/api/simulator-subscribe', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ name, email, consent, plan: 'gratis', ...utm, ...((window as unknown as { __attr?: () => Record<string, unknown> }).__attr?.() ?? {}) }),
+              body: JSON.stringify({ name, email, consent, marketing, plan: 'gratis', ...utm, ...((window as unknown as { __attr?: () => Record<string, unknown> }).__attr?.() ?? {}) }),
             });
             const data = (await res.json()) as { ok?: boolean; message?: string; error?: string };
             if (res.ok && data.ok) {
@@ -511,18 +530,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
               subMsg.hidden = false;
             }
           } else {
-            // Básico o Premium → Stripe Checkout.
-            if (!consent) {
-              subMsg.textContent = 'Debes aceptar la política de datos para continuar.';
-              subMsg.classList.add('err');
-              subMsg.hidden = false;
-              return;
-            }
+            // Básico o Premium → Stripe Checkout (el consentimiento ya se validó arriba).
             trackEvent('checkout_started', { plan });
             const res = await fetch('/api/simulator-checkout', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ plan, email, name, ...((window as unknown as { __attr?: () => Record<string, unknown> }).__attr?.() ?? {}) }),
+              body: JSON.stringify({ plan, email, name, consent, marketing, ...((window as unknown as { __attr?: () => Record<string, unknown> }).__attr?.() ?? {}) }),
             });
             const data = (await res.json()) as { ok?: boolean; url?: string; error?: string };
             if (res.ok && data.ok && data.url) {
@@ -734,8 +747,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     .field { display: flex; flex-direction: column; gap: 6px; }
     .field.checkbox { flex-direction: row; align-items: flex-start; gap: 10px; }
     .field.checkbox label {
-      font-size: 13px; color: var(--text-mute); line-height: 1.5;
+      font-size: 14px; color: var(--text); line-height: 1.5;
     }
+    .consent-note { margin: -8px 0 0 26px; font-size: 14px; color: var(--text); line-height: 1.5; }
+    .consent-common { margin: 0; font-size: 14px; color: var(--text); line-height: 1.5; }
     .field.checkbox a { color: var(--navy); text-decoration: underline; }
     .field-hint {
       margin: 0;

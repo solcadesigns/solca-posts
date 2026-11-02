@@ -20,6 +20,8 @@
 
 import type { APIRoute } from 'astro';
 import { hmacVerifyEmail } from '../../lib/drip';
+import { emailHashFull } from '../../lib/attribution';
+import { registrarRevocacion } from '../../lib/consent';
 
 export const prerender = false;
 
@@ -112,6 +114,15 @@ export const GET: APIRoute = async ({ url, locals }) => {
       page('Error al procesar', 'La baja no se pudo guardar. Escribe a <a href="mailto:hello@solcaciencia.com">hello@solcaciencia.com</a> y lo hacemos manualmente.'),
     );
   }
+
+  // 2 nov 2026: evento marketing_revoked en D1 (sin correo) y, si también sale del newsletter, revocado_at en
+  // consentimientos. Best-effort: la baja ya quedó en KV.
+  await registrarRevocacion(
+    env.SIMULATOR_METRICS_DB as D1Database | undefined,
+    await emailHashFull(email),
+    'drip-unsubscribe',
+    alsoNewsletter ? 'newsletter' : 'drip',
+  );
 
   if (alsoNewsletter) {
     return htmlResponse(

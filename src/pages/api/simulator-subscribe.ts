@@ -33,6 +33,14 @@ import type { APIRoute } from 'astro';
 import { sendEmailWithTemplate, PostmarkError } from '../../lib/postmark';
 import { extractUtms } from '../../lib/utm';
 import { extractAttribution, emailHashFull } from '../../lib/attribution';
+import {
+  readMarketing,
+  consentFields,
+  consentKvMeta,
+  registrarConsentimiento,
+  CONSENT_MSG,
+  type ConsentFields,
+} from '../../lib/consent';
 
 export const prerender = false;
 
@@ -40,6 +48,8 @@ interface SubscribeRequest {
   email: string;
   name: string;
   consent?: boolean;
+  // 2 nov 2026: casilla opcional de correos comerciales (src/lib/consent.ts). No condiciona el código.
+  marketing?: boolean;
   country?: string;
   utm_source?: string;
   utm_medium?: string;
@@ -137,7 +147,10 @@ async function storeSimLead(
   }
   const key = `sim:${record.ts}:${(record.email as string).toLowerCase()}`;
   try {
-    await kv.put(key, JSON.stringify(record));
+    // 2 nov 2026: metadata con el consentimiento para que blog-broadcast lo lea con `list`, sin `get`.
+    await kv.put(key, JSON.stringify(record), {
+      metadata: consentKvMeta(record as unknown as ConsentFields),
+    });
   } catch (err) {
     console.error('simulator-subscribe:KV EMAILS put failed:', err);
   }
@@ -257,11 +270,12 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
   const email = (body.email ?? '').trim().toLowerCase();
   const name = (body.name ?? '').trim();
   const consent = body.consent === true;
+  const marketing = readMarketing(body);
   const country = body.country?.trim();
 
   if (!consent) {
     return jsonResponse(
-      { error: 'consent_required', message: 'Debes aceptar la política de datos.' },
+      { error: 'consent_required', message: CONSENT_MSG.privacidad_requerida },
       400,
     );
   }
@@ -307,22 +321,39 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
   // UTMs sanitizadas (server-side allow-list + trim).
   const utms = extractUtms(body as unknown as Record<string, unknown>);
 
+  const leadTs = new Date().toISOString();
+  const attr = extractAttribution(body);
+  const emailHash64 = await emailHashFull(email);
   const leadRecord: Record<string, unknown> = {
     source: 'simulator',
     email,
     name,
     country: country?.toLowerCase(),
     ip,
-    ts: new Date().toISOString(),
+    ts: leadTs,
     code,
     cohort: PREPAYWALL_COHORT,
     expires_at: PREPAYWALL_EXPIRES_ISO,
     max_sessions: PREPAYWALL_MAX_SESSIONS,
     ...utms,
     // 30 oct 2026 (P2): llave de unión con ventas (sha256 completo) + aid/ft/lt/interno.
-    email_hash: await emailHashFull(email),
-    ...extractAttribution(body),
+    email_hash: emailHash64,
+    ...attr,
+    // 2 nov 2026: versión del texto aceptado, fecha y casilla comercial (src/lib/consent.ts).
+    ...consentFields(leadTs, marketing, 'simulador'),
   };
+
+  // Prueba del consentimiento + evento lead_captured en D1 (permanente, sin correo). Con await: en Astro
+  // sobre Workers waitUntil no es confiable, y es una sola escritura corta.
+  await registrarConsentimiento(env.SIMULATOR_METRICS_DB as D1Database | undefined, {
+    ts: leadTs,
+    emailHash: emailHash64,
+    form: 'simulador',
+    marketing,
+    attr,
+    utms,
+    country: request.headers.get('cf-ipcountry'),
+  });
 
   // Escritura del lead + envío de Postmark en background (waitUntil).
   waitUntil(
@@ -339,7 +370,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
   return jsonResponse(
     {
       ok: true,
-      message: 'Suscrito. En un momento recibes tu código por email para hacer tu sesión.',
+      message: CONSENT_MSG.simulador_ok,
       // No devolvemos el código en la respuesta HTTP: obliga al usuario a
       // abrir el email (verifica que la dirección es válida y llega bien).
     },

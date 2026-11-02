@@ -34,6 +34,7 @@ import type { APIRoute } from 'astro';
 import { sendEmailWithTemplate, PostmarkError } from '../../lib/postmark';
 import { PLAN_CONFIG, type Plan } from '../../lib/simulator-types';
 import { emailHashFull } from '../../lib/attribution';
+import { registrarConsentimiento, consentFields, consentKvMeta } from '../../lib/consent';
 
 export const prerender = false;
 
@@ -462,6 +463,57 @@ export const POST: APIRoute = async ({ request, locals }) => {
   // Libro de ventas (30 oct 2026): después de entregar y antes de marcar el dedup, para que un fallo
   // de créditos (que hace reintentar a Stripe) no deje una venta sin sesiones. INSERT OR IGNORE por session.id.
   await registrarVenta(ventasDb, session, plan, email, event.livemode !== false, event.type);
+
+  // 2 nov 2026: consentimiento del checkout (privacidad + casilla comercial) al confirmar el pago, no al abrir
+  // el checkout. Los checkouts anteriores no traen consent_version en metadata y se quedan sin registro.
+  const mConsent = meta(session.metadata, 'consent_version', 30);
+  if (mConsent) {
+    const m = session.metadata;
+    const touch = (p: 'ft' | 'lt') => {
+      const t = {
+        utm_source: meta(m, `${p}_source`) ?? undefined,
+        utm_medium: meta(m, `${p}_medium`) ?? undefined,
+        utm_campaign: meta(m, `${p}_campaign`) ?? undefined,
+        utm_content: meta(m, `${p}_content`) ?? undefined,
+        ref_host: meta(m, `${p}_ref_host`) ?? undefined,
+        landing_path: p === 'ft' ? meta(m, 'ft_landing') ?? undefined : undefined,
+      };
+      return t.utm_source || t.utm_campaign || t.ref_host ? t : undefined;
+    };
+    // ts estable por evento: un reintento del mismo evento no duplica la fila (INSERT OR IGNORE por id).
+    const consentTs = new Date((event.created ?? Math.floor(Date.now() / 1000)) * 1000).toISOString();
+    const compradorMarketing = meta(m, 'marketing', 1) === '1';
+    // El comprador que marcó la casilla entra a la lista (KV EMAILS) como lead del simulador, con su consentimiento.
+    if (compradorMarketing) {
+      const emailsKv = env.EMAILS as KVNamespace | undefined;
+      if (emailsKv) {
+        try {
+          const fields = consentFields(consentTs, true, 'simulador-pago');
+          await emailsKv.put(
+            `sim:${consentTs}:${email}`,
+            JSON.stringify({ ts: consentTs, email, source: 'simulador-pago', plan, ...fields }),
+            { metadata: consentKvMeta(fields) },
+          );
+        } catch (err) {
+          console.warn('[stripe-webhook] lead con opt-in no guardado en EMAILS', String(err).slice(0, 200));
+        }
+      }
+    }
+    await registrarConsentimiento(ventasDb, {
+      ts: consentTs,
+      emailHash: await emailHashFull(email),
+      form: 'simulador-pago',
+      marketing: compradorMarketing,
+      consentVersion: mConsent,
+      attr: {
+        aid: meta(m, 'aid', 36) ?? undefined,
+        ft: touch('ft'),
+        lt: touch('lt'),
+        ...(meta(m, 'interno') === '1' ? { interno: true as const } : {}),
+      },
+      country: session.customer_details?.address?.country?.slice(0, 2) ?? null,
+    });
+  }
 
   // Marcar dedup ANTES de enviar email (si el email falla no queremos duplicar créditos).
   // Si falla la escritura de créditos, el evento queda sin marcar y Stripe reintenta.

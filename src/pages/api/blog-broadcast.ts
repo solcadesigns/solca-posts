@@ -1,6 +1,14 @@
 import type { APIRoute } from 'astro';
 import { sendEmail, sendEmailWithTemplate, PostmarkError } from '../../lib/postmark';
 import { getCollection } from 'astro:content';
+import {
+  decideMarketing,
+  isSpain,
+  legacyPolicy,
+  readConsentKvMeta,
+  type ConsentSignal,
+  type LegacyPolicy,
+} from '../../lib/consent';
 
 export const prerender = false;
 
@@ -29,6 +37,14 @@ export const prerender = false;
  *   `drip-unsubscribe` ("salir también del newsletter") o puesta a mano cuando alguien
  *   contesta "unsub". `unsub:<email>:drip` NO saca del newsletter (la página lo promete).
  *
+ * Consentimiento comercial (2 nov 2026, src/lib/consent.ts): el newsletter solo va a correos con la casilla
+ * comercial marcada en algún formulario (metadata `{cv, mk}` de la llave, sin `get`), o a correos que solo
+ * tienen registros legado (sin versión de consentimiento) si MARKETING_LEGACY_POLICY lo permite
+ * (`permitir_sin_es`: pasan salvo país España; para eso se lee el registro `email:`/`quiz:` legado con `get`,
+ * dentro de un tope de operaciones KV; lo que no alcanza a leerse sale como `legacy_unread`, no se envía).
+ * Motivos nuevos en `excluded`: no_marketing_optin, legacy_es, legacy_bloqueado, legacy_unread. Se evalúan
+ * al final, después de los motivos anteriores, para que esas cuentas sigan siendo comparables.
+ *
  * Idempotencia: `broadcast-lock:<slug>` se escribe antes del primer envío; una segunda
  * corrida del mismo post se salta salvo `?force=1`. `?dry_run=1` calcula la audiencia y
  * las exclusiones sin enviar ni escribir nada.
@@ -41,6 +57,9 @@ const NEWSLETTER_UNSUB_SCOPES = new Set(['newsletter', 'comercial', 'all']);
 const LEAD_KEY_RE = /^(email|quiz|sim):(\d{4}-\d{2}-\d{2}T[0-9:.]+Z):(.+)$/;
 const UNSUB_KEY_RE = /^unsub:(.+):([a-z_-]+)$/;
 const POSTMARK_BASE = 'https://api.postmarkapp.com';
+// Workers KV: 1,000 operaciones por invocación (https://developers.cloudflare.com/kv/platform/limits/).
+// Las lecturas de registros legado paran antes, con margen para el candado y el reporte.
+const KV_OP_BUDGET = 980;
 
 interface Lead {
   email: string;
@@ -56,6 +75,18 @@ interface Exclusions {
   suppressed_outbound: number; // rebote duro / queja en el stream transaccional
   over_cap: number; // no enviados por tope de la corrida
   unparsable_key: number; // llave de suscriptor con formato inesperado y sin registro legible
+  // 2 nov 2026 · consentimiento comercial (src/lib/consent.ts)
+  no_marketing_optin: number; // solo registros nuevos y ninguno con la casilla comercial marcada
+  legacy_es: number; // solo legado y país España (política permitir_sin_es)
+  legacy_bloqueado: number; // solo legado y la política es bloquear o reconfirmar
+  legacy_unread: number; // legado sin leer por el tope de operaciones KV (no se envía sin verificar)
+}
+
+interface ConsentStats {
+  policy: LegacyPolicy;
+  optin: number; // elegibles por casilla comercial marcada
+  legacy_allowed: number; // elegibles por regla legado
+  legacy_reads: number; // `get` de registros legado para el filtro España
 }
 
 interface BroadcastReport {
@@ -70,6 +101,7 @@ interface BroadcastReport {
   failed_inactive: number; // Postmark 406: destinatario suprimido que no venía en el dump
   skipped: number; // candidates - eligible (compatibilidad con el reporte anterior)
   excluded: Exclusions;
+  consent: ConsentStats;
   drip_unsub_still_sent: number; // solo dejaron el drip; siguen en el newsletter
   suppression_check: 'ok' | 'failed';
   suppression_errors: string[];
@@ -108,18 +140,25 @@ function isAuthorized(request: Request, env: Record<string, unknown>): boolean {
   return provided === expected;
 }
 
-/** Lista todas las llaves de un prefijo, paginando con cursor. */
-async function listAllKeys(
-  kv: KVNamespace,
-  prefix: string,
-  counter: { calls: number; truncated: boolean },
-): Promise<string[]> {
-  const names: string[] = [];
+interface KvCounter {
+  calls: number; // kv.list
+  gets: number; // kv.get
+  truncated: boolean;
+}
+
+interface KeyInfo {
+  name: string;
+  metadata?: unknown;
+}
+
+/** Lista todas las llaves de un prefijo (con su metadata), paginando con cursor. */
+async function listAllKeys(kv: KVNamespace, prefix: string, counter: KvCounter): Promise<KeyInfo[]> {
+  const names: KeyInfo[] = [];
   let cursor: string | undefined;
   for (let page = 0; page < MAX_LIST_PAGES; page++) {
     const res = await kv.list({ prefix, limit: 1000, ...(cursor ? { cursor } : {}) });
     counter.calls++;
-    for (const k of res.keys) names.push(k.name);
+    for (const k of res.keys) names.push({ name: k.name, metadata: k.metadata });
     if (res.list_complete) return names;
     cursor = (res as { cursor?: string }).cursor;
     if (!cursor) return names;
@@ -130,10 +169,11 @@ async function listAllKeys(
 }
 
 /** Correo + ts del nombre de la llave; si el formato no cuadra, lee el registro. */
-async function leadFromKey(kv: KVNamespace, name: string): Promise<Lead | null> {
+async function leadFromKey(kv: KVNamespace, name: string, counter: KvCounter): Promise<Lead | null> {
   const m = LEAD_KEY_RE.exec(name);
   if (m) return { email: m[3].toLowerCase().trim(), ts: m[2] };
   try {
+    counter.gets++;
     const raw = await kv.get(name);
     if (!raw) return null;
     const rec = JSON.parse(raw) as { email?: string; ts?: string; optedInAt?: string };
@@ -189,6 +229,7 @@ interface Audience {
   candidatesByPrefix: Record<string, number>;
   uniqueEmails: number;
   excluded: Exclusions;
+  consent: ConsentStats;
   dripUnsubStillSent: number;
   suppressionCheck: 'ok' | 'failed';
   suppressionErrors: string[];
@@ -197,8 +238,13 @@ interface Audience {
   kvListTruncated: boolean;
 }
 
-async function buildAudience(kv: KVNamespace, token: string, nowMs: number): Promise<Audience> {
-  const counter = { calls: 0, truncated: false };
+async function buildAudience(
+  kv: KVNamespace,
+  token: string,
+  nowMs: number,
+  policy: LegacyPolicy,
+): Promise<Audience> {
+  const counter: KvCounter = { calls: 0, gets: 0, truncated: false };
   const excluded: Exclusions = {
     attempt_only: 0,
     duplicate: 0,
@@ -208,7 +254,15 @@ async function buildAudience(kv: KVNamespace, token: string, nowMs: number): Pro
     suppressed_outbound: 0,
     over_cap: 0,
     unparsable_key: 0,
+    no_marketing_optin: 0,
+    legacy_es: 0,
+    legacy_bloqueado: 0,
+    legacy_unread: 0,
   };
+  const consent: ConsentStats = { policy, optin: 0, legacy_allowed: 0, legacy_reads: 0 };
+  // Consentimiento por correo: señales de la metadata (registros nuevos) y llaves legado por leer.
+  const signalsByEmail = new Map<string, ConsentSignal[]>();
+  const legacyKeysByEmail = new Map<string, string[]>(); // solo email:/quiz: (sim: no trae país)
 
   // 1. Suscriptores por prefijo; dedup por correo conservando el opt-in más reciente.
   const byEmail = new Map<string, Lead>();
@@ -218,12 +272,25 @@ async function buildAudience(kv: KVNamespace, token: string, nowMs: number): Pro
     const names = await listAllKeys(kv, prefix, counter);
     candidatesByPrefix[prefix.slice(0, -1)] = names.length;
     candidates += names.length;
-    for (const name of names) {
-      const lead = await leadFromKey(kv, name);
+    for (const { name, metadata } of names) {
+      const lead = await leadFromKey(kv, name, counter);
       if (!lead) {
         excluded.unparsable_key++;
         continue;
       }
+      const meta = readConsentKvMeta(metadata);
+      const sigs = signalsByEmail.get(lead.email) ?? [];
+      if (meta) {
+        sigs.push({ consent_version: meta.cv, marketing_optin: meta.mk === 1 });
+      } else {
+        sigs.push({}); // legado: el país, si hace falta, se lee después
+        if (prefix !== 'sim:') {
+          const arr = legacyKeysByEmail.get(lead.email) ?? [];
+          arr.push(name);
+          legacyKeysByEmail.set(lead.email, arr);
+        }
+      }
+      signalsByEmail.set(lead.email, sigs);
       const prev = byEmail.get(lead.email);
       if (prev) {
         excluded.duplicate++;
@@ -236,7 +303,7 @@ async function buildAudience(kv: KVNamespace, token: string, nowMs: number): Pro
 
   // 2. Solo para medir: correos con intento de CV y sin registro de suscriptor.
   const attemptEmails = new Set<string>();
-  for (const name of await listAllKeys(kv, 'attempt:', counter)) {
+  for (const { name } of await listAllKeys(kv, 'attempt:', counter)) {
     const m = /^attempt:\d{4}-\d{2}-\d{2}T[0-9:.]+Z:(.+)$/.exec(name);
     if (m) attemptEmails.add(m[1].toLowerCase().trim());
   }
@@ -245,7 +312,7 @@ async function buildAudience(kv: KVNamespace, token: string, nowMs: number): Pro
   // 3. Bajas guardadas en KV.
   const unsubNewsletter = new Set<string>();
   const unsubDrip = new Set<string>();
-  for (const name of await listAllKeys(kv, 'unsub:', counter)) {
+  for (const { name } of await listAllKeys(kv, 'unsub:', counter)) {
     const m = UNSUB_KEY_RE.exec(name);
     if (!m) continue;
     const e = m[1].toLowerCase().trim();
@@ -293,6 +360,49 @@ async function buildAudience(kv: KVNamespace, token: string, nowMs: number): Pro
       excluded.suppressed_outbound++;
       continue;
     }
+    // 2 nov 2026: consentimiento comercial.
+    const sigs = signalsByEmail.get(lead.email) ?? [{}];
+    let decision = decideMarketing(sigs, policy);
+    if (decision === 'legacy') {
+      // permitir_sin_es: falta saber si algún registro legado es de España. Se lee con `get` (con tope).
+      let unread = false;
+      for (const key of legacyKeysByEmail.get(lead.email) ?? []) {
+        if (counter.calls + counter.gets >= KV_OP_BUDGET) {
+          unread = true;
+          break;
+        }
+        counter.gets++;
+        consent.legacy_reads++;
+        try {
+          const raw = await kv.get(key);
+          const country = raw ? (JSON.parse(raw) as { country?: string }).country : undefined;
+          if (isSpain(country)) {
+            decision = 'legacy_es';
+            break;
+          }
+        } catch {
+          // registro ilegible: no aporta país
+        }
+      }
+      if (unread && decision === 'legacy') {
+        excluded.legacy_unread++;
+        continue;
+      }
+    }
+    if (decision === 'no_marketing_optin') {
+      excluded.no_marketing_optin++;
+      continue;
+    }
+    if (decision === 'legacy_es') {
+      excluded.legacy_es++;
+      continue;
+    }
+    if (decision === 'legacy_bloqueado') {
+      excluded.legacy_bloqueado++;
+      continue;
+    }
+    if (decision === 'optin') consent.optin++;
+    else consent.legacy_allowed++;
     if (unsubDrip.has(lead.email)) dripUnsubStillSent++;
     eligible.push(lead);
   }
@@ -307,6 +417,7 @@ async function buildAudience(kv: KVNamespace, token: string, nowMs: number): Pro
     candidatesByPrefix,
     uniqueEmails: byEmail.size,
     excluded,
+    consent,
     dripUnsubStillSent,
     suppressionCheck: suppressionErrors.length ? 'failed' : 'ok',
     suppressionErrors,
@@ -402,7 +513,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
 
   // dry_run: audiencia y exclusiones sin enviar ni escribir (solo conteos, sin correos).
   if (dryRun) {
-    const aud = await buildAudience(emailsKv, token, Date.now());
+    const aud = await buildAudience(emailsKv, token, Date.now(), legacyPolicy(env));
     return jsonResponse({
       dry_run: true,
       blog_slug: post?.id ?? null,
@@ -412,6 +523,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
       unique_emails: aud.uniqueEmails,
       eligible: aud.eligible.length,
       excluded: aud.excluded,
+      consent: aud.consent,
       drip_unsub_still_sent: aud.dripUnsubStillSent,
       suppression_check: aud.suppressionCheck,
       suppression_errors: aud.suppressionErrors,
@@ -453,7 +565,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
     : `https://solcaciencia.com${heroPath}`;
 
   // 2-3. Audiencia: suscriptores paginados, dedup, bajas KV y supresiones Postmark.
-  const aud = await buildAudience(emailsKv, token, Date.now());
+  const aud = await buildAudience(emailsKv, token, Date.now(), legacyPolicy(env));
   const eligible = aud.eligible;
 
   // Lock antes del primer envío: si la corrida muere a medias, NO se reintenta sola
@@ -492,6 +604,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
     failed_inactive: failedInactive,
     skipped: aud.candidates - eligible.length,
     excluded: aud.excluded,
+    consent: aud.consent,
     drip_unsub_still_sent: aud.dripUnsubStillSent,
     suppression_check: aud.suppressionCheck,
     suppression_errors: aud.suppressionErrors,
@@ -520,6 +633,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
   if (aud.suppressionMaybeTruncated) problems.push('La lista de supresiones del stream broadcast trajo 500 o más registros: podría venir incompleta.');
   if (lockFailed) problems.push('No se pudo escribir el candado del envío: una segunda corrida manual de este post podría duplicarlo.');
   if (aud.kvListTruncated) problems.push('El listado de KV EMAILS llegó al tope de páginas: parte de la lista no se leyó.');
+  if (aud.excluded.legacy_unread > 0) problems.push(`${aud.excluded.legacy_unread} correos legado no se enviaron porque se agotó el tope de ${KV_OP_BUDGET} operaciones KV antes de verificar su país. Toca guardar el país en la metadata de esas llaves (backfill) o cambiar la política.`);
   if (aud.excluded.over_cap > 0) problems.push(`${aud.excluded.over_cap} suscriptores quedaron fuera por el tope de ${MAX_SENDS_PER_RUN} envíos por corrida. Toca pasar a envío por lotes.`);
   if (failed > 0) problems.push(`${failed} envíos fallaron (ver logs broadcast:send-failed).`);
   if (problems.length) {

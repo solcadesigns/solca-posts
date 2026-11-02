@@ -17,6 +17,11 @@
  *   3. No hay unsubscribe en KV EMAILS con key `unsub:{email}:drip`.
  *   4. El lead NO recibió `blog-broadcast` en las últimas 48h (anti-fatiga
  *      cruzada con Solca Insight).
+ *   5. (2 nov 2026) El correo tiene consentimiento comercial: algún registro con
+ *      `marketing_optin: true` (cualquier formulario: email:, quiz: o sim:), o solo
+ *      registros legado que MARKETING_LEGACY_POLICY deja pasar (src/lib/consent.ts).
+ *      Sin eso: `skip_no_optin`, `skip_legacy_es` o `skip_legacy_bloqueado`.
+ *      Tampoco se envía con `unsub:{email}:newsletter|comercial|all`.
  *
  * Tracks:
  *   - `cv`: leads de KV EMAILS prefix `email:`. templateModel simple.
@@ -35,6 +40,16 @@
 
 import type { APIRoute } from 'astro';
 import { sendEmailWithTemplate, PostmarkError } from '../../lib/postmark';
+import { guardarEventoD1 } from '../../lib/eventos-d1';
+import {
+  decideMarketing,
+  isMarketingAllowed,
+  legacyPolicy,
+  readConsentKvMeta,
+  COMMERCIAL_UNSUB_SCOPES,
+  type ConsentSignal,
+  type LegacyPolicy,
+} from '../../lib/consent';
 import {
   DRIP_STEPS,
   type DripStep,
@@ -63,6 +78,9 @@ interface EmailRec {
   role?: string;
   stage?: 'gate' | 'complete';
   country?: string;
+  // 2 nov 2026 (src/lib/consent.ts). Sin consent_version = registro legado.
+  consent_version?: string;
+  marketing_optin?: boolean;
 }
 
 interface Candidate {
@@ -87,6 +105,9 @@ interface TickAction {
     | 'skip_unsubscribed'
     | 'skip_recent_broadcast'
     | 'skip_quiz_incomplete'
+    | 'skip_no_optin'
+    | 'skip_legacy_es'
+    | 'skip_legacy_bloqueado'
     | 'skip_no_token'
     | 'error';
   messageId?: string;
@@ -100,6 +121,7 @@ interface TickSummary {
   scanned: number;
   candidates: number;
   by_outcome: Record<string, number>;
+  legacy_policy?: LegacyPolicy;
   sent_details: Array<{ email: string; track: DripTrack; step: DripStep; messageId?: string }>;
   errors: Array<{ email: string; track: DripTrack; error: string }>;
 }
@@ -124,11 +146,41 @@ function isAuthorized(url: URL, headers: Headers, expectedKey: string | undefine
  * Recorre KV EMAILS con el prefix dado y arma un mapa de candidates,
  * quedándose con el firstSeen y con el metadata más útil por (email, track).
  */
+/** Señales de consentimiento por correo (todas las fuentes juntas: un opt-in en cualquier formulario cuenta). */
+type SignalMap = Map<string, ConsentSignal[]>;
+
+function addSignal(map: SignalMap, email: string, sig: ConsentSignal): void {
+  const arr = map.get(email);
+  if (arr) arr.push(sig);
+  else map.set(email, [sig]);
+}
+
+/**
+ * Solo para el consentimiento: los registros `sim:` nuevos traen la casilla en la metadata de la llave,
+ * así que basta `list` (sin `get`). Los `sim:` legado (sin metadata) no se leen: no traen país y sumarlos
+ * solo podría abrir envíos, no cerrarlos.
+ */
+async function collectSimSignals(kv: KVNamespace, signals: SignalMap): Promise<void> {
+  let cursor: string | undefined;
+  do {
+    const res = await kv.list({ prefix: 'sim:', cursor, limit: 1000 });
+    for (const key of res.keys) {
+      const meta = readConsentKvMeta(key.metadata);
+      if (!meta) continue;
+      const m = /^sim:\d{4}-\d{2}-\d{2}T[0-9:.]+Z:(.+)$/.exec(key.name);
+      if (!m) continue;
+      addSignal(signals, m[1].toLowerCase().trim(), { consent_version: meta.cv, marketing_optin: meta.mk === 1 });
+    }
+    cursor = res.list_complete ? undefined : res.cursor;
+  } while (cursor);
+}
+
 async function collectCandidates(
   kv: KVNamespace,
   prefix: string,
   track: DripTrack,
   target: Map<string, Candidate>,
+  signals: SignalMap,
 ): Promise<number> {
   let scanned = 0;
   let cursor: string | undefined;
@@ -147,6 +199,11 @@ async function collectCandidates(
       const tsMs = rec.ts ? Date.parse(rec.ts) : NaN;
       if (!email || isNaN(tsMs)) continue;
       scanned++;
+      addSignal(signals, email, {
+        consent_version: rec.consent_version,
+        marketing_optin: rec.marketing_optin === true,
+        country: rec.country,
+      });
 
       const composite = `${email}|${track}`;
       const existing = target.get(composite);
@@ -192,6 +249,8 @@ async function processOne(
     dry: boolean;
     nowMs: number;
     ageDays: number;
+    signals: SignalMap;
+    policy: LegacyPolicy;
   },
 ): Promise<TickAction> {
   const base: TickAction = {
@@ -207,6 +266,14 @@ async function processOne(
     return { ...base, outcome: 'skip_quiz_incomplete' };
   }
 
+  // 2 nov 2026: los drips son comerciales; solo con consentimiento (src/lib/consent.ts).
+  const decision = decideMarketing(ctx.signals.get(candidate.email) ?? [], ctx.policy);
+  if (!isMarketingAllowed(decision)) {
+    const outcome =
+      decision === 'legacy_es' ? 'skip_legacy_es' : decision === 'legacy_bloqueado' ? 'skip_legacy_bloqueado' : 'skip_no_optin';
+    return { ...base, outcome };
+  }
+
   // Dedupe: un envío por (email, track, step)
   const dedupeKey = `drip:${candidate.email}:${candidate.track}:${step}`;
   const already = await ctx.kv.get(dedupeKey);
@@ -215,6 +282,10 @@ async function processOne(
   // Kill switch específico del drip
   const unsub = await ctx.kv.get(`unsub:${candidate.email}:drip`);
   if (unsub) return { ...base, outcome: 'skip_unsubscribed' };
+  // Baja comercial general (la misma que respeta blog-broadcast).
+  for (const scope of COMMERCIAL_UNSUB_SCOPES) {
+    if (await ctx.kv.get(`unsub:${candidate.email}:${scope}`)) return { ...base, outcome: 'skip_unsubscribed' };
+  }
 
   // Anti-colisión con blog broadcast (48h)
   if (ctx.postmarkToken) {
@@ -310,9 +381,13 @@ async function runTick(
   }
 
   const candidates = new Map<string, Candidate>();
-  summary.scanned += await collectCandidates(kv, 'email:', 'cv', candidates);
-  summary.scanned += await collectCandidates(kv, 'quiz:', 'quiz', candidates);
+  const signals: SignalMap = new Map();
+  const policy = legacyPolicy(env);
+  summary.scanned += await collectCandidates(kv, 'email:', 'cv', candidates, signals);
+  summary.scanned += await collectCandidates(kv, 'quiz:', 'quiz', candidates, signals);
+  await collectSimSignals(kv, signals);
   summary.candidates = candidates.size;
+  summary.legacy_policy = policy;
 
   const nowMs = Date.now();
   let sentCount = 0;
@@ -334,6 +409,8 @@ async function runTick(
       dry,
       nowMs,
       ageDays,
+      signals,
+      policy,
     });
     summary.by_outcome[action.outcome] = (summary.by_outcome[action.outcome] ?? 0) + 1;
     if (action.outcome === 'sent') {
@@ -348,6 +425,26 @@ async function runTick(
       summary.errors.push({ email: cand.email, track: cand.track, error: action.error ?? '' });
     }
   }
+
+  // 2 nov 2026: resumen de la corrida en D1 `eventos` (permanente, sin correos) para el reporte semanal
+  // (sección consentimiento_comercial). Best-effort.
+  const o = summary.by_outcome;
+  await guardarEventoD1(env.SIMULATOR_METRICS_DB as D1Database | undefined, `drip-tick:${summary.triggered_at}`, {
+    ts: summary.triggered_at,
+    event: 'drip_tick_resumen',
+    extra: {
+      dry,
+      legacy_policy: policy,
+      candidates: summary.candidates,
+      sent: o.sent ?? 0,
+      dry_would_send: o.dry_would_send ?? 0,
+      skip_no_optin: o.skip_no_optin ?? 0,
+      skip_legacy_es: o.skip_legacy_es ?? 0,
+      skip_legacy_bloqueado: o.skip_legacy_bloqueado ?? 0,
+      skip_unsubscribed: o.skip_unsubscribed ?? 0,
+      error: o.error ?? 0,
+    },
+  });
 
   return summary;
 }

@@ -8,6 +8,42 @@ Fuente de verdad del contenido del welcome email disparado desde:
 
 ---
 
+## Cambio pendiente · 2 nov 2026 (casilla separada para correos comerciales)
+
+Desde el despliegue de `src/lib/consent.ts`:
+
+- **`welcome-cv` solo se envía a quien marcó la casilla comercial** (`cv-review.ts`). Sin casilla no sale correo: el análisis ya está en pantalla. La rama `is_cv` no cambia de variables.
+- **`welcome-quiz` va a todos** (resultado del rol), pero el código manda `is_quiz.marketing`:
+  - con casilla: `{ cta_url, cta_label, role_next_step }`;
+  - sin casilla: `false`.
+  - Los campos sueltos `is_quiz.cta_url`, `is_quiz.cta_label`, `is_quiz.role_next_step` siguen llegando para que la plantilla actual no se rompa. **Mientras la plantilla no cambie, el bloque del libro llega también a quien no marcó la casilla.** Orden: desplegar el código, publicar esta plantilla el mismo día, y después quitar los campos sueltos de `quiz-subscribe.ts`.
+
+Qué cambia en la plantilla (Oscar, en Postmark; el texto nuevo pasa antes por `solca-editorial-reviewer`):
+
+1. Dentro de `{{#is_quiz}}`, envolver en `{{#marketing}}...{{/marketing}}` el bloque `next-step`, el botón y el párrafo del Solca Insight. Dentro de esa sección las variables se leen de `marketing` (Mustachio anida el contexto):
+
+```html
+{{#marketing}}
+<div class="next-step">
+{{role_next_step}}
+</div>
+
+<p>
+<a class="btn" href="{{cta_url}}">{{cta_label}} →</a>
+</p>
+
+<p>Cada semana publico un Solca Insight con dato citable sobre carrera en pharma LATAM — vacantes reales, salarios verificables, patrones que veo en el simulador. La próxima entrega te llega el viernes por la mañana.</p>
+{{/marketing}}
+```
+
+   Igual en el text body (`Próximo paso`, el enlace y el párrafo del Solca Insight dentro de `{{#marketing}}`).
+
+2. El pie dice "Recibiste este email porque te suscribiste al Solca Insight". Sin casilla ya no es cierto para el quiz. Propuesta (borrador, sin revisar): en `is_quiz` sin casilla, "Recibiste este correo porque hiciste el quiz de rol en solcaciencia.com"; con casilla o en `is_cv`, el pie actual.
+3. Rama `is_cv`: quitar "Tu análisis de CV ya se procesó y te lo enviamos en un email aparte". Ningún endpoint manda el análisis por correo (hallazgo 5 de la propuesta); revisar si la plantilla viva lo dice.
+4. Preview con `is_quiz.marketing: false` (no debe verse botón ni libro) y con el objeto (debe verse igual que hoy).
+
+---
+
 ## Variables que recibe el template
 
 | Variable | Origen | Ejemplo |

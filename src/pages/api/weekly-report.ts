@@ -25,6 +25,12 @@ import type { APIRoute } from 'astro';
 import { DRIP_STEPS } from '../../lib/drip';
 import { LeadAttribution, type AtribucionReport } from '../../lib/report-atribucion';
 import { contarSesionesPrueba, filtroSesionesReales } from '../../lib/simulator-test-sessions';
+import {
+  decideMarketing,
+  legacyPolicy,
+  type ConsentSignal,
+  type LegacyPolicy,
+} from '../../lib/consent';
 
 export const prerender = false;
 
@@ -132,6 +138,8 @@ interface WeeklyReport {
     leads_internos_registros: number; // registros de EMAILS con interno=1, fuera de subscripciones/utm
     eventos_bot_7d: number;          // eventos rechazados por user-agent de bot (contador evt-bot:)
   };
+  // 2 nov 2026: casilla separada para correos comerciales (src/lib/consent.ts). Ver buildConsentimiento.
+  consentimiento_comercial: ConsentimientoComercial | null;
   simulator: {
     sesiones_acumuladas: number;
     esta_semana: number;
@@ -288,10 +296,137 @@ function computeDelta(current: number, previous: number): DeltaStats {
   return { current, previous, delta_abs, delta_pct };
 }
 
+// ── Consentimiento comercial (2 nov 2026) ────────────────────────────
+// Leads por formulario y semana con casilla comercial marcada (D1 eventos `lead_captured`, sin internos),
+// estado de la lista según la regla de consentimiento (KV EMAILS) y exclusiones del último drip y broadcast.
+interface VentanaOptin { leads: number; optin: number; pct_optin: number | null }
+interface ConsentimientoComercial {
+  politica_legado: LegacyPolicy;
+  // simulador | simulador-pago | quiz | cv. Historia desde el despliegue de la casilla (2 nov 2026).
+  por_formulario: Record<string, { esta_semana: VentanaOptin; semana_anterior: VentanaOptin }>;
+  total: { esta_semana: VentanaOptin; semana_anterior: VentanaOptin };
+  // Correos únicos en KV EMAILS (email:/quiz:/sim:, sin internos), antes de bajas y supresiones.
+  lista: {
+    optin_activos: number;        // algún registro con la casilla comercial marcada
+    legado_activos: number;       // solo registros legado que la política deja pasar
+    legado_excluidos_es: number;  // solo legado, país España
+    legado_bloqueados: number;    // solo legado, política bloquear/reconfirmar
+    sin_optin: number;            // solo registros nuevos sin casilla comercial
+  };
+  ultimo_broadcast: {
+    started_at: string;
+    eligible: number;
+    no_marketing_optin: number;
+    legacy_es: number;
+    legacy_bloqueado: number;
+    legacy_unread: number;
+  } | null;
+  ultimo_drip: {
+    ts: string;
+    sent: number;
+    skip_no_optin: number;
+    skip_legacy_es: number;
+    skip_legacy_bloqueado: number;
+  } | null;
+}
+
+function ventanaOptin(leads: number, optin: number): VentanaOptin {
+  return { leads, optin, pct_optin: leads > 0 ? +((optin / leads) * 100).toFixed(1) : null };
+}
+
+async function buildConsentimiento(
+  db: D1Database | undefined,
+  weekAgoIso: string,
+  twoWeeksAgoIso: string,
+  nowIso: string,
+  signals: Map<string, ConsentSignal[]>,
+  policy: LegacyPolicy,
+  ultimoBroadcast: ConsentimientoComercial['ultimo_broadcast'],
+): Promise<ConsentimientoComercial> {
+  const por_formulario: ConsentimientoComercial['por_formulario'] = {};
+  let curL = 0, curO = 0, prevL = 0, prevO = 0;
+  let ultimo_drip: ConsentimientoComercial['ultimo_drip'] = null;
+  if (db) {
+    try {
+      const rows = await db
+        .prepare(
+          // Un lead = un correo por formulario y ventana (id = lead:<ts ISO>:<hash12>:<form>); opt-in si alguna vez marcó.
+          `SELECT form, win, COUNT(*) AS leads, SUM(mk) AS optin FROM (
+             SELECT json_extract(extra,'$.form') AS form,
+                    CASE WHEN ts >= ? THEN 'cur' ELSE 'prev' END AS win,
+                    substr(id, 31, 12) AS h,
+                    MAX(COALESCE(json_extract(extra,'$.marketing'), 0)) AS mk
+               FROM eventos
+              WHERE evento = 'lead_captured' AND interno = 0 AND ts >= ? AND ts <= ?
+              GROUP BY form, win, h)
+            GROUP BY form, win`,
+        )
+        .bind(weekAgoIso, twoWeeksAgoIso, nowIso)
+        .all<{ form: string | null; win: 'cur' | 'prev'; leads: number; optin: number | null }>();
+      const acc = new Map<string, { cur: [number, number]; prev: [number, number] }>();
+      for (const r of rows.results ?? []) {
+        const f = r.form ?? 'desconocido';
+        const a = acc.get(f) ?? { cur: [0, 0], prev: [0, 0] };
+        const leads = Number(r.leads) || 0;
+        const optin = Number(r.optin) || 0;
+        if (r.win === 'cur') { a.cur = [leads, optin]; curL += leads; curO += optin; }
+        else { a.prev = [leads, optin]; prevL += leads; prevO += optin; }
+        acc.set(f, a);
+      }
+      for (const [f, a] of acc) {
+        por_formulario[f] = { esta_semana: ventanaOptin(...a.cur), semana_anterior: ventanaOptin(...a.prev) };
+      }
+    } catch (err) {
+      console.warn('weekly-report: lead_captured query failed', err);
+    }
+    try {
+      const d = await db
+        .prepare(
+          `SELECT ts, extra FROM eventos
+            WHERE evento = 'drip_tick_resumen' AND json_extract(extra,'$.dry') = 0
+            ORDER BY ts DESC LIMIT 1`,
+        )
+        .first<{ ts: string; extra: string | null }>();
+      if (d) {
+        const x = JSON.parse(d.extra ?? '{}') as Record<string, number>;
+        ultimo_drip = {
+          ts: d.ts,
+          sent: x.sent ?? 0,
+          skip_no_optin: x.skip_no_optin ?? 0,
+          skip_legacy_es: x.skip_legacy_es ?? 0,
+          skip_legacy_bloqueado: x.skip_legacy_bloqueado ?? 0,
+        };
+      }
+    } catch (err) {
+      console.warn('weekly-report: drip_tick_resumen query failed', err);
+    }
+  }
+  const lista = { optin_activos: 0, legado_activos: 0, legado_excluidos_es: 0, legado_bloqueados: 0, sin_optin: 0 };
+  for (const sigs of signals.values()) {
+    const dec = decideMarketing(sigs, policy);
+    if (dec === 'optin') lista.optin_activos++;
+    else if (dec === 'legacy') lista.legado_activos++;
+    else if (dec === 'legacy_es') lista.legado_excluidos_es++;
+    else if (dec === 'legacy_bloqueado') lista.legado_bloqueados++;
+    else lista.sin_optin++;
+  }
+  return {
+    politica_legado: policy,
+    por_formulario,
+    total: { esta_semana: ventanaOptin(curL, curO), semana_anterior: ventanaOptin(prevL, prevO) },
+    lista,
+    ultimo_broadcast: ultimoBroadcast,
+    ultimo_drip,
+  };
+}
+
 interface EmailRec {
   email?: string;
   ts?: string;
   country?: string;
+  // 2 nov 2026 (src/lib/consent.ts). Sin consent_version = registro legado.
+  consent_version?: string;
+  marketing_optin?: boolean;
   stage?: 'gate' | 'complete';
   // UTMs opcionales (P1 sprint 2026-08-18) — solo llegan si el visitante
   // aterrizó con parámetros de campaña y luego hizo gate/CV.
@@ -1147,14 +1282,43 @@ export const GET: APIRoute = async ({ url, locals }) => {
     // 30 oct 2026: atribución por lead único (incluye sim:) y exclusión de tráfico interno.
     const atrib = new LeadAttribution();
     let leadsInternosRegistros = 0;
+    // 2 nov 2026: señales de consentimiento por correo y último reporte de broadcast (sección consentimiento_comercial).
+    const consentSignals = new Map<string, ConsentSignal[]>();
+    let ultimoBroadcastKey = '';
+    let ultimoBroadcast: ConsentimientoComercial['ultimo_broadcast'] = null;
 
     if (emailsKv) {
       await walkKv<EmailRec>(emailsKv, '', (rec, key) => {
+        if (key.startsWith('broadcast-report:')) {
+          if (key > ultimoBroadcastKey) {
+            const b = rec as unknown as {
+              started_at?: string;
+              eligible?: number;
+              excluded?: Record<string, number>;
+            };
+            ultimoBroadcastKey = key;
+            ultimoBroadcast = {
+              started_at: b.started_at ?? key.slice('broadcast-report:'.length),
+              eligible: b.eligible ?? 0,
+              no_marketing_optin: b.excluded?.no_marketing_optin ?? 0,
+              legacy_es: b.excluded?.legacy_es ?? 0,
+              legacy_bloqueado: b.excluded?.legacy_bloqueado ?? 0,
+              legacy_unread: b.excluded?.legacy_unread ?? 0,
+            };
+          }
+          return;
+        }
         if (key.startsWith('email:') || key.startsWith('quiz:') || key.startsWith('sim:')) {
           atrib.add({ ...rec, key });
           if (rec.interno === true) {
             leadsInternosRegistros++;
             return; // tráfico propio de Oscar: fuera de todas las cuentas de abajo
+          }
+          const em = (rec.email ?? '').toLowerCase().trim();
+          if (em) {
+            const arr = consentSignals.get(em) ?? [];
+            arr.push({ consent_version: rec.consent_version, marketing_optin: rec.marketing_optin === true, country: rec.country });
+            consentSignals.set(em, arr);
           }
         }
         // Filtrar solo registros de suscripción
@@ -1622,6 +1786,14 @@ export const GET: APIRoute = async ({ url, locals }) => {
       return null;
     });
 
+    // ── 4f. Consentimiento comercial (2 nov 2026) ────────────────
+    const consentimiento_comercial = await buildConsentimiento(
+      simDb, weekAgoIso, twoWeeksAgoIso, nowIso, consentSignals, legacyPolicy(env), ultimoBroadcast,
+    ).catch((err) => {
+      console.error('consentimiento_comercial failed', err);
+      return null;
+    });
+
     // ── 5. Email health (Postmark Analytics API) ─────────────────
     // Consulta por tag los últimos 30 días. Data útil solo si Open+Link
     // tracking están ON en Server Settings (activados 30 jul 2026).
@@ -1838,6 +2010,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
         leads_internos_registros: leadsInternosRegistros,
         eventos_bot_7d: funnel.eventos_bot_7d,
       },
+      consentimiento_comercial,
       simulator: {
         sesiones_acumuladas: sim.total,
         esta_semana: sim.cur,

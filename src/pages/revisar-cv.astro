@@ -1,6 +1,11 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import MarketSurvey from '../components/MarketSurvey.astro';
+// 2 nov 2026: textos de las casillas en src/lib/consent.ts (lo que se guarda corresponde a lo que se ve).
+import { CONSENT_TEXT, CONSENT_COMMON, CONSENT_MSG, privacidadHtml } from '../lib/consent';
+const consentCv = CONSENT_TEXT.cv;
+const consentPrivacidadHtml = privacidadHtml('cv');
+const consentErrMsg = CONSENT_MSG.privacidad_requerida;
 
 const cursoURL = 'https://go.hotmart.com/B104495115T';
 const newsletterURL =
@@ -159,10 +164,14 @@ const atsBlogURL =
         <div class="field full consent-field">
           <label class="consent-label">
             <input type="checkbox" id="consent" name="consent" required />
-            <span>
-              Acepto que el texto de mi CV se procese con IA bajo la rúbrica de Oscar Solís para generar el análisis. <strong>El contenido del CV NO se guarda en nuestros servidores</strong> — se procesa en memoria, se genera el feedback y se descarta. Mi email se guarda para enviarme contenido relevante; puedo darme de baja cuando quiera. Consulta el <a href="/privacidad" target="_blank" rel="noopener">aviso de privacidad</a>.
-            </span>
+            <span set:html={consentPrivacidadHtml} />
           </label>
+          <label class="consent-label">
+            <input type="checkbox" id="marketing" name="marketing" />
+            <span>{consentCv.marketing}</span>
+          </label>
+          <p class="consent-note">{consentCv.nota}</p>
+          <p class="consent-common" id="consent-common" data-consent-err={consentErrMsg}>{CONSENT_COMMON}</p>
         </div>
 
         <div class="field full">
@@ -593,11 +602,14 @@ const atsBlogURL =
     align-items: flex-start;
     gap: 12px;
     cursor: pointer;
-    font-size: 13px;
-    color: var(--text-mute);
+    font-size: 14px;
+    color: var(--text);
     line-height: 1.5;
     font-weight: 400;
   }
+  .consent-label + .consent-label { margin-top: 10px; }
+  .consent-note { margin: 4px 0 0 30px; font-size: 14px; color: var(--text); line-height: 1.5; }
+  .consent-common { margin: 10px 0 0; font-size: 14px; color: var(--text); line-height: 1.5; }
   .consent-label input[type="checkbox"] {
     flex-shrink: 0;
     margin-top: 2px;
@@ -1180,6 +1192,8 @@ const atsBlogURL =
       email: String(fd.get('email') ?? '').trim(),
       country: String(fd.get('country') ?? ''),
       consent: fd.get('consent') === 'on',
+      // 2 nov 2026: casilla comercial opcional; el análisis funciona igual sin ella.
+      marketing: fd.get('marketing') === 'on',
       // UTM attribution (P1 sprint 2026-08-18): window.__utm lo llena BaseLayout.
       ...(window.__utm || {}),
       // 30 oct 2026 (P2): aid, primer/último toque y bandera interna.
@@ -1190,7 +1204,7 @@ const atsBlogURL =
 
     // Quick client-side validation
     if (!payload.consent) {
-      alert('Debes aceptar la política de datos antes de continuar.');
+      alert(document.getElementById('consent-common')?.dataset.consentErr || 'Debes aceptar el aviso de privacidad para continuar.');
       return;
     }
     if (payload.cv.length < 200) {

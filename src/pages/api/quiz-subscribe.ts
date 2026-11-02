@@ -2,6 +2,14 @@ import type { APIRoute } from 'astro';
 import { sendEmailWithTemplate, PostmarkError } from '../../lib/postmark';
 import { extractUtms, UTM_KEYS } from '../../lib/utm';
 import { extractAttribution, emailHashFull } from '../../lib/attribution';
+import {
+  readMarketing,
+  consentFields,
+  consentKvMeta,
+  registrarConsentimiento,
+  CONSENT_MSG,
+  type ConsentFields,
+} from '../../lib/consent';
 // Postmark reemplaza a Brevo (jul 2026). Ver _docs/que-rompimos-brevo-mailerlite.md.
 // El opt-in vive en KV EMAILS. La segmentación por rol (PM/MSL/CR/FV/Consulting) vive en el record
 // del KV — Postmark no maneja listas.
@@ -34,6 +42,8 @@ interface QuizSubscribeRequest {
   scores?: Partial<Record<QuizRole, number>>;
   country?: string;
   consent?: boolean;
+  // 2 nov 2026: casilla opcional de correos comerciales (src/lib/consent.ts). El quiz funciona igual sin ella.
+  marketing?: boolean;
   stage?: 'gate' | 'complete';
   selfMatch?: QuizRole | 'NS';
   quizVersion?: string;
@@ -69,7 +79,10 @@ async function storeQuizLead(
   if (kv && typeof kv.put === 'function') {
     const key = `quiz:${record.ts}:${(record.email as string).toLowerCase()}`;
     try {
-      await kv.put(key, JSON.stringify(record));
+      // 2 nov 2026: metadata con el consentimiento para que blog-broadcast lo lea con `list`, sin `get`.
+      await kv.put(key, JSON.stringify(record), {
+        metadata: consentKvMeta(record as unknown as ConsentFields),
+      });
     } catch (err) {
       console.error('KV put (quiz) failed:', err);
     }
@@ -88,6 +101,7 @@ async function sendWelcomeQuiz(
   email: string,
   firstName: string | undefined,
   role: QuizRole,
+  marketing: boolean,
 ): Promise<void> {
   const token = runtime?.env?.POSTMARK_SERVER_TOKEN as string | undefined;
   if (!token) {
@@ -158,6 +172,15 @@ async function sendWelcomeQuiz(
     // role_next_step van dentro del objeto is_quiz — así el template puede
     // referenciarlas como {{role_label}} dentro del {{#is_quiz}}. Bug
     // encontrado 2026-09-29 tras smoke test que rendereó campos vacíos.
+    //
+    // 2 nov 2026 (casilla comercial): el resultado del rol va a todos; el bloque del libro y la promesa del
+    // newsletter van solo con opt-in, dentro de is_quiz.marketing (objeto con los campos, o false). La
+    // plantilla debe envolver ese bloque en {{#marketing}}...{{/marketing}} dentro de {{#is_quiz}}
+    // (_docs/POSTMARK_TEMPLATE_welcome-solca-insight.md). Los campos sueltos cta_url/cta_label/role_next_step
+    // se conservan solo para la plantilla anterior, mientras Oscar publica la nueva; borrarlos después.
+    const marketingBlock = marketing
+      ? { cta_url: ctaUrl, cta_label: ctaCfg.label, role_next_step: ctaCfg.next }
+      : false;
     const result = await sendEmailWithTemplate(token, {
       from: 'Oscar Solís <hola@solcaciencia.com>',
       to: email,
@@ -170,10 +193,11 @@ async function sendWelcomeQuiz(
           cta_url: ctaUrl,
           cta_label: ctaCfg.label,
           role_next_step: ctaCfg.next,
+          marketing: marketingBlock,
         },
       },
       tag: 'welcome-quiz',
-      metadata: { source: 'quiz-subscribe', role },
+      metadata: { source: 'quiz-subscribe', role, marketing: marketing ? '1' : '0' },
     });
     console.log('quiz-subscribe:postmark-sent', result.messageId, result.to, 'role:', role);
   } catch (err) {
@@ -221,6 +245,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
   const name = body.name?.trim();
   const country = body.country?.trim();
   const consent = body.consent === true;
+  const marketing = readMarketing(body);
   const role = body.role;
   const scores = body.scores;
   const stage = body.stage ?? 'gate';
@@ -232,7 +257,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
 
   if (!consent) {
     return jsonResponse(
-      { error: 'consent_required', message: 'Debes aceptar la política de datos.' },
+      { error: 'consent_required', message: CONSENT_MSG.quiz_privacidad_requerida },
       400,
     );
   }
@@ -273,6 +298,9 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
   // Server-side sanitiza (allow-list + truncado); no confiamos en input crudo.
   const utms = extractUtms(body as unknown as Record<string, unknown>);
 
+  const ts = new Date().toISOString();
+  const attr = extractAttribution(body);
+  const emailHash64 = await emailHashFull(email);
   const record: Record<string, unknown> = {
     source: 'quiz',
     stage,
@@ -283,12 +311,28 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     country: country?.toLowerCase(),
     quizVersion,
     ip,
-    ts: new Date().toISOString(),
+    ts,
     ...utms,
     // 30 oct 2026 (P2): llave de unión con ventas (sha256 completo) + aid/ft/lt/interno.
-    email_hash: await emailHashFull(email),
-    ...extractAttribution(body),
+    email_hash: emailHash64,
+    ...attr,
+    // 2 nov 2026: versión del texto aceptado, fecha y casilla comercial (src/lib/consent.ts).
+    ...consentFields(ts, marketing, 'quiz'),
   };
+
+  // Prueba del consentimiento + evento lead_captured (D1, permanente). Solo en gate, para no contar dos veces.
+  if (stage === 'gate') {
+    await registrarConsentimiento(runtime?.env?.SIMULATOR_METRICS_DB as D1Database | undefined, {
+      ts,
+      emailHash: emailHash64,
+      form: 'quiz',
+      marketing,
+      stage,
+      attr,
+      utms,
+      country: request.headers.get('cf-ipcountry'),
+    });
+  }
 
   waitUntil(
     storeQuizLead(runtime as { env?: Record<string, unknown> }, { ...record, selfMatch }).catch((err) =>
@@ -323,6 +367,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
         // Postmark solo usa el primer nombre; name puede venir con nombre completo.
         name?.trim().split(/\s+/)[0],
         role,
+        marketing,
       ).catch((err) => console.error('sendWelcomeQuiz failed', err)),
     );
   }
@@ -333,7 +378,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
       stage,
       message:
         stage === 'gate'
-          ? 'Suscrito al newsletter. Continúa con el quiz.'
+          ? CONSENT_MSG.quiz_gate_ok
           : 'Resultado guardado. Revisa tu email en minutos.',
     },
     200,

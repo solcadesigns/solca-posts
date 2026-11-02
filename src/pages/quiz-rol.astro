@@ -1,6 +1,11 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import MarketSurvey from '../components/MarketSurvey.astro';
+// 2 nov 2026: textos de las casillas en src/lib/consent.ts (lo que se guarda corresponde a lo que se ve).
+import { CONSENT_TEXT, CONSENT_COMMON, CONSENT_MSG, privacidadHtml } from '../lib/consent';
+const consentQuiz = CONSENT_TEXT.quiz;
+const consentPrivacidadHtml = privacidadHtml('quiz');
+const CONSENT_ERR = CONSENT_MSG.quiz_privacidad_requerida;
 
 // CTAs por rol. Los 5 roles tienen libro publicado y van a Hotmart
 // (Consulting desde el 28 oct 2026). Mismas URLs que index.astro y libros.ts.
@@ -226,8 +231,14 @@ const QUESTIONS = [
           <div class="gate-field gate-field-full">
             <label class="gate-consent-label">
               <input type="checkbox" id="gate-consent" name="consent" required />
-              <span>Acepto recibir el resultado del quiz + 3 emails de bienvenida + el newsletter Solca Insight (semanal). <strong>Mi email no se comparte con terceros</strong>. Me puedo dar de baja en cualquier momento. Ver <a href="/privacidad" target="_blank" rel="noopener">aviso de privacidad</a>.</span>
+              <span set:html={consentPrivacidadHtml} />
             </label>
+            <label class="gate-consent-label">
+              <input type="checkbox" id="gate-marketing" name="marketing" />
+              <span>{consentQuiz.marketing}</span>
+            </label>
+            <p class="gate-consent-note">{consentQuiz.nota}</p>
+            <p class="gate-consent-common">{CONSENT_COMMON}</p>
           </div>
         </div>
         <button type="submit" class="btn btn-orange btn-large btn-block" id="gate-submit">Empezar el quiz →</button>
@@ -493,12 +504,14 @@ const QUESTIONS = [
     display: flex;
     align-items: flex-start;
     gap: 10px;
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1.5;
-    color: var(--text-mute);
+    color: var(--text);
     cursor: pointer;
     padding: 8px 0;
   }
+  .gate-consent-note { margin: -4px 0 6px 26px; font-size: 14px; line-height: 1.5; color: var(--text); }
+  .gate-consent-common { margin: 4px 0 0; font-size: 14px; line-height: 1.5; color: var(--text); }
   .gate-consent-label input[type="checkbox"] {
     flex-shrink: 0;
     margin-top: 2px;
@@ -892,7 +905,7 @@ const QUESTIONS = [
   }
 </style>
 
-<script define:vars={{ QUESTIONS, cta, QUIZ_VERSION }}>
+<script define:vars={{ QUESTIONS, cta, QUIZ_VERSION, CONSENT_ERR }}>
   // ROLE_DATA · usa `ctaTitle`, `ctaDesc`, `ctaURL`, `ctaLabel` de forma
   // unificada. Los 5 roles apuntan a su libro en Hotmart.
   const ROLE_DATA = {
@@ -963,7 +976,7 @@ const QUESTIONS = [
     answers: new Array(QUESTIONS.length).fill(null),
     topRole: null,
     scores: null,
-    gateData: null,   // { name, email, country }
+    gateData: null,   // { name, email, country, marketing }
     selfMatch: null,  // 'PM' | 'MSL' | 'CR' | 'FV' | 'Consulting' | 'NS'
   };
 
@@ -1020,6 +1033,8 @@ const QUESTIONS = [
       email: String(fd.get('email') ?? '').trim().toLowerCase(),
       country: String(fd.get('country') ?? '') || undefined,
       consent: fd.get('consent') === 'on',
+      // 2 nov 2026: casilla comercial opcional; el quiz funciona igual sin ella.
+      marketing: fd.get('marketing') === 'on',
       stage: 'gate',
       // UTM attribution (P1 sprint 2026-08-18): window.__utm lo llena BaseLayout.
       ...(window.__utm || {}),
@@ -1027,7 +1042,7 @@ const QUESTIONS = [
       ...(window.__attr ? window.__attr() : {}),
     };
     if (!payload.consent) {
-      alert('Necesitamos tu consentimiento para enviarte los emails.');
+      alert(CONSENT_ERR);
       return;
     }
     if (!payload.name || payload.name.length < 2) {
@@ -1063,6 +1078,7 @@ const QUESTIONS = [
       name: payload.name,
       email: payload.email,
       country: payload.country,
+      marketing: payload.marketing === true,
     };
     showScreen('self-match');
   });
@@ -1125,7 +1141,9 @@ const QUESTIONS = [
           name: state.gateData.name,
           email: state.gateData.email,
           country: state.gateData.country,
+          // Aceptó la casilla obligatoria en el gate (sin ella no se llega aquí).
           consent: true,
+          marketing: state.gateData.marketing === true,
           stage: 'complete',
           role,
           scores,

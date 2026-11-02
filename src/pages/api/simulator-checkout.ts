@@ -24,6 +24,7 @@
 
 import type { APIRoute } from 'astro';
 import { extractAttribution } from '../../lib/attribution';
+import { readMarketing, CONSENT_VERSION, CONSENT_MSG } from '../../lib/consent';
 
 export const prerender = false;
 
@@ -33,6 +34,10 @@ interface CheckoutRequest {
   plan: PaidPlan;
   email: string;
   name?: string;
+  // 2 nov 2026: casilla de privacidad (obligatoria) y comercial (opcional). Viajan en metadata y el webhook
+  // las registra al confirmar el pago (D1 consentimientos + evento lead_captured).
+  consent?: boolean;
+  marketing?: boolean;
   // 30 oct 2026 (P1/P2): fuente de la venta. Se validan en lib/attribution y viajan en metadata.
   aid?: string;
   ft?: unknown;
@@ -121,6 +126,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (!email || !EMAIL_RE.test(email)) {
     return jsonResponse(400, { ok: false, error: 'Email invalido' });
   }
+  if (body.consent !== true) {
+    return jsonResponse(400, { ok: false, error: CONSENT_MSG.privacidad_requerida });
+  }
   if (!VALID_PLANS.includes(body.plan)) {
     return jsonResponse(400, { ok: false, error: 'Plan invalido. Opciones: basico, premium.' });
   }
@@ -150,6 +158,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
   put('lt_content', attr.lt?.utm_content);
   put('lt_ref_host', attr.lt?.ref_host);
   if (attr.interno) fuente.interno = '1';
+  fuente.consent_version = CONSENT_VERSION;
+  fuente.marketing = readMarketing(body) ? '1' : '0';
 
   try {
     const session = (await stripe(stripeKey, 'checkout/sessions', 'POST', {

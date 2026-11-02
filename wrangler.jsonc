@@ -35,7 +35,11 @@
 		// Propiedad GSC. Si la propiedad es URL-prefix en vez de dominio,
 		// cambiar a "https://solcaciencia.com/". Secrets requeridos:
 		// GSC_CLIENT_EMAIL + GSC_PRIVATE_KEY (wrangler secret put).
-		"GSC_SITE_URL": "sc-domain:solcaciencia.com"
+		"GSC_SITE_URL": "sc-domain:solcaciencia.com",
+		// Correos comerciales a leads anteriores a la casilla separada (2 nov 2026, src/lib/consent.ts).
+		// permitir_sin_es (aprobada): siguen recibiendo salvo país España · bloquear: ningún legado
+		// · reconfirmar: hoy igual que bloquear (falta el correo de reconfirmación).
+		"MARKETING_LEGACY_POLICY": "permitir_sin_es"
 	},
 	"assets": {
 		"binding": "ASSETS",

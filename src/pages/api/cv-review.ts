@@ -6,6 +6,13 @@ import { sendEmail, sendEmailWithTemplate, PostmarkError } from '../../lib/postm
 import { extractUtms, type UtmRecord } from '../../lib/utm';
 import { extractAttribution, emailHashFull, type Attribution } from '../../lib/attribution';
 import { guardarEventoD1 } from '../../lib/eventos-d1';
+import {
+  readMarketing,
+  consentFields,
+  consentKvMeta,
+  registrarConsentimiento,
+  CONSENT_MSG,
+} from '../../lib/consent';
 // Postmark reemplaza a Brevo (jul 2026). Ver _docs/que-rompimos-brevo-mailerlite.md.
 
 export const prerender = false;
@@ -15,6 +22,8 @@ interface CVReviewRequest {
   email: string;
   country?: string;
   consent?: boolean;
+  // 2 nov 2026: casilla opcional de correos comerciales (src/lib/consent.ts). El análisis funciona igual sin ella.
+  marketing?: boolean;
   // UTMs opcionales: los agrega el cliente desde window.__utm (P1 sprint 2026-08-18).
   utm_source?: string;
   utm_medium?: string;
@@ -101,24 +110,30 @@ async function storeEmail(
   utms: UtmRecord,
   referrer?: string,
   attr: Attribution = {},
+  marketing = false,
+  ts: string = new Date().toISOString(),
 ): Promise<void> {
   // Si hay KV namespace `EMAILS` configurado, guardamos. Si no, log a console (visible vía `wrangler tail`).
   const kv = runtime?.env?.EMAILS as KVNamespace | undefined;
+  const consent = consentFields(ts, marketing, 'cv');
   const record = {
     email: email.toLowerCase().trim(),
     country: country?.toLowerCase().trim(),
     ip,
-    ts: new Date().toISOString(),
+    ts,
     ...(referrer ? { referrer } : {}),
     ...utms,
     // 30 oct 2026 (P2): llave de unión con ventas (sha256 completo) + aid/ft/lt/interno.
     email_hash: await emailHashFull(email),
     ...attr,
+    // 2 nov 2026: versión del texto aceptado, fecha y casilla comercial (src/lib/consent.ts).
+    ...consent,
   };
   if (kv && typeof kv.put === 'function') {
     const key = `email:${record.ts}:${record.email}`;
     try {
-      await kv.put(key, JSON.stringify(record));
+      // Metadata con el consentimiento para que blog-broadcast lo lea con `list`, sin `get`.
+      await kv.put(key, JSON.stringify(record), { metadata: consentKvMeta(consent) });
     } catch (err) {
       console.error('KV put failed:', err);
     }
@@ -178,11 +193,12 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
   const email = (body.email ?? '').trim().toLowerCase();
   const country = body.country?.trim();
   const consent = body.consent === true;
+  const marketing = readMarketing(body);
 
   // Validations
   if (!consent) {
     return jsonResponse(
-      { error: 'consent_required', message: 'Debes aceptar la política de datos.' },
+      { error: 'consent_required', message: CONSENT_MSG.privacidad_requerida },
       400,
     );
   }
@@ -412,6 +428,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
 
   // Extraer UTMs del body (los pone el cliente desde window.__utm).
   const utms = extractUtms(body as unknown as Record<string, unknown>);
+  const leadTs = new Date().toISOString();
 
   waitUntil(
     storeEmail(
@@ -422,8 +439,20 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
       utms,
       referrer,
       extractAttribution(body),
+      marketing,
+      leadTs,
     ).catch((err) => console.error('storeEmail failed', err)),
   );
+  // 2 nov 2026: prueba del consentimiento + evento lead_captured en D1 (permanente, sin correo).
+  await registrarConsentimiento(attemptDb, {
+    ts: leadTs,
+    emailHash: await emailHashFull(email),
+    form: 'cv',
+    marketing,
+    attr,
+    utms,
+    country: request.headers.get('cf-ipcountry'),
+  });
   waitUntil(
     saveAttempt({
       ...attemptBase,
@@ -431,14 +460,18 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
       outputTokens: completion.usage?.output_tokens,
     }),
   );
-  waitUntil(
-    sendWelcomeCv(
-      runtime as { env?: Record<string, unknown> },
-      email,
-      // Postmark solo usa el primer nombre; parsed.candidateName puede venir con nombre completo.
-      parsed.candidateName?.trim().split(/\s+/)[0],
-    ).catch((err) => console.error('sendWelcomeCv failed', err)),
-  );
+  // 2 nov 2026: welcome-cv es comercial (presenta el newsletter y lleva al quiz); el análisis ya está en
+  // pantalla. Solo se manda con la casilla opcional marcada.
+  if (marketing) {
+    waitUntil(
+      sendWelcomeCv(
+        runtime as { env?: Record<string, unknown> },
+        email,
+        // Postmark solo usa el primer nombre; parsed.candidateName puede venir con nombre completo.
+        parsed.candidateName?.trim().split(/\s+/)[0],
+      ).catch((err) => console.error('sendWelcomeCv failed', err)),
+    );
+  }
   waitUntil(
     incrementCvSubmitCount(limitsKV, email).catch((err) =>
       console.error('incrementCvSubmitCount failed', err),
