@@ -32,6 +32,7 @@ const FALLAS_SEGUIDAS_MAX = 5; // tras 5 fichas fallidas seguidas se corta la fu
 interface Opciones {
   limite: number; // Date.now() a partir del cual ya no se piden fichas (el cron tiene 15 min de reloj)
   enCron: boolean;
+  aceptar?: boolean; // carga manual con ?aceptar=1: una persona revisó el portal y la caída es real
 }
 
 /** Sentencias que guardan los descriptores de una vacante (columnas + etiquetas). */
@@ -140,15 +141,18 @@ async function leerFuente(env: Env, f: Fuente, ahora: string, opt: Opciones): Pr
     res.vistas = vistos.size;
 
     // Controles de calidad: primera lectura de la fuente (cohorte inicial) y caídas bruscas.
+    // La mediana se toma desde la última caída aceptada a mano, para que el nuevo nivel sea la referencia.
     const previas = await env.DB.prepare(
-      "SELECT vistas FROM vacantes_corridas WHERE fuente = ? AND estado = 'ok' ORDER BY ts DESC LIMIT 7",
+      `SELECT vistas FROM vacantes_corridas WHERE fuente = ?1 AND estado = 'ok'
+         AND ts >= COALESCE((SELECT MAX(ts) FROM vacantes_corridas WHERE fuente = ?1 AND estado = 'ok' AND error LIKE 'aceptada%'), '')
+       ORDER BY ts DESC LIMIT 7`,
     ).bind(f.id).all<{ vistas: number }>();
     const historico = ((previas.results ?? []) as Array<{ vistas: number }>).map((r) => r.vistas).sort((a, b) => a - b);
     const primeraLectura = historico.length === 0;
     if (historico.length >= 3) {
       const mediana = historico[Math.floor(historico.length / 2)];
       // Si la fuente cae a la mitad o menos de su mediana, algo cambió en el portal: no se cierra nada.
-      if (mediana >= 10 && res.vistas <= mediana * 0.5) {
+      if (mediana >= 10 && res.vistas <= mediana * 0.5 && !opt.aceptar) {
         res.estado = 'sospechosa';
         res.error = `vistas ${res.vistas} contra mediana ${mediana}`;
       }
@@ -268,7 +272,7 @@ async function leerFuente(env: Env, f: Fuente, ahora: string, opt: Opciones): Pr
         .all<{ id: string; ultima_vez: string }>();
       const cerrar = ((activas.results ?? []) as Array<{ id: string; ultima_vez: string }>).filter((r) => !vistos.has(r.id));
       const totalActivas = await env.DB.prepare('SELECT COUNT(*) AS n FROM vacantes WHERE fuente = ? AND activa = 1').bind(f.id).first<{ n: number }>();
-      if (cerrar.length > 5 && cerrar.length > (totalActivas?.n ?? 0) * 0.3) {
+      if (cerrar.length > 5 && cerrar.length > (totalActivas?.n ?? 0) * 0.3 && !opt.aceptar) {
         // Cerrar más del 30 % de una fuente en un día no es normal: se deja para revisión.
         res.estado = 'sospechosa';
         res.error = `pretendía cerrar ${cerrar.length} de ${totalActivas?.n}`;
@@ -277,6 +281,7 @@ async function leerFuente(env: Env, f: Fuente, ahora: string, opt: Opciones): Pr
         const stmts = cerrar.flatMap((r) => [cls.bind(r.ultima_vez.slice(0, 10), ahora, r.id), ciclo.bind(r.id, ahora, 'cierre', null)]);
         for (let i = 0; i < stmts.length; i += 50) await env.DB.batch(stmts.slice(i, i + 50));
         res.cerradas = cerrar.length;
+        if (opt.aceptar) res.error = `aceptada a mano: ${res.vistas} vistas, ${cerrar.length} cerradas`;
       }
     }
   } catch (err) {
@@ -349,7 +354,10 @@ export default {
       return new Response(JSON.stringify({ reprocesadas: total }), { headers: { 'Content-Type': 'application/json' } });
     }
     // Carga manual por HTTP: sin límite de reloj (la primera carga de una fuente grande va por aquí).
-    const r = await correr(env, url.searchParams.get('fuente') ?? undefined, { limite: Number.POSITIVE_INFINITY, enCron: false });
+    // ?aceptar=1 (solo con ?fuente=): acepta una caída que el control de calidad marcó como sospechosa.
+    const fuente = url.searchParams.get('fuente') ?? undefined;
+    const aceptar = url.searchParams.get('aceptar') === '1' && fuente !== undefined;
+    const r = await correr(env, fuente, { limite: Number.POSITIVE_INFINITY, enCron: false, aceptar });
     return new Response(JSON.stringify(r, null, 2), { headers: { 'Content-Type': 'application/json' } });
   },
 };
