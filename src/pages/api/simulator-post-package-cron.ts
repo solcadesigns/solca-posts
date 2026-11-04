@@ -77,7 +77,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
   // que quien solo es suscriptor del newsletter. Override con env var.
   const couponCode = (env.HOTMART_COUPON_FEEDBACK as string | undefined) ?? 'FEEDBACK35';
   const courseUrl =
-    'https://solcadesigns.hotmart.host/cv-en-ciencias-biologicas-y-de-de-la-salud-ats-linkedin-e78259bd-c882-4b61-b496-9d3da84d06b2';
+    'https://solcadesigns.hotmart.host/cv-en-ciencias-biologicas-y-de-de-la-salud-ats-linkedin-e78259bd-c882-4b61-b496-9d3da84d06b2?src=sim-post-paquete';
 
   const list = await kv.list({ prefix: 'pkg_end:', limit: 50 });
   if (list.keys.length === 0) {

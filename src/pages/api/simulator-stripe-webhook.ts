@@ -534,7 +534,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
           : '';
       const courseUrl =
         plan === 'premium'
-          ? 'https://solcadesigns.hotmart.host/cv-en-ciencias-biologicas-y-de-de-la-salud-ats-linkedin-e78259bd-c882-4b61-b496-9d3da84d06b2'
+          ? 'https://solcadesigns.hotmart.host/cv-en-ciencias-biologicas-y-de-de-la-salud-ats-linkedin-e78259bd-c882-4b61-b496-9d3da84d06b2?src=sim-compra-premium'
           : '';
       await sendEmailWithTemplate(postmarkToken, {
         from: 'Oscar Solís <hola@solcaciencia.com>',
