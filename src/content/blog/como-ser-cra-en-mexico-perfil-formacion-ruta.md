@@ -1,6 +1,6 @@
 ---
-title: "Qué es un CRA y cómo ser CRA en México: perfil y ruta 2026"
-description: "Qué es un CRA en investigación clínica, qué hace según ICH E6(R3), qué marco aplica en México y desde qué puestos se llega al rol."
+title: "Cómo ser CRA en México: qué hace y qué estudiar"
+description: "Qué hace un CRA (Clinical Research Associate) en la farmacéutica, qué estudiar para serlo en México y si puedes empezar sin experiencia."
 pubDate: 2026-07-13
 updatedDate: 2026-10-12
 heroImage: "/blog/como-ser-cra-en-mexico-perfil-formacion-ruta.png"
