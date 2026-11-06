@@ -209,6 +209,7 @@ interface WeeklyReport {
     book_clicks_7d: Record<string, number>;
     outbound_clicks_7d: Record<string, number>;
     next_step_clicks_7d: Record<string, number>;
+    cv_steps_7d: Record<string, number>;
     // 14 oct 2026: visitas registradas por page_viewed en la semana (7 días),
     // con y sin UTM. Desde antes de esa fecha no hay datos.
     page_views_7d: { 'quiz-rol': number; 'revisar-cv': number; blog: number; vacantes: number; libro: number; con_utm: number };
@@ -1642,6 +1643,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
       book_clicks_7d: {} as Record<string, number>,
       outbound_clicks_7d: {} as Record<string, number>,
       next_step_clicks_7d: {} as Record<string, number>,
+      cv_steps_7d: {} as Record<string, number>,
       page_views_7d: { 'quiz-rol': 0, 'revisar-cv': 0, blog: 0, vacantes: 0, libro: 0, con_utm: 0 },
       eventos_internos_7d: 0,
       eventos_bot_7d: 0,
@@ -1676,7 +1678,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
           if (esLanzamiento && tsMs < Date.parse(MEDICION_LANZAMIENTO_DESDE)) return;
 
           // Desglose por campaña: ventana de 30 días, independiente de la semanal.
-          if (rec.utm_campaign && tsMs >= campaignWindowStart) {
+          if (rec.utm_campaign && tsMs >= campaignWindowStart && rec.event !== 'cv_step') {
             const c = funnel.by_campaign.get(rec.utm_campaign) ?? {
               utm_campaign: rec.utm_campaign,
               utm_source: rec.utm_source ?? null,
@@ -1727,6 +1729,12 @@ export const GET: APIRoute = async ({ url, locals }) => {
           if (rec.event === 'outbound_clicked') {
             const dest = rec.product ?? 'desconocido';
             funnel.outbound_clicks_7d[dest] = (funnel.outbound_clicks_7d[dest] ?? 0) + 1;
+            return;
+          }
+          // 6 nov 2026: pasos del revisor de CV (pdf_ok, pdf_fail, result_viewed, report_downloaded, share:<red>).
+          if (rec.event === 'cv_step') {
+            const paso = rec.product ?? 'desconocido';
+            funnel.cv_steps_7d[paso] = (funnel.cv_steps_7d[paso] ?? 0) + 1;
             return;
           }
           funnel.disponible = true;
@@ -2123,6 +2131,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
         book_clicks_7d: funnel.book_clicks_7d,
         outbound_clicks_7d: funnel.outbound_clicks_7d,
         next_step_clicks_7d: funnel.next_step_clicks_7d,
+        cv_steps_7d: funnel.cv_steps_7d,
         por_campaign_30d: Array.from(funnel.by_campaign.values()).sort(
           (a, b) =>
             b.paywall_viewed + b.quiz_viewed + b.cv_viewed + b.blog_viewed -
