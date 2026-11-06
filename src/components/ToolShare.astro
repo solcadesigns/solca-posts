@@ -1,0 +1,131 @@
+---
+/**
+ * Botones discretos para compartir una HERRAMIENTA (no un resultado) · 6 nov 2026.
+ * Decisión de Oscar en ../consultoria/investigacion/2026-11-plan-revisor-cv.md.
+ *
+ * - Redes: LinkedIn, WhatsApp y copiar enlace.
+ * - El enlace compartido lleva utm_source=share&utm_medium=<red>&utm_campaign=<herramienta>.
+ * - Cada clic se registra como `share_clicked` con product `<herramienta>:<red>` (/api/simulator-events) y el
+ *   reporte semanal lo cuenta aparte (share_clicks_7d), fuera del embudo del simulador y del desglose por campaña.
+ * - Clases propias (`tool-share*`) para no chocar con las barras `.share-strip` / `.share-btn` que ya existen
+ *   después del resultado del quiz y del revisor de CV.
+ * - `texto`: una frase factual, sin cifras que no se puedan verificar en la página de la herramienta. LinkedIn no
+ *   usa el texto (toma la vista previa de la URL); WhatsApp sí.
+ */
+export type Herramienta = 'quiz-rol' | 'simulador-entrevistas' | 'vacantes' | 'revisar-cv';
+
+interface Props {
+  herramienta: Herramienta;
+  /** Ruta canónica de la herramienta, p. ej. '/vacantes'. */
+  ruta: string;
+  texto: string;
+  label?: string;
+}
+
+const { herramienta, ruta, texto, label = 'Compartir esta herramienta' } = Astro.props;
+const url = `https://solcaciencia.com${ruta}`;
+---
+<div class="tool-share" data-tool-share={herramienta} data-tool-share-url={url} data-tool-share-text={texto}>
+  <span class="tool-share-label">{label}</span>
+  <button type="button" class="tool-share-btn" data-red="linkedin" aria-label="Compartir en LinkedIn" title="LinkedIn">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM8.34 17.34V10.5H6.17v6.84zM7.25 9.5a1.26 1.26 0 1 0 0-2.51 1.26 1.26 0 0 0 0 2.51zM18 17.34v-3.75c0-2-1.07-2.93-2.5-2.93a2.16 2.16 0 0 0-1.95 1.08v-.93h-2.16c.03.61 0 6.53 0 6.53h2.16v-3.82a1.48 1.48 0 0 1 .07-.53 1.18 1.18 0 0 1 1.11-.79c.78 0 1.1.6 1.1 1.47v3.67z"/></svg>
+  </button>
+  <button type="button" class="tool-share-btn" data-red="whatsapp" aria-label="Compartir por WhatsApp" title="WhatsApp">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.1l-.9 1.2c-.2.2-.4.2-.7.1-1-.4-1.9-1-2.7-1.7-.7-.7-1.3-1.5-1.8-2.4-.1-.2 0-.5.1-.6.1-.1.2-.3.4-.4.1-.1.2-.3.3-.4.1-.1.1-.3 0-.4-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.7.4-.7.7-1.1 1.6-1.1 2.6.1 1.2.5 2.3 1.2 3.3 1.3 1.9 3 3.4 5 4.4.6.3 1 .4 1.4.5.6.2 1.1.2 1.6.1.5-.1 1.6-.7 1.8-1.3.2-.5.2-1 .2-1.1zM12 22a10 10 0 0 1-5.3-1.5L2 22l1.5-4.6A10 10 0 0 1 2 12 10 10 0 0 1 12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10z"/></svg>
+  </button>
+  <button type="button" class="tool-share-btn" data-red="copy" aria-label="Copiar enlace" title="Copiar enlace">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+  </button>
+  <span class="tool-share-done" role="status" hidden>Enlace copiado</span>
+</div>
+
+<style>
+  .tool-share {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 28px auto 0;
+    font-size: 13px;
+    color: #5A6480;
+  }
+  .tool-share-label { margin-right: 4px; }
+  .tool-share-btn {
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: transparent;
+    border: 1px solid rgba(27, 58, 107, 0.2);
+    border-radius: 50%;
+    color: #1B3A6B;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .tool-share-btn:hover,
+  .tool-share-btn:focus-visible {
+    background: #1B3A6B;
+    color: #fff;
+  }
+  .tool-share-done { color: #1B3A6B; font-weight: 600; }
+  .tool-share-done[hidden] { display: none !important; }
+  @media print { .tool-share { display: none !important; } }
+</style>
+
+<script>
+  // Un solo manejador por página aunque el componente aparezca más de una vez.
+  type W = Window & { __toolShareBound?: boolean; __utm?: Record<string, string>; __attr?: () => Record<string, unknown> };
+  const w = window as W;
+  if (!w.__toolShareBound) {
+    w.__toolShareBound = true;
+    document.addEventListener('click', (ev) => {
+      const btn = (ev.target as HTMLElement | null)?.closest<HTMLButtonElement>('.tool-share-btn');
+      if (!btn) return;
+      const box = btn.closest<HTMLElement>('[data-tool-share]');
+      if (!box) return;
+      const herramienta = box.dataset.toolShare || 'otra';
+      const red = btn.dataset.red || 'otra';
+      const u = new URL(box.dataset.toolShareUrl || window.location.href);
+      u.searchParams.set('utm_source', 'share');
+      u.searchParams.set('utm_medium', red);
+      u.searchParams.set('utm_campaign', herramienta);
+      const shareUrl = u.toString();
+      const text = box.dataset.toolShareText || '';
+
+      // Evento share_clicked (best-effort, no bloquea el clic).
+      try {
+        const utm = w.__utm || {};
+        const body = JSON.stringify({
+          event: 'share_clicked',
+          product: `${herramienta}:${red}`,
+          path: window.location.pathname,
+          utm_source: utm.utm_source,
+          utm_medium: utm.utm_medium,
+          utm_campaign: utm.utm_campaign,
+          utm_content: utm.utm_content,
+          ...(w.__attr ? w.__attr() : {}),
+        });
+        if (navigator.sendBeacon) navigator.sendBeacon('/api/simulator-events', new Blob([body], { type: 'application/json' }));
+        else fetch('/api/simulator-events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(() => {});
+      } catch { /* medición best-effort */ }
+
+      if (red === 'linkedin') {
+        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, '_blank', 'noopener');
+      } else if (red === 'whatsapp') {
+        window.open(`https://wa.me/?text=${encodeURIComponent(text ? `${text} ${shareUrl}` : shareUrl)}`, '_blank', 'noopener');
+      } else {
+        const done = box.querySelector<HTMLElement>('.tool-share-done');
+        const ok = () => {
+          if (!done) return;
+          done.hidden = false;
+          setTimeout(() => (done.hidden = true), 1800);
+        };
+        if (navigator.clipboard?.writeText) navigator.clipboard.writeText(shareUrl).then(ok).catch(() => window.prompt('Copia el enlace:', shareUrl));
+        else window.prompt('Copia el enlace:', shareUrl);
+      }
+    });
+  }
+</script>

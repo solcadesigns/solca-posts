@@ -210,6 +210,8 @@ interface WeeklyReport {
     outbound_clicks_7d: Record<string, number>;
     next_step_clicks_7d: Record<string, number>;
     cv_steps_7d: Record<string, number>;
+    // 6 nov 2026: clics en compartir herramienta (share_clicked), por <herramienta>:<red>.
+    share_clicks_7d: Record<string, number>;
     // 14 oct 2026: visitas registradas por page_viewed en la semana (7 días),
     // con y sin UTM. Desde antes de esa fecha no hay datos.
     page_views_7d: { 'quiz-rol': number; 'revisar-cv': number; blog: number; vacantes: number; libro: number; con_utm: number };
@@ -1644,6 +1646,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
       outbound_clicks_7d: {} as Record<string, number>,
       next_step_clicks_7d: {} as Record<string, number>,
       cv_steps_7d: {} as Record<string, number>,
+      share_clicks_7d: {} as Record<string, number>,
       page_views_7d: { 'quiz-rol': 0, 'revisar-cv': 0, blog: 0, vacantes: 0, libro: 0, con_utm: 0 },
       eventos_internos_7d: 0,
       eventos_bot_7d: 0,
@@ -1678,7 +1681,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
           if (esLanzamiento && tsMs < Date.parse(MEDICION_LANZAMIENTO_DESDE)) return;
 
           // Desglose por campaña: ventana de 30 días, independiente de la semanal.
-          if (rec.utm_campaign && tsMs >= campaignWindowStart && rec.event !== 'cv_step') {
+          if (rec.utm_campaign && tsMs >= campaignWindowStart && rec.event !== 'cv_step' && rec.event !== 'share_clicked') {
             const c = funnel.by_campaign.get(rec.utm_campaign) ?? {
               utm_campaign: rec.utm_campaign,
               utm_source: rec.utm_source ?? null,
@@ -1735,6 +1738,13 @@ export const GET: APIRoute = async ({ url, locals }) => {
           if (rec.event === 'cv_step') {
             const paso = rec.product ?? 'desconocido';
             funnel.cv_steps_7d[paso] = (funnel.cv_steps_7d[paso] ?? 0) + 1;
+            return;
+          }
+          // 6 nov 2026: compartir herramienta (quiz-rol, simulador-entrevistas, vacantes, revisar-cv) por red.
+          // Aparte, como cv_step: no entra al embudo del simulador ni al desglose por campaña.
+          if (rec.event === 'share_clicked') {
+            const k = rec.product ?? 'desconocido';
+            funnel.share_clicks_7d[k] = (funnel.share_clicks_7d[k] ?? 0) + 1;
             return;
           }
           funnel.disponible = true;
@@ -2132,6 +2142,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
         outbound_clicks_7d: funnel.outbound_clicks_7d,
         next_step_clicks_7d: funnel.next_step_clicks_7d,
         cv_steps_7d: funnel.cv_steps_7d,
+        share_clicks_7d: funnel.share_clicks_7d,
         por_campaign_30d: Array.from(funnel.by_campaign.values()).sort(
           (a, b) =>
             b.paywall_viewed + b.quiz_viewed + b.cv_viewed + b.blog_viewed -

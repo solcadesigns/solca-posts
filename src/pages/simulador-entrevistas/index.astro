@@ -15,6 +15,8 @@
 // La página es pública e indexable (sin noindex): es la puerta canónica al producto.
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
+// 6 nov 2026: compartir la herramienta, discreto, en el pie de la página.
+import ToolShare from '../../components/ToolShare.astro';
 // 2 nov 2026: textos de las casillas en src/lib/consent.ts (lo que se guarda corresponde a lo que se ve).
 import { CONSENT_TEXT, CONSENT_COMMON, CONSENT_MSG, privacidadHtml } from '../../lib/consent';
 const consentSim = CONSENT_TEXT.simulador;
@@ -308,6 +310,11 @@ const consentErrMsg = CONSENT_MSG.privacidad_requerida;
         <a href="mailto:hello@solcaciencia.com">hello@solcaciencia.com</a> con dudas, ideas o
         errores.
       </p>
+      <ToolShare
+        herramienta="simulador-entrevistas"
+        ruta="/simulador-entrevistas/"
+        texto="Simulador para practicar entrevistas de roles en la industria farmacéutica y recibir un reporte con lo que conviene reforzar."
+      />
     </div>
   </footer>
 

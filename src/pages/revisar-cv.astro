@@ -1,6 +1,8 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import MarketSurvey from '../components/MarketSurvey.astro';
+// 6 nov 2026: compartir la herramienta (no el resultado), discreto, debajo del formulario.
+import ToolShare from '../components/ToolShare.astro';
 // 2 nov 2026: textos de las casillas en src/lib/consent.ts (lo que se guarda corresponde a lo que se ve).
 import { CONSENT_TEXT, CONSENT_COMMON, CONSENT_MSG, privacidadHtml } from '../lib/consent';
 const consentCv = CONSENT_TEXT.cv;
@@ -190,6 +192,11 @@ const atsBlogURL =
         </div>
       </div>
     </form>
+    <ToolShare
+      herramienta="revisar-cv"
+      ruta="/revisar-cv"
+      texto="Herramienta que revisa tu CV contra 20 criterios para roles en la industria farmacéutica."
+    />
   </div>
 </section>
 
@@ -310,25 +317,7 @@ const atsBlogURL =
       </button>
     </div>
 
-    <div class="share-strip"
-         data-share-url="https://solcaciencia.com/revisar-cv"
-         data-share-text="Probé esta herramienta gratuita que revisa tu CV con IA contra 20 criterios para roles en la industria farmacéutica.">
-      <span class="share-strip-label">Compartir esta herramienta</span>
-      <div class="share-strip-buttons">
-        <button type="button" class="share-btn" data-share="linkedin" aria-label="Compartir en LinkedIn" title="LinkedIn">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM8.34 17.34V10.5H6.17v6.84zM7.25 9.5a1.26 1.26 0 1 0 0-2.51 1.26 1.26 0 0 0 0 2.51zM18 17.34v-3.75c0-2-1.07-2.93-2.5-2.93a2.16 2.16 0 0 0-1.95 1.08v-.93h-2.16c.03.61 0 6.53 0 6.53h2.16v-3.82a1.48 1.48 0 0 1 .07-.53 1.18 1.18 0 0 1 1.11-.79c.78 0 1.1.6 1.1 1.47v3.67z"/></svg>
-        </button>
-        <button type="button" class="share-btn" data-share="whatsapp" aria-label="Compartir por WhatsApp" title="WhatsApp">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.1l-.9 1.2c-.2.2-.4.2-.7.1-1-.4-1.9-1-2.7-1.7-.7-.7-1.3-1.5-1.8-2.4-.1-.2 0-.5.1-.6.1-.1.2-.3.4-.4.1-.1.2-.3.3-.4.1-.1.1-.3 0-.4-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.7.4-.7.7-1.1 1.6-1.1 2.6.1 1.2.5 2.3 1.2 3.3 1.3 1.9 3 3.4 5 4.4.6.3 1 .4 1.4.5.6.2 1.1.2 1.6.1.5-.1 1.6-.7 1.8-1.3.2-.5.2-1 .2-1.1zM12 22a10 10 0 0 1-5.3-1.5L2 22l1.5-4.6A10 10 0 0 1 2 12 10 10 0 0 1 12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10z"/></svg>
-        </button>
-        <button type="button" class="share-btn" data-share="email" aria-label="Compartir por email" title="Email">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-        </button>
-        <button type="button" class="share-btn" data-share="copy" aria-label="Copiar enlace" title="Copiar enlace">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        </button>
-      </div>
-    </div>
+    <!-- 6 nov 2026: se quitó la barra de compartir después del resultado; compartir la herramienta vive en ToolShare, debajo del formulario. -->
   </div>
 </section>
 
@@ -336,7 +325,7 @@ const atsBlogURL =
 <section class="cv-error" id="error" hidden>
   <div class="container">
     <div class="error-card">
-      <h2>Algo salió mal</h2>
+      <h2 id="error-title">Algo salió mal</h2>
       <p id="error-message">Intenta de nuevo en un momento.</p>
       <button type="button" id="error-retry-btn" class="btn btn-primary">Intentar otra vez</button>
     </div>
@@ -912,55 +901,6 @@ const atsBlogURL =
     flex-wrap: wrap;
   }
 
-  /* ============ Share strip ============ */
-  .share-strip {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    margin-top: 36px;
-    padding-top: 24px;
-    border-top: 1px solid var(--rule);
-  }
-  .share-strip-label {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--text-mute);
-  }
-  .share-strip-buttons {
-    display: flex;
-    gap: 10px;
-  }
-  .share-btn {
-    width: 38px;
-    height: 38px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #fff;
-    border: 1px solid var(--rule);
-    border-radius: 50%;
-    color: var(--navy);
-    cursor: pointer;
-    transition: all 0.15s ease;
-    padding: 0;
-  }
-  .share-btn:hover {
-    background: var(--orange);
-    border-color: var(--orange);
-    color: #fff;
-    transform: translateY(-1px);
-  }
-  .share-btn:active { transform: scale(0.95); }
-  .share-btn.share-btn-copied {
-    background: var(--navy);
-    border-color: var(--navy);
-    color: #fff;
-  }
-
   /* ============ Error ============ */
   .cv-error { background: var(--bg); padding: 80px 0; }
   .error-card {
@@ -988,7 +928,7 @@ const atsBlogURL =
 
   /* Print: strip nav, hero, form, footer; keep result + brand header */
   @media print {
-    .nav, .cv-hero, .cv-form-section, .cv-loading, .cv-error, .footer, .result-actions, .result-download-notice, .market-survey, .share-strip { display: none !important; }
+    .nav, .cv-hero, .cv-form-section, .cv-loading, .cv-error, .footer, .result-actions, .result-download-notice, .market-survey { display: none !important; }
     .cv-result { background: white; padding: 20px 0; }
     .cv-result .result-feedback,
     .cv-result .result-observaciones { box-shadow: none; border: 1px solid #ccc; }
@@ -1110,6 +1050,7 @@ const atsBlogURL =
   // 6 nov 2026 (rúbrica v2): grupos, conteos y siguiente paso salen del mismo módulo que usa el endpoint.
   import {
     countByEstado,
+    cursoLead,
     groupObservaciones,
     pickNextStep,
     topGrupo,
@@ -1391,7 +1332,7 @@ const atsBlogURL =
     }
     return {
       title: 'Trabaja la redacción de tu CV',
-      body: 'Lo prioritario en tu CV está en la redacción y la estructura. El curso explica cómo redactar un CV, optimizar LinkedIn y aplicar de forma estratégica. Los ejemplos son de ciencias biológicas y de la salud.',
+      body: `${cursoLead(data, lastRol)} El curso explica cómo redactar un CV, optimizar LinkedIn y aplicar de forma estratégica. Los ejemplos son de ciencias biológicas y de la salud.`,
       cta: 'Ver el curso en Hotmart',
       href: cursoUrl,
       hrefPdf: `${cursoUrl}${cursoUrl.includes('?') ? '&' : '?'}src=cv-reporte-pdf`,
@@ -1526,7 +1467,7 @@ const atsBlogURL =
     if (retroCard) retroCard.hidden = !data.retroalimentacion;
 
     // Un solo siguiente paso, elegido en código por el hallazgo principal.
-    const step = pickNextStep(data);
+    const step = pickNextStep(data, lastRol);
     const ns = nextStepCopy(step, data);
     const external = ns.href.startsWith('http');
     set(
@@ -1662,6 +1603,20 @@ const atsBlogURL =
 
       if (intervalId) window.clearInterval(intervalId);
 
+      // 6 nov 2026 (bloque B): el análisis falló y quedó pendiente; llega por correo. No se ofrece reintentar
+      // aquí para no duplicar el análisis.
+      if (res.status === 202) {
+        const pend = (await res.json().catch(() => ({}))) as { message?: string };
+        hide(loading);
+        const errTitle = document.getElementById('error-title');
+        if (errTitle) errTitle.textContent = 'Tu análisis llegará por correo';
+        if (errorMessage) errorMessage.textContent = pend.message || 'Hubo un problema al generar tu análisis; te lo enviaremos por correo en cuanto esté listo.';
+        hide(errorRetryBtn);
+        show(errorSection);
+        cvStep('pendiente_mostrado');
+        return;
+      }
+
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({ message: 'Error desconocido' }));
         throw new Error(errBody.message || `HTTP ${res.status}`);
@@ -1678,6 +1633,9 @@ const atsBlogURL =
       if (intervalId) window.clearInterval(intervalId);
       hide(loading);
       const msg = err instanceof Error ? err.message : 'Error desconocido.';
+      const errTitle = document.getElementById('error-title');
+      if (errTitle) errTitle.textContent = 'Algo salió mal';
+      show(errorRetryBtn);
       if (errorMessage) errorMessage.textContent = msg;
       show(errorSection);
       submitBtn && (submitBtn.disabled = false);
@@ -2004,7 +1962,7 @@ const atsBlogURL =
     }
 
     // ===== SIGUIENTE PASO (caja navy) =====
-    const ns = nextStepCopy(pickNextStep(raw), raw);
+    const ns = nextStepCopy(pickNextStep(raw, lastRol), raw);
     font('normal', 10, OFFW);
     const bodyL = lines(ns.body, C_W - 12);
     const bridgeL = lines('Este análisis es general; no compara tu CV con una vacante.', C_W - 12);
@@ -2117,61 +2075,7 @@ const atsBlogURL =
     marketObserver.observe(result, { attributes: true, attributeFilter: ['hidden'] });
   }
 
-  // ============ Share strip · LinkedIn / WhatsApp / Email / Copy ============
-  // Cada botón agrega su UTM (20 oct 2026): antes los enlaces compartidos llegaban sin fuente.
-  function withShareUtm(url: string, medium: string): string {
-    try {
-      const u = new URL(url);
-      u.searchParams.set('utm_source', 'share');
-      u.searchParams.set('utm_medium', medium);
-      u.searchParams.set('utm_campaign', 'cv_checker');
-      return u.toString();
-    } catch {
-      return url;
-    }
-  }
-  document.querySelectorAll<HTMLButtonElement>('.share-btn').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const strip = btn.closest<HTMLElement>('.share-strip');
-      if (!strip) return;
-      const target = btn.dataset.share;
-      cvStep(`share:${target || 'other'}`);
-      const shareUrl = withShareUtm(strip.dataset.shareUrl || window.location.href, target || 'other');
-      const shareText = strip.dataset.shareText || '';
-      const fullText = shareText ? `${shareText} ${shareUrl}` : shareUrl;
-
-      let openUrl = '';
-      if (target === 'linkedin') {
-        openUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
-      } else if (target === 'whatsapp') {
-        openUrl = `https://wa.me/?text=${encodeURIComponent(fullText)}`;
-      } else if (target === 'email') {
-        const subject = encodeURIComponent('Te recomiendo esto · Solca');
-        const body = encodeURIComponent(fullText);
-        openUrl = `mailto:?subject=${subject}&body=${body}`;
-      } else if (target === 'copy') {
-        try {
-          await navigator.clipboard.writeText(fullText);
-          btn.classList.add('share-btn-copied');
-          setTimeout(() => btn.classList.remove('share-btn-copied'), 1500);
-        } catch (err) {
-          console.warn('clipboard failed', err);
-          const ta = document.createElement('textarea');
-          ta.value = fullText;
-          document.body.appendChild(ta);
-          ta.select();
-          document.execCommand('copy');
-          document.body.removeChild(ta);
-          btn.classList.add('share-btn-copied');
-          setTimeout(() => btn.classList.remove('share-btn-copied'), 1500);
-        }
-        return;
-      }
-      if (openUrl) {
-        window.open(openUrl, '_blank', 'noopener,noreferrer');
-      }
-    });
-  });
+  // 6 nov 2026: la barra de compartir después del resultado se quitó (ToolShare, debajo del formulario, la reemplaza).
 </script>
 
 </BaseLayout>

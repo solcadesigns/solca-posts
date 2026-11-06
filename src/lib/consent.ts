@@ -20,7 +20,10 @@
 import { guardarEventoD1 } from './eventos-d1';
 import { emailHashFull, type Attribution } from './attribution';
 
-export const CONSENT_VERSION = 'v2-2026-11';
+// Historial: v2-2026-11 (2 nov 2026, casillas separadas). v3-2026-11 (6 nov 2026): cambia solo la casilla de
+// privacidad del revisor de CV (análisis por correo, aviso de falla y reintento con el CV guardado hasta 48 h);
+// los textos de Simulador y Quiz quedan igual. La versión es única para todos los formularios.
+export const CONSENT_VERSION = 'v3-2026-11';
 
 // 'reconfirmacion-es': opt-in desde /api/confirmar-correos (correo único aviso-privacidad-2026-11, legado España).
 export type ConsentForm = 'simulador' | 'simulador-pago' | 'quiz' | 'cv' | 'reconfirmacion-es';
@@ -43,7 +46,7 @@ export const CONSENT_TEXT: Record<FormKey, { privacidad: string; marketing: stri
   },
   cv: {
     privacidad:
-      'He leído el aviso de privacidad y acepto que el texto de mi CV se procese con IA para generar mi análisis. El CV no se guarda: se procesa y se descarta. Mi correo se usa para limitar el número de análisis y para avisarme si el mío falla.',
+      'He leído el aviso de privacidad y acepto que el texto de mi CV se procese con IA para generar mi análisis. El CV no se guarda; solo si el análisis falla, se conserva hasta 48 horas para reintentarlo y después se borra. Mi correo se usa para enviarme el análisis, avisarme si falla y limitar el número de análisis.',
     marketing:
       'Quiero recibir 4 correos de bienvenida en las próximas 3 semanas y el newsletter semanal Solca Insight, con recursos y ofertas de Solca Ciencia (libros, curso y Simulador). Me doy de baja cuando quiera.',
     nota: 'Opcional. Tu análisis funciona igual sin marcarla.',

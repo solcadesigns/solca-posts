@@ -1,6 +1,8 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import MarketSurvey from '../components/MarketSurvey.astro';
+// 6 nov 2026: compartir la herramienta (no el resultado), discreto, al pie de la página.
+import ToolShare from '../components/ToolShare.astro';
 // 2 nov 2026: textos de las casillas en src/lib/consent.ts (lo que se guarda corresponde a lo que se ve).
 import { CONSENT_TEXT, CONSENT_COMMON, CONSENT_MSG, privacidadHtml } from '../lib/consent';
 const consentQuiz = CONSENT_TEXT.quiz;
@@ -350,6 +352,13 @@ const QUESTIONS = [
         <button class="retake-btn" id="retake-btn">↺ Volver a tomar el quiz</button>
       </div>
     </div>
+  </div>
+  <div class="container">
+    <ToolShare
+      herramienta="quiz-rol"
+      ruta="/quiz-rol"
+      texto="Quiz de 12 preguntas que sugiere cuál de cinco roles de la industria farmacéutica y de ciencias de la vida se ajusta a cómo trabajas."
+    />
   </div>
 </section>
 

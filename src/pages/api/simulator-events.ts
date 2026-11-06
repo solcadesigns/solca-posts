@@ -41,7 +41,8 @@ interface EventBody {
     | 'book_clicked'
     | 'outbound_clicked'
     | 'next_step_clicked'
-    | 'cv_step';
+    | 'cv_step'
+    | 'share_clicked';
   // page_viewed: qué página se vio. path = pathname (para blog, el slug).
   page?: 'quiz-rol' | 'revisar-cv' | 'blog' | 'vacantes';
   path?: string;
@@ -82,10 +83,14 @@ const ALLOWED_EVENTS = new Set([
   'next_step_clicked',
   // 6 nov 2026: pasos del revisor de CV (product = pdf_ok | pdf_fail | result_viewed | report_downloaded | share:<red>).
   'cv_step',
+  // 6 nov 2026: clic en compartir una herramienta (componente ToolShare; product = <herramienta>:<red>).
+  'share_clicked',
 ]);
 
 // 22 oct 2026: + buscador de vacantes.
 const ALLOWED_PAGES = new Set(['quiz-rol', 'revisar-cv', 'blog', 'vacantes', 'libro']);
+
+const SHARE_PRODUCT_RE = /^(quiz-rol|simulador-entrevistas|vacantes|revisar-cv):(linkedin|whatsapp|copy)$/;
 
 const MAX_STRING = 200; // recorta strings largas para no ensuciar KV
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
@@ -119,6 +124,10 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
   }
   if (event === 'page_viewed' && !ALLOWED_PAGES.has(body.page ?? '')) {
     return jsonResponse({ error: 'invalid_page' }, 400);
+  }
+  // 6 nov 2026: share_clicked solo con herramienta y red conocidas (componente ToolShare).
+  if (event === 'share_clicked' && !SHARE_PRODUCT_RE.test(typeof body.product === 'string' ? body.product : '')) {
+    return jsonResponse({ error: 'invalid_product' }, 400);
   }
 
   const runtime = (locals as { runtime?: { env?: Record<string, unknown> } }).runtime;
@@ -170,8 +179,8 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     plan: body.plan && ['gratis', 'basico', 'premium'].includes(body.plan) ? body.plan : undefined,
     cta: body.cta === 'hero' || body.cta === 'card' ? body.cta : undefined,
     page: event === 'page_viewed' ? body.page : undefined,
-    path: event === 'page_viewed' || event === 'book_clicked' || event === 'outbound_clicked' || event === 'next_step_clicked' ? truncate(body.path) : undefined,
-    product: event === 'book_clicked' || event === 'outbound_clicked' || event === 'next_step_clicked' || event === 'cv_step' ? truncate(body.product) : undefined,
+    path: event === 'page_viewed' || event === 'book_clicked' || event === 'outbound_clicked' || event === 'next_step_clicked' || event === 'share_clicked' ? truncate(body.path) : undefined,
+    product: event === 'book_clicked' || event === 'outbound_clicked' || event === 'next_step_clicked' || event === 'cv_step' || event === 'share_clicked' ? truncate(body.product) : undefined,
     tag: event === 'book_clicked' ? truncate(body.tag) : undefined,
     utm_source: truncate(body.utm_source),
     utm_medium: truncate(body.utm_medium),

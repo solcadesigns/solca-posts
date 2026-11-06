@@ -1,28 +1,24 @@
 import type { APIRoute } from 'astro';
-import { CV_REVIEW_SYSTEM_PROMPT, buildCvReviewUserMessage } from '../../lib/cv-review-prompt';
+import { readRolObjetivo } from '../../lib/cv-review-rubric';
+import { checkCvSubmitLimit } from '../../lib/rate-limit';
+import { sendEmail } from '../../lib/postmark';
+import { extractUtms } from '../../lib/utm';
+import { extractAttribution, emailHashFull } from '../../lib/attribution';
+import { readMarketing, CONSENT_MSG } from '../../lib/consent';
+// 6 nov 2026 (bloque B): análisis, cierre, correo con el análisis y trabajos pendientes viven en cv-review-run.
 import {
-  RUBRIC_VERSION,
-  ROL_NO_SEGURO,
-  readRolObjetivo,
-  rolLabel,
-  lineBreakCount,
-  parseJsonLenient,
-  validateCvReview,
-  countByEstado,
-} from '../../lib/cv-review-rubric';
-import { chatCompletion, extractText, AnthropicError } from '../../lib/anthropic';
-import { checkCvSubmitLimit, incrementCvSubmitCount } from '../../lib/rate-limit';
-import { sendEmail, sendEmailWithTemplate, PostmarkError } from '../../lib/postmark';
-import { extractUtms, type UtmRecord } from '../../lib/utm';
-import { extractAttribution, emailHashFull, type Attribution } from '../../lib/attribution';
-import { guardarEventoD1 } from '../../lib/eventos-d1';
-import {
-  readMarketing,
-  consentFields,
-  consentKvMeta,
-  registrarConsentimiento,
-  CONSENT_MSG,
-} from '../../lib/consent';
+  runCvAnalysis,
+  finalizeCvSuccess,
+  cvJobKey,
+  newCvJob,
+  saveCvJob,
+  markCvDone,
+  putAttemptKv,
+  recordCvAttemptD1,
+  type CvAttemptCtx,
+  type CvAttemptRec,
+} from '../../lib/cv-review-run';
+import { CV_PENDING_MSG } from '../../lib/cv-review-email';
 // Postmark reemplaza a Brevo (jul 2026). Ver _docs/que-rompimos-brevo-mailerlite.md.
 
 export const prerender = false;
@@ -65,86 +61,6 @@ function jsonResponse(data: unknown, status = 200) {
   });
 }
 
-/**
- * Envía el welcome de Solca Insight vía Postmark, template welcome-solca-insight.
- * Fire-and-forget. Si POSTMARK_SERVER_TOKEN no está configurado, salta silenciosamente.
- * El template soporta la rama is_cv (this endpoint) y is_quiz (quiz-subscribe.ts).
- */
-async function sendWelcomeCv(
-  runtime: { env?: Record<string, unknown> } | undefined,
-  email: string,
-  firstName: string | undefined,
-): Promise<void> {
-  const token = runtime?.env?.POSTMARK_SERVER_TOKEN as string | undefined;
-  if (!token) {
-    console.log('cv-review:postmark-skipped (no POSTMARK_SERVER_TOKEN)');
-    return;
-  }
-
-  try {
-    const result = await sendEmailWithTemplate(token, {
-      from: 'Oscar Solís <hola@solcaciencia.com>',
-      to: email,
-      templateAlias: 'welcome-solca-insight',
-      templateModel: {
-        first_name: firstName ?? '',
-        is_cv: true,
-        is_quiz: false,
-        role_label: '',
-      },
-      tag: 'welcome-cv',
-      metadata: { source: 'cv-review' },
-    });
-    console.log('cv-review:postmark-sent', result.messageId, result.to);
-  } catch (err) {
-    if (err instanceof PostmarkError) {
-      console.error('Postmark send failed:', err.status, JSON.stringify(err.body));
-    } else {
-      console.error('Postmark unexpected error:', err);
-    }
-  }
-}
-
-async function storeEmail(
-  runtime: { env?: Record<string, unknown> } | undefined,
-  email: string,
-  country: string | undefined,
-  ip: string | null,
-  utms: UtmRecord,
-  referrer?: string,
-  attr: Attribution = {},
-  marketing = false,
-  ts: string = new Date().toISOString(),
-): Promise<void> {
-  // Si hay KV namespace `EMAILS` configurado, guardamos. Si no, log a console (visible vía `wrangler tail`).
-  const kv = runtime?.env?.EMAILS as KVNamespace | undefined;
-  const consent = consentFields(ts, marketing, 'cv');
-  const record = {
-    email: email.toLowerCase().trim(),
-    country: country?.toLowerCase().trim(),
-    ip,
-    ts,
-    ...(referrer ? { referrer } : {}),
-    ...utms,
-    // 30 oct 2026 (P2): llave de unión con ventas (sha256 completo) + aid/ft/lt/interno.
-    email_hash: await emailHashFull(email),
-    ...attr,
-    // 2 nov 2026: versión del texto aceptado, fecha y casilla comercial (src/lib/consent.ts).
-    ...consent,
-  };
-  if (kv && typeof kv.put === 'function') {
-    const key = `email:${record.ts}:${record.email}`;
-    try {
-      // Metadata con el consentimiento para que blog-broadcast lo lea con `list`, sin `get`.
-      await kv.put(key, JSON.stringify(record), { metadata: consentKvMeta(consent) });
-    } catch (err) {
-      console.error('KV put failed:', err);
-    }
-  } else {
-    console.log('cv-review:email-captured', JSON.stringify(record));
-  }
-}
-
 // Tope diario global (20 oct 2026): un pico de 29 análisis en un día (vs 1-2 normal)
 // llegó sin aviso. El tope corta el gasto si el pico crece; al alcanzarlo se avisa
 // una sola vez a hello@ para decidir si se sube.
@@ -163,18 +79,7 @@ async function bumpDailyCount(kv: KVNamespace | undefined): Promise<number> {
 // análisis sale bien. `attempt:` se escribe antes de llamar a Anthropic y se
 // actualiza con el resultado; los que quedan en 'started' son abandonos
 // (p. ej., la persona cerró la página durante los 30-40 s de espera).
-async function putAttempt(
-  kv: KVNamespace | undefined,
-  key: string,
-  record: Record<string, unknown>,
-): Promise<void> {
-  if (!kv) return;
-  try {
-    await kv.put(key, JSON.stringify(record), { expirationTtl: 60 * 60 * 24 * 180 });
-  } catch (err) {
-    console.error('attempt put failed', err);
-  }
-}
+// 6 nov 2026: el helper vive en lib/cv-review-run (putAttemptKv), compartido con el reintento.
 
 function cleanReferrer(raw: unknown): string | undefined {
   if (typeof raw !== 'string') return undefined;
@@ -318,193 +223,133 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
   };
   // 30 oct 2026: el registro `attempt:` (KV, 180 días) lleva el correo, así que no se vuelve permanente.
   // La parte anónima (estado, largo del CV, país, fuente, aid) se copia a D1 `eventos` como cv_attempt, sin TTL.
-  const attemptDb = runtime?.env?.SIMULATOR_METRICS_DB as D1Database | undefined;
+  const env = (runtime?.env ?? {}) as Record<string, unknown>;
+  const attemptDb = env.SIMULATOR_METRICS_DB as D1Database | undefined;
   const attemptTag = (await emailHashFull(email)).slice(0, 12);
   const attr = extractAttribution(body);
-  const saveAttempt = async (rec: Record<string, unknown>): Promise<void> => {
-    await putAttempt(emailsKV, attemptKey, rec);
-    const status = String(rec.status ?? 'desconocido').slice(0, 30);
-    const u = rec as { utm_source?: string; utm_medium?: string; utm_campaign?: string; utm_content?: string; utm_term?: string };
-    await guardarEventoD1(attemptDb, `cvat:${attemptTs}:${attemptTag}:${status}`, {
-      ts: new Date().toISOString(),
-      event: 'cv_attempt',
-      utm_source: u.utm_source, utm_medium: u.utm_medium, utm_campaign: u.utm_campaign,
-      utm_content: u.utm_content, utm_term: u.utm_term,
-      referrer, country: request.headers.get('cf-ipcountry') ?? undefined, // país de la IP (Cloudflare), como en eventos
-      ...attr,
-      extra: {
-        status,
-        pais_form: country ? country.slice(0, 40) : undefined, // país elegido en el formulario
-        cv_length: cv.length,
-        output_tokens: typeof rec.outputTokens === 'number' ? rec.outputTokens : undefined,
-        intento: attemptTag, // une started con su resultado; es un prefijo de 12 caracteres del hash, no el correo
-        // 6 nov 2026 (rúbrica v2): rol del formulario, origen del texto y conteos por estado. Sin texto del CV.
-        rubric_version: RUBRIC_VERSION,
-        rol_objetivo: rolObjetivo,
-        origen,
-        paginas: paginas ?? undefined,
-        ms: typeof rec.ms === 'number' ? rec.ms : undefined,
-        parcial: typeof rec.parcial === 'boolean' ? rec.parcial : undefined,
-        n_prioritario: typeof rec.nPrioritario === 'number' ? rec.nPrioritario : undefined,
-        n_mejorable: typeof rec.nMejorable === 'number' ? rec.nMejorable : undefined,
-        n_solido: typeof rec.nSolido === 'number' ? rec.nSolido : undefined,
-        n_no_evaluable: typeof rec.nNoEvaluable === 'number' ? rec.nNoEvaluable : undefined,
-        n_ajustes: typeof rec.nAjustes === 'number' ? rec.nAjustes : undefined,
-      },
-    });
-  };
-  await saveAttempt({ ...attemptBase, status: 'started' });
-
-  // Mensaje de usuario: datos del formulario + CV entre marcas (rúbrica v2).
-  const userMessage = buildCvReviewUserMessage({
-    cv,
-    country,
-    rolLabel: rolLabel(rolObjetivo),
-    rolNoSeguro: rolObjetivo === ROL_NO_SEGURO,
-    origen,
-    paginas,
-    saltos: lineBreakCount(cv),
-  });
-  const t0 = Date.now();
-
-  // Call Claude with prefill technique: prefill assistant with "{" so Claude continues a JSON object
-  let completion;
-  try {
-    completion = await chatCompletion({
-      apiKey,
-      model: 'claude-haiku-4-5-20251001',
-      system: CV_REVIEW_SYSTEM_PROMPT,
-      temperature: 0.3,
-      // 6 nov 2026 (v2): más campos de salida (estado, evidencia, prioridades, reescrituras). 5000 → 7000.
-      // El aumento real se mide con output_tokens en cv_attempt.
-      maxTokens: 7000,
-      messages: [
-        { role: 'user', content: userMessage },
-        { role: 'assistant', content: '{' }, // prefill — fuerza JSON limpio
-      ],
-    });
-  } catch (err) {
-    if (err instanceof AnthropicError) {
-      console.error('Anthropic error', err.status, err.body);
-    } else {
-      console.error('Unexpected error calling Anthropic', err);
-    }
-    await saveAttempt({
-      ...attemptBase,
-      status: 'llm_error',
-      httpStatus: err instanceof AnthropicError ? err.status : undefined,
-    });
-    return jsonResponse(
-      {
-        error: 'llm_error',
-        message:
-          'No pudimos completar el análisis en este momento. Intenta de nuevo en un minuto.',
-      },
-      502,
-    );
-  }
-
-  // Reconstruct the JSON: prepend `{` (prefill) to the response text
-  const rawText = extractText(completion).trim();
-  const jsonString = '{' + rawText;
-  const outputTokens = completion.usage?.output_tokens;
-  const ms = Date.now() - t0;
-
-  // Parseo tolerante: si el modelo se cortó por max_tokens, se cierra el JSON en el último objeto completo.
-  const parsedLenient = parseJsonLenient(jsonString);
-  if (!parsedLenient) {
-    console.error('LLM returned non-JSON:', jsonString.slice(0, 500));
-    await saveAttempt({ ...attemptBase, status: 'parse_error', outputTokens, ms });
-    return jsonResponse(
-      {
-        error: 'parse_error',
-        message:
-          'Recibimos una respuesta inesperada. Intenta de nuevo o pega el CV con saltos de línea limpios.',
-      },
-      500,
-    );
-  }
-
-  // Validación v2: citas literales, estados, grupos por id, prioridades y reescrituras. Acepta parciales.
-  const validated = validateCvReview(parsedLenient.value, { cv, origen, paginas, rolObjetivo });
-  if (!validated) {
-    console.error('LLM returned malformed structure:', JSON.stringify(parsedLenient.value).slice(0, 500));
-    await saveAttempt({ ...attemptBase, status: 'incomplete_result', outputTokens, ms });
-    return jsonResponse(
-      {
-        error: 'incomplete_result',
-        message:
-          'El análisis quedó incompleto. Intenta de nuevo; si persiste, asegúrate de pegar el CV completo.',
-      },
-      500,
-    );
-  }
-  const parsed = validated.result;
-  const parcial = validated.report.parcial || parsedLenient.repaired;
-  if (Object.keys(validated.report.issues).length) {
-    console.log('cv-review:ajustes', JSON.stringify({ ...validated.report.issues, reparado: parsedLenient.repaired }));
-  }
-  const conteos = countByEstado(parsed.observaciones);
-
-  // Guardar lead, consentimiento, intento y contador. 6 nov 2026: todo con await; ctx.waitUntil no
-  // ejecuta el callback en Astro sobre Workers (gotcha documentado en oscar-context).
-  const ip = clientAddress ?? request.headers.get('cf-connecting-ip');
-
-  // Extraer UTMs del body (los pone el cliente desde window.__utm).
   const utms = extractUtms(body as unknown as Record<string, unknown>);
-  const leadTs = new Date().toISOString();
-
-  await storeEmail(
-    runtime as { env?: Record<string, unknown> },
-    email,
-    country,
-    ip,
-    utms,
+  const ipCountry = request.headers.get('cf-ipcountry');
+  const attemptCtx: CvAttemptCtx = {
+    attemptTs,
+    intento: attemptTag,
     referrer,
-    extractAttribution(body),
-    marketing,
-    leadTs,
-  ).catch((err) => console.error('storeEmail failed', err));
-  // 2 nov 2026: prueba del consentimiento + evento lead_captured en D1 (permanente, sin correo).
-  await registrarConsentimiento(attemptDb, {
-    ts: leadTs,
-    emailHash: await emailHashFull(email),
-    form: 'cv',
-    marketing,
+    ipCountry,
     attr,
     utms,
-    country: request.headers.get('cf-ipcountry'),
-  });
-  await saveAttempt({
-    ...attemptBase,
-    status: 'ok',
-    outputTokens,
-    ms,
-    parcial,
-    nPrioritario: conteos.prioritario,
-    nMejorable: conteos.mejorable,
-    nSolido: conteos.solido,
-    nNoEvaluable: conteos.no_evaluable,
-    nAjustes: Object.values(validated.report.issues).reduce((a, b) => a + b, 0),
-  }).catch((err) => console.error('saveAttempt failed', err));
-  // 2 nov 2026: welcome-cv es comercial (presenta el newsletter y lleva al quiz); el análisis ya está en
-  // pantalla. Solo se manda con la casilla opcional marcada.
-  if (marketing) {
-    await sendWelcomeCv(
-      runtime as { env?: Record<string, unknown> },
-      email,
-      // Postmark solo usa el primer nombre; parsed.candidateName puede venir con nombre completo.
-      parsed.candidateName?.trim().split(/\s+/)[0],
-    ).catch((err) => console.error('sendWelcomeCv failed', err));
-  }
-  // El contador también sirve de prueba para /api/cv-waitlist (este correo hizo un análisis en 30 días).
-  await incrementCvSubmitCount(limitsKV, email).catch((err) =>
-    console.error('incrementCvSubmitCount failed', err),
-  );
+    country,
+    cvLength: cv.length,
+    rolObjetivo,
+    origen,
+    paginas,
+  };
+  const saveAttempt = async (kvRec: Record<string, unknown>, d1: CvAttemptRec): Promise<void> => {
+    await putAttemptKv(emailsKV, attemptKey, kvRec);
+    await recordCvAttemptD1(attemptDb, attemptCtx, d1);
+  };
+  await saveAttempt({ ...attemptBase, status: 'started' }, { status: 'started' });
 
-  // Return structured result
-  return jsonResponse(
-    { ...parsed, parcial, usage: completion.usage },
-    200,
-  );
+  // Una sola llamada al modelo; parseo tolerante y validación v2 (lib/cv-review-run).
+  const outcome = await runCvAnalysis(apiKey, { cv, country, rolObjetivo, origen, paginas });
+  const ip = clientAddress ?? request.headers.get('cf-connecting-ip');
+  const jobKey = await cvJobKey(email);
+
+  if (!outcome.ok) {
+    await saveAttempt(
+      { ...attemptBase, status: outcome.status, httpStatus: outcome.httpStatus, outputTokens: outcome.outputTokens, ms: outcome.ms },
+      { status: outcome.status, outputTokens: outcome.outputTokens, ms: outcome.ms },
+    );
+    // 6 nov 2026 (bloque B): en vez de pedir que lo intente otra vez, se guarda un trabajo pendiente (KV, 48 h
+    // máximo) que /api/cv-process-pending reintenta; el análisis llega por correo. Si no se puede guardar, se cae
+    // al mensaje de error de antes.
+    if (limitsKV) {
+      try {
+        await saveCvJob(
+          limitsKV,
+          jobKey,
+          newCvJob({
+            lastStatus: outcome.status,
+            attemptKey,
+            attemptTs,
+            intento: attemptTag,
+            cv,
+            rolObjetivo,
+            origen,
+            paginas,
+            email,
+            country,
+            marketing,
+            consentTs: attemptTs,
+            ip,
+            ipCountry,
+            utms,
+            referrer,
+            attr,
+          }),
+        );
+        await saveAttempt({ ...attemptBase, status: 'pending', lastError: outcome.status }, { status: 'pending', intentoN: 1 });
+        return jsonResponse(
+          {
+            pending: true,
+            message: CV_PENDING_MSG,
+          },
+          202,
+        );
+      } catch (err) {
+        console.error('cv-review: no se pudo guardar el trabajo pendiente', err);
+      }
+    }
+    const fallback: Record<typeof outcome.status, { status: number; message: string }> = {
+      llm_error: { status: 502, message: 'No pudimos completar el análisis en este momento. Intenta de nuevo en un minuto.' },
+      parse_error: { status: 500, message: 'Recibimos una respuesta inesperada. Intenta de nuevo o pega el CV con saltos de línea limpios.' },
+      incomplete_result: { status: 500, message: 'El análisis quedó incompleto. Intenta de nuevo; si persiste, asegúrate de pegar el CV completo.' },
+    };
+    return jsonResponse({ error: outcome.status, message: fallback[outcome.status].message }, fallback[outcome.status].status);
+  }
+
+  const parsed = outcome.result;
+  await saveAttempt(
+    {
+      ...attemptBase,
+      status: 'ok',
+      outputTokens: outcome.outputTokens,
+      ms: outcome.ms,
+      parcial: outcome.parcial,
+      nPrioritario: outcome.conteos.prioritario,
+      nMejorable: outcome.conteos.mejorable,
+      nSolido: outcome.conteos.solido,
+      nNoEvaluable: outcome.conteos.no_evaluable,
+      nAjustes: outcome.nAjustes,
+    },
+    {
+      status: 'ok',
+      outputTokens: outcome.outputTokens,
+      ms: outcome.ms,
+      parcial: outcome.parcial,
+      conteos: outcome.conteos,
+      nAjustes: outcome.nAjustes,
+    },
+  ).catch((err) => console.error('saveAttempt failed', err));
+
+  // Si quedaba un pendiente de un intento anterior de este correo, ya no hace falta (y lleva texto de un CV).
+  // Primero la marca cvdone (unos minutos): si el cron está a media corrida con ese trabajo, al releer la ve y no
+  // manda otro correo, no registra otro lead, no cuenta dos veces ni reescribe el CV viejo (lib/cv-pending.ts).
+  if (limitsKV) {
+    await markCvDone(limitsKV, jobKey).catch((err) => console.error('markCvDone failed', err));
+    await limitsKV.delete(jobKey).catch(() => {});
+  }
+
+  // Lead, consentimiento, welcome comercial (solo con casilla), contador y correo con el análisis. Todo con
+  // await (ctx.waitUntil no ejecuta en Astro sobre Workers). Una falla del correo no cambia la respuesta.
+  const { emailSent } = await finalizeCvSuccess(
+    env,
+    { email, country, ip, utms, referrer, attr, marketing, ipCountry },
+    parsed,
+    { rolFormulario: rolObjetivo, reintento: false },
+  ).catch((err) => {
+    console.error('finalizeCvSuccess failed', err);
+    return { emailSent: false };
+  });
+  if (!emailSent) console.warn('cv-review: el correo con el análisis no salió');
+
+  return jsonResponse({ ...parsed, parcial: outcome.parcial, correo_enviado: emailSent, usage: outcome.usage }, 200);
 };

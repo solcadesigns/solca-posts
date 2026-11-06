@@ -12,6 +12,9 @@
  *   "0 14 * * 1" (Lun 8am CDMX) → /api/simulator-weekly-cron
  *   "0 14 * * 5" (Vie 8am CDMX) → /api/blog-broadcast
  *   "0 15 * * *" (Diario 9am CDMX) → /api/drip-tick
+ *   "*\/5 * * * *" (escrito con \/ para no cerrar este comentario) (cada 5 min) → /api/cv-process-pending (reintentos del revisor de CV; 6 nov 2026).
+ *     Va por Cron Trigger y no por cron-job.org: un análisis tarda ~30 s y una conexión HTTP
+ *     cortada a los 30 s cancelaría la invocación.
  *
  * Por qué un patch post-build: el adapter de Astro solo expone `fetch`. No hay
  * forma documentada de añadir otros handlers (scheduled, queue, etc.) desde
@@ -31,7 +34,7 @@ import { dirname, resolve } from 'node:path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const WORKER_INDEX = resolve(__dirname, '..', 'dist', '_worker.js', 'index.js');
 
-const PATCH_MARKER = '/* SOLCA_CRON_PATCH_v4 */';
+const PATCH_MARKER = '/* SOLCA_CRON_PATCH_v5 */';
 
 const PATCH = `
 ${PATCH_MARKER}
@@ -61,6 +64,10 @@ const __solcaCronWrapper = {
       // Diario 9am CDMX · drip de bienvenida (tracks CV + Quiz, steps d3/d7/d12/d20)
       const key = env.STATS_KEY ?? '';
       url = \`https://internal.cron/api/drip-tick?key=\${encodeURIComponent(key)}&trigger=\${encodeURIComponent(cronExpr)}\`;
+    } else if (cronExpr === '*/5 * * * *') {
+      // Cada 5 min · reintentos pendientes del revisor de CV
+      const key = env.STATS_KEY ?? '';
+      url = \`https://internal.cron/api/cv-process-pending?key=\${encodeURIComponent(key)}&trigger=\${encodeURIComponent(cronExpr)}\`;
     } else {
       console.warn('scheduled: no route for cron', cronExpr);
       return;

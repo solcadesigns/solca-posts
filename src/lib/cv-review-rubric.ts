@@ -613,15 +613,39 @@ export function topGrupo(obs: Observacion[]): GrupoId | null {
 
 export type NextStep = 'quiz' | 'curso' | 'simulador';
 
+/** Grupo del hallazgo principal: la primera prioridad o, si no hay, el grupo con más ▲. */
+export function topFindingGrupo(res: Pick<CvReviewResult, 'observaciones' | 'prioridades'>): GrupoId | null {
+  return res.prioridades[0] ? CRITERIO_POR_ID.get(res.prioridades[0].id_observacion)?.grupo ?? null : topGrupo(res.observaciones);
+}
+
 /**
  * Un solo siguiente paso, elegido en código por el hallazgo principal (auditoría §3.7):
- *   - rol que no se distingue (y no lo declaró en el formulario) o posicionamiento como lo más débil → quiz
  *   - ningún prioritario → simulador ("el CV ya cumple; ensaya la llamada")
- *   - en otro caso → curso (logros, palabras clave y estructura son su contenido)
+ *   - con rol elegido en el formulario (`rolFormulario`, uno de los 10 del catálogo): nunca quiz; en otro caso
+ *     → curso (también si lo más débil es el posicionamiento: el rol ya está decidido, falta que el CV lo diga).
+ *     Corrige el 6 nov 2026 el "si todavía dudas entre roles" a quien ya eligió rol.
+ *   - sin rol elegido: rol que no se distingue o posicionamiento como lo más débil → quiz; si no → curso
  */
-export function pickNextStep(res: Pick<CvReviewResult, 'observaciones' | 'prioridades' | 'perfil'>): NextStep {
-  const top = res.prioridades[0] ? CRITERIO_POR_ID.get(res.prioridades[0].id_observacion)?.grupo : topGrupo(res.observaciones);
+export function pickNextStep(
+  res: Pick<CvReviewResult, 'observaciones' | 'prioridades' | 'perfil'>,
+  rolFormulario?: string,
+): NextStep {
+  const top = topFindingGrupo(res);
+  const rolElegido = !!rolLabel(rolFormulario);
+  if (rolElegido) return countByEstado(res.observaciones).prioritario === 0 ? 'simulador' : 'curso';
   if (!res.perfil.rol_objetivo || top === 'posicionamiento') return 'quiz';
   if (countByEstado(res.observaciones).prioritario === 0) return 'simulador';
   return 'curso';
+}
+
+/**
+ * Primera frase del bloque del curso (pantalla, PDF y correo). Con rol elegido y el posicionamiento como lo más
+ * débil, nombra el rol en vez de mandar al quiz (6 nov 2026).
+ */
+export function cursoLead(res: Pick<CvReviewResult, 'observaciones' | 'prioridades'>, rolFormulario?: string): string {
+  const rol = rolLabel(rolFormulario);
+  if (rol && topFindingGrupo(res) === 'posicionamiento') {
+    return `Lo prioritario en tu CV es el posicionamiento: que se entienda pronto que apuntas a ${rol} y por qué encajas.`;
+  }
+  return 'Lo prioritario en tu CV está en la redacción y la estructura.';
 }

@@ -6,6 +6,8 @@
  * Diseño: _docs/VACANTES_BUSCADOR.md.
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
+// 6 nov 2026: compartir la herramienta, discreto, debajo de "Cómo funciona".
+import ToolShare from '../components/ToolShare.astro';
 import { FUENTES, PAISES_OBJETIVO, PAIS_NOMBRE, ubicacionFueraDeObjetivo, type PaisObjetivo } from '../lib/vacantes-fuentes';
 import { ROLES_VACANTE, NIVELES } from '../lib/vacantes-clasificar';
 import { LIBRO_POR_ROL, type Libro } from '../lib/libros';
@@ -302,6 +304,11 @@ const actualizadoTxt = actualizado
         <li>No somos intermediarios: la postulación se hace en el sitio de cada empresa.</li>
       </ul>
     </section>
+    <ToolShare
+      herramienta="vacantes"
+      ruta="/vacantes"
+      texto="Vacantes de farmacéuticas, CROs (organizaciones de investigación por contrato) y empresas de tecnología médica en seis países de América Latina y en España, tomadas de los portales oficiales de cada empresa."
+    />
   </div>
 </section>
 
