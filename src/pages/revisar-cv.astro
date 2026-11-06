@@ -6,6 +6,9 @@ import { CONSENT_TEXT, CONSENT_COMMON, CONSENT_MSG, privacidadHtml } from '../li
 const consentCv = CONSENT_TEXT.cv;
 const consentPrivacidadHtml = privacidadHtml('cv');
 const consentErrMsg = CONSENT_MSG.privacidad_requerida;
+// 6 nov 2026 (rúbrica v2): rol objetivo opcional con los 10 roles del simulador y textos del "Avísame".
+import { ROLE_LABELS, ROL_NO_SEGURO, ROL_NO_SEGURO_LABEL, WAITLIST_BOTON, WAITLIST_NOTA } from '../lib/cv-review-rubric';
+const roleOptions = Object.entries(ROLE_LABELS);
 
 const cursoURL = 'https://go.hotmart.com/B104495115T';
 const newsletterURL =
@@ -106,16 +109,12 @@ const atsBlogURL =
             </div>
           </aside>
 
-          <!-- Vista colapsada cuando PDF se subió OK · oculto por default -->
-          <div class="textarea-collapsed" id="textarea-collapsed" hidden>
-            <button type="button" id="toggle-textarea" class="textarea-toggle-btn">
-              Ver / editar texto extraído
-            </button>
-          </div>
-
-          <!-- Vista expandida (default cuando no se ha subido PDF) -->
+          <!-- 6 nov 2026: el recuadro siempre está visible. Tras leer un PDF muestra el texto extraído para revisarlo y editarlo. -->
           <div class="textarea-wrapper" id="textarea-wrapper">
-            <label for="cv">Si prefieres, puedes pegar el texto de tu CV en este recuadro en vez de subirlo</label>
+            <label for="cv" id="cv-label">Si prefieres, puedes pegar el texto de tu CV en este recuadro en vez de subirlo</label>
+            <p class="field-help extract-help" id="extract-help" hidden>
+              Este es el texto que leímos de tu PDF. Revísalo: si algo salió en desorden o sobra, corrígelo aquí antes de enviar.
+            </p>
             <textarea
               id="cv"
               name="cv"
@@ -123,12 +122,12 @@ const atsBlogURL =
               placeholder="Abre tu CV en Word o Pages, selecciona todo, copia y pega aquí."
               required
               minlength="200"
-              maxlength="15000"
-              aria-describedby="cv-help"
+              aria-describedby="cv-help cv-error"
             ></textarea>
             <p id="cv-help" class="field-help">
-              Mínimo 200 caracteres. Máximo 15,000.
+              Mínimo 200 caracteres. Máximo 15,000. <span id="cv-count" class="cv-count">0 caracteres</span>
             </p>
+            <p id="cv-error" class="field-error" role="alert" hidden></p>
           </div>
         </div>
 
@@ -159,6 +158,16 @@ const atsBlogURL =
             <option value="Otro LATAM">Otro LATAM</option>
             <option value="Otro">Otro</option>
           </select>
+        </div>
+
+        <div class="field full">
+          <label for="rol_objetivo">¿A qué rol apuntas? <span class="optional-label">(opcional)</span></label>
+          <select id="rol_objetivo" name="rol_objetivo">
+            <option value="">Selecciona</option>
+            {roleOptions.map(([value, label]) => <option value={value}>{label}</option>)}
+            <option value={ROL_NO_SEGURO}>{ROL_NO_SEGURO_LABEL}</option>
+          </select>
+          <p class="field-help">Si lo eliges, el análisis revisa tu CV contra ese tipo de rol.</p>
         </div>
 
         <div class="field full consent-field">
@@ -217,69 +226,85 @@ const atsBlogURL =
       </div>
     </div>
 
-    <!-- Notice arriba: indica que el PDF está al final -->
-    <div class="result-download-notice">
-      <span class="result-download-notice-icon" aria-hidden="true">↓</span>
-      <span>
-        El PDF descargable está al final del análisis, junto al <strong>siguiente paso recomendado</strong>.
-      </span>
-    </div>
-
     <header class="result-header">
       <div class="eyebrow">
         <span class="dot"></span>
-        <span>Análisis básico de CV</span>
+        <span>Análisis de CV</span>
       </div>
-      <h2 id="result-title">Análisis básico para [nombre]</h2>
+      <h2 id="result-title">Análisis de CV</h2>
+      <p class="result-meta" id="result-meta"></p>
+      <div class="result-actions result-actions-top">
+        <button type="button" id="download-btn" class="btn btn-orange">
+          <span class="download-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+          </span>
+          Descargar PDF
+        </button>
+      </div>
     </header>
 
-    <article class="result-feedback">
-      <h3>Retroalimentación</h3>
+    <!-- 6 nov 2026 (rúbrica v2): orden de la auditoría §2.3. Resumen y prioridades nunca se pliegan. -->
+    <article class="result-card result-summary" aria-labelledby="summary-h">
+      <h3 id="summary-h">Resumen</h3>
+      <p class="summary-line" id="summary-line"></p>
+      <p class="state-counts" id="state-counts"></p>
+      <div class="state-bar" id="state-bar" aria-hidden="true"></div>
+      <p class="summary-perfil" id="summary-perfil"></p>
+      <p class="summary-disclaimer">Es una lectura de tu CV contra criterios de redacción y estructura; no predice si te van a llamar.</p>
+      <p class="summary-partial" id="summary-partial" hidden>Parte del análisis no se pudo completar; te mostramos lo que sí quedó.</p>
+    </article>
+
+    <article class="result-card" id="priorities-card" aria-labelledby="prio-h">
+      <h3 id="prio-h">Qué cambiar primero</h3>
+      <ol class="priorities" id="priorities-list"></ol>
+    </article>
+
+    <article class="result-card" id="rewrites-card" aria-labelledby="rew-h">
+      <h3 id="rew-h">Así se vería</h3>
+      <p class="card-help">Tomamos frases de tu CV y las reescribimos. Lo que va entre corchetes es un dato que solo tú tienes: complétalo o quítalo.</p>
+      <div id="rewrites-list"></div>
+    </article>
+
+    <article class="result-card" aria-labelledby="det-h">
+      <h3 id="det-h">Detalle por área</h3>
+      <div id="groups-list"></div>
+    </article>
+
+    <article class="result-card result-feedback">
+      <h3>Retroalimentación general</h3>
       <p id="result-retroalimentacion"></p>
     </article>
 
-    <article class="result-observaciones">
-      <h3>Observaciones puntuales y recomendaciones</h3>
-      <ul id="result-observaciones-list"></ul>
-    </article>
-
-    <article class="result-cta">
+    <article class="result-cta" id="next-step" data-curso={cursoURL}>
       <h3>Siguiente paso sugerido</h3>
-      <p>
-        Si quieres mejorar tu CV de forma estructurada y aprender a posicionarlo correctamente para procesos reales de selección, revisa el curso completo donde explico cómo redactar un CV, optimizar LinkedIn y aplicar estratégicamente.
-      </p>
-      <p class="result-cta-note">
-        Los ejemplos están enfocados en ciencias biológicas y de la salud — los conceptos aplican a cualquier área.
-      </p>
-      <a href={cursoURL} class="btn btn-orange btn-large" target="_blank" rel="noopener">
-        Ver el curso en Hotmart
-      </a>
-      <div class="result-next-step">
-        <h4>Tu CV consigue la llamada. La llamada decide si sigues.</h4>
-        <p>
-          Muchas candidaturas pasan el filtro del CV y se caen en la primera entrevista. Ensaya esa llamada antes de que cuente: 5 preguntas de un reclutador y un reporte en PDF con lo que funcionó y lo que no. La primera sesión no tiene costo.
-        </p>
-        <a href="/simulador-entrevistas/?ref=cv" class="btn btn-secondary" data-next-step="cv-simulador">Ensayar mi primera llamada →</a>
-      </div>
+      <div id="next-step-body"></div>
       <p class="result-sign">
         — Oscar Solís · <em>Director general, Solca Ciencia y Consultoría</em>
       </p>
     </article>
 
+    <aside class="result-card result-bridge" id="waitlist-card">
+      <p class="bridge-line">Este análisis es general; no compara tu CV con una vacante.</p>
+      <button type="button" id="waitlist-btn" class="btn btn-secondary btn-navy">{WAITLIST_BOTON}</button>
+      <p class="field-help" id="waitlist-note">{WAITLIST_NOTA}</p>
+      <p class="bridge-done" id="waitlist-done" role="status" hidden></p>
+    </aside>
+
+    <div class="result-card result-useful" id="useful-card">
+      <span class="useful-q" id="useful-q">¿Te sirvió este análisis?</span>
+      <button type="button" class="btn-chip" data-useful="si">Sí</button>
+      <button type="button" class="btn-chip" data-useful="no">No</button>
+      <span class="useful-thanks" id="useful-thanks" role="status" hidden>Gracias. Lo usamos para mejorar el análisis.</span>
+    </div>
+
     <!-- ==================== POST-RESULT SURVEY (anónima, opcional) ==================== -->
     <MarketSurvey origen="cv" />
 
     <div class="result-actions">
-      <button type="button" id="download-btn" class="btn btn-orange btn-large">
-        <span class="download-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
-          </svg>
-        </span>
-        Descargar PDF
-      </button>
       <button type="button" id="retry-btn" class="btn btn-secondary" style="color: var(--navy); border-color: var(--navy);">
         Revisar otro CV
       </button>
@@ -287,7 +312,7 @@ const atsBlogURL =
 
     <div class="share-strip"
          data-share-url="https://solcaciencia.com/revisar-cv"
-         data-share-text="Probé esta app gratuita que analiza tu CV con IA y marca los errores típicos de PhDs aplicando a pharma.">
+         data-share-text="Probé esta herramienta gratuita que revisa tu CV con IA contra 20 criterios para roles en la industria farmacéutica.">
       <span class="share-strip-label">Compartir esta herramienta</span>
       <div class="share-strip-buttons">
         <button type="button" class="share-btn" data-share="linkedin" aria-label="Compartir en LinkedIn" title="LinkedIn">
@@ -976,7 +1001,125 @@ const atsBlogURL =
   }
 </style>
 
+<!-- 6 nov 2026: estilos del reporte v2. Globales (prefijo .cv-result) porque el contenido se pinta con innerHTML
+     y los estilos con alcance de Astro no aplican a nodos creados así. -->
+<style is:global>
+  .cv-result .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+  .cv-result .result-meta { margin-top: 8px; color: var(--text-mute); font-size: 14px; }
+  .cv-result .result-actions-top { justify-content: flex-start; margin: 16px 0 0; }
+  .cv-result .result-card {
+    background: var(--off-white);
+    border-radius: var(--radius);
+    padding: 28px 32px;
+    margin-bottom: 22px;
+    box-shadow: var(--shadow-sm);
+  }
+  .cv-result .result-card h3 {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: clamp(18px, 2.4vw, 22px);
+    color: var(--navy);
+    margin: 0 0 16px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--orange);
+    display: inline-block;
+  }
+  .cv-result .card-help { font-size: 14px; color: var(--text-mute); margin: -4px 0 14px; line-height: 1.5; }
+  .cv-result .summary-line { font-size: 17px; line-height: 1.5; color: var(--text); margin: 0 0 14px; font-weight: 600; }
+  .cv-result .state-counts { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 0 0 10px; font-size: 15px; color: var(--text); }
+  .cv-result .state-count { display: inline-flex; align-items: center; gap: 6px; }
+  .cv-result .state-count strong { font-weight: 800; }
+  .cv-result .st { font-style: normal; font-size: 0.95em; line-height: 1; }
+  .cv-result .st-prioritario { color: #B23A2A; }
+  .cv-result .st-mejorable { color: #9A6A00; }
+  .cv-result .st-solido { color: #2E7D5B; }
+  .cv-result .st-no_evaluable { color: #6B7489; }
+  .cv-result .state-bar { display: flex; gap: 2px; margin: 0 0 14px; }
+  .cv-result .state-bar span { flex: 1; height: 12px; border-radius: 2px; }
+  .cv-result .state-bar .b-prioritario { background: #B23A2A; }
+  .cv-result .state-bar .b-mejorable { background: #D9A21B; }
+  .cv-result .state-bar .b-solido { background: #2E7D5B; }
+  .cv-result .state-bar .b-no_evaluable { background: transparent; border: 1px dashed #8A93A6; }
+  .cv-result .summary-perfil { font-size: 14px; color: var(--text); margin: 0 0 8px; }
+  .cv-result .summary-disclaimer { font-size: 13px; color: var(--text-mute); margin: 0; }
+  .cv-result .summary-partial { font-size: 13px; color: #9A6A00; margin: 8px 0 0; }
+  .cv-result .priorities { list-style: none; counter-reset: prio; margin: 0; padding: 0; }
+  .cv-result .priorities li { counter-increment: prio; position: relative; padding: 0 0 16px 40px; margin-bottom: 16px; border-bottom: 1px solid var(--rule); }
+  .cv-result .priorities li:last-child { border-bottom: 0; margin-bottom: 0; padding-bottom: 0; }
+  .cv-result .priorities li::before {
+    content: counter(prio); position: absolute; left: 0; top: 0; width: 28px; height: 28px; border-radius: 50%;
+    background: var(--navy); color: var(--off-white); font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 14px;
+  }
+  .cv-result .prio-accion { font-weight: 700; color: var(--navy); margin: 2px 0 6px; line-height: 1.45; }
+  .cv-result .prio-meta { font-size: 14px; color: var(--text); margin: 0 0 4px; line-height: 1.5; }
+  .cv-result .prio-meta b { color: var(--text-mute); font-weight: 600; }
+  .cv-result .rewrite { border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; background: #fff; }
+  .cv-result .rewrite p { margin: 0 0 8px; font-size: 15px; line-height: 1.5; }
+  .cv-result .rewrite p:last-child { margin-bottom: 0; }
+  .cv-result .rw-label { display: inline-block; min-width: 68px; font-weight: 700; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-mute); }
+  .cv-result .rw-despues { color: var(--navy); }
+  .cv-result .rw-hueco { background: var(--orange-light); border: 1px dashed var(--orange); border-radius: 4px; padding: 0 4px; font-weight: 600; }
+  .cv-result .rw-principio { font-size: 13px !important; color: var(--text-mute); }
+  .cv-result details.grp { border-top: 1px solid var(--rule); }
+  .cv-result details.grp:first-child { border-top: 0; }
+  .cv-result details.grp > summary {
+    cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    padding: 14px 0; font-weight: 700; color: var(--navy); font-size: 16px;
+  }
+  .cv-result details.grp > summary::-webkit-details-marker { display: none; }
+  .cv-result details.grp > summary::before { content: '▸'; color: var(--orange); margin-right: 8px; transition: transform .15s; display: inline-block; }
+  .cv-result details.grp[open] > summary::before { transform: rotate(90deg); }
+  .cv-result .grp-name { flex: 1; }
+  .cv-result .grp-counts { font-weight: 600; font-size: 14px; display: inline-flex; gap: 10px; white-space: nowrap; }
+  .cv-result .obs { padding: 0 0 14px; margin: 0 0 14px; border-bottom: 1px dashed var(--rule); }
+  .cv-result .obs:last-child { border-bottom: 0; }
+  .cv-result .obs-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin-bottom: 4px; }
+  .cv-result .obs-state { font-size: 12px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+  .cv-result .obs-name { font-weight: 700; color: var(--navy); }
+  .cv-result .obs p { margin: 0 0 4px; font-size: 15px; line-height: 1.5; color: var(--text); }
+  .cv-result .obs-evid { font-size: 14px !important; color: var(--text-mute) !important; font-style: italic; }
+  .cv-result .obs-rec { color: var(--navy) !important; font-weight: 600; }
+  .cv-result .grp-note { font-size: 13px; color: var(--text-mute); margin: 0 0 12px; }
+  .cv-result .result-bridge { border-left: 4px solid var(--navy); }
+  .cv-result .bridge-line { font-weight: 700; color: var(--navy); margin: 0 0 12px; }
+  .cv-result .btn-navy { color: var(--navy); border-color: var(--navy); }
+  .cv-result .bridge-done { margin: 10px 0 0; font-size: 14px; color: #2E7D5B; font-weight: 600; }
+  .cv-result .result-useful { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 18px 24px; }
+  .cv-result .useful-q { font-weight: 700; color: var(--navy); margin-right: 6px; }
+  .cv-result .btn-chip { border: 1.5px solid var(--navy); background: transparent; color: var(--navy); border-radius: 999px; padding: 6px 18px; font-weight: 700; cursor: pointer; }
+  .cv-result .btn-chip:hover, .cv-result .btn-chip.is-picked { background: var(--navy); color: var(--off-white); }
+  .cv-result .btn-chip:disabled { cursor: default; }
+  .cv-result .useful-thanks { font-size: 14px; color: var(--text-mute); }
+  .cv-result .result-cta .ns-title { margin: 0 0 8px; font-size: 18px; color: var(--off-white); }
+  .cv-result .result-cta .ns-body { margin: 0 0 14px; }
+  #cv-form .field-error { color: #B23A2A; font-size: 14px; font-weight: 600; margin: 6px 0 0; }
+  #cv-form .cv-count.over { color: #B23A2A; font-weight: 700; }
+  #cv-form .extract-help { margin: 0 0 6px; color: var(--navy); }
+  @media (max-width: 720px) {
+    .cv-result .result-card { padding: 22px 18px; }
+    .cv-result .priorities li { padding-left: 36px; }
+  }
+  @media print {
+    .cv-result .result-actions-top, .cv-result .result-bridge, .cv-result .result-useful { display: none !important; }
+    .cv-result .result-card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+    .cv-result details.grp { break-inside: avoid; }
+  }
+</style>
+
 <script>
+  // 6 nov 2026 (rúbrica v2): grupos, conteos y siguiente paso salen del mismo módulo que usa el endpoint.
+  import {
+    countByEstado,
+    groupObservaciones,
+    pickNextStep,
+    topGrupo,
+    type CvReviewResult,
+    type Estado,
+    type GrupoId,
+    type NextStep,
+    type Observacion,
+  } from '../lib/cv-review-rubric';
+
   // Referrer externo del aterrizaje (20 oct 2026). Se guarda en sessionStorage al cargar
   // para que "Revisar otro CV" o una recarga no lo pierdan; se ignora el propio dominio.
   function landingReferrer(): string | undefined {
@@ -998,6 +1141,9 @@ const atsBlogURL =
     if (ref) sessionStorage.setItem('cv_ref', ref);
   } catch { /* storage bloqueado */ }
 
+  const MIN_CV = 200;
+  const MAX_CV = 15000;
+
   const form = document.getElementById('cv-form') as HTMLFormElement | null;
   const loading = document.getElementById('loading') as HTMLElement | null;
   const loadingStatus = document.getElementById('loading-status') as HTMLElement | null;
@@ -1011,10 +1157,10 @@ const atsBlogURL =
   const cvTextarea = document.getElementById('cv') as HTMLTextAreaElement | null;
   const cvUpload = document.getElementById('cv-upload') as HTMLInputElement | null;
   const uploadStatus = document.getElementById('upload-status') as HTMLElement | null;
-  const textareaWrapper = document.getElementById('textarea-wrapper') as HTMLElement | null;
-  const textareaCollapsed = document.getElementById('textarea-collapsed') as HTMLElement | null;
-  const toggleTextareaBtn = document.getElementById('toggle-textarea') as HTMLButtonElement | null;
   const pdfWarning = document.getElementById('pdf-warning') as HTMLElement | null;
+  const extractHelp = document.getElementById('extract-help') as HTMLElement | null;
+  const cvCount = document.getElementById('cv-count') as HTMLElement | null;
+  const cvError = document.getElementById('cv-error') as HTMLElement | null;
 
   function hide(el: HTMLElement | null) { if (el) el.hidden = true; }
   function show(el: HTMLElement | null) { if (el) el.hidden = false; }
@@ -1028,6 +1174,26 @@ const atsBlogURL =
       else fetch('/api/simulator-events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(() => {});
     } catch { /* medición best-effort */ }
   }
+
+  // Origen del texto que se manda al análisis (6 nov 2026). Si la persona edita el texto extraído, sigue siendo 'pdf'.
+  let extract: { origen: 'pdf' | 'pegado'; paginas: number | null } = { origen: 'pegado', paginas: null };
+
+  function updateCount() {
+    if (!cvTextarea || !cvCount) return;
+    const n = cvTextarea.value.trim().length;
+    cvCount.textContent = `${n.toLocaleString('es-MX')} caracteres`;
+    cvCount.classList.toggle('over', n > MAX_CV);
+    if (n <= MAX_CV && cvError && !cvError.hidden && n >= MIN_CV) hide(cvError);
+  }
+  function showCvError(msg: string) {
+    if (cvError) {
+      cvError.textContent = msg;
+      show(cvError);
+    }
+    cvTextarea?.focus();
+    cvTextarea?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  cvTextarea?.addEventListener('input', updateCount);
 
   // ---- PDF upload: lazy-load pdf.js from CDN, extract text, fill textarea ----
   let pdfjsPromise: Promise<any> | null = null;
@@ -1052,21 +1218,48 @@ const atsBlogURL =
     if (kind !== 'idle') uploadStatus.classList.add(kind);
   }
 
+  /**
+   * Texto de una página conservando los saltos de línea (6 nov 2026). pdf.js 4.x marca el fin de línea con
+   * `hasEOL`; además se corta la línea cuando cambia la coordenada vertical (transform[5]) por si falta la marca.
+   */
+  function pageTextWithBreaks(items: Array<{ str?: string; hasEOL?: boolean; transform?: number[] }>): string {
+    let out = '';
+    let lastY: number | null = null;
+    for (const it of items) {
+      const str = it.str ?? '';
+      const y = Array.isArray(it.transform) ? it.transform[5] : null;
+      if (str && lastY !== null && y !== null && Math.abs(y - lastY) > 2 && !out.endsWith('\n')) out += '\n';
+      out += str;
+      if (it.hasEOL) out += '\n';
+      if (str && y !== null) lastY = y;
+    }
+    return out
+      .split('\n')
+      .map((l) => l.replace(/[ \t ]+/g, ' ').trim())
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }
+
+  function setExtractMode(fromPdf: boolean) {
+    if (extractHelp) extractHelp.hidden = !fromPdf;
+  }
+
   cvUpload?.addEventListener('change', async (e) => {
     const target = e.target as HTMLInputElement;
     const file = target.files?.[0];
 
-    // Usuario quitó el archivo (clicó la ✕) → resetear estado: mostrar textarea, limpiar status y aviso.
+    // Usuario quitó el archivo → volver a "pegar texto".
     if (!file) {
       setUploadStatus('', 'idle');
       hide(pdfWarning);
-      hide(textareaCollapsed);
-      show(textareaWrapper);
+      setExtractMode(false);
+      extract = { origen: 'pegado', paginas: null };
       if (cvTextarea) cvTextarea.value = '';
+      updateCount();
       return;
     }
 
-    // Reset previous warning state
     hide(pdfWarning);
 
     if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
@@ -1086,71 +1279,53 @@ const atsBlogURL =
       const pdfjsLib = await loadPdfJs();
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      let fullText = '';
+      const pages: string[] = [];
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
-        const pageText = content.items
-          .map((item: { str?: string }) => item.str ?? '')
-          .join(' ')
-          .replace(/\s+/g, ' ')
-          .trim();
-        fullText += pageText + '\n\n';
+        pages.push(pageTextWithBreaks(content.items));
       }
-      fullText = fullText.trim();
-      if (cvTextarea) {
-        cvTextarea.value = fullText;
-      }
-      if (fullText.length < 200) {
-        setUploadStatus(
-          `Solo se extrajeron ${fullText.length} caracteres.`,
-          'error',
-        );
+      const fullText = pages.join('\n\n').trim();
+      if (cvTextarea) cvTextarea.value = fullText;
+      updateCount();
+      if (fullText.length < MIN_CV) {
+        setUploadStatus(`Solo se extrajeron ${fullText.length} caracteres.`, 'error');
         cvStep('pdf_fail');
-        // Mostrar aviso educativo de ATS
         show(pdfWarning);
-        // Mantener textarea visible para que el usuario pegue manualmente
-        show(textareaWrapper);
-        hide(textareaCollapsed);
+        setExtractMode(false);
+        extract = { origen: 'pegado', paginas: null };
       } else {
         setUploadStatus(
           `✓ PDF cargado · ${pdf.numPages} ${pdf.numPages === 1 ? 'página' : 'páginas'} · ${fullText.length.toLocaleString('es-MX')} caracteres extraídos`,
           'success',
         );
         cvStep('pdf_ok');
-        // Éxito: ocultar textarea + ocultar botón "Ver/editar" + ocultar aviso.
-        // El usuario confía en el status ✓; si el extract resultara malo, puede quitar el archivo
-        // y pegar el texto manualmente.
-        hide(textareaWrapper);
-        hide(textareaCollapsed);
         hide(pdfWarning);
+        setExtractMode(true);
+        extract = { origen: 'pdf', paginas: pdf.numPages };
+        if (fullText.length > MAX_CV) {
+          showCvError(`Leímos ${fullText.length.toLocaleString('es-MX')} caracteres y el máximo es 15,000. Recorta en el recuadro lo menos relevante (por ejemplo, la lista completa de congresos o cursos).`);
+        }
       }
     } catch (err) {
       console.error('PDF parse error:', err);
       setUploadStatus('No pudimos leer el PDF.', 'error');
       cvStep('pdf_fail');
-      // Mostrar aviso educativo de ATS
       show(pdfWarning);
-      show(textareaWrapper);
-      hide(textareaCollapsed);
+      setExtractMode(false);
+      extract = { origen: 'pegado', paginas: null };
     }
-  });
-
-  toggleTextareaBtn?.addEventListener('click', () => {
-    show(textareaWrapper);
-    hide(textareaCollapsed);
-    cvTextarea?.focus();
   });
 
   function setStatusCycling() {
     if (!loadingStatus) return null;
     const messages = [
       'Leyendo estructura y experiencias.',
-      'Evaluando coherencia y posicionamiento.',
-      'Buscando palabras clave de industria.',
-      'Revisando métricas y verbos activos.',
-      'Verificando compatibilidad ATS.',
-      'Sintetizando observaciones.',
+      'Revisando el resumen y el rol al que apuntas.',
+      'Buscando logros, verbos y resultados.',
+      'Revisando palabras clave del rol.',
+      'Ordenando lo que conviene cambiar primero.',
+      'Preparando ejemplos con frases de tu CV.',
     ];
     let i = 0;
     const interval = window.setInterval(() => {
@@ -1169,42 +1344,282 @@ const atsBlogURL =
       .replace(/'/g, '&#39;');
   }
 
-  interface Observacion { categoria: string; evaluacion: string; recomendacion: string; }
-  interface Result { candidateName: string; retroalimentacion: string; observaciones: Observacion[]; }
+  type Result = CvReviewResult & { parcial?: boolean };
 
-  // Guardamos el último análisis para que el botón de descarga lo use
+  // Forma + palabra + color para cada estado (WCAG 1.4.1: el color nunca va solo).
+  const ESTADO_UI: Record<Estado, { sym: string; label: string }> = {
+    prioritario: { sym: '▲', label: 'Prioritario' },
+    mejorable: { sym: '■', label: 'Mejorable' },
+    solido: { sym: '●', label: 'Sólido' },
+    no_evaluable: { sym: '○', label: 'No evaluable' },
+  };
+  const ESTADO_ORDEN: Estado[] = ['prioritario', 'mejorable', 'solido', 'no_evaluable'];
+  function stateTag(e: Estado, withLabel = true): string {
+    const u = ESTADO_UI[e];
+    return `<i class="st st-${e}" aria-hidden="true">${u.sym}</i>${withLabel ? ` <span class="obs-state st-${e}">${u.label}</span>` : ''}`;
+  }
+  function huecos(html: string): string {
+    return html.replace(/\[([^\]]{1,60})\]/g, '<span class="rw-hueco">[$1]</span>');
+  }
+
+  // Siguiente paso: textos y destinos. En pantalla, simulador y quiz llevan data-next-step (BaseLayout registra
+  // next_step_clicked); el curso no, para que BaseLayout le ponga src y registre book_clicked.
+  const cursoUrl = (document.getElementById('next-step') as HTMLElement | null)?.dataset.curso || 'https://go.hotmart.com/B104495115T';
+  const PDF_UTM = 'utm_source=pdf&utm_medium=cv-report&utm_campaign=revisar-cv';
+  function nextStepCopy(step: NextStep, data: Result) {
+    if (step === 'quiz') {
+      return {
+        title: 'Define a qué rol apuntas',
+        body: data.perfil.rol_objetivo
+          ? 'Lo más urgente en tu CV es el posicionamiento: que se entienda pronto a qué rol apuntas y por qué encajas. Si todavía dudas entre roles, el quiz te ayuda a elegir entre 5 roles de la industria.'
+          : 'En esta lectura tu CV todavía no deja claro a qué puesto apunta, y varios criterios de este análisis dependen de eso. El quiz de rol te ayuda a elegir entre 5 roles de la industria.',
+        cta: 'Hacer el quiz de rol',
+        href: '/quiz-rol?ref=cv',
+        hrefPdf: `https://solcaciencia.com/quiz-rol?ref=cv&${PDF_UTM}`,
+        track: 'cv-quiz',
+      };
+    }
+    if (step === 'simulador') {
+      return {
+        title: 'Ensaya la primera llamada',
+        body: 'En esta lectura tu CV no tiene puntos prioritarios. El siguiente paso es la entrevista: el simulador te ayuda a ensayar la llamada inicial con un reclutador. La primera sesión no tiene costo.',
+        cta: 'Ensayar mi primera llamada',
+        href: '/simulador-entrevistas/?ref=cv',
+        hrefPdf: `https://solcaciencia.com/simulador-entrevistas/?ref=cv&${PDF_UTM}`,
+        track: 'cv-simulador',
+      };
+    }
+    return {
+      title: 'Trabaja la redacción de tu CV',
+      body: 'Lo prioritario en tu CV está en la redacción y la estructura. El curso explica cómo redactar un CV, optimizar LinkedIn y aplicar de forma estratégica. Los ejemplos son de ciencias biológicas y de la salud.',
+      cta: 'Ver el curso en Hotmart',
+      href: cursoUrl,
+      hrefPdf: `${cursoUrl}${cursoUrl.includes('?') ? '&' : '?'}src=cv-reporte-pdf`,
+      track: '',
+    };
+  }
+
+  // Guardamos el último análisis para el PDF, y el correo para el "Avísame".
   let lastResult: Result | null = null;
+  let lastEmail = '';
+  let lastRol = '';
+  const openedGroups = new Set<string>();
+
+  function fechaLarga(): string {
+    return new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
 
   function renderResult(data: Result) {
     lastResult = data;
+    openedGroups.clear();
     cvStep('result_viewed');
+    const set = (id: string, html: string) => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = html;
+    };
     const titleEl = document.getElementById('result-title');
-    const retroEl = document.getElementById('result-retroalimentacion');
-    const obsList = document.getElementById('result-observaciones-list');
-    if (titleEl) titleEl.textContent = `Análisis básico para ${data.candidateName}`;
-    if (retroEl) retroEl.textContent = data.retroalimentacion;
-    if (obsList) {
-      obsList.innerHTML = data.observaciones
-        .map(
-          (o) => `<li>
-  <span class="obs-cat">${escapeHtml(o.categoria)}</span>
-  <p class="obs-eval">${escapeHtml(o.evaluacion)}</p>
-  <p class="obs-rec">→ ${escapeHtml(o.recomendacion)}</p>
-</li>`,
-        )
-        .join('');
+    if (titleEl) titleEl.textContent = `Análisis de CV · ${data.candidateName}`;
+    set('result-meta', `${escapeHtml(fechaLarga())} · Rúbrica ${escapeHtml(data.rubric_version)}`);
+
+    // Resumen
+    const summaryLine = document.getElementById('summary-line');
+    if (summaryLine) {
+      summaryLine.textContent = data.resumen.una_linea ?? '';
+      summaryLine.hidden = !data.resumen.una_linea;
     }
+    const counts = countByEstado(data.observaciones);
+    set(
+      'state-counts',
+      ESTADO_ORDEN.map((e) => `<span class="state-count">${stateTag(e, false)} <strong>${counts[e]}</strong> ${ESTADO_UI[e].label}</span>`).join(''),
+    );
+    set(
+      'state-bar',
+      ESTADO_ORDEN.flatMap((e) => Array.from({ length: counts[e] }, () => `<span class="b-${e}"></span>`)).join(''),
+    );
+    set(
+      'summary-perfil',
+      `<strong>Perfil leído:</strong> ${escapeHtml(data.perfil.nivel)} · <strong>Apunta a:</strong> ${escapeHtml(data.perfil.rol_objetivo ?? 'no se distingue')}`,
+    );
+    const partial = document.getElementById('summary-partial');
+    if (partial) partial.hidden = !data.parcial;
+
+    // Qué cambiar primero
+    set(
+      'priorities-list',
+      data.prioridades
+        .map((p) => {
+          const o = data.observaciones.find((x) => x.id === p.id_observacion);
+          return `<li>
+  <p class="prio-accion">${o ? stateTag(o.estado, false) + ' ' : ''}${escapeHtml(p.accion)}</p>
+  ${p.por_que ? `<p class="prio-meta"><b>Por qué:</b> ${escapeHtml(p.por_que)}</p>` : ''}
+  ${p.esfuerzo ? `<p class="prio-meta"><b>Esfuerzo:</b> ${escapeHtml(p.esfuerzo)}</p>` : ''}
+  ${o ? `<p class="prio-meta"><b>Área:</b> ${escapeHtml(o.categoria)}</p>` : ''}
+</li>`;
+        })
+        .join(''),
+    );
+    const prioCard = document.getElementById('priorities-card');
+    if (prioCard) prioCard.hidden = data.prioridades.length === 0;
+
+    // Así se vería
+    set(
+      'rewrites-list',
+      data.reescrituras
+        .map(
+          (r) => `<div class="rewrite">
+  <p><span class="rw-label">Antes</span> “${escapeHtml(r.antes)}”</p>
+  <p class="rw-despues"><span class="rw-label">Después</span> “${huecos(escapeHtml(r.despues))}”</p>
+  ${r.principio ? `<p class="rw-principio">Por qué: ${escapeHtml(r.principio)}</p>` : ''}
+</div>`,
+        )
+        .join(''),
+    );
+    const rwCard = document.getElementById('rewrites-card');
+    if (rwCard) rwCard.hidden = data.reescrituras.length === 0;
+
+    // Detalle por área (6 grupos plegables)
+    const groups = groupObservaciones(data.observaciones);
+    const mobile = window.matchMedia('(max-width: 720px)').matches;
+    let top: GrupoId | null = topGrupo(data.observaciones);
+    if (!top) {
+      // Sin ▲: abre el grupo con más ■.
+      let max = 0;
+      for (const g of groups) if (g.counts.mejorable > max) { max = g.counts.mejorable; top = g.id; }
+    }
+    set(
+      'groups-list',
+      groups
+        .map((g) => {
+          const open = mobile ? g.id === top : g.counts.prioritario > 0 || g.id === top;
+          const countsHtml = ESTADO_ORDEN.filter((e) => g.counts[e] > 0)
+            .map((e) => `<span title="${ESTADO_UI[e].label}">${stateTag(e, false)}<span class="sr-only"> ${ESTADO_UI[e].label}</span> ${g.counts[e]}</span>`)
+            .join('');
+          const note =
+            g.id === 'formato_ats' && lastResult
+              ? `<p class="grp-note">${extractNote()}</p>`
+              : '';
+          const items = g.items.length
+            ? g.items.map((o) => obsHtml(o)).join('')
+            : '<p class="grp-note">Sin datos en esta área.</p>';
+          return `<details class="grp" data-grupo="${g.id}"${open ? ' open' : ''}>
+  <summary><span class="grp-name">${escapeHtml(g.label)}</span><span class="grp-counts">${countsHtml}</span></summary>
+  ${note}${items}
+</details>`;
+        })
+        .join(''),
+    );
+    document.querySelectorAll<HTMLElement>('#groups-list details.grp > summary').forEach((sum) => {
+      sum.addEventListener('click', () => {
+        const det = sum.parentElement as HTMLDetailsElement;
+        const id = det.dataset.grupo || '';
+        // Solo cuenta aperturas hechas por la persona, una vez por grupo y análisis.
+        if (!det.open && !openedGroups.has(id)) {
+          openedGroups.add(id);
+          cvStep(`group_opened:${id}`);
+        }
+      });
+    });
+
+    const retroEl = document.getElementById('result-retroalimentacion');
+    if (retroEl) retroEl.textContent = data.retroalimentacion;
+    const retroCard = retroEl?.closest('article') as HTMLElement | null;
+    if (retroCard) retroCard.hidden = !data.retroalimentacion;
+
+    // Un solo siguiente paso, elegido en código por el hallazgo principal.
+    const step = pickNextStep(data);
+    const ns = nextStepCopy(step, data);
+    const external = ns.href.startsWith('http');
+    set(
+      'next-step-body',
+      `<h4 class="ns-title">${escapeHtml(ns.title)}</h4>
+<p class="ns-body">${escapeHtml(ns.body)}</p>
+<a href="${escapeHtml(ns.href)}" class="btn btn-orange btn-large"${external ? ' target="_blank" rel="noopener"' : ''}${ns.track ? ` data-next-step="${ns.track}"` : ''}>${escapeHtml(ns.cta)}</a>`,
+    );
+    cvStep(`next_step_shown:${step}`);
+
+    // Estados de los botones de un clic.
+    const wlBtn = document.getElementById('waitlist-btn') as HTMLButtonElement | null;
+    if (wlBtn) wlBtn.disabled = false;
+    hide(document.getElementById('waitlist-done'));
+    document.querySelectorAll<HTMLButtonElement>('[data-useful]').forEach((b) => {
+      b.disabled = false;
+      b.classList.remove('is-picked');
+    });
+    hide(document.getElementById('useful-thanks'));
   }
+
+  function extractNote(): string {
+    return extract.origen === 'pdf'
+      ? `Texto leído de tu PDF: ${extract.paginas} ${extract.paginas === 1 ? 'página' : 'páginas'}.`
+      : 'El texto se pegó, así que el diseño del documento no se pudo revisar.';
+  }
+
+  function obsHtml(o: Observacion): string {
+    if (o.estado === 'solido') {
+      return `<div class="obs"><div class="obs-head">${stateTag(o.estado)} <span class="obs-name">${escapeHtml(o.categoria)}</span></div><p>${escapeHtml(o.evaluacion)}</p></div>`;
+    }
+    return `<div class="obs">
+  <div class="obs-head">${stateTag(o.estado)} <span class="obs-name">${escapeHtml(o.categoria)}</span></div>
+  <p>${escapeHtml(o.evaluacion)}</p>
+  ${o.evidencia ? `<p class="obs-evid">En tu CV: “${escapeHtml(o.evidencia)}”</p>` : ''}
+  ${o.recomendacion ? `<p class="obs-rec">→ ${escapeHtml(o.recomendacion)}</p>` : ''}
+</div>`;
+  }
+
+  // Al imprimir con Cmd+P se abren todos los grupos.
+  window.addEventListener('beforeprint', () => {
+    document.querySelectorAll<HTMLDetailsElement>('#groups-list details.grp').forEach((d) => (d.open = true));
+  });
+
+  // ---- "Avísame cuando esté disponible" (CV adaptado a una vacante) ----
+  const waitlistBtn = document.getElementById('waitlist-btn') as HTMLButtonElement | null;
+  waitlistBtn?.addEventListener('click', async () => {
+    if (!waitlistBtn || !lastEmail) return;
+    cvStep('avisame_cv_medida');
+    waitlistBtn.disabled = true;
+    const done = document.getElementById('waitlist-done');
+    try {
+      const res = await fetch('/api/cv-waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: lastEmail, producto: 'cv-medida', origen: 'pantalla', rol_objetivo: lastRol || undefined }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (done) done.textContent = `Listo. Te escribiremos a ${lastEmail} cuando esté disponible.`;
+      show(done);
+    } catch {
+      waitlistBtn.disabled = false;
+      if (done) done.textContent = 'No pudimos guardar tu aviso. Intenta de nuevo en un momento.';
+      show(done);
+    }
+  });
+
+  // ---- "¿Te sirvió este análisis?" en un clic ----
+  document.querySelectorAll<HTMLButtonElement>('[data-useful]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const v = btn.dataset.useful === 'si' ? 'si' : 'no';
+      cvStep(`util_${v}`);
+      document.querySelectorAll<HTMLButtonElement>('[data-useful]').forEach((b) => (b.disabled = true));
+      btn.classList.add('is-picked');
+      show(document.getElementById('useful-thanks'));
+    });
+  });
 
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!form) return;
 
     const fd = new FormData(form);
+    const cvText = String(fd.get('cv') ?? '').trim();
     const payload = {
-      cv: String(fd.get('cv') ?? '').trim(),
+      cv: cvText,
       email: String(fd.get('email') ?? '').trim(),
       country: String(fd.get('country') ?? ''),
+      // 6 nov 2026 (rúbrica v2): rol objetivo opcional y señales de la extracción (sin texto adicional).
+      rol_objetivo: String(fd.get('rol_objetivo') ?? '') || undefined,
+      origen: extract.origen,
+      paginas: extract.origen === 'pdf' ? extract.paginas : undefined,
+      caracteres: cvText.length,
       consent: fd.get('consent') === 'on',
       // 2 nov 2026: casilla comercial opcional; el análisis funciona igual sin ella.
       marketing: fd.get('marketing') === 'on',
@@ -1216,13 +1631,18 @@ const atsBlogURL =
       referrer: landingReferrer(),
     };
 
-    // Quick client-side validation
-    if (!payload.consent) {
-      alert(document.getElementById('consent-common')?.dataset.consentErr || 'Debes aceptar el aviso de privacidad para continuar.');
+    // Validación en cliente: el largo se avisa junto al recuadro (antes con alert y sin dónde recortar).
+    if (payload.cv.length < MIN_CV) {
+      showCvError('El CV es muy corto. Pega el texto completo (mínimo 200 caracteres).');
       return;
     }
-    if (payload.cv.length < 200) {
-      alert('El CV es muy corto. Pega el texto completo (mínimo 200 caracteres).');
+    if (payload.cv.length > MAX_CV) {
+      showCvError(`Tu CV tiene ${payload.cv.length.toLocaleString('es-MX')} caracteres y el máximo es 15,000. Recorta en el recuadro lo menos relevante (por ejemplo, la lista completa de congresos o cursos).`);
+      return;
+    }
+    hide(cvError);
+    if (!payload.consent) {
+      alert(document.getElementById('consent-common')?.dataset.consentErr || 'Debes aceptar el aviso de privacidad para continuar.');
       return;
     }
 
@@ -1248,10 +1668,11 @@ const atsBlogURL =
       }
 
       const data = (await res.json()) as Result;
+      lastEmail = payload.email.toLowerCase();
+      lastRol = payload.rol_objetivo ?? '';
       renderResult(data);
       hide(loading);
       show(result);
-      // Scroll to top of result
       window.scrollTo({ top: result?.offsetTop ?? 0, behavior: 'smooth' });
     } catch (err) {
       if (intervalId) window.clearInterval(intervalId);
@@ -1290,79 +1711,108 @@ const atsBlogURL =
   function sanitizeForPDF(text: string): string {
     if (!text) return '';
     return text
-      .replace(/→/g, '>')           // right arrow → ASCII greater-than
+      .replace(/→/g, '>')
       .replace(/←/g, '<')
       .replace(/↑/g, '^')
       .replace(/↓/g, 'v')
-      .replace(/—/g, ' - ')         // em dash
-      .replace(/–/g, '-')           // en dash
-      .replace(/[‘’‚‛]/g, "'")  // curly single quotes
-      .replace(/[“”„‟]/g, '"')  // curly double quotes
+      .replace(/—/g, ' - ')
+      .replace(/–/g, '-')
+      .replace(/[‘’‚‛]/g, "'")
+      .replace(/[“”„‟]/g, '"')
       .replace(/…/g, '...')
       .replace(/•/g, '*')
+      .replace(/[▲■●○▸]/g, '')
       .replace(/✓/g, 'OK')
       .replace(/✗/g, 'X')
-      .replace(/[‐-―]/g, '-')   // various dashes
-      .replace(/[  ]/g, ' ')    // non-breaking spaces
-      .replace(/[​‌‍﻿]/g, ''); // zero-width spaces / BOM
+      .replace(/[‐-―]/g, '-')
+      .replace(/[  ]/g, ' ')
+      .replace(/[​‌‍﻿]/g, '');
   }
 
-  function generatePdf(JsPDF: any, data: Result): any {
+  /**
+   * PDF v2 (auditoría §2.5): mismo orden que la pantalla. Página 1 accionable (resumen, conteos, qué cambiar
+   * primero y un antes/después). Estados dibujados con figuras de jsPDF (Helvetica WinAnsi no tiene ▲■●○).
+   * Detalle en tabla; los sólidos van en una línea. Pie con fecha, rubric_version y la línea "no predice".
+   */
+  function generatePdf(JsPDF: any, raw: Result): any {
     const doc = new JsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    const S = sanitizeForPDF;
 
-    // Sanitiza el contenido completo antes de procesar
-    const safeData: Result = {
-      candidateName: sanitizeForPDF(data.candidateName),
-      retroalimentacion: sanitizeForPDF(data.retroalimentacion),
-      observaciones: data.observaciones.map((o) => ({
-        categoria: sanitizeForPDF(o.categoria),
-        evaluacion: sanitizeForPDF(o.evaluacion),
-        recomendacion: sanitizeForPDF(o.recomendacion),
-      })),
-    };
-
-    // Page constants (mm)
     const PAGE_W = 210;
     const PAGE_H = 297;
     const M_X = 18;
     const M_TOP = 18;
-    const M_BOTTOM = 22;
+    const M_BOTTOM = 24;
     const C_W = PAGE_W - 2 * M_X;
 
-    // Brand colors (RGB tuples)
-    const NAVY: [number, number, number] = [27, 58, 107];
-    const NAVY_DEEP: [number, number, number] = [15, 39, 72];
-    const ORANGE: [number, number, number] = [232, 116, 58];
-    const OFFW: [number, number, number] = [247, 245, 238];
-    const TEXT: [number, number, number] = [27, 37, 64];
-    const TEXTMUTE: [number, number, number] = [90, 100, 128];
-    const RULE: [number, number, number] = [220, 218, 210];
+    type RGB = [number, number, number];
+    const NAVY: RGB = [27, 58, 107];
+    const NAVY_DEEP: RGB = [15, 39, 72];
+    const ORANGE: RGB = [232, 116, 58];
+    const OFFW: RGB = [247, 245, 238];
+    const TEXT: RGB = [27, 37, 64];
+    const TEXTMUTE: RGB = [90, 100, 128];
+    const RULE: RGB = [220, 218, 210];
+    const BAND: RGB = [240, 238, 230];
+    const EST_COLOR: Record<Estado, RGB> = {
+      prioritario: [178, 58, 42],
+      mejorable: [217, 162, 27],
+      solido: [46, 125, 91],
+      no_evaluable: [107, 116, 137],
+    };
 
     let y = M_TOP;
+    const fecha = fechaLarga();
 
-    function setColor(setter: 'fill' | 'stroke' | 'text', color: [number, number, number]) {
-      if (setter === 'fill') doc.setFillColor(color[0], color[1], color[2]);
-      else if (setter === 'stroke') doc.setDrawColor(color[0], color[1], color[2]);
-      else doc.setTextColor(color[0], color[1], color[2]);
+    function setColor(setter: 'fill' | 'stroke' | 'text', c: RGB) {
+      if (setter === 'fill') doc.setFillColor(c[0], c[1], c[2]);
+      else if (setter === 'stroke') doc.setDrawColor(c[0], c[1], c[2]);
+      else doc.setTextColor(c[0], c[1], c[2]);
     }
-
-    function needBreak(spaceNeeded: number) {
-      if (y + spaceNeeded > PAGE_H - M_BOTTOM) {
+    function font(style: 'normal' | 'bold' | 'italic', size: number, color: RGB) {
+      doc.setFont('helvetica', style);
+      doc.setFontSize(size);
+      setColor('text', color);
+    }
+    function needBreak(space: number) {
+      if (y + space > PAGE_H - M_BOTTOM) {
         doc.addPage();
         y = M_TOP;
       }
     }
-
-    function drawFooter(pageNum: number, totalPages: number) {
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      setColor('text', TEXTMUTE);
-      doc.text('Solca · Ciencia y Consultoría · hello@solcaciencia.com', M_X, PAGE_H - 10);
-      doc.text(`Página ${pageNum} / ${totalPages}`, PAGE_W - M_X, PAGE_H - 10, { align: 'right' });
+    function lines(text: string, width: number): string[] {
+      return doc.splitTextToSize(S(text), width);
     }
+    /** Escribe un párrafo con salto de página por línea. */
+    function para(text: string, x: number, width: number, lh: number) {
+      for (const l of lines(text, width)) {
+        needBreak(lh);
+        doc.text(l, x, y);
+        y += lh;
+      }
+    }
+    function section(title: string) {
+      needBreak(16);
+      font('bold', 13, NAVY);
+      doc.text(S(title), M_X, y);
+      setColor('stroke', ORANGE);
+      doc.setLineWidth(0.7);
+      doc.line(M_X, y + 1.5, M_X + doc.getTextWidth(S(title)), y + 1.5);
+      y += 8;
+    }
+    /** Figura del estado centrada en (cx, cy). */
+    function shape(e: Estado, cx: number, cy: number, r = 1.5) {
+      setColor('fill', EST_COLOR[e]);
+      setColor('stroke', EST_COLOR[e]);
+      doc.setLineWidth(0.35);
+      if (e === 'prioritario') doc.triangle(cx - r, cy + r * 0.9, cx + r, cy + r * 0.9, cx, cy - r * 1.1, 'F');
+      else if (e === 'mejorable') doc.rect(cx - r * 0.9, cy - r * 0.9, r * 1.8, r * 1.8, 'F');
+      else if (e === 'solido') doc.circle(cx, cy, r, 'F');
+      else doc.circle(cx, cy, r * 0.95, 'S');
+    }
+    const LABEL: Record<Estado, string> = { prioritario: 'Prioritario', mejorable: 'Mejorable', solido: 'Sólido', no_evaluable: 'No evaluable' };
 
-    // ===== HEADER (solo en página 1) =====
-    // Logo: navy rounded square + naranja dot + thin orange ring
+    // ===== ENCABEZADO =====
     setColor('fill', NAVY_DEEP);
     doc.roundedRect(M_X, y, 10, 10, 1.8, 1.8, 'F');
     setColor('fill', ORANGE);
@@ -1370,240 +1820,238 @@ const atsBlogURL =
     setColor('stroke', ORANGE);
     doc.setLineWidth(0.35);
     doc.circle(M_X + 5, y + 5, 3, 'S');
-
-    // Brand text
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    setColor('text', NAVY);
+    font('bold', 14, NAVY);
     doc.text('Solca', M_X + 13.5, y + 4.5);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-    setColor('text', ORANGE);
+    font('normal', 7.5, ORANGE);
     doc.text('CIENCIA Y CONSULTORÍA', M_X + 13.5, y + 9);
-
-    // Email right-aligned
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    setColor('text', TEXTMUTE);
+    font('normal', 9, TEXTMUTE);
     doc.text('hello@solcaciencia.com', PAGE_W - M_X, y + 7, { align: 'right' });
-
     y += 13;
-
-    // Header divider
     setColor('stroke', RULE);
     doc.setLineWidth(0.4);
     doc.line(M_X, y, PAGE_W - M_X, y);
+    y += 10;
 
-    y += 11;
-
-    // ===== TITLE =====
-    // Eyebrow dot + text
-    setColor('fill', ORANGE);
-    doc.circle(M_X + 1.5, y - 1.5, 1, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    setColor('text', ORANGE);
-    doc.text('ANÁLISIS BÁSICO DE CV', M_X + 5, y);
-
-    y += 8;
-
-    // Title h1
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(22);
-    setColor('text', NAVY);
-    const titleText = `Análisis básico para ${safeData.candidateName}`;
-    const titleLines = doc.splitTextToSize(titleText, C_W);
-    titleLines.forEach((line: string, i: number) => {
-      doc.text(line, M_X, y + i * 9);
-    });
-    y += titleLines.length * 9 + 6;
-
-    // ===== RETROALIMENTACIÓN =====
-    // Section header with orange underline
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    setColor('text', NAVY);
-    doc.text('Retroalimentación', M_X, y);
-    setColor('stroke', ORANGE);
-    doc.setLineWidth(0.8);
-    const retroTw = doc.getTextWidth('Retroalimentación');
-    doc.line(M_X, y + 1.5, M_X + retroTw, y + 1.5);
+    font('bold', 8, ORANGE);
+    doc.text('ANÁLISIS DE CV', M_X, y);
+    y += 7;
+    font('bold', 19, NAVY);
+    const tl = lines(`Análisis de CV · ${raw.candidateName}`, C_W);
+    tl.forEach((l, i) => doc.text(l, M_X, y + i * 8));
+    y += tl.length * 8;
+    font('normal', 9, TEXTMUTE);
+    doc.text(S(`${fecha} · Rúbrica ${raw.rubric_version}`), M_X, y);
     y += 9;
 
-    // Body
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10.5);
-    setColor('text', TEXT);
-    const retroLines = doc.splitTextToSize(safeData.retroalimentacion, C_W);
-    retroLines.forEach((line: string) => {
-      needBreak(5);
-      doc.text(line, M_X, y);
-      y += 5;
-    });
-    y += 6;
+    // ===== RESUMEN =====
+    section('Resumen');
+    if (raw.resumen.una_linea) {
+      font('bold', 11, TEXT);
+      para(raw.resumen.una_linea, M_X, C_W, 5.4);
+      y += 2;
+    }
+    const counts = countByEstado(raw.observaciones);
+    // Conteos: figura + número + palabra.
+    let x = M_X;
+    for (const e of ESTADO_ORDEN) {
+      shape(e, x + 1.6, y - 1.3);
+      font('bold', 10, TEXT);
+      const t = `${counts[e]} ${LABEL[e]}`;
+      doc.text(S(t), x + 4.5, y);
+      x += 4.5 + doc.getTextWidth(S(t)) + 8;
+    }
+    y += 5;
+    // Barra: una celda por criterio, en el orden de los estados.
+    const total = raw.observaciones.length || 1;
+    const cellW = C_W / total;
+    let cx = M_X;
+    for (const e of ESTADO_ORDEN) {
+      for (let i = 0; i < counts[e]; i++) {
+        if (e === 'no_evaluable') {
+          setColor('stroke', EST_COLOR[e]);
+          doc.setLineWidth(0.3);
+          doc.rect(cx + 0.3, y, cellW - 0.6, 3.5, 'S');
+        } else {
+          setColor('fill', EST_COLOR[e]);
+          doc.rect(cx + 0.3, y, cellW - 0.6, 3.5, 'F');
+        }
+        cx += cellW;
+      }
+    }
+    y += 8.5;
+    font('normal', 9.5, TEXT);
+    para(`Perfil leído: ${raw.perfil.nivel} · Apunta a: ${raw.perfil.rol_objetivo ?? 'no se distingue'}`, M_X, C_W, 4.8);
+    font('italic', 8.5, TEXTMUTE);
+    para('Es una lectura de tu CV contra criterios de redacción y estructura; no predice si te van a llamar.', M_X, C_W, 4.4);
+    y += 4;
 
-    // ===== OBSERVACIONES =====
-    needBreak(15);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    setColor('text', NAVY);
-    doc.text('Observaciones puntuales y recomendaciones', M_X, y);
-    setColor('stroke', ORANGE);
-    doc.setLineWidth(0.8);
-    const obsTw = doc.getTextWidth('Observaciones puntuales y recomendaciones');
-    doc.line(M_X, y + 1.5, M_X + obsTw, y + 1.5);
-    y += 9;
-
-    // Render each observación
-    safeData.observaciones.forEach((obs, idx) => {
-      // Estimate height needed for this whole obs (cat + body + rec)
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      const catLines = doc.splitTextToSize(`${obs.categoria}:`, C_W);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      const evalLines = doc.splitTextToSize(obs.evaluacion, C_W);
-      doc.setFontSize(9.5);
-      const recLines = doc.splitTextToSize(obs.recomendacion, C_W - 5);
-      const totalHeight = catLines.length * 5.5 + evalLines.length * 4.8 + recLines.length * 4.6 + 8;
-      needBreak(totalHeight);
-
-      // Category (bold, navy)
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      setColor('text', NAVY);
-      catLines.forEach((line: string, i: number) => {
-        doc.text(line, M_X, y + i * 5.5);
+    // ===== QUÉ CAMBIAR PRIMERO =====
+    if (raw.prioridades.length) {
+      section('Qué cambiar primero');
+      raw.prioridades.forEach((p, i) => {
+        const o = raw.observaciones.find((ob) => ob.id === p.id_observacion);
+        font('bold', 10.5, NAVY);
+        const al = lines(p.accion, C_W - 12);
+        needBreak(al.length * 5 + 10);
+        setColor('fill', NAVY);
+        doc.circle(M_X + 2.6, y - 1.4, 2.6, 'F');
+        font('bold', 9, OFFW);
+        doc.text(String(i + 1), M_X + 2.6, y - 0.3, { align: 'center' });
+        if (o) shape(o.estado, M_X + 8, y - 1.4, 1.3);
+        font('bold', 10.5, NAVY);
+        al.forEach((l, k) => doc.text(l, M_X + 11, y + k * 5));
+        y += al.length * 5;
+        font('normal', 9.5, TEXT);
+        if (p.por_que) para(`Por qué: ${p.por_que}`, M_X + 11, C_W - 11, 4.6);
+        const meta = [p.esfuerzo ? `Esfuerzo: ${p.esfuerzo}` : '', o ? `Área: ${o.categoria}` : ''].filter(Boolean).join(' · ');
+        if (meta) {
+          font('normal', 8.5, TEXTMUTE);
+          para(meta, M_X + 11, C_W - 11, 4.4);
+        }
+        y += 3;
       });
-      y += catLines.length * 5.5 + 1;
+    }
 
-      // Evaluation (regular, text color)
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      setColor('text', TEXT);
-      evalLines.forEach((line: string) => {
-        doc.text(line, M_X, y);
-        y += 4.8;
-      });
+    // ===== ASÍ SE VERÍA =====
+    if (raw.reescrituras.length) {
+      section('Así se vería');
+      font('italic', 8.5, TEXTMUTE);
+      para('Lo que va entre corchetes es un dato que solo tú tienes: complétalo o quítalo.', M_X, C_W, 4.4);
       y += 1;
-
-      // Recommendation (smaller, muted, with orange left bar)
-      const recStartY = y;
-      setColor('text', TEXTMUTE);
-      doc.setFontSize(9.5);
-      recLines.forEach((line: string) => {
-        doc.text(line, M_X + 5, y);
-        y += 4.6;
+      raw.reescrituras.forEach((r) => {
+        font('normal', 9.5, TEXT);
+        const a = lines(`"${r.antes}"`, C_W - 22);
+        const d = lines(`"${r.despues}"`, C_W - 22);
+        needBreak((a.length + d.length) * 4.8 + 12);
+        font('bold', 8, TEXTMUTE);
+        doc.text('ANTES', M_X, y);
+        font('normal', 9.5, TEXT);
+        a.forEach((l, k) => doc.text(l, M_X + 20, y + k * 4.8));
+        y += a.length * 4.8 + 1.5;
+        font('bold', 8, TEXTMUTE);
+        doc.text('DESPUÉS', M_X, y);
+        font('bold', 9.5, NAVY);
+        d.forEach((l, k) => doc.text(l, M_X + 20, y + k * 4.8));
+        y += d.length * 4.8;
+        if (r.principio) {
+          font('italic', 8.5, TEXTMUTE);
+          para(`Por qué: ${r.principio}`, M_X + 20, C_W - 20, 4.4);
+        }
+        y += 4;
       });
-      // Orange left border
-      setColor('stroke', ORANGE);
-      doc.setLineWidth(0.8);
-      doc.line(M_X + 2, recStartY - 3, M_X + 2, y - 2);
+    }
 
-      // Spacing between observations
-      if (idx < safeData.observaciones.length - 1) {
-        y += 5;
-        // Subtle divider
+    // ===== DETALLE POR ÁREA (tabla) =====
+    section('Detalle por área');
+    const COL1 = 30;
+    const COL2 = 44;
+    const COL3 = C_W - COL1 - COL2;
+    const solidos: string[] = [];
+    for (const g of groupObservaciones(raw.observaciones)) {
+      const rows = g.items.filter((o) => o.estado !== 'solido');
+      g.items.filter((o) => o.estado === 'solido').forEach((o) => solidos.push(o.categoria));
+      if (!rows.length) continue;
+      needBreak(16);
+      setColor('fill', BAND);
+      doc.rect(M_X, y - 4, C_W, 6.2, 'F');
+      font('bold', 9.5, NAVY);
+      doc.text(S(g.label), M_X + 2, y);
+      y += 5.5;
+      for (const o of rows) {
+        font('bold', 9, TEXT);
+        const nameL = lines(o.categoria, COL2 - 3);
+        font('normal', 9, TEXT);
+        const recL = o.recomendacion ? lines(o.recomendacion, COL3) : [];
+        font('normal', 8, TEXTMUTE);
+        const evL = lines(o.evaluacion, COL3);
+        const rowH = Math.max(nameL.length * 4.3, 4.3, recL.length * 4.4 + evL.length * 3.9) + 3;
+        needBreak(rowH);
+        shape(o.estado, M_X + 1.8, y - 1.2, 1.3);
+        font('normal', 8.5, EST_COLOR[o.estado]);
+        doc.text(S(LABEL[o.estado]), M_X + 4.5, y);
+        font('bold', 9, TEXT);
+        nameL.forEach((l, k) => doc.text(l, M_X + COL1, y + k * 4.3));
+        let ry = y;
+        font('normal', 9, TEXT);
+        recL.forEach((l) => { doc.text(l, M_X + COL1 + COL2, ry); ry += 4.4; });
+        font('normal', 8, TEXTMUTE);
+        evL.forEach((l) => { doc.text(l, M_X + COL1 + COL2, ry); ry += 3.9; });
+        y += rowH;
         setColor('stroke', RULE);
         doc.setLineWidth(0.2);
-        doc.line(M_X, y, PAGE_W - M_X, y);
-        y += 4;
-      } else {
-        y += 8;
+        doc.line(M_X, y - 2.2, PAGE_W - M_X, y - 2.2);
+        y += 1;
       }
-    });
+    }
+    if (solidos.length) {
+      y += 1;
+      needBreak(10);
+      shape('solido', M_X + 1.8, y - 1.2, 1.3);
+      font('bold', 9, TEXT);
+      doc.text('Sólidos:', M_X + 4.5, y);
+      font('normal', 9, TEXT);
+      const sl = lines(`${solidos.join(', ')}.`, C_W - 20);
+      sl.forEach((l, k) => doc.text(l, M_X + 20, y + k * 4.4));
+      y += sl.length * 4.4 + 4;
+    }
 
-    // ===== SIGUIENTE PASO (CTA navy box) =====
-    const ctaBodyText =
-      'Si quieres mejorar tu CV de forma estructurada y aprender a posicionarlo correctamente para procesos reales de selección, revisa el curso completo donde explico cómo redactar un CV, optimizar LinkedIn y aplicar estratégicamente.';
-    const ctaNoteText = 'Los ejemplos están enfocados en ciencias biológicas y de la salud — los conceptos aplican a cualquier área.';
-    const ctaLinkText = 'Ver el curso en Hotmart';
-    const ctaLinkURL = 'https://go.hotmart.com/B104495115T?src=cv-reporte-pdf';
-    const ctaSignName = 'Oscar Solís';
-    const ctaSignTitle = 'Director general, Solca Ciencia y Consultoría';
+    // ===== RETROALIMENTACIÓN GENERAL =====
+    if (raw.retroalimentacion) {
+      section('Retroalimentación general');
+      font('normal', 10, TEXT);
+      para(raw.retroalimentacion, M_X, C_W, 5);
+      y += 4;
+    }
 
-    // Calculate box height
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    const ctaBodyLines = doc.splitTextToSize(ctaBodyText, C_W - 12);
-    doc.setFontSize(9);
-    const ctaNoteLines = doc.splitTextToSize(ctaNoteText, C_W - 12);
-    const boxPadding = 6;
-    const boxHeight =
-      boxPadding * 2 +
-      9 + // header
-      ctaBodyLines.length * 5 + 3 +
-      ctaNoteLines.length * 4.5 + 5 +
-      8 + // link
-      10; // signature
-    needBreak(boxHeight + 5);
-
-    const boxStartY = y;
+    // ===== SIGUIENTE PASO (caja navy) =====
+    const ns = nextStepCopy(pickNextStep(raw), raw);
+    font('normal', 10, OFFW);
+    const bodyL = lines(ns.body, C_W - 12);
+    const bridgeL = lines('Este análisis es general; no compara tu CV con una vacante.', C_W - 12);
+    const pad = 6;
+    const boxH = pad * 2 + 9 + 6 + bodyL.length * 5 + 3 + 8 + bridgeL.length * 4.4 + 4 + 10;
+    needBreak(boxH + 4);
+    const by = y;
     setColor('fill', NAVY_DEEP);
-    doc.roundedRect(M_X, boxStartY, C_W, boxHeight, 2.5, 2.5, 'F');
-
-    let cy = boxStartY + boxPadding;
-    // Section header inside box
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
-    setColor('text', OFFW);
-    doc.text('Siguiente paso sugerido', M_X + boxPadding, cy + 2);
+    doc.roundedRect(M_X, by, C_W, boxH, 2.5, 2.5, 'F');
+    let cy = by + pad + 2;
+    font('bold', 12, OFFW);
+    doc.text('Siguiente paso sugerido', M_X + pad, cy);
     setColor('stroke', ORANGE);
     doc.setLineWidth(0.7);
-    const cthtw = doc.getTextWidth('Siguiente paso sugerido');
-    doc.line(M_X + boxPadding, cy + 3.5, M_X + boxPadding + cthtw, cy + 3.5);
+    doc.line(M_X + pad, cy + 1.5, M_X + pad + doc.getTextWidth('Siguiente paso sugerido'), cy + 1.5);
     cy += 9;
-
-    // Body
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    setColor('text', OFFW);
-    ctaBodyLines.forEach((line: string) => {
-      doc.text(line, M_X + boxPadding, cy);
-      cy += 5;
-    });
-    cy += 1;
-
-    // Note in italic
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(9);
-    setColor('text', [200, 198, 188]);
-    ctaNoteLines.forEach((line: string) => {
-      doc.text(line, M_X + boxPadding, cy);
-      cy += 4.5;
-    });
+    font('bold', 11, OFFW);
+    doc.text(S(ns.title), M_X + pad, cy);
+    cy += 6;
+    font('normal', 10, OFFW);
+    bodyL.forEach((l) => { doc.text(l, M_X + pad, cy); cy += 5; });
     cy += 3;
-
-    // Link (link-like text — clickable in jsPDF via doc.link)
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    setColor('text', ORANGE);
-    doc.textWithLink(`>> ${ctaLinkText}`, M_X + boxPadding, cy + 1, { url: ctaLinkURL });
+    font('bold', 10, ORANGE);
+    doc.textWithLink(S(`>> ${ns.cta}`), M_X + pad, cy, { url: ns.hrefPdf });
     cy += 8;
-
-    // Signature inside box (lighter)
+    font('italic', 9, [200, 198, 188]);
+    bridgeL.forEach((l) => { doc.text(l, M_X + pad, cy); cy += 4.4; });
+    cy += 2;
     setColor('stroke', [60, 70, 95]);
     doc.setLineWidth(0.3);
-    doc.line(M_X + boxPadding, cy, PAGE_W - M_X - boxPadding, cy);
-    cy += 4;
+    doc.line(M_X + pad, cy, PAGE_W - M_X - pad, cy);
+    cy += 4.5;
+    font('bold', 9, OFFW);
+    doc.text(S('— Oscar Solís · Director general, Solca Ciencia y Consultoría'), M_X + pad, cy);
+    y = by + boxH + 6;
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9.5);
-    setColor('text', OFFW);
-    doc.text(`— ${ctaSignName}`, M_X + boxPadding, cy);
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(8.5);
-    setColor('text', [200, 198, 188]);
-    doc.text(ctaSignTitle, M_X + boxPadding, cy + 4);
-
-    y = boxStartY + boxHeight + 6;
-
-    // ===== FOOTERS on all pages =====
+    // ===== PIE en todas las páginas =====
     const totalPages = doc.internal.pages.length - 1;
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
-      drawFooter(i, totalPages);
+      setColor('stroke', RULE);
+      doc.setLineWidth(0.2);
+      doc.line(M_X, PAGE_H - 17, PAGE_W - M_X, PAGE_H - 17);
+      font('normal', 7.5, TEXTMUTE);
+      doc.text(S(`Solca · Ciencia y Consultoría · ${fecha} · Rúbrica ${raw.rubric_version}`), M_X, PAGE_H - 13);
+      doc.text(`Página ${i} / ${totalPages}`, PAGE_W - M_X, PAGE_H - 13, { align: 'right' });
+      doc.text(S('Es una lectura de tu CV contra criterios de redacción y estructura; no predice si te van a llamar.'), M_X, PAGE_H - 9.5);
     }
 
     return doc;
@@ -1637,6 +2085,13 @@ const atsBlogURL =
     const formSection = document.getElementById('form');
     show(formSection);
     if (form) form.reset();
+    // 6 nov 2026: el recuadro queda visible y vacío; se limpia el estado del PDF anterior.
+    extract = { origen: 'pegado', paginas: null };
+    setExtractMode(false);
+    setUploadStatus('', 'idle');
+    hide(pdfWarning);
+    hide(cvError);
+    updateCount();
     submitBtn && (submitBtn.disabled = false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
