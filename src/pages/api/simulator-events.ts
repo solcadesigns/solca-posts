@@ -40,7 +40,8 @@ interface EventBody {
     | 'page_viewed'
     | 'book_clicked'
     | 'outbound_clicked'
-    | 'next_step_clicked';
+    | 'next_step_clicked'
+    | 'cv_step';
   // page_viewed: qué página se vio. path = pathname (para blog, el slug).
   page?: 'quiz-rol' | 'revisar-cv' | 'blog' | 'vacantes';
   path?: string;
@@ -79,6 +80,8 @@ const ALLOWED_EVENTS = new Set([
   'outbound_clicked',
   // 30 oct 2026 (EMB-4): clic al siguiente paso gratuito (product = origen-destino, p. ej. cv-simulador).
   'next_step_clicked',
+  // 6 nov 2026: pasos del revisor de CV (product = pdf_ok | pdf_fail | result_viewed | report_downloaded | share:<red>).
+  'cv_step',
 ]);
 
 // 22 oct 2026: + buscador de vacantes.
@@ -168,7 +171,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     cta: body.cta === 'hero' || body.cta === 'card' ? body.cta : undefined,
     page: event === 'page_viewed' ? body.page : undefined,
     path: event === 'page_viewed' || event === 'book_clicked' || event === 'outbound_clicked' || event === 'next_step_clicked' ? truncate(body.path) : undefined,
-    product: event === 'book_clicked' || event === 'outbound_clicked' || event === 'next_step_clicked' ? truncate(body.product) : undefined,
+    product: event === 'book_clicked' || event === 'outbound_clicked' || event === 'next_step_clicked' || event === 'cv_step' ? truncate(body.product) : undefined,
     tag: event === 'book_clicked' ? truncate(body.tag) : undefined,
     utm_source: truncate(body.utm_source),
     utm_medium: truncate(body.utm_medium),

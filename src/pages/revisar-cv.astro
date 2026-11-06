@@ -43,9 +43,9 @@ const atsBlogURL =
       <span class="dot"></span>
       <span>Recurso gratuito</span>
     </div>
-    <h1 class="cv-hero-title">Análisis profesional de tu CV en <em>30 segundos</em></h1>
+    <h1 class="cv-hero-title">Análisis profesional de <em>tu CV</em></h1>
     <p class="cv-hero-lead">
-      Pega tu CV y recibe feedback estructurado contra 20 criterios reales de selección en industria farmacéutica: coherencia, métricas, palabras clave, compatibilidad ATS, posicionamiento profesional. Sin pago, sin compromiso.
+      Pega tu CV y recibe feedback estructurado en 20 criterios de redacción y estructura para procesos de selección en la industria farmacéutica: coherencia, métricas, palabras clave, compatibilidad ATS, posicionamiento profesional. Sin pago, sin compromiso.
     </p>
     <div class="cv-hero-meta">
       <span class="meta-item"><span class="meta-dot"></span>Análisis cualitativo</span>
@@ -85,7 +85,7 @@ const atsBlogURL =
                 Esto suele significar que el PDF tiene el texto como imagen (escaneado), usa una fuente que los parsers no entienden, o tiene un layout complejo (columnas, gráficos, íconos).
               </p>
               <p class="pdf-warning-callout">
-                <strong>Importante:</strong> los sistemas ATS de selección de pharma usan parsers similares a este. Si tu PDF no se pudo leer aquí, <strong>probablemente tampoco pasará el primer filtro automático</strong> de las plataformas de aplicación a las que envíes el CV.
+                <strong>Importante:</strong> muchas plataformas de postulación leen el CV de forma automática. Si tu PDF no se pudo leer aquí, <strong>es posible que esas plataformas tampoco lo lean bien</strong>.
               </p>
               <p class="pdf-warning-actions-label">Antes de seguir, vale la pena leer:</p>
               <ul class="pdf-warning-actions">
@@ -115,12 +115,12 @@ const atsBlogURL =
 
           <!-- Vista expandida (default cuando no se ha subido PDF) -->
           <div class="textarea-wrapper" id="textarea-wrapper">
-            <label for="cv">Texto del CV</label>
+            <label for="cv">Si prefieres, puedes pegar el texto de tu CV en este recuadro en vez de subirlo</label>
             <textarea
               id="cv"
               name="cv"
               rows="14"
-              placeholder="Pega aquí el texto de tu CV: selecciona todo en tu Word/Pages (Cmd+A), copia (Cmd+C) y pega (Cmd+V). O sube el PDF arriba y procesamos el texto automáticamente."
+              placeholder="Abre tu CV en Word o Pages, selecciona todo, copia y pega aquí."
               required
               minlength="200"
               maxlength="15000"
@@ -287,7 +287,7 @@ const atsBlogURL =
 
     <div class="share-strip"
          data-share-url="https://solcaciencia.com/revisar-cv"
-         data-share-text="Probé esta app gratuita que analiza tu CV con IA y marca los errores típicos de PhDs aplicando a pharma. Toma 60 segundos.">
+         data-share-text="Probé esta app gratuita que analiza tu CV con IA y marca los errores típicos de PhDs aplicando a pharma.">
       <span class="share-strip-label">Compartir esta herramienta</span>
       <div class="share-strip-buttons">
         <button type="button" class="share-btn" data-share="linkedin" aria-label="Compartir en LinkedIn" title="LinkedIn">
@@ -1018,6 +1018,16 @@ const atsBlogURL =
 
   function hide(el: HTMLElement | null) { if (el) el.hidden = true; }
   function show(el: HTMLElement | null) { if (el) el.hidden = false; }
+  // 6 nov 2026: pasos del revisor de CV como evento cv_step (best-effort, no bloquea el flujo).
+  function cvStep(product: string) {
+    try {
+      const w = window as unknown as { __utm?: Record<string, string>; __attr?: () => Record<string, unknown> };
+      const utm = w.__utm || {};
+      const body = JSON.stringify({ event: 'cv_step', product, utm_source: utm.utm_source, utm_medium: utm.utm_medium, utm_campaign: utm.utm_campaign, utm_content: utm.utm_content, ...(w.__attr ? w.__attr() : {}) });
+      if (navigator.sendBeacon) navigator.sendBeacon('/api/simulator-events', new Blob([body], { type: 'application/json' }));
+      else fetch('/api/simulator-events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(() => {});
+    } catch { /* medición best-effort */ }
+  }
 
   // ---- PDF upload: lazy-load pdf.js from CDN, extract text, fill textarea ----
   let pdfjsPromise: Promise<any> | null = null;
@@ -1096,6 +1106,7 @@ const atsBlogURL =
           `Solo se extrajeron ${fullText.length} caracteres.`,
           'error',
         );
+        cvStep('pdf_fail');
         // Mostrar aviso educativo de ATS
         show(pdfWarning);
         // Mantener textarea visible para que el usuario pegue manualmente
@@ -1106,6 +1117,7 @@ const atsBlogURL =
           `✓ PDF cargado · ${pdf.numPages} ${pdf.numPages === 1 ? 'página' : 'páginas'} · ${fullText.length.toLocaleString('es-MX')} caracteres extraídos`,
           'success',
         );
+        cvStep('pdf_ok');
         // Éxito: ocultar textarea + ocultar botón "Ver/editar" + ocultar aviso.
         // El usuario confía en el status ✓; si el extract resultara malo, puede quitar el archivo
         // y pegar el texto manualmente.
@@ -1116,6 +1128,7 @@ const atsBlogURL =
     } catch (err) {
       console.error('PDF parse error:', err);
       setUploadStatus('No pudimos leer el PDF.', 'error');
+      cvStep('pdf_fail');
       // Mostrar aviso educativo de ATS
       show(pdfWarning);
       show(textareaWrapper);
@@ -1164,6 +1177,7 @@ const atsBlogURL =
 
   function renderResult(data: Result) {
     lastResult = data;
+    cvStep('result_viewed');
     const titleEl = document.getElementById('result-title');
     const retroEl = document.getElementById('result-retroalimentacion');
     const obsList = document.getElementById('result-observaciones-list');
@@ -1505,7 +1519,7 @@ const atsBlogURL =
       'Si quieres mejorar tu CV de forma estructurada y aprender a posicionarlo correctamente para procesos reales de selección, revisa el curso completo donde explico cómo redactar un CV, optimizar LinkedIn y aplicar estratégicamente.';
     const ctaNoteText = 'Los ejemplos están enfocados en ciencias biológicas y de la salud — los conceptos aplican a cualquier área.';
     const ctaLinkText = 'Ver el curso en Hotmart';
-    const ctaLinkURL = 'https://go.hotmart.com/B104495115T';
+    const ctaLinkURL = 'https://go.hotmart.com/B104495115T?src=cv-reporte-pdf';
     const ctaSignName = 'Oscar Solís';
     const ctaSignTitle = 'Director general, Solca Ciencia y Consultoría';
 
@@ -1597,6 +1611,7 @@ const atsBlogURL =
 
   downloadBtn?.addEventListener('click', async () => {
     if (!downloadBtn || !lastResult) return;
+    cvStep('report_downloaded');
     const originalText = downloadBtn.innerHTML;
     downloadBtn.disabled = true;
     downloadBtn.innerHTML =
@@ -1665,6 +1680,7 @@ const atsBlogURL =
       const strip = btn.closest<HTMLElement>('.share-strip');
       if (!strip) return;
       const target = btn.dataset.share;
+      cvStep(`share:${target || 'other'}`);
       const shareUrl = withShareUtm(strip.dataset.shareUrl || window.location.href, target || 'other');
       const shareText = strip.dataset.shareText || '';
       const fullText = shareText ? `${shareText} ${shareUrl}` : shareUrl;
