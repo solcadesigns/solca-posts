@@ -17,8 +17,11 @@ import type { APIRoute } from 'astro';
 import {
   retryableChatCompletion,
   extractText,
+  HAIKU,
   AnthropicError,
+  AnthropicRefusalError,
 } from '../../lib/anthropic';
+import { registrarModeloD1 } from '../../lib/eventos-d1';
 import { buildSystemPrompt } from '../../lib/simulator-prompt';
 import { inferRole, getStageInfo, getRoleCta } from '../../lib/simulator-defaults';
 import { parseFinalOutput } from '../../lib/simulator-metrics-parser';
@@ -139,6 +142,11 @@ const FINAL_REPORT_TOKENS_CAP = 16000;
 function finalReportMaxTokens(questionCount: number): number {
   const computed = FINAL_REPORT_BASE_TOKENS + questionCount * FINAL_REPORT_TOKENS_PER_QUESTION;
   return Math.min(computed, FINAL_REPORT_TOKENS_CAP);
+}
+// 6 nov 2026: el reporte sync va con Haiku 5.5, cuyo tokenizer cuenta ~30% más tokens por el mismo texto.
+// Mismo cálculo × 1.3 (con el mismo tope); el respaldo a Haiku 4.5 usa finalReportMaxTokens tal cual.
+function finalReportMaxTokensHaiku55(questionCount: number): number {
+  return Math.min(Math.ceil(finalReportMaxTokens(questionCount) * 1.3), FINAL_REPORT_TOKENS_CAP);
 }
 
 interface BetaCodeRecord {
@@ -520,6 +528,22 @@ async function handleInit(
     );
   } catch (err) {
     if (err instanceof AnthropicError) {
+      await registrarModeloD1(env.SIMULATOR_METRICS_DB as D1Database | undefined, {
+        ruta: 'init',
+        ok: false,
+        modeloPedido: MODEL,
+        error: err instanceof AnthropicRefusalError ? 'refusal' : err.status,
+        sessionId: state.sessionId,
+        esPrueba: Boolean(state.esPrueba),
+      });
+    }
+    // 6 nov 2026: un rechazo de seguridad (HTTP 200, stop_reason refusal) muestra el mensaje genérico de la
+    // página, no "Anthropic API error 200".
+    if (err instanceof AnthropicRefusalError) {
+      console.warn('[anthropic-refusal] init', err.category ?? '');
+      return { ok: false, error: 'Error iniciando sesión', errorCode: 'anthropic_error' };
+    }
+    if (err instanceof AnthropicError) {
       console.error('Anthropic error in init:', err.status, err.body);
       return {
         ok: false,
@@ -529,6 +553,19 @@ async function handleInit(
     }
     throw err;
   }
+
+  // 6 nov 2026: evento llm_modelo por llamada (también sin respaldo) para medir el respaldo Sonnet 5.5 → 4.5.
+  await registrarModeloD1(env.SIMULATOR_METRICS_DB as D1Database | undefined, {
+    ruta: 'init',
+    ok: true,
+    modeloPedido: MODEL,
+    modelo: response.model,
+    respaldo: Boolean(response.respaldo),
+    statusRespaldo: response.statusRespaldo,
+    outputTokens: response.usage?.output_tokens,
+    sessionId: state.sessionId,
+    esPrueba: Boolean(state.esPrueba),
+  });
 
   const assistantText = extractText(response);
 
@@ -651,16 +688,23 @@ async function trySyncFinalReport(
         'Esa fue la última respuesta del candidato. Ahora devuelve los DOS bloques JSON del reporte final según el formato v0.7 especificado en el system prompt: primero el reporte expandido con summary + questions_breakdown + cta, después el JSON de métricas anónimas. NO devuelvas feedback por turnos — todo va consolidado en el reporte.',
     });
 
+    const tSync = Date.now();
     const response = await retryableChatCompletion(
       {
         apiKey,
         // Haiku 4.5 en sync 10q · más rápido que Sonnet, cabe mejor en el
         // timeout de 25s. Sonnet no cabía consistentemente con 10q + contexto real.
-        model: 'claude-haiku-4-5',
+        // 6 nov 2026: Haiku 4.5 → Haiku 5.5, con respaldo temporal a 4.5 (lib/anthropic.ts). Pensamiento
+        // apagado y effort low por el timeout de 25 s; sin temperature (400 en 5.5). La respuesta son DOS
+        // bloques JSON, así que no cabe un esquema único: el formato lo fija el prompt y parseFinalOutput.
+        model: HAIKU,
         system: systemPrompt,
         messages,
-        temperature: TEMPERATURE,
-        maxTokens: finalReportMaxTokens(state.profile.questionCount),
+        effort: 'low',
+        thinking: 'disabled',
+        temperature: TEMPERATURE, // solo para el respaldo
+        maxTokens: finalReportMaxTokensHaiku55(state.profile.questionCount),
+        maxTokensRespaldo: finalReportMaxTokens(state.profile.questionCount),
         timeoutMs: 25000,
         cacheSystem: true,
       },
@@ -669,6 +713,19 @@ async function trySyncFinalReport(
     );
 
     const assistantText = extractText(response);
+    if (response.respaldo) console.warn('[sync_final_report] respondió el respaldo', response.model);
+    await registrarModeloD1(env.SIMULATOR_METRICS_DB as D1Database | undefined, {
+      ruta: 'sync_report',
+      ok: true,
+      modeloPedido: HAIKU,
+      modelo: response.model,
+      respaldo: Boolean(response.respaldo),
+      statusRespaldo: response.statusRespaldo,
+      outputTokens: response.usage?.output_tokens,
+      ms: Date.now() - tSync,
+      sessionId: state.sessionId,
+      esPrueba: Boolean(state.esPrueba),
+    });
     const parsed = parseFinalOutput(assistantText);
 
     if (!parsed.finalReport) {
@@ -714,6 +771,16 @@ async function trySyncFinalReport(
     return { ok: true, finalReport: parsed.finalReport };
   } catch (err) {
     // Kill switch balance: si Anthropic devolvió 402/403, pausar
+    if (err instanceof AnthropicError) {
+      await registrarModeloD1(env.SIMULATOR_METRICS_DB as D1Database | undefined, {
+        ruta: 'sync_report',
+        ok: false,
+        modeloPedido: HAIKU,
+        error: err instanceof AnthropicRefusalError ? 'refusal' : err.status,
+        sessionId: state.sessionId,
+        esPrueba: Boolean(state.esPrueba),
+      });
+    }
     if (err instanceof AnthropicError && (err.status === 402 || err.status === 403)) {
       await markAnthropicPaused(env, `sync_final_report ${err.status}: ${JSON.stringify(err.body).slice(0, 150)}`);
     }
@@ -1098,6 +1165,21 @@ async function handleNext(
     );
   } catch (err) {
     if (err instanceof AnthropicError) {
+      await registrarModeloD1(env.SIMULATOR_METRICS_DB as D1Database | undefined, {
+        ruta: 'next_question',
+        ok: false,
+        modeloPedido: MODEL,
+        error: err instanceof AnthropicRefusalError ? 'refusal' : err.status,
+        sessionId: state.sessionId,
+        esPrueba: Boolean(state.esPrueba),
+      });
+    }
+    // 6 nov 2026: rechazo de seguridad → mensaje genérico de la página (ver init).
+    if (err instanceof AnthropicRefusalError) {
+      console.warn('[anthropic-refusal] next-question', err.category ?? '');
+      return { ok: false, error: 'Error procesando respuesta', errorCode: 'anthropic_error', sessionState: state };
+    }
+    if (err instanceof AnthropicError) {
       console.error('Anthropic error in next:', err.status, err.body);
       // Kill switch · si es 402 (balance) o 403 (auth), pausar por 15 min
       if (err.status === 402 || err.status === 403) {
@@ -1112,6 +1194,18 @@ async function handleNext(
     }
     throw err;
   }
+
+  await registrarModeloD1(env.SIMULATOR_METRICS_DB as D1Database | undefined, {
+    ruta: 'next_question',
+    ok: true,
+    modeloPedido: MODEL,
+    modelo: response.model,
+    respaldo: Boolean(response.respaldo),
+    statusRespaldo: response.statusRespaldo,
+    outputTokens: response.usage?.output_tokens,
+    sessionId: state.sessionId,
+    esPrueba: Boolean(state.esPrueba),
+  });
 
   const assistantText = extractText(response);
 

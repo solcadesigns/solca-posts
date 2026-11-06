@@ -538,6 +538,75 @@ export function validateCvReview(
   };
 }
 
+// ── Esquema para salidas estructuradas (Haiku 5.5) ──────────────────────────────────────────────
+
+const textoONull = { anyOf: [{ type: 'string' }, { type: 'null' }] };
+
+/**
+ * JSON schema del análisis para `output_config.format` · 6 nov 2026 (Haiku 5.5 no acepta el prefill `{`).
+ * Mismo orden de campos que el prompt: si se corta por max_tokens, lo que se pierde es el final. Sin
+ * minItems/maxLength (la API no los acepta): los conteos y largos los sigue cuidando validateCvReview.
+ */
+export const CV_REVIEW_JSON_SCHEMA: Record<string, unknown> = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['candidateName', 'resumen', 'perfil', 'prioridades', 'reescrituras', 'observaciones', 'retroalimentacion'],
+  properties: {
+    candidateName: { type: 'string' },
+    resumen: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['una_linea'],
+      properties: { una_linea: { type: 'string' } },
+    },
+    perfil: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['nivel', 'rol_objetivo'],
+      properties: { nivel: { type: 'string', enum: [...NIVELES] }, rol_objetivo: textoONull },
+    },
+    prioridades: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['id_observacion', 'accion', 'por_que', 'esfuerzo'],
+        properties: {
+          id_observacion: { type: 'integer' },
+          accion: { type: 'string' },
+          por_que: { type: 'string' },
+          esfuerzo: { type: 'string', enum: ['rápido', 'medio', 'largo'] },
+        },
+      },
+    },
+    reescrituras: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['antes', 'despues', 'principio'],
+        properties: { antes: { type: 'string' }, despues: { type: 'string' }, principio: { type: 'string' } },
+      },
+    },
+    observaciones: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['id', 'estado', 'evaluacion', 'recomendacion', 'evidencia'],
+        properties: {
+          id: { type: 'integer' },
+          estado: { type: 'string', enum: [...ESTADOS] },
+          evaluacion: { type: 'string' },
+          recomendacion: { type: 'string' },
+          evidencia: textoONull,
+        },
+      },
+    },
+    retroalimentacion: { type: 'string' },
+  },
+};
+
 // ── JSON truncado ────────────────────────────────────────────────────────────────────────────────
 
 /**

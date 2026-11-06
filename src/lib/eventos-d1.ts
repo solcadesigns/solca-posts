@@ -81,3 +81,50 @@ export async function guardarEventoD1(
     console.warn('eventos-d1: insert failed (el evento sigue en KV)', String((err as Error)?.message ?? err).slice(0, 200));
   }
 }
+
+/**
+ * Evento `llm_modelo` (6 nov 2026): qué modelo respondió cada llamada del simulador (chunks, reporte sync,
+ * cv-parse con Haiku; init y next-question con Sonnet) y si entró el respaldo (Haiku 5.5 → 4.5 o
+ * Sonnet 5.5 → 4.5). Un evento por llamada, también las exitosas sin respaldo, para tener la proporción. Sirve para decidir cuándo quitar el respaldo. Sin datos
+ * personales: solo la ruta, el modelo, el status y el id aleatorio de la sesión si lo hay. Nunca lanza.
+ */
+export async function registrarModeloD1(
+  db: D1Database | undefined,
+  r: {
+    ruta: 'chunk_summary' | 'chunk_breakdown' | 'sync_report' | 'cv_parse' | 'init' | 'next_question';
+    ok: boolean;
+    /** Modelo que se pidió (p. ej. claude-sonnet-5-5). */
+    modeloPedido?: string;
+    /** Modelo que respondió según la API. */
+    modelo?: string;
+    respaldo?: boolean;
+    /** Status HTTP del modelo pedido que activó el respaldo. */
+    statusRespaldo?: number;
+    outputTokens?: number;
+    ms?: number;
+    /** Status HTTP o 'refusal' cuando falló. */
+    error?: string | number;
+    sessionId?: string;
+    esPrueba?: boolean;
+  },
+): Promise<void> {
+  const ts = new Date().toISOString();
+  await guardarEventoD1(db, `llmm:${ts}:${r.ruta}:${crypto.randomUUID().slice(0, 8)}`, {
+    ts,
+    event: 'llm_modelo',
+    product: 'simulador',
+    interno: r.esPrueba || undefined,
+    extra: {
+      ruta: r.ruta,
+      ok: r.ok ? 1 : 0,
+      modelo_pedido: r.modeloPedido ? r.modeloPedido.slice(0, 40) : undefined,
+      modelo: r.modelo ? r.modelo.slice(0, 40) : undefined,
+      respaldo: r.respaldo === undefined ? undefined : r.respaldo ? 1 : 0,
+      status_respaldo: r.statusRespaldo,
+      output_tokens: r.outputTokens,
+      ms: r.ms,
+      error: r.error === undefined ? undefined : String(r.error).slice(0, 30),
+      session_id: r.sessionId ? r.sessionId.slice(0, 40) : undefined,
+    },
+  }).catch(() => {});
+}

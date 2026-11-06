@@ -2035,7 +2035,10 @@ import MarketSurvey from '../../components/MarketSurvey.astro';
         const resp = await fetch('/api/simulator-cv-parse', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ cvText }),
+          body: JSON.stringify({
+            cvText,
+            interno: (window as unknown as { __interno?: boolean }).__interno ? true : undefined,
+          }),
         });
         const data = await resp.json();
         if (!data.ok || !data.cvSummary) {

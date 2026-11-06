@@ -363,6 +363,15 @@ await test('reintento: si el correo falla se guarda solo el resultado, se reinte
   assert.equal(await h.kv.get(JOB_KEY), null);
 });
 
+await test('reintento: un rechazo de seguridad (refusal) cierra con disculpa, sin programar otro intento', async () => {
+  const h = await harness({ analyze: async () => ({ ok: false, status: 'refusal', ms: 1 }) });
+  const r = await processCvPendingOnce(h.deps);
+  assert.match(r.status, /retry_failed/);
+  assert.ok(h.log.includes('apology') && h.log.includes('alert:analisis'));
+  assert.ok(!h.log.some((x) => x.startsWith('send')), 'no hay análisis que mandar');
+  assert.equal(await h.kv.get(JOB_KEY), null);
+});
+
 await test('carrera: a la persona le sale en la página mientras el cron analiza (borrado + cvdone)', async () => {
   const h = await harness({
     analyze: async (job, { kv, t }) => {

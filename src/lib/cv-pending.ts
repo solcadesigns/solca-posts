@@ -72,6 +72,8 @@ export interface CvJob {
   parcial?: boolean;
   outputTokens?: number;
   ms?: number;
+  /** Modelo que hizo el análisis (6 nov 2026: Haiku 5.5 o el respaldo Haiku 4.5). */
+  modelo?: string;
   sendAttempts?: number;
   emailSent?: boolean;
   // Cierre
@@ -155,8 +157,8 @@ async function stillOurs(kv: KvLike, key: string, claimId: string): Promise<bool
 }
 
 export type AnalysisOutcome =
-  | { ok: true; result: CvReviewResult; parcial: boolean; outputTokens?: number; ms: number; extra?: Record<string, unknown> }
-  | { ok: false; status: string; outputTokens?: number; ms: number };
+  | { ok: true; result: CvReviewResult; parcial: boolean; outputTokens?: number; ms: number; modelo?: string; extra?: Record<string, unknown> }
+  | { ok: false; status: string; outputTokens?: number; ms: number; modelo?: string };
 
 export interface ProcessorDeps {
   kv: KvLike;
@@ -303,6 +305,7 @@ export async function processCvPendingOnce(d: ProcessorDeps, listLimit = 20): Pr
         parcial: outcome.parcial,
         outputTokens: outcome.outputTokens,
         ms: outcome.ms,
+        modelo: outcome.modelo,
         sendAttempts: 0,
         emailSent: false,
         lastStatus: 'analisis_ok',
@@ -311,7 +314,8 @@ export async function processCvPendingOnce(d: ProcessorDeps, listLimit = 20): Pr
       return processSend(d, key, sendJob, claimId);
     }
     job.lastStatus = outcome.status;
-    if (job.attempts >= CV_MAX_ATTEMPTS) return startClosing(d, key, job, 'analisis');
+    // 6 nov 2026: un rechazo de seguridad no se reintenta (se volvería a rechazar): se cierra con la disculpa.
+    if (job.attempts >= CV_MAX_ATTEMPTS || outcome.status === 'refusal') return startClosing(d, key, job, 'analisis');
     job.nextAt = nextAttemptAt(job.attempts, d.now());
     await saveCvJob(d.kv, key, job, d.now());
     return { processed: 1, status: `reintento_programado · intento ${job.attempts} · ${outcome.status}`, job: key };

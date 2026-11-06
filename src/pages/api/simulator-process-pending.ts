@@ -23,7 +23,10 @@ import {
   retryableChatCompletion,
   extractText,
   AnthropicError,
+  AnthropicRefusalError,
+  HAIKU,
 } from '../../lib/anthropic';
+import { registrarModeloD1 } from '../../lib/eventos-d1';
 import {
   buildSummaryChunkPrompt,
   buildBreakdownChunkPrompt,
@@ -48,8 +51,12 @@ export const prerender = false;
 // y 3x más barato ($1/$5 vs $3/$15). Calidad más que suficiente para generar
 // JSON estructurado según framework fijo (no razonamiento complejo).
 // Las preguntas de la sesión siguen con Sonnet (calidad conversacional).
-const MODEL = 'claude-haiku-4-5';
-const TEMPERATURE = 0.5;
+// 6 nov 2026: Haiku 4.5 → Haiku 5.5 (`claude-haiku-5-5`), con respaldo temporal a 4.5 en lib/anthropic.ts.
+// Pensamiento apagado (disabled) y effort low: cada chunk tiene 28 s contra el cron de 30 s y el pensamiento
+// suma latencia; es JSON con un marco fijo, como lo hacía 4.5 sin pensar. Sin temperature (400 en 5.5).
+// El JSON sigue saliendo del prompt + la extracción tolerante de abajo (no había prefill que quitar).
+const MODEL = HAIKU;
+const TEMPERATURE = 0.5; // solo para el respaldo a Haiku 4.5
 // FIX (8 sept 2026): MAX_ATTEMPTS de 2 → 1. Single-shot por chunk.
 // Post-mortem: cada attempt gasta tokens completos y con reintentos internos
 // del retryableChatCompletion (3 más), un solo pending fallido gasta 6+ requests.
@@ -171,7 +178,9 @@ interface PendingRecord {
 // entre todos los chunks + reintentos), se marca como failed y no se
 // procesa más. Protección de último recurso contra runaway.
 // 200k tokens ≈ $0.60 USD con Sonnet 4.5, ~$0.20 con Haiku 4.5.
-const MAX_TOKENS_PER_SESSION = 200000;
+// 6 nov 2026: 200k → 260k. Con Haiku 5.5 el mismo texto cuenta ~30% más tokens; el tope cubre la misma
+// sesión que antes (y el precio por token de 5.5 es menor, así que el costo máximo no sube).
+const MAX_TOKENS_PER_SESSION = 260000;
 
 /**
  * Lee, suma y persiste el contador de tokens de una sesión.
@@ -221,7 +230,7 @@ async function generateChunk(
   state: SessionState,
   chunkType: 'summary' | 'breakdown',
   breakdownRange?: { start: number; end: number },
-): Promise<{ parsed: Record<string, unknown>; tokensUsed: number }> {
+): Promise<{ parsed: Record<string, unknown>; tokensUsed: number; modelo: string; respaldo: boolean; statusRespaldo?: number; outputTokens?: number }> {
   const promptOptions = {
     profile: state.profile,
     plan: state.plan,
@@ -265,9 +274,13 @@ async function generateChunk(
       model: MODEL,
       system: systemPrompt,
       messages,
-      temperature: TEMPERATURE,
+      effort: 'low',
+      thinking: 'disabled',
       // maxTokens ajustado: 2200 permite breakdown de 3q sin truncado JSON.
-      maxTokens: 2200,
+      // 6 nov 2026: 2200 → 2900 por el tokenizer de Haiku 5.5 (~30% más); el respaldo usa 2200.
+      maxTokens: 2900,
+      temperature: TEMPERATURE,
+      maxTokensRespaldo: 2200,
       timeoutMs: 28000,
       // Prompt caching (9 sept 2026): el system prompt (~5-8k tokens) se
       // cachea. Chunks subsecuentes leen del cache: 90% descuento en costo Y
@@ -285,7 +298,14 @@ async function generateChunk(
   // Extraer JSON del texto (puede venir con ```json ... ```)
   const jsonMatch = text.match(/```json\s*([\s\S]+?)\s*```/) ?? text.match(/(\{[\s\S]+\})/);
   const jsonStr = jsonMatch ? jsonMatch[1] : text;
-  return { parsed: JSON.parse(jsonStr) as Record<string, unknown>, tokensUsed };
+  return {
+    parsed: JSON.parse(jsonStr) as Record<string, unknown>,
+    tokensUsed,
+    modelo: response.model,
+    respaldo: Boolean(response.respaldo),
+    statusRespaldo: response.statusRespaldo,
+    outputTokens: response.usage?.output_tokens,
+  };
 }
 
 /**
@@ -517,16 +537,38 @@ async function processOneChunk(
   const chunk = chunksNeeded[0];
   try {
     let tokensUsedThisChunk = 0;
+    let modeloChunk = '';
+    const tChunk = Date.now();
+    // 6 nov 2026: evento llm_modelo en D1 (modelo y respaldo) por cada chunk generado.
+    const registrar = (g: { modelo: string; respaldo: boolean; statusRespaldo?: number; outputTokens?: number }) =>
+      registrarModeloD1(env.SIMULATOR_METRICS_DB as D1Database | undefined, {
+        ruta: chunk.type === 'summary' ? 'chunk_summary' : 'chunk_breakdown',
+        ok: true,
+        modeloPedido: MODEL,
+        modelo: g.modelo,
+        respaldo: g.respaldo,
+        statusRespaldo: g.statusRespaldo,
+        outputTokens: g.outputTokens,
+        ms: Date.now() - tChunk,
+        sessionId: state.sessionId,
+        esPrueba: Boolean(state.esPrueba),
+      });
     if (chunk.type === 'summary') {
-      const { parsed, tokensUsed } = await generateChunk(apiKey, state, 'summary');
+      const g = await generateChunk(apiKey, state, 'summary');
+      const { parsed, tokensUsed, modelo } = g;
+      await registrar(g);
       tokensUsedThisChunk = tokensUsed;
+      modeloChunk = modelo;
       state.finalReportChunks.summary = parsed as SessionState['finalReportChunks']['summary'];
     } else {
-      const { parsed, tokensUsed } = await generateChunk(apiKey, state, 'breakdown', {
+      const g = await generateChunk(apiKey, state, 'breakdown', {
         start: chunk.start,
         end: chunk.end,
       });
+      const { parsed, tokensUsed, modelo } = g;
+      await registrar(g);
       tokensUsedThisChunk = tokensUsed;
+      modeloChunk = modelo;
       const questionsData = (parsed as { questions_breakdown?: unknown[] }).questions_breakdown ?? [];
       // FIX (9 sept 2026): mapear snake_case (Anthropic JSON) → camelCase
       // (TS interfaces). El PDF renderer accede a `qb.questionNumber` pero
@@ -562,12 +604,21 @@ async function processOneChunk(
     const remaining = chunksNeeded.length - 1;
     return {
       ok: true,
-      status: `chunk_done · ${chunk.type}${chunk.type === 'breakdown' ? ` ${chunk.start}-${chunk.end}` : ''} · ${remaining} restantes · ${tokensUsedThisChunk}t (total ${budgetPost.totalTokens}t)`,
+      status: `chunk_done · ${chunk.type}${chunk.type === 'breakdown' ? ` ${chunk.start}-${chunk.end}` : ''} · ${remaining} restantes · ${tokensUsedThisChunk}t (total ${budgetPost.totalTokens}t) · ${modeloChunk}`,
     };
   } catch (err) {
     pending.attempts += 1;
     const errMsg = err instanceof Error ? err.message : String(err);
     console.error(`[pending-cron] chunk failed for ${pending.sessionId}:`, errMsg);
+    // 6 nov 2026: también se registra la respuesta que llegó pero no se pudo leer como JSON.
+    await registrarModeloD1(env.SIMULATOR_METRICS_DB as D1Database | undefined, {
+      ruta: chunk.type === 'summary' ? 'chunk_summary' : 'chunk_breakdown',
+      ok: false,
+      modeloPedido: MODEL,
+      error: err instanceof AnthropicRefusalError ? 'refusal' : err instanceof AnthropicError ? err.status : err instanceof SyntaxError ? 'parse' : 'otro',
+      sessionId: state.sessionId,
+      esPrueba: Boolean(state.esPrueba),
+    });
 
     // Kill switch balance: si Anthropic devolvió 402/403, pausar TODO el
     // Anthropic global por 15 min. Evita que las próximas corridas del cron

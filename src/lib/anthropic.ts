@@ -3,6 +3,10 @@
  * Usa fetch nativo de Workers, sin SDK para mantener bundle pequeño y zero deps.
  *
  * Docs: https://docs.anthropic.com/en/api/messages
+ *
+ * 6 nov 2026: Haiku 4.5 → Haiku 5.5 (`claude-haiku-5-5`). Las diferencias por modelo viven en
+ * construirCuerpo(); el respaldo temporal a Haiku 4.5, en chatCompletion(). Prueba offline:
+ * `node scripts/test-anthropic-body.mjs`.
  */
 
 export interface ChatMessage {
@@ -10,22 +14,56 @@ export interface ChatMessage {
   content: string;
 }
 
+/** Modelo Haiku vigente (6 nov 2026). */
+export const HAIKU = 'claude-haiku-5-5';
+/** Respaldo temporal: se usa solo si Haiku 5.5 responde 4xx/5xx. Quitar cuando 5.5 esté estable. */
+export const HAIKU_RESPALDO = 'claude-haiku-4-5';
+
+export type Esfuerzo = 'low' | 'medium' | 'high';
+
 export interface ChatCompletionOptions {
   apiKey: string;
-  /** Default: claude-haiku-4-5-20251001 */
+  /** Default: claude-haiku-5-5 */
   model?: string;
   /** System prompt (top-level, no se manda como mensaje) */
   system: string;
   messages: ChatMessage[];
-  /** 0..1, default 0.3 para outputs estructurados */
+  /**
+   * 0..1, default 0.3. Solo se manda a modelos que lo aceptan (Haiku 4.5, también en el respaldo).
+   * Haiku 5.5 y Sonnet 5.5 responden 400 con un valor distinto del default, así que no se envía.
+   */
   temperature?: number;
-  /** Required. Default 4000 */
+  /** Required. Default 4000. Es el tope para el modelo principal (ya con el margen de Haiku 5.5). */
   maxTokens?: number;
+  /**
+   * Haiku 5.5 (6 nov 2026): nivel de esfuerzo (`output_config.effort`). Default 'low'. Se ignora en
+   * modelos sin effort (Haiku 4.5).
+   */
+  effort?: Esfuerzo;
+  /**
+   * Haiku 5.5: 'adaptive' (default del modelo; el pensamiento cuenta contra max_tokens) o 'disabled'
+   * (permitido con effort low/medium/high). Se ignora en otros modelos.
+   */
+  thinking?: 'adaptive' | 'disabled';
+  /**
+   * Haiku 5.5: JSON schema para salidas estructuradas (`output_config.format`). Sustituye al prefill
+   * `{`. En el respaldo a Haiku 4.5 no se manda: ahí vuelven el prefill y la temperatura.
+   */
+  jsonSchema?: Record<string, unknown>;
+  /**
+   * Prefill del asistente (p. ej. `{`). Solo se agrega en modelos que lo aceptan (Haiku 4.5, en el
+   * respaldo); Haiku 5.5 responde 400 con un prefill. Si se usó, la respuesta lo trae en `prefill`
+   * para que quien llama lo anteponga al texto.
+   */
+  prefill?: string;
+  /** Tope de tokens para el respaldo a Haiku 4.5 (el valor de antes). Default: maxTokens. */
+  maxTokensRespaldo?: number;
   /**
    * Timeout del fetch a Anthropic en milisegundos. Default 85000 (85s) para
    * dejar margen antes del gateway timeout de Cloudflare (100s). Si el fetch
    * excede este timeout, se aborta y se lanza AnthropicError con status 524
    * (retryable). Agregado 2 sept 2026 tras sesión 27d9355c.
+   * 6 nov 2026: el respaldo a Haiku 4.5 usa solo el tiempo que sobra de este mismo tope.
    */
   timeoutMs?: number;
   /**
@@ -42,13 +80,21 @@ export interface AnthropicResponse {
   id: string;
   type: string;
   role: string;
+  /** Modelo que respondió según la API (con el respaldo, el id de Haiku 4.5). */
   model: string;
   content: Array<{ type: string; text?: string }>;
   stop_reason: string;
+  stop_details?: { category?: string } | null;
   usage: {
     input_tokens: number;
     output_tokens: number;
   };
+  /** Agregado por este wrapper: el prefill que se mandó (solo en el respaldo). Anteponerlo al texto. */
+  prefill?: string;
+  /** Agregado por este wrapper: true si respondió el respaldo (Haiku 4.5 o Sonnet 4.5). */
+  respaldo?: boolean;
+  /** Agregado por este wrapper: status HTTP del modelo principal que activó el respaldo. */
+  statusRespaldo?: number;
 }
 
 /**
@@ -56,33 +102,37 @@ export interface AnthropicResponse {
  * Claude Sonnet 5.5 rechaza con 400 un `temperature` distinto del default y piensa por default
  * (los tokens de pensamiento cuentan contra max_tokens y suman latencia). `between_tools` apaga
  * el pensamiento, que es como se comportaba Sonnet 4.5 en estas llamadas.
+ *
+ * 6 nov 2026, Haiku 5.5: sin temperature/top_p/top_k ni prefill (400 los dos), effort explícito,
+ * pensamiento adaptive o disabled según la llamada, y el JSON con `output_config.format`.
  */
-function parametrosDeModelo(model: string, temperature: number): Record<string, unknown> {
+function parametrosDeModelo(model: string, options: ChatCompletionOptions): Record<string, unknown> {
   if (model === 'claude-sonnet-5-5') return { thinking: { type: 'between_tools' } };
-  return { temperature };
-}
-
-export class AnthropicError extends Error {
-  constructor(public status: number, message: string, public body?: unknown) {
-    super(message);
-    this.name = 'AnthropicError';
+  if (model === HAIKU) {
+    const outputConfig: Record<string, unknown> = { effort: options.effort ?? 'low' };
+    if (options.jsonSchema) outputConfig.format = { type: 'json_schema', schema: options.jsonSchema };
+    return {
+      thinking: { type: options.thinking ?? 'adaptive' },
+      output_config: outputConfig,
+    };
   }
+  return { temperature: options.temperature ?? 0.3 };
 }
 
-export async function chatCompletion(
-  options: ChatCompletionOptions,
-): Promise<AnthropicResponse> {
-  const {
-    apiKey,
-    model = 'claude-haiku-4-5-20251001',
-    system,
-    messages,
-    temperature = 0.3,
-    maxTokens = 4000,
-    timeoutMs = 85000, // 85s · deja margen contra el gateway timeout de Cloudflare (100s)
-    cacheSystem = false,
-  } = options;
+/** Modelos que aceptan un prefill del asistente (6 nov 2026). */
+function aceptaPrefill(model: string): boolean {
+  return model !== HAIKU && model !== 'claude-sonnet-5-5';
+}
 
+/**
+ * Arma el cuerpo de /v1/messages para un modelo. Puro (sin fetch), para probarlo offline.
+ * `model` permite pedir el cuerpo del respaldo con las mismas opciones.
+ */
+export function construirCuerpo(
+  options: ChatCompletionOptions,
+  model: string = options.model ?? HAIKU,
+): Record<string, unknown> {
+  const { system, messages, maxTokens = 4000, cacheSystem = false, prefill } = options;
   // Anthropic prompt caching: si cacheSystem=true, mandamos system como array
   // con cache_control ephemeral. Anthropic cachea automáticamente y responde
   // en llamadas subsecuentes con cache_read_input_tokens (10% del costo del
@@ -90,14 +140,61 @@ export async function chatCompletion(
   const systemField = cacheSystem
     ? [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }]
     : system;
-
-  const body = {
+  const usarPrefill = Boolean(prefill) && aceptaPrefill(model);
+  const esRespaldo = model === HAIKU_RESPALDO && options.model === HAIKU;
+  return {
     model,
     system: systemField,
-    messages,
-    ...parametrosDeModelo(model, temperature),
-    max_tokens: maxTokens,
+    messages: usarPrefill ? [...messages, { role: 'assistant', content: prefill }] : messages,
+    ...parametrosDeModelo(model, options),
+    max_tokens: esRespaldo ? (options.maxTokensRespaldo ?? maxTokens) : maxTokens,
   };
+}
+
+export class AnthropicError extends Error {
+  status: number;
+  body?: unknown;
+  // Sin parameter properties (`public status`) para que Node importe este .ts sin compilar en las pruebas.
+  constructor(status: number, message: string, body?: unknown) {
+    super(message);
+    this.name = 'AnthropicError';
+    this.status = status;
+    this.body = body;
+  }
+}
+
+/**
+ * Haiku 5.5 y Sonnet 5.5 pueden negarse por sus clasificadores de seguridad: HTTP 200 con stop_reason
+ * "refusal" (6 nov 2026). Quien llama distingue el caso con `instanceof AnthropicRefusalError` o
+ * `codigo === 'refusal'` y muestra su mensaje genérico en español (nunca "Anthropic API error 200"). Se lanza como error para que siga el mismo camino que cualquier otra falla. Status 200:
+ * no está en RETRYABLE_STATUS ni activa el kill switch (402/403) ni el respaldo (que solo mira 4xx/5xx).
+ * No se reintenta con Haiku 4.5 a propósito: sería saltarse el clasificador.
+ */
+export class AnthropicRefusalError extends AnthropicError {
+  readonly codigo = 'refusal';
+  category?: string;
+  constructor(model: string, category?: string) {
+    super(200, `Anthropic refusal (${model}${category ? `, ${category}` : ''})`, { stop_reason: 'refusal', category });
+    this.name = 'AnthropicRefusalError';
+    this.category = category;
+  }
+}
+
+function revisarRechazo(response: AnthropicResponse): void {
+  if (response.stop_reason === 'refusal') {
+    const category = response.stop_details?.category;
+    console.warn('[anthropic-refusal]', JSON.stringify({ model: response.model, category }));
+    throw new AnthropicRefusalError(response.model, category);
+  }
+}
+
+/** Una sola petición sin streaming, sin respaldo. */
+async function enviarUnaVez(
+  options: ChatCompletionOptions,
+  model: string,
+  timeoutMs: number,
+): Promise<AnthropicResponse> {
+  const body = construirCuerpo(options, model);
 
   // AbortController con timeout explícito. Si Anthropic tarda más de timeoutMs,
   // abortamos y convertimos el error en AnthropicError 524 (retryable) en vez
@@ -110,7 +207,7 @@ export async function chatCompletion(
     response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'x-api-key': apiKey,
+        'x-api-key': options.apiKey,
         'anthropic-version': '2023-06-01',
         'content-type': 'application/json',
       },
@@ -154,7 +251,60 @@ export async function chatCompletion(
     );
   }
 
-  return (await response.json()) as AnthropicResponse;
+  const data = (await response.json()) as AnthropicResponse;
+  if (options.prefill && (body.messages as ChatMessage[]).length > options.messages.length) {
+    data.prefill = options.prefill;
+  }
+  return data;
+}
+
+/**
+ * Tiempo mínimo que debe quedar del timeout para intentar el respaldo. 12 s (revisión 6 nov 2026): en las rutas
+ * de 25 s (reporte sync) y 28 s (chunks), un respaldo con menos tiempo casi seguro se corta a la mitad.
+ */
+export const RESPALDO_MIN_MS = 12000;
+
+/**
+ * Respaldo temporal (6 nov 2026, mismo patrón que Sonnet 5.5): si Haiku 5.5 falla con 4xx/5xx, se repite
+ * una vez con Haiku 4.5 y los parámetros de antes (temperature y prefill). No aplica a 401/402/403 (cuenta o
+ * saldo: Haiku 4.5 fallaría igual y el kill switch necesita ver el status original), a los rechazos de
+ * seguridad, ni cuando ya no queda tiempo del timeout (p. ej. tras un 524 del cliente). Quitar cuando
+ * Haiku 5.5 lleve unas semanas sin `[anthropic-fallback]` en los logs.
+ */
+export function debeUsarRespaldo(options: ChatCompletionOptions, err: unknown, msRestantes: number): boolean {
+  return (
+    (options.model ?? HAIKU) === HAIKU &&
+    err instanceof AnthropicError &&
+    !(err instanceof AnthropicRefusalError) &&
+    err.status >= 400 &&
+    ![401, 402, 403].includes(err.status) &&
+    msRestantes >= RESPALDO_MIN_MS
+  );
+}
+
+export async function chatCompletion(
+  options: ChatCompletionOptions,
+): Promise<AnthropicResponse> {
+  const model = options.model ?? HAIKU;
+  const timeoutMs = options.timeoutMs ?? 85000; // 85s · deja margen contra el gateway timeout de Cloudflare (100s)
+  const t0 = Date.now();
+  let response: AnthropicResponse;
+  try {
+    response = await enviarUnaVez(options, model, timeoutMs);
+  } catch (err) {
+    const msRestantes = timeoutMs - (Date.now() - t0);
+    if (!debeUsarRespaldo(options, err, msRestantes)) throw err;
+    const e = err as AnthropicError;
+    console.warn(
+      `[anthropic-fallback] ${HAIKU} respondió ${e.status}; reintento con ${HAIKU_RESPALDO}`,
+      JSON.stringify(e.body ?? null).slice(0, 300),
+    );
+    response = await enviarUnaVez({ ...options, model: HAIKU }, HAIKU_RESPALDO, msRestantes);
+    response.respaldo = true;
+    response.statusRespaldo = e.status;
+  }
+  revisarRechazo(response);
+  return response;
 }
 
 /**
@@ -227,7 +377,11 @@ export async function retryableChatCompletion(
         (err.status === 400 || err.status === 404)
       ) {
         console.warn(`[anthropic-fallback] ${context}: claude-sonnet-5-5 respondió ${err.status}; reintento con claude-sonnet-4-5`, JSON.stringify(err.body).slice(0, 300));
-        return chatCompletion({ ...options, model: 'claude-sonnet-4-5' });
+        // 6 nov 2026: se marca en la respuesta para que quien llama lo registre en D1 (evento llm_modelo).
+        const r = await chatCompletion({ ...options, model: 'claude-sonnet-4-5' });
+        r.respaldo = true;
+        r.statusRespaldo = err.status;
+        return r;
       }
 
       if (!willRetry) {
@@ -275,22 +429,12 @@ export async function chatCompletionStream(
 ): Promise<AnthropicResponse> {
   const {
     apiKey,
-    model = 'claude-haiku-4-5-20251001',
-    system,
-    messages,
-    temperature = 0.3,
-    maxTokens = 4000,
+    model = HAIKU,
     timeoutMs = 180000, // 180s · con streaming Cloudflare no corta, así que más margen
   } = options;
 
-  const body = {
-    model,
-    system,
-    messages,
-    ...parametrosDeModelo(model, temperature),
-    max_tokens: maxTokens,
-    stream: true,
-  };
+  // 6 nov 2026: mismo cuerpo por modelo que chatCompletion (sin respaldo: hoy nadie usa el streaming).
+  const body = { ...construirCuerpo(options, model), stream: true };
 
   const controller = new AbortController();
   const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
@@ -420,7 +564,7 @@ export async function chatCompletionStream(
   }
 
   const fullText = textParts.join('');
-  return {
+  const result: AnthropicResponse = {
     id: messageMeta.id ?? '',
     type: messageMeta.type ?? 'message',
     role: messageMeta.role ?? 'assistant',
@@ -429,6 +573,9 @@ export async function chatCompletionStream(
     stop_reason: messageMeta.stop_reason ?? 'end_turn',
     usage: messageMeta.usage ?? { input_tokens: 0, output_tokens: 0 },
   };
+  // Solo se acumulan text_delta: los bloques de pensamiento de Haiku 5.5 no entran al texto.
+  revisarRechazo(result);
+  return result;
 }
 
 /**

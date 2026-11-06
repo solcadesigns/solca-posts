@@ -78,8 +78,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
         paginas: job.paginas,
       });
       return o.ok
-        ? { ok: true, result: o.result, parcial: o.parcial, outputTokens: o.outputTokens, ms: o.ms }
-        : { ok: false, status: o.status, outputTokens: o.outputTokens, ms: o.ms };
+        ? { ok: true, result: o.result, parcial: o.parcial, outputTokens: o.outputTokens, ms: o.ms, modelo: o.modelo }
+        : { ok: false, status: o.status, outputTokens: o.outputTokens, ms: o.ms, modelo: o.modelo };
     },
     sendAnalysis: (job, result) =>
       sendCvAnalysisEmail(token, job.email, result, { rolFormulario: job.rolObjetivo, marketing: job.marketing, reintento: true }),
@@ -105,6 +105,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
         intentoN: job.attempts,
         outputTokens: job.outputTokens,
         ms: job.ms,
+        modelo: job.modelo,
         parcial: job.parcial,
         conteos,
         correo: typeof extra.correo === 'boolean' ? extra.correo : undefined,

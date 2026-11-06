@@ -255,13 +255,14 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
 
   if (!outcome.ok) {
     await saveAttempt(
-      { ...attemptBase, status: outcome.status, httpStatus: outcome.httpStatus, outputTokens: outcome.outputTokens, ms: outcome.ms },
-      { status: outcome.status, outputTokens: outcome.outputTokens, ms: outcome.ms },
+      { ...attemptBase, status: outcome.status, httpStatus: outcome.httpStatus, outputTokens: outcome.outputTokens, ms: outcome.ms, modelo: outcome.modelo },
+      { status: outcome.status, outputTokens: outcome.outputTokens, ms: outcome.ms, modelo: outcome.modelo },
     );
     // 6 nov 2026 (bloque B): en vez de pedir que lo intente otra vez, se guarda un trabajo pendiente (KV, 48 h
     // máximo) que /api/cv-process-pending reintenta; el análisis llega por correo. Si no se puede guardar, se cae
     // al mensaje de error de antes.
-    if (limitsKV) {
+    // 6 nov 2026: un rechazo de seguridad no se encola (se volvería a rechazar); va directo al mensaje genérico.
+    if (limitsKV && outcome.status !== 'refusal') {
       try {
         await saveCvJob(
           limitsKV,
@@ -300,6 +301,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     }
     const fallback: Record<typeof outcome.status, { status: number; message: string }> = {
       llm_error: { status: 502, message: 'No pudimos completar el análisis en este momento. Intenta de nuevo en un minuto.' },
+      refusal: { status: 502, message: 'No pudimos completar el análisis en este momento. Intenta de nuevo en un minuto.' },
       parse_error: { status: 500, message: 'Recibimos una respuesta inesperada. Intenta de nuevo o pega el CV con saltos de línea limpios.' },
       incomplete_result: { status: 500, message: 'El análisis quedó incompleto. Intenta de nuevo; si persiste, asegúrate de pegar el CV completo.' },
     };
@@ -319,9 +321,11 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
       nSolido: outcome.conteos.solido,
       nNoEvaluable: outcome.conteos.no_evaluable,
       nAjustes: outcome.nAjustes,
+      modelo: outcome.modelo,
     },
     {
       status: 'ok',
+      modelo: outcome.modelo,
       outputTokens: outcome.outputTokens,
       ms: outcome.ms,
       parcial: outcome.parcial,

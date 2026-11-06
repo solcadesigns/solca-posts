@@ -5,7 +5,7 @@
  * Recibe: { cvText: string } · el texto plano del CV (cliente lo extrajo con PDF.js)
  * Devuelve: { ok: true, cvSummary: CvSummary } o { ok: false, error }
  *
- * Modelo: Haiku 4.5 (más barato y suficiente para extracción).
+ * Modelo: Haiku 5.5 desde el 6 nov 2026 (antes Haiku 4.5), con respaldo temporal a 4.5 en lib/anthropic.ts.
  *
  * Privacidad:
  *  - El CV completo NUNCA se guarda en KV.
@@ -14,18 +14,53 @@
  */
 
 import type { APIRoute } from 'astro';
-import { chatCompletion, extractText, AnthropicError } from '../../lib/anthropic';
+import { chatCompletion, extractText, AnthropicError, AnthropicRefusalError, HAIKU } from '../../lib/anthropic';
 import { CV_PARSE_SYSTEM_PROMPT, buildCvParseUserMessage } from '../../lib/cv-parse-prompt';
 import type { CvSummary } from '../../lib/simulator-types';
+import { registrarModeloD1 } from '../../lib/eventos-d1';
+import { esBanderaInterna } from '../../lib/simulator-test-sessions';
 
 export const prerender = false;
 
-const MODEL = 'claude-haiku-4-5-20251001';
-const TEMPERATURE = 0.1; // determinista para extracción
-const MAX_TOKENS = 2000;
+// 6 nov 2026: Haiku 4.5 → Haiku 5.5. Extracción simple: pensamiento apagado (disabled, válido con effort low)
+// para no sumar latencia al inicio de la sesión. Sin temperature (400 en 5.5); el JSON lo fija el esquema.
+// max_tokens 2000 → 2600 por el tokenizer nuevo (~30% más tokens; sin pensamiento no hace falta más).
+const MODEL = HAIKU;
+const TEMPERATURE = 0.1; // solo para el respaldo a Haiku 4.5 (determinista para extracción)
+const MAX_TOKENS = 2600;
+const MAX_TOKENS_RESPALDO = 2000;
+
+const listaDeTexto = { type: 'array', items: { type: 'string' } };
+/** Esquema de salidas estructuradas con la forma que pide CV_PARSE_SYSTEM_PROMPT (6 nov 2026). */
+const CV_PARSE_JSON_SCHEMA: Record<string, unknown> = {
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    'formacion',
+    'experiencia',
+    'tecnicas',
+    'areas_tematicas',
+    'publicaciones_count',
+    'idiomas_declarados',
+    'gaps_visibles',
+    'fortalezas_pharma_evidentes',
+  ],
+  properties: {
+    formacion: { type: 'string' },
+    experiencia: listaDeTexto,
+    tecnicas: listaDeTexto,
+    areas_tematicas: listaDeTexto,
+    publicaciones_count: { anyOf: [{ type: 'integer' }, { type: 'null' }] },
+    idiomas_declarados: listaDeTexto,
+    gaps_visibles: listaDeTexto,
+    fortalezas_pharma_evidentes: listaDeTexto,
+  },
+};
 
 interface ParseRequest {
   cvText: string;
+  // 6 nov 2026: bandera interna (?interno=1) para marcar el evento llm_modelo como prueba.
+  interno?: boolean;
 }
 
 interface ParseResponse {
@@ -129,14 +164,33 @@ export const POST: APIRoute = async ({ request, locals }) => {
     );
   }
 
+  const db = env.SIMULATOR_METRICS_DB as D1Database | undefined;
+  const t0 = Date.now();
   try {
     const response = await chatCompletion({
       apiKey,
       model: MODEL,
       system: CV_PARSE_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: buildCvParseUserMessage(cvText) }],
-      temperature: TEMPERATURE,
+      effort: 'low',
+      thinking: 'disabled',
+      jsonSchema: CV_PARSE_JSON_SCHEMA,
       maxTokens: MAX_TOKENS,
+      temperature: TEMPERATURE,
+      maxTokensRespaldo: MAX_TOKENS_RESPALDO,
+    });
+    if (response.respaldo) console.warn('[simulator-cv-parse] respondió el respaldo', response.model);
+    // 6 nov 2026: evento llm_modelo en D1 (sin texto del CV).
+    await registrarModeloD1(db, {
+      ruta: 'cv_parse',
+      esPrueba: esBanderaInterna(body.interno),
+      ok: true,
+      modeloPedido: MODEL,
+      modelo: response.model,
+      respaldo: Boolean(response.respaldo),
+      statusRespaldo: response.statusRespaldo,
+      outputTokens: response.usage?.output_tokens,
+      ms: Date.now() - t0,
     });
 
     const rawText = extractText(response);
@@ -152,6 +206,20 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const cvSummary = normalizeCvSummary(parsedJson as Record<string, unknown>);
     return jsonResponse({ ok: true, cvSummary });
   } catch (err) {
+    if (err instanceof AnthropicError) {
+      await registrarModeloD1(db, {
+        ruta: 'cv_parse',
+      esPrueba: esBanderaInterna(body.interno),
+        ok: false,
+        modeloPedido: MODEL,
+        error: err instanceof AnthropicRefusalError ? 'refusal' : err.status,
+        ms: Date.now() - t0,
+      });
+    }
+    if (err instanceof AnthropicRefusalError) {
+      console.error('Anthropic refusal in cv-parse:', err.body);
+      return jsonResponse({ ok: false, error: 'No se pudo analizar el CV. Intenta de nuevo.' }, 502);
+    }
     if (err instanceof AnthropicError) {
       console.error('Anthropic error in cv-parse:', err.status, err.body);
       return jsonResponse({ ok: false, error: `Anthropic API error ${err.status}` }, 502);

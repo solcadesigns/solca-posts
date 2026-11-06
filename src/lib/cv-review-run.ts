@@ -17,10 +17,11 @@ import {
   parseJsonLenient,
   validateCvReview,
   countByEstado,
+  CV_REVIEW_JSON_SCHEMA,
   type CvReviewResult,
   type Estado,
 } from './cv-review-rubric';
-import { chatCompletion, extractText, AnthropicError } from './anthropic';
+import { chatCompletion, extractText, AnthropicError, AnthropicRefusalError, HAIKU } from './anthropic';
 import { incrementCvSubmitCount } from './rate-limit';
 import { sendEmail, sendEmailWithTemplate, PostmarkError } from './postmark';
 import type { UtmRecord } from './utm';
@@ -52,13 +53,17 @@ export type CvAnalysisOutcome =
       outputTokens?: number;
       ms: number;
       usage: unknown;
+      /** Modelo que respondió (6 nov 2026: Haiku 5.5, o Haiku 4.5 si entró el respaldo). */
+      modelo?: string;
     }
   | {
       ok: false;
-      status: 'llm_error' | 'parse_error' | 'incomplete_result';
+      /** 'refusal' (6 nov 2026): rechazo de seguridad del modelo. No se reintenta. */
+      status: 'llm_error' | 'parse_error' | 'incomplete_result' | 'refusal';
       httpStatus?: number;
       outputTokens?: number;
       ms: number;
+      modelo?: string;
     };
 
 /** Una sola llamada al modelo (sin reintentos internos) + parseo tolerante + validación v2. */
@@ -75,20 +80,33 @@ export async function runCvAnalysis(apiKey: string, input: CvAnalysisInput): Pro
   const t0 = Date.now();
   let completion;
   try {
+    // 6 nov 2026: Haiku 4.5 → Haiku 5.5. Sin temperature ni prefill (400 en 5.5); el JSON lo fija el esquema
+    // (salidas estructuradas). Pensamiento adaptive con effort low: es un juicio sobre 20 criterios con citas
+    // literales, así que se deja pensar un poco donde lo necesite; low cuida la latencia de la página (85 s).
+    // max_tokens 7000 → 12000: ~30% más tokens por el tokenizer nuevo (≈9100) + margen para el pensamiento,
+    // que cuenta contra el tope. Si 5.5 falla con 4xx/5xx, el respaldo (lib/anthropic.ts) repite con
+    // Haiku 4.5, temperature 0.3, prefill "{" y el tope de antes.
     completion = await chatCompletion({
       apiKey,
-      model: 'claude-haiku-4-5-20251001',
+      model: HAIKU,
       system: CV_REVIEW_SYSTEM_PROMPT,
+      effort: 'low',
+      thinking: 'adaptive',
+      jsonSchema: CV_REVIEW_JSON_SCHEMA,
+      maxTokens: 12000,
+      // Solo para el respaldo a Haiku 4.5:
       temperature: 0.3,
-      // 6 nov 2026 (v2): más campos de salida (estado, evidencia, prioridades, reescrituras). 5000 → 7000.
-      // El aumento real se mide con output_tokens en cv_attempt.
-      maxTokens: 7000,
-      messages: [
-        { role: 'user', content: userMessage },
-        { role: 'assistant', content: '{' }, // prefill: fuerza JSON limpio
-      ],
+      prefill: '{',
+      maxTokensRespaldo: 7000,
+      messages: [{ role: 'user', content: userMessage }],
     });
   } catch (err) {
+    if (err instanceof AnthropicRefusalError) {
+      // 6 nov 2026: el rechazo llega como HTTP 200. Status propio para no encolar un reintento que se volvería
+      // a rechazar; quien llama muestra el mensaje genérico y lo registra en cv_attempt.
+      console.error('Anthropic refusal', err.body);
+      return { ok: false, status: 'refusal', ms: Date.now() - t0, modelo: HAIKU };
+    }
     if (err instanceof AnthropicError) console.error('Anthropic error', err.status, err.body);
     else console.error('Unexpected error calling Anthropic', err);
     return {
@@ -100,12 +118,14 @@ export async function runCvAnalysis(apiKey: string, input: CvAnalysisInput): Pro
   }
   const ms = Date.now() - t0;
   const outputTokens = completion.usage?.output_tokens;
-  // El prefill "{" no viene en la respuesta: se antepone.
-  const jsonString = '{' + extractText(completion).trim();
+  const modelo = completion.model;
+  // Con el esquema, el texto ya es el JSON completo. Solo en el respaldo (prefill "{") hay que anteponerlo;
+  // extractText lee los bloques de tipo text, nunca por posición (5.5 puede empezar con bloques de pensamiento).
+  const jsonString = (completion.prefill ?? '') + extractText(completion).trim();
   const parsedLenient = parseJsonLenient(jsonString);
   if (!parsedLenient) {
     console.error('LLM returned non-JSON:', jsonString.slice(0, 300));
-    return { ok: false, status: 'parse_error', outputTokens, ms };
+    return { ok: false, status: 'parse_error', outputTokens, ms, modelo };
   }
   const validated = validateCvReview(parsedLenient.value, {
     cv: input.cv,
@@ -115,7 +135,7 @@ export async function runCvAnalysis(apiKey: string, input: CvAnalysisInput): Pro
   });
   if (!validated) {
     console.error('LLM returned malformed structure');
-    return { ok: false, status: 'incomplete_result', outputTokens, ms };
+    return { ok: false, status: 'incomplete_result', outputTokens, ms, modelo };
   }
   if (Object.keys(validated.report.issues).length) {
     console.log('cv-review:ajustes', JSON.stringify({ ...validated.report.issues, reparado: parsedLenient.repaired }));
@@ -129,6 +149,7 @@ export async function runCvAnalysis(apiKey: string, input: CvAnalysisInput): Pro
     outputTokens,
     ms,
     usage: completion.usage,
+    modelo,
   };
 }
 
@@ -410,6 +431,8 @@ export interface CvAttemptRec {
   intentoN?: number;
   /** El correo (análisis o disculpa) salió. Solo en estados finales. */
   correo?: boolean;
+  /** Modelo que respondió (6 nov 2026, migración a Haiku 5.5 con respaldo a 4.5). */
+  modelo?: string;
 }
 
 export async function recordCvAttemptD1(db: D1Database | undefined, ctx: CvAttemptCtx, rec: CvAttemptRec): Promise<void> {
@@ -445,6 +468,7 @@ export async function recordCvAttemptD1(db: D1Database | undefined, ctx: CvAttem
       n_ajustes: rec.nAjustes,
       intento_n: rec.intentoN,
       correo: rec.correo === undefined ? undefined : rec.correo ? 1 : 0,
+      modelo: rec.modelo ? rec.modelo.slice(0, 40) : undefined,
     },
   });
 }
