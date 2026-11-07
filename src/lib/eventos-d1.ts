@@ -91,7 +91,8 @@ export async function guardarEventoD1(
 export async function registrarModeloD1(
   db: D1Database | undefined,
   r: {
-    ruta: 'chunk_summary' | 'chunk_breakdown' | 'sync_report' | 'cv_parse' | 'init' | 'next_question';
+    // 'cv_medida' (6 nov 2026): redacción de CV a la medida con Sonnet 5.5; se guarda con product 'cv-medida'.
+    ruta: 'chunk_summary' | 'chunk_breakdown' | 'sync_report' | 'cv_parse' | 'init' | 'next_question' | 'cv_medida';
     ok: boolean;
     /** Modelo que se pidió (p. ej. claude-sonnet-5-5). */
     modeloPedido?: string;
@@ -112,7 +113,7 @@ export async function registrarModeloD1(
   await guardarEventoD1(db, `llmm:${ts}:${r.ruta}:${crypto.randomUUID().slice(0, 8)}`, {
     ts,
     event: 'llm_modelo',
-    product: 'simulador',
+    product: r.ruta === 'cv_medida' ? 'cv-medida' : 'simulador',
     interno: r.esPrueba || undefined,
     extra: {
       ruta: r.ruta,

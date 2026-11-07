@@ -129,6 +129,8 @@ interface WeeklyReport {
   vacantes: VacantesStats | null;
   // Ventas de Hotmart por webhook (28 oct 2026) · D1 hotmart_eventos. Sin datos antes de activar el webhook.
   hotmart: HotmartStats | null;
+  // 6 nov 2026: CV a la medida · embudo cvmedida_* (D1 eventos, sin internos) y ventas con producto 'cv-medida'.
+  cv_medida: CvMedidaStats | null;
   // 30 oct 2026 (P2/P1/P3/P6): leads únicos con fuente, ventas Stripe+Hotmart unidas a lead, cohortes de valor.
   // Ver src/lib/report-atribucion.ts para las definiciones.
   atribucion: AtribucionReport | null;
@@ -975,6 +977,86 @@ interface HotmartFila {
   moneda_c_afiliado: string | null;
   comision_productor: number | null;
   moneda_c: string | null;
+}
+
+// ── CV a la medida (6 nov 2026) ────────────────────────────────────────────────────────────────
+const CVM_EVENTOS = [
+  'cvmedida_inicio',
+  'cvmedida_checkout',
+  'cvmedida_pagado',
+  'cvmedida_generado',
+  'cvmedida_entregado',
+  'cvmedida_descarga',
+  'cvmedida_falla',
+  'cvmedida_reembolso',
+] as const;
+
+interface CvMedidaStats {
+  embudo_7d: Record<string, number>;
+  embudo_semana_anterior: Record<string, number>;
+  ventas_7d: number;              // ventas live, sin internas ni de monto 0 (cupón al 100%), pagadas o reembolsadas
+  ingreso_bruto_7d: number;       // suma de monto (MXN, después de cupones)
+  ingreso_neto_7d: number | null; // suma de neto si Stripe ya lo tenía
+  reembolsos_7d: number;          // ventas de la semana ya marcadas como reembolsadas
+  por_idioma_7d: Record<string, number>; // de cvmedida_generado
+  por_rol_7d: Record<string, number>;    // de cvmedida_generado
+  fallas_por_motivo_7d: Record<string, number>;
+  modelo_7d: Record<string, number>;     // modelo que generó (respaldo visible aquí)
+}
+
+async function buildCvMedida(db: D1Database, desde: string, hasta: string, desdePrev: string): Promise<CvMedidaStats> {
+  const lista = CVM_EVENTOS.map((e) => `'${e}'`).join(',');
+  const [cur, prev, gen, fallas, ventas] = await db.batch([
+    db.prepare(`SELECT evento, COUNT(*) AS n FROM eventos WHERE evento IN (${lista}) AND interno = 0 AND ts >= ?1 AND ts < ?2 GROUP BY evento`).bind(desde, hasta),
+    db.prepare(`SELECT evento, COUNT(*) AS n FROM eventos WHERE evento IN (${lista}) AND interno = 0 AND ts >= ?1 AND ts < ?2 GROUP BY evento`).bind(desdePrev, desde),
+    db
+      .prepare(
+        `SELECT json_extract(extra, '$.idioma') AS idioma, json_extract(extra, '$.rol') AS rol, json_extract(extra, '$.modelo') AS modelo, COUNT(*) AS n
+         FROM eventos WHERE evento = 'cvmedida_generado' AND interno = 0 AND ts >= ?1 AND ts < ?2 GROUP BY 1, 2, 3`,
+      )
+      .bind(desde, hasta),
+    db
+      .prepare(`SELECT json_extract(extra, '$.motivo') AS motivo, COUNT(*) AS n FROM eventos WHERE evento = 'cvmedida_falla' AND interno = 0 AND ts >= ?1 AND ts < ?2 GROUP BY 1`)
+      .bind(desde, hasta),
+    db
+      .prepare(
+        `SELECT COUNT(*) AS n, COALESCE(SUM(monto), 0) AS bruto, SUM(neto) AS neto, SUM(CASE WHEN estado != 'pagada' THEN 1 ELSE 0 END) AS reemb
+         FROM ventas WHERE producto = 'cv-medida' AND interno = 0 AND livemode = 1 AND COALESCE(monto, 0) > 0 AND creado >= ?1 AND creado < ?2`,
+      )
+      .bind(desde, hasta),
+  ]);
+  const aMapa = (rows: unknown[] | undefined) => {
+    const out: Record<string, number> = Object.fromEntries(CVM_EVENTOS.map((e) => [e, 0]));
+    for (const r of (rows ?? []) as Array<{ evento: string; n: number }>) out[r.evento] = r.n;
+    return out;
+  };
+  const sumar = (m: Record<string, number>, k: unknown, n: number) => {
+    const key = typeof k === 'string' && k ? k : 'sin_dato';
+    m[key] = (m[key] ?? 0) + n;
+  };
+  const por_idioma_7d: Record<string, number> = {};
+  const por_rol_7d: Record<string, number> = {};
+  const modelo_7d: Record<string, number> = {};
+  for (const r of (gen.results ?? []) as Array<{ idioma: unknown; rol: unknown; modelo: unknown; n: number }>) {
+    sumar(por_idioma_7d, r.idioma, r.n);
+    sumar(por_rol_7d, r.rol, r.n);
+    sumar(modelo_7d, r.modelo, r.n);
+  }
+  const fallas_por_motivo_7d: Record<string, number> = {};
+  for (const r of (fallas.results ?? []) as Array<{ motivo: unknown; n: number }>) sumar(fallas_por_motivo_7d, r.motivo, r.n);
+  const v = ((ventas.results ?? [])[0] ?? {}) as { n?: number; bruto?: number; neto?: number | null; reemb?: number };
+  return {
+    embudo_7d: aMapa(cur.results),
+    embudo_semana_anterior: aMapa(prev.results),
+    ventas_7d: v.n ?? 0,
+    ingreso_bruto_7d: +(v.bruto ?? 0).toFixed(2),
+    ingreso_neto_7d: typeof v.neto === 'number' ? +v.neto.toFixed(2) : null,
+    reembolsos_7d: v.reemb ?? 0,
+    por_idioma_7d,
+    por_rol_7d,
+    fallas_por_motivo_7d,
+    modelo_7d,
+  };
 }
 
 interface HotmartStats {
@@ -1870,6 +1952,12 @@ export const GET: APIRoute = async ({ url, locals }) => {
       return null;
     }) : null;
 
+    // ── 4d-bis. CV a la medida (6 nov 2026) ──────────────────────
+    const cv_medida = simDb ? await buildCvMedida(simDb, weekAgoIso, nowIso, twoWeeksAgoIso).catch((err) => {
+      console.error('cv_medida stats failed', err);
+      return null;
+    }) : null;
+
     // ── 4e. Atribución de leads y ventas (30 oct 2026) ───────────
     const atribucion = await atrib.build(simDb, now).catch((err) => {
       console.error('atribucion failed', err);
@@ -2101,6 +2189,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
       market_survey,
       vacantes,
       hotmart,
+      cv_medida,
       atribucion,
       trafico_excluido: {
         eventos_internos_7d: funnel.eventos_internos_7d,

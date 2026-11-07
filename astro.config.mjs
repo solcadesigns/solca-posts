@@ -47,7 +47,9 @@ export default defineConfig({
         !page.includes('/admin') &&
         !page.includes('/simulador-entrevistas/sesion') &&
         !page.includes('/simulador-entrevistas/gracias') &&
-        !page.includes('/simulador-entrevistas/mis-reportes'),
+        !page.includes('/simulador-entrevistas/mis-reportes') &&
+        // 6 nov 2026: CV a la medida es noindex hasta que Oscar decida abrirlo.
+        !page.includes('/cv-a-la-medida'),
     }),
   ],
   vite: {

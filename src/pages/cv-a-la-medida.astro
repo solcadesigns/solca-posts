@@ -1,0 +1,302 @@
+---
+/**
+ * /cv-a-la-medida · CV a la medida (6 nov 2026). Producto de pago, noindex y sin enlaces desde el sitio hasta que
+ * Oscar decida abrirlo (decisión en ../consultoria/investigacion/2026-11-plan-revisor-cv.md).
+ *
+ * Flujo: formulario → /api/cv-medida-checkout (guarda el pedido 4 días y abre Stripe) → webhook al pagar →
+ * cola del cron → correo con el DOCX. Estados por query: ?pago=ok (después de pagar) y ?pago=cancelado.
+ * El PDF se lee en el navegador con pdf.js (mismo método que /revisar-cv); al servidor solo llega el texto.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { CONSENT_TEXT, CONSENT_COMMON, CONSENT_MSG, privacidadHtml } from '../lib/consent';
+import { CVM_PRECIO_TEXTO, CVM_MIN_CV, CVM_MAX_CV, CVM_MIN_VACANTE, CVM_MAX_VACANTE, CVM_MAX_TEXTO_LIBRE } from '../lib/cv-medida';
+
+export const prerender = false;
+
+const consent = CONSENT_TEXT['cv-medida'];
+const consentPrivacidadHtml = privacidadHtml('cv-medida');
+const pago = Astro.url.searchParams.get('pago');
+const estado = pago === 'ok' ? 'ok' : pago === 'cancelado' ? 'cancelado' : 'form';
+---
+<BaseLayout
+  title="CV a la medida de una vacante · Solca"
+  description="Tu CV reescrito para una vacante concreta, en Word y en español o inglés según la vacante, con un resumen de qué requisitos cumples."
+  noindex={true}
+>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <span class="dot"></span>
+      <span>Solca</span>
+    </a>
+    <div class="nav-links">
+      <a href="/#libros">Libros</a>
+      <a href="/#curso">Curso</a>
+      <a href="/revisar-cv">Revisar CV</a>
+      <a href="/#sobre">Sobre</a>
+      <a href="/contacto">Contacto</a>
+    </div>
+  </div>
+</nav>
+
+<section class="cvm-hero">
+  <div class="container cvm-hero-inner">
+    <h1 class="cvm-title">CV a la medida de <em>una vacante</em></h1>
+    <p class="cvm-lead">
+      Subes tu CV y pegas la vacante que te interesa. Te enviamos por correo tu CV redactado para esa vacante, en Word editable y en español o inglés, según la vacante, con un resumen de qué requisitos cumples, cuáles en parte y cuáles no.
+    </p>
+  </div>
+</section>
+
+{estado === 'ok' && (
+  <section class="cvm-body">
+    <div class="container cvm-card" id="estado-ok">
+      <h2>Gracias. Recibimos tu pedido.</h2>
+      <p>Si pagaste con tarjeta, generamos tu CV en cuanto Stripe confirma el pago y te lo enviamos por correo.</p>
+      <p>Si elegiste OXXO, paga la ficha antes de que venza (al final del día siguiente). Empezamos cuando OXXO confirma el pago.</p>
+      <p>Si no te llega, revisa la carpeta de spam o escríbenos a <a href="mailto:hello@solcaciencia.com">hello@solcaciencia.com</a>.</p>
+    </div>
+  </section>
+)}
+
+{estado !== 'ok' && (
+  <section class="cvm-body">
+    <div class="container cvm-grid">
+      <div class="cvm-card cvm-info">
+        {estado === 'cancelado' && (
+          <p class="cvm-aviso" role="status">No se completó el pago y no se hizo ningún cargo. Puedes intentarlo de nuevo. Los datos de ese intento se borran solos a más tardar en 4 días.</p>
+        )}
+        <h2>Qué recibes</h2>
+        <ul>
+          <li>Tu CV en una columna, con formato pensado para los sistemas de selección (ATS), en Word para que lo edites.</li>
+          <li>Un resumen de coincidencia: cada requisito clave de la vacante marcado como cumple, parcial o no cumple, con la frase de tu CV que lo respalda.</li>
+        </ul>
+        <h2>Lo que no hace</h2>
+        <ul>
+          <li>No agrega datos que no diste. Usa solo lo que está en tu CV y en tu texto. Si falta una cifra, deja un marcador como [n de muestras] para que la completes o la borres.</li>
+          <li>Lo que la vacante pide y no tienes no se agrega al CV: aparece como "no cumple" en el resumen.</li>
+          <li>Lo redacta una inteligencia artificial: revísalo antes de enviarlo. No garantiza entrevistas.</li>
+        </ul>
+        <p class="cvm-precio"><strong>{CVM_PRECIO_TEXTO}.</strong> Pago único con tarjeta u OXXO a través de Stripe.</p>
+        <p class="cvm-letra">Reembolso solo si la entrega falla o si el documento no corresponde al CV y la vacante que enviaste. Detalle en los <a href="/terminos" target="_blank" rel="noopener">términos</a>.</p>
+      </div>
+
+      <form id="cvm-form" class="cvm-card cvm-form" novalidate>
+        <div class="field">
+          <label for="cv-upload">Tu CV en PDF <span class="optional-label">(o pega el texto abajo)</span></label>
+          <input type="file" id="cv-upload" accept="application/pdf,.pdf" />
+          <span id="upload-status" class="field-help"></span>
+          <p class="field-help">El PDF se lee en tu navegador; solo enviamos el texto.</p>
+          <textarea id="cv" rows="10" placeholder="Texto de tu CV" aria-describedby="cv-count"></textarea>
+          <p class="field-help">Mínimo {CVM_MIN_CV} caracteres, máximo {CVM_MAX_CV.toLocaleString('es-MX')}. <span id="cv-count">0 caracteres</span></p>
+        </div>
+
+        <div class="field">
+          <label for="vacante">Texto de la vacante</label>
+          <textarea id="vacante" rows="10" placeholder="Pega la descripción completa: responsabilidades y requisitos." maxlength={CVM_MAX_VACANTE} aria-describedby="vacante-count"></textarea>
+          <p class="field-help">Mínimo {CVM_MIN_VACANTE} caracteres, máximo {CVM_MAX_VACANTE.toLocaleString('es-MX')}. <span id="vacante-count">0 caracteres</span></p>
+        </div>
+
+        <div class="field">
+          <label for="texto-libre">Qué parte de tu experiencia encaja con esta vacante y por qué <span class="optional-label">(opcional)</span></label>
+          <textarea id="texto-libre" rows="5" maxlength={CVM_MAX_TEXTO_LIBRE} placeholder="Con tus palabras. Lo que escribas aquí también puede usarse en el CV."></textarea>
+          <p class="field-help">Máximo {CVM_MAX_TEXTO_LIBRE.toLocaleString('es-MX')} caracteres.</p>
+        </div>
+
+        <div class="field">
+          <label for="email">Tu correo</label>
+          <input type="email" id="email" placeholder="tu@email.com" autocomplete="email" />
+        </div>
+
+        <div class="field consent-field">
+          <label class="consent-label">
+            <input type="checkbox" id="consent" />
+            <span set:html={consentPrivacidadHtml} />
+          </label>
+          <label class="consent-label">
+            <input type="checkbox" id="marketing" />
+            <span>{consent.marketing}</span>
+          </label>
+          <p class="consent-note">{consent.nota}</p>
+          <p class="consent-common">{CONSENT_COMMON}</p>
+        </div>
+
+        <p id="form-error" class="cvm-error" role="alert" hidden></p>
+        <button type="submit" id="submit-btn" class="btn btn-orange btn-large btn-block">Pagar {CVM_PRECIO_TEXTO.split(',')[0]} y recibir mi CV</button>
+      </form>
+    </div>
+  </section>
+)}
+
+<div id="cvm-config" hidden
+  data-min-cv={CVM_MIN_CV} data-max-cv={CVM_MAX_CV}
+  data-min-vac={CVM_MIN_VACANTE} data-max-vac={CVM_MAX_VACANTE}
+  data-consent-err={CONSENT_MSG.privacidad_requerida}></div>
+
+<script>
+  const cfg = (document.getElementById('cvm-config') as HTMLElement | null)?.dataset ?? {};
+  const MIN_CV = Number(cfg.minCv ?? 200);
+  const MAX_CV = Number(cfg.maxCv ?? 15000);
+  const MIN_VAC = Number(cfg.minVac ?? 200);
+  const MAX_VAC = Number(cfg.maxVac ?? 8000);
+  const form = document.getElementById('cvm-form') as HTMLFormElement | null;
+  const cvEl = document.getElementById('cv') as HTMLTextAreaElement | null;
+  const vacEl = document.getElementById('vacante') as HTMLTextAreaElement | null;
+  const libreEl = document.getElementById('texto-libre') as HTMLTextAreaElement | null;
+  const emailEl = document.getElementById('email') as HTMLInputElement | null;
+  const consentEl = document.getElementById('consent') as HTMLInputElement | null;
+  const marketingEl = document.getElementById('marketing') as HTMLInputElement | null;
+  const errEl = document.getElementById('form-error') as HTMLElement | null;
+  const btn = document.getElementById('submit-btn') as HTMLButtonElement | null;
+  const uploadStatus = document.getElementById('upload-status') as HTMLElement | null;
+  let extract: { origen: 'pdf' | 'pegado'; paginas: number | null } = { origen: 'pegado', paginas: null };
+
+  function contar(el: HTMLTextAreaElement | null, out: string, max: number) {
+    const o = document.getElementById(out);
+    if (!el || !o) return;
+    const n = el.value.trim().length;
+    o.textContent = `${n.toLocaleString('es-MX')} caracteres`;
+    o.style.color = n > max ? '#B23A2A' : '';
+  }
+  cvEl?.addEventListener('input', () => contar(cvEl, 'cv-count', MAX_CV));
+  vacEl?.addEventListener('input', () => contar(vacEl, 'vacante-count', MAX_VAC));
+
+  function error(msg: string) {
+    if (!errEl) return;
+    errEl.textContent = msg;
+    errEl.hidden = !msg;
+  }
+
+  // PDF: pdf.js desde CDN, igual que /revisar-cv (texto con saltos de línea por página).
+  let pdfjsPromise: Promise<any> | null = null;
+  function loadPdfJs() {
+    if (!pdfjsPromise) {
+      pdfjsPromise = (async () => {
+        const lib = await import(/* @vite-ignore */ 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs');
+        lib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs';
+        return lib;
+      })();
+    }
+    return pdfjsPromise;
+  }
+  function pageText(items: Array<{ str?: string; hasEOL?: boolean; transform?: number[] }>): string {
+    let out = '';
+    let lastY: number | null = null;
+    for (const it of items) {
+      const str = it.str ?? '';
+      const y = Array.isArray(it.transform) ? it.transform[5] : null;
+      if (str && lastY !== null && y !== null && Math.abs(y - lastY) > 2 && !out.endsWith('\n')) out += '\n';
+      out += str;
+      if (it.hasEOL) out += '\n';
+      if (str && y !== null) lastY = y;
+    }
+    return out.split('\n').map((l) => l.replace(/[ \t ]+/g, ' ').trim()).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  }
+  document.getElementById('cv-upload')?.addEventListener('change', async (e) => {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.pdf') || file.size > 10 * 1024 * 1024) {
+      if (uploadStatus) uploadStatus.textContent = 'Solo PDF de hasta 10 MB. Para otros formatos, pega el texto.';
+      input.value = '';
+      return;
+    }
+    if (uploadStatus) uploadStatus.textContent = 'Leyendo el PDF...';
+    try {
+      const lib = await loadPdfJs();
+      const pdf = await lib.getDocument({ data: await file.arrayBuffer() }).promise;
+      const pages: string[] = [];
+      for (let i = 1; i <= pdf.numPages; i++) pages.push(pageText((await (await pdf.getPage(i)).getTextContent()).items));
+      const text = pages.join('\n\n').trim();
+      if (cvEl) cvEl.value = text;
+      contar(cvEl, 'cv-count', MAX_CV);
+      if (text.length < MIN_CV) {
+        extract = { origen: 'pegado', paginas: null };
+        if (uploadStatus) uploadStatus.textContent = 'No pudimos leer suficiente texto del PDF. Pega el texto de tu CV en el recuadro.';
+      } else {
+        extract = { origen: 'pdf', paginas: pdf.numPages };
+        if (uploadStatus) uploadStatus.textContent = `PDF leído: ${pdf.numPages} ${pdf.numPages === 1 ? 'página' : 'páginas'}. Revisa el texto en el recuadro y corrige lo que haya salido en desorden.`;
+      }
+    } catch {
+      extract = { origen: 'pegado', paginas: null };
+      if (uploadStatus) uploadStatus.textContent = 'No pudimos leer el PDF. Pega el texto de tu CV en el recuadro.';
+    }
+  });
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    error('');
+    const cv = cvEl?.value.trim() ?? '';
+    const vacante = vacEl?.value.trim() ?? '';
+    const email = emailEl?.value.trim() ?? '';
+    if (cv.length < MIN_CV || cv.length > MAX_CV) return error(`El CV debe tener entre ${MIN_CV} y ${MAX_CV.toLocaleString('es-MX')} caracteres.`);
+    if (vacante.length < MIN_VAC || vacante.length > MAX_VAC) return error(`La vacante debe tener entre ${MIN_VAC} y ${MAX_VAC.toLocaleString('es-MX')} caracteres.`);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return error('Escribe un correo válido.');
+    if (!consentEl?.checked) return error(cfg.consentErr ?? 'Debes aceptar el aviso de privacidad para continuar.');
+    if (btn) { btn.disabled = true; btn.textContent = 'Abriendo el pago...'; }
+    try {
+      const w = window as unknown as { __attr?: () => Record<string, unknown> };
+      const res = await fetch('/api/cv-medida-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cv,
+          vacante,
+          texto_libre: libreEl?.value.trim() ?? '',
+          email,
+          consent: true,
+          marketing: marketingEl?.checked === true,
+          origen: extract.origen,
+          paginas: extract.paginas ?? undefined,
+          ...(w.__attr ? w.__attr() : {}),
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; url?: string; message?: string };
+      if (data.ok && data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      error(data.message ?? 'No pudimos abrir el pago. No se hizo ningún cargo. Intenta de nuevo.');
+    } catch {
+      error('No pudimos conectar. No se hizo ningún cargo. Intenta de nuevo.');
+    }
+    if (btn) { btn.disabled = false; btn.textContent = 'Intentar de nuevo'; }
+  });
+</script>
+
+<style>
+  .cvm-hero { background: linear-gradient(135deg, var(--navy) 0%, var(--navy-deep) 100%); color: var(--off-white); padding: 56px 0 44px; }
+  .cvm-hero-inner { max-width: 820px; }
+  .cvm-title { font-family: 'Inter', sans-serif; font-weight: 900; font-size: clamp(30px, 5vw, 46px); line-height: 1.1; color: var(--off-white); margin: 0 0 14px; }
+  .cvm-title em { font-style: normal; color: var(--orange); }
+  .cvm-lead { font-size: 17px; line-height: 1.6; color: var(--off-white-mute); max-width: 720px; }
+  .cvm-body { background: var(--bg); padding: 48px 0 80px; }
+  .cvm-grid { display: grid; grid-template-columns: 1fr 1.3fr; gap: 24px; align-items: start; }
+  .cvm-card { background: var(--off-white); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 32px; }
+  .cvm-card h2 { font-family: 'Inter', sans-serif; font-size: 19px; font-weight: 800; color: var(--navy); margin: 0 0 10px; }
+  .cvm-card h2 + ul, .cvm-card ul { margin: 0 0 20px; padding-left: 20px; }
+  .cvm-card li, .cvm-card p { font-size: 15px; line-height: 1.6; color: var(--text); margin-bottom: 8px; }
+  .cvm-card a { color: var(--blue-mid); text-decoration: underline; }
+  .cvm-precio { font-size: 17px !important; color: var(--navy) !important; margin-top: 8px; }
+  .cvm-letra { font-size: 13px !important; color: var(--text-mute) !important; }
+  .cvm-aviso { background: #FFF6E5; border: 1px solid #E8C77A; border-radius: 8px; padding: 10px 12px; }
+  .cvm-form { display: flex; flex-direction: column; gap: 18px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-family: 'Inter', sans-serif; font-weight: 600; font-size: 14px; color: var(--text); }
+  .field input[type='email'], .field textarea { padding: 12px 14px; border: 1.5px solid var(--rule); border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 15px; color: var(--text); background: white; }
+  .field textarea { resize: vertical; line-height: 1.5; }
+  .field input:focus, .field textarea:focus { outline: 0; border-color: var(--orange); }
+  .field-help { font-size: 12px; color: var(--text-mute); }
+  .optional-label { font-weight: 400; color: var(--text-mute); font-size: 13px; }
+  .consent-field { padding: 12px 14px; background: var(--bg); border-radius: 8px; border: 1px solid var(--rule); }
+  .consent-label { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; font-size: 14px; line-height: 1.5; font-weight: 400; }
+  .consent-label + .consent-label { margin-top: 10px; }
+  .consent-label input[type='checkbox'] { flex-shrink: 0; margin-top: 2px; width: 18px; height: 18px; }
+  .consent-note { margin: 4px 0 0 30px; font-size: 14px; }
+  .consent-common { margin: 10px 0 0; font-size: 14px; }
+  .cvm-error { color: #B23A2A; font-size: 14px; margin: 0; }
+  .cvm-error[hidden] { display: none !important; }
+  @media (max-width: 860px) { .cvm-grid { grid-template-columns: 1fr; } .cvm-card { padding: 24px; } }
+</style>
+</BaseLayout>

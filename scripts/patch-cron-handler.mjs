@@ -15,6 +15,9 @@
  *   "*\/5 * * * *" (escrito con \/ para no cerrar este comentario) (cada 5 min) → /api/cv-process-pending (reintentos del revisor de CV; 6 nov 2026).
  *     Va por Cron Trigger y no por cron-job.org: un análisis tarda ~30 s y una conexión HTTP
  *     cortada a los 30 s cancelaría la invocación.
+ *     v6 · 6 nov 2026: el mismo disparo llama después a /api/cv-medida-process (cola de CV a la medida).
+ *     Sin trigger nuevo: la cuenta está en el tope de 5 Cron Triggers. Las dos llamadas van en serie y un
+ *     fallo de la primera no impide la segunda.
  *
  * Por qué un patch post-build: el adapter de Astro solo expone `fetch`. No hay
  * forma documentada de añadir otros handlers (scheduled, queue, etc.) desde
@@ -34,11 +37,11 @@ import { dirname, resolve } from 'node:path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const WORKER_INDEX = resolve(__dirname, '..', 'dist', '_worker.js', 'index.js');
 
-const PATCH_MARKER = '/* SOLCA_CRON_PATCH_v5 */';
+const PATCH_MARKER = '/* SOLCA_CRON_PATCH_v6 */';
 
 const PATCH = `
 ${PATCH_MARKER}
-// Wrapper inyectado por scripts/patch-cron-handler.mjs (v3).
+// Wrapper inyectado por scripts/patch-cron-handler.mjs (v6).
 // Reemplaza el default export del Astro worker con un módulo que expone
 // AMBOS handlers: fetch (delegado al original) y scheduled (rutea por cron
 // pattern a endpoints internos, sin ir por HTTP externa).
@@ -65,9 +68,26 @@ const __solcaCronWrapper = {
       const key = env.STATS_KEY ?? '';
       url = \`https://internal.cron/api/drip-tick?key=\${encodeURIComponent(key)}&trigger=\${encodeURIComponent(cronExpr)}\`;
     } else if (cronExpr === '*/5 * * * *') {
-      // Cada 5 min · reintentos pendientes del revisor de CV
-      const key = env.STATS_KEY ?? '';
-      url = \`https://internal.cron/api/cv-process-pending?key=\${encodeURIComponent(key)}&trigger=\${encodeURIComponent(cronExpr)}\`;
+      // Cada 5 min · reintentos del revisor de CV y, en serie, la cola de CV a la medida (v6).
+      const key = encodeURIComponent(env.STATS_KEY ?? '');
+      const trig = encodeURIComponent(cronExpr);
+      const rutas = [
+        \`https://internal.cron/api/cv-process-pending?key=\${key}&trigger=\${trig}\`,
+        \`https://internal.cron/api/cv-medida-process?key=\${key}&trigger=\${trig}\`,
+      ];
+      ctx.waitUntil((async () => {
+        for (const u of rutas) {
+          try {
+            await __astrojsSsrVirtualEntry.fetch(new Request(u, {
+              method: 'POST',
+              headers: { 'X-Cron-Trigger': '1', 'Content-Type': 'application/json', 'Origin': 'https://solcaciencia.com' },
+            }), env, ctx);
+          } catch (err) {
+            console.error('scheduled: falló', u.split('?')[0], String(err).slice(0, 200));
+          }
+        }
+      })());
+      return;
     } else {
       console.warn('scheduled: no route for cron', cronExpr);
       return;

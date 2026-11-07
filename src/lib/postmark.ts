@@ -28,6 +28,8 @@ export interface PostmarkEmailInput {
   tag?: string;
   metadata?: Record<string, string>;
   messageStream?: string; // default 'outbound' (transactional)
+  /** 6 nov 2026 (CV a la medida): adjuntos. Content en base64. Postmark acepta hasta 10 MB por mensaje. */
+  attachments?: Array<{ Name: string; Content: string; ContentType: string }>;
 }
 
 export interface PostmarkTemplateInput {
@@ -79,6 +81,7 @@ export async function sendEmail(
   if (input.textBody) body.TextBody = input.textBody;
   if (input.tag) body.Tag = input.tag;
   if (input.metadata) body.Metadata = input.metadata;
+  if (input.attachments?.length) body.Attachments = input.attachments;
 
   const res = await fetch(`${POSTMARK_BASE}/email`, {
     method: 'POST',

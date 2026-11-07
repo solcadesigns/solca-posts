@@ -4,6 +4,9 @@
  * Establecido: 2 sept 2026 (fase paywall).
  * Ver `_docs/PAYWALL_SIMULADOR.md`.
  *
+ * 6 nov 2026: también CV a la medida (metadata.producto = 'cv-medida', ruteo en src/lib/stripe-route.ts): al pagar
+ * encola el trabajo en KV CV_LIMITS (src/lib/cv-medida-run.ts) y registra la venta con producto 'cv-medida'.
+ *
  * Eventos que procesa:
  *   - checkout.session.completed (pagado)    → escribe créditos + envía email confirmación
  *   - checkout.session.async_payment_succeeded → igual, para OXXO (pago diferido, 30 oct 2026)
@@ -35,6 +38,9 @@ import { sendEmailWithTemplate, PostmarkError } from '../../lib/postmark';
 import { PLAN_CONFIG, type Plan } from '../../lib/simulator-types';
 import { emailHashFull } from '../../lib/attribution';
 import { registrarConsentimiento, consentFields, consentKvMeta } from '../../lib/consent';
+// 6 nov 2026: el mismo endpoint atiende CV a la medida (metadata.producto = 'cv-medida').
+import { rutaStripe } from '../../lib/stripe-route';
+import { procesarPagoCvMedida, borrarPedidoNoPagado, reembolsoCvMedida } from '../../lib/cv-medida-run';
 
 export const prerender = false;
 
@@ -187,10 +193,11 @@ const meta = (m: Record<string, string> | null | undefined, k: string, max = 200
 async function registrarVenta(
   db: D1Database | undefined,
   session: StripeSessionCompleted,
-  plan: Plan,
+  plan: string,
   email: string,
   livemode: boolean,
   eventType: string,
+  producto: 'simulador' | 'cv-medida' = 'simulador',
 ): Promise<void> {
   if (!db) return;
   try {
@@ -201,11 +208,12 @@ async function registrarVenta(
           (id, pasarela, creado, producto, plan, monto, moneda, payment_intent, metodo, email_hash, aid,
            ft_source, ft_medium, ft_campaign, ft_content, ft_ref_host, ft_landing, ft_ts,
            lt_source, lt_medium, lt_campaign, lt_content, lt_ref_host, pais, interno, livemode, estado)
-         VALUES (?, 'stripe', ?, 'simulador', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pagada')`,
+         VALUES (?, 'stripe', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pagada')`,
       )
       .bind(
         session.id,
         new Date().toISOString(),
+        producto,
         plan,
         typeof session.amount_total === 'number' ? session.amount_total / 100 : null,
         session.currency ? session.currency.toUpperCase().slice(0, 3) : null,
@@ -218,7 +226,8 @@ async function registrarVenta(
         meta(m, 'ft_ref_host'), meta(m, 'ft_landing'), meta(m, 'ft_ts', 30),
         meta(m, 'lt_source'), meta(m, 'lt_medium'), meta(m, 'lt_campaign'), meta(m, 'lt_content'), meta(m, 'lt_ref_host'),
         session.customer_details?.address?.country?.slice(0, 2) ?? null,
-        meta(m, 'interno') === '1' ? 1 : 0,
+        // 6 nov 2026: en CV a la medida, un total de 0 (cupón al 100%) cuenta como prueba interna.
+        meta(m, 'interno') === '1' || (producto === 'cv-medida' && session.amount_total === 0) ? 1 : 0,
         livemode ? 1 : 0,
       )
       .run();
@@ -317,9 +326,57 @@ export const POST: APIRoute = async ({ request, locals }) => {
   // checkout.session.async_payment_succeeded (pago confirmado en tienda).
   // 30 oct 2026: reembolso → marca la fila del libro de ventas. No toca créditos ni entrega.
   if (event.type === 'charge.refunded') {
-    await registrarReembolso(ventasDb, event.data.object as unknown as StripeCharge);
+    const charge = event.data.object as unknown as StripeCharge;
+    await registrarReembolso(ventasDb, charge);
+    // 6 nov 2026: si es un CV a la medida que aún no se generó, se cancela la entrega (índice cvmd_pi:).
+    const cvKvR = env.CV_LIMITS as KVNamespace | undefined;
+    if (cvKvR && typeof charge.payment_intent === 'string') await reembolsoCvMedida(env, cvKvR, charge.payment_intent);
     await dedupKv.put(dedupKey, '1', { expirationTtl: 60 * 60 * 24 * 7 });
     return jsonResponse(200, { received: true, processed: 'refund' });
+  }
+
+  // 6 nov 2026: CV a la medida comparte el endpoint; se separa por metadata.producto (src/lib/stripe-route.ts).
+  // Mismas guardas: solo con pago confirmado, OXXO por async_payment_succeeded, una entrega por sesión.
+  const ruta = rutaStripe(event);
+  if (ruta.ruta === 'cv-medida-fallido') {
+    const cvKv = env.CV_LIMITS as KVNamespace | undefined;
+    if (cvKv) await borrarPedidoNoPagado(cvKv, ruta.jobId).catch(() => {});
+    await dedupKv.put(dedupKey, '1', { expirationTtl: 60 * 60 * 24 * 7 });
+    return jsonResponse(200, { received: true, processed: 'cv-medida-no-pagado' });
+  }
+  if (ruta.ruta === 'cv-medida') {
+    const s = event.data.object;
+    if (await dedupKv.get(`stripe_session:${s.id}`)) {
+      await dedupKv.put(dedupKey, '1', { expirationTtl: 60 * 60 * 24 * 7 });
+      return jsonResponse(200, { received: true, deduped: 'session' });
+    }
+    const cvKv = env.CV_LIMITS as KVNamespace | undefined;
+    if (!cvKv) {
+      console.error('[stripe-webhook] Falta CV_LIMITS para cv-medida');
+      return jsonResponse(500, { error: 'config' });
+    }
+    const consentTsCv = new Date((event.created ?? Math.floor(Date.now() / 1000)) * 1000).toISOString();
+    let estado: string;
+    try {
+      // Encola el trabajo (la generación la hace el cron). Si KV falla, 500 y Stripe reintenta.
+      estado = await procesarPagoCvMedida(env, cvKv, s, ruta.jobId, event.livemode !== false, consentTsCv);
+    } catch (err) {
+      console.error('[stripe-webhook] cv-medida: no se pudo encolar', String(err).slice(0, 200));
+      return jsonResponse(500, { error: 'cv_medida_queue' });
+    }
+    const emailCv = (s.metadata?.email ?? s.customer_email ?? s.customer_details?.email ?? '').trim().toLowerCase();
+    await registrarVenta(ventasDb, s, 'unico', emailCv, event.livemode !== false, event.type, 'cv-medida');
+    // Idioma de la vacante en la venta (columna de la migración 0014; sin ella no pasa nada). El rol se escribe al generar.
+    const idiomaCv = meta(s.metadata, 'idioma', 2);
+    if (ventasDb && idiomaCv) {
+      await ventasDb.prepare('UPDATE ventas SET idioma = ? WHERE id = ?').bind(idiomaCv, s.id).run().catch((err: unknown) => {
+        console.warn('[stripe-webhook] idioma en ventas no guardado (¿falta migración 0014?)', String(err).slice(0, 160));
+      });
+    }
+    await dedupKv.put(`stripe_session:${s.id}`, `cvmd:${ruta.jobId}`, { expirationTtl: 60 * 60 * 24 * 7 });
+    await dedupKv.put(dedupKey, '1', { expirationTtl: 60 * 60 * 24 * 7 });
+    await completarComision(ventasDb, env.STRIPE_SECRET_KEY as string | undefined, s);
+    return jsonResponse(200, { received: true, processed: 'cv-medida', estado });
   }
 
   const session = event.data.object;

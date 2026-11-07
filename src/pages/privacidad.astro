@@ -56,12 +56,13 @@ const lastUpdated = '6 de noviembre de 2026';
       <li><strong>Nombre.</strong> Cuando te registras en el quiz de rol o en el Simulador de Entrevistas, para dirigirnos a ti en los correos.</li>
       <li><strong>País (opcional).</strong> Para contextualizar el análisis o personalizar contenido.</li>
       <li><strong>Texto de tu CV (procesamiento efímero).</strong> Lo procesamos en memoria al momento de generar el análisis y <strong>no lo conservamos</strong> después de entregarte el resultado. Única excepción: si el análisis falla, guardamos el texto hasta 48 horas para reintentarlo y enviarte el resultado por correo, y lo borramos en cuanto el análisis sale o se agotan los reintentos. No se usa para entrenar modelos ni se comparte con terceros más allá del procesamiento descrito en la sección 4.</li>
+      <li><strong>CV a la medida (producto de pago).</strong> El texto de tu CV, el de la vacante y lo que escribas en el texto libre, junto con tu correo. Se guardan hasta 4 días, solo para generar y entregar tu documento (el plazo cubre un pago en OXXO), y se borran en cuanto el documento está listo; si el pago no se completa, se borran a más tardar a los 4 días. El documento generado (Word) se guarda 7 días para que lo descargues desde el enlace del correo. No se usa para entrenar modelos.</li>
       <li><strong>Respuestas y configuración del Simulador de Entrevistas (procesamiento efímero).</strong> Tus respuestas durante la sesión se procesan en memoria para generar el feedback y se descartan al cierre. El detalle completo del flujo del simulador (qué se guarda como métrica anónima y qué no) está en la sección 6.</li>
       <li><strong>Encuesta de mercado (opcional y anónima).</strong> Después del análisis de CV, del quiz de rol o del simulador te podemos hacer hasta 3 preguntas (por ejemplo, tu etapa profesional o qué te frena para entrar a la industria). Junto con ellas guardamos una copia anónima de datos generales que ya diste en la herramienta (país, formación, nivel académico y rango de años de experiencia, rol de interés, el rol que te sugirió el quiz, y rango de edad y género si los compartiste) y de dónde llegaste al sitio. <strong>Nunca se guarda tu email, tu nombre, tu CV ni texto libre</strong> junto con estas respuestas.</li>
       <li><strong>Identificador anónimo del navegador.</strong> Un número aleatorio que se guarda en tu navegador (no es una cookie de rastreo ni se comparte con terceros) para contar personas y no usos, y para no repetirte preguntas que ya contestaste. Si dejas tu correo en alguna herramienta, este identificador se guarda junto con tu registro para saber por qué canal llegaste.</li>
       <li><strong>Origen de la visita.</strong> El sitio o la campaña por la que llegaste la primera vez y la más reciente (página de origen y parámetros UTM del enlace), para saber qué canales funcionan.</li>
       <li><strong>Identificador cifrado de tu correo.</strong> Una huella irreversible de tu correo (no el correo en sí) que usamos para relacionar tu registro con una compra y saber qué canales generan ventas.</li>
-      <li><strong>Compras.</strong> El Simulador de Entrevistas se paga con Stripe y los libros y el curso se compran en Hotmart. Nosotros no recibimos ni guardamos los datos de tu tarjeta. De cada compra guardamos el producto, el precio, el país, el origen de la venta y el identificador cifrado de tu correo.</li>
+      <li><strong>Compras.</strong> El Simulador de Entrevistas y CV a la medida se pagan con Stripe y los libros y el curso se compran en Hotmart. Nosotros no recibimos ni guardamos los datos de tu tarjeta. De cada compra guardamos el producto, el precio, el país, el origen de la venta y el identificador cifrado de tu correo.</li>
       <li><strong>Dirección IP.</strong> Registrada únicamente para prevenir abuso de servicios (rate-limiting) y diagnosticar errores. No se vincula a tu identidad para fines comerciales.</li>
       <li><strong>Datos técnicos básicos.</strong> Logs del servidor (navegador, tipo de dispositivo, timestamp) recopilados automáticamente por Cloudflare (nuestro proveedor de hosting) para seguridad y rendimiento.</li>
     </ul>
@@ -83,13 +84,13 @@ const lastUpdated = '6 de noviembre de 2026';
     <p>Para operar el servicio dependemos de proveedores externos:</p>
     <ul>
       <li>
-        <strong>Anthropic (Claude API).</strong> Procesa el texto de tu CV y tus respuestas del simulador para generar el análisis. Anthropic declara que no usa los datos enviados por su API para entrenar sus modelos y que los <a href="https://privacy.anthropic.com/en/articles/7996866-how-long-do-you-store-personal-data" target="_blank" rel="noopener">elimina en un plazo de 30 días</a>, salvo las excepciones de su política (por ejemplo, contenido marcado por infringir su política de uso).
+        <strong>Anthropic (Claude API).</strong> Procesa el texto de tu CV y tus respuestas del simulador para generar el análisis; en CV a la medida, también la vacante y tu texto libre para redactar el documento. Anthropic declara que no usa los datos enviados por su API para entrenar sus modelos y que los <a href="https://privacy.anthropic.com/en/articles/7996866-how-long-do-you-store-personal-data" target="_blank" rel="noopener">elimina en un plazo de 30 días</a>, salvo las excepciones de su política (por ejemplo, contenido marcado por infringir su política de uso).
       </li>
       <li>
         <strong>Cloudflare.</strong> Hosting del sitio, procesamiento de solicitudes y bases de datos donde guardamos registros y métricas. Recopila logs técnicos de acceso (IP, user-agent, timestamps) según su <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">aviso de privacidad</a>.
       </li>
       <li><strong>Postmark.</strong> Envío de correos (análisis, códigos de acceso, reportes y newsletter).</li>
-      <li><strong>Stripe.</strong> Procesamiento de pagos del Simulador de Entrevistas.</li>
+      <li><strong>Stripe.</strong> Procesamiento de pagos del Simulador de Entrevistas y de CV a la medida.</li>
       <li><strong>Hotmart.</strong> Venta y entrega de los libros y el curso.</li>
       <li>
         <strong>GitHub.</strong> Almacenamiento del código del sitio (no de tus datos personales).
@@ -105,6 +106,7 @@ const lastUpdated = '6 de noviembre de 2026';
     <h2>5. Retención de datos</h2>
     <ul>
       <li><strong>Texto del CV:</strong> efímero. Se procesa en memoria, se entrega el resultado, se descarta. Solo si el análisis falla se guarda hasta 48 horas para reintentarlo; se borra en cuanto el análisis sale o se agotan los reintentos.</li>
+      <li><strong>CV a la medida:</strong> el CV, la vacante y el texto libre, hasta 4 días como máximo; se borran al generar el documento. Tu correo, el CV redactado y el resumen de coincidencia, hasta que sale el correo de entrega (máximo 6 horas). Si la entrega falla, tu correo y los datos del pago, hasta 25 horas, solo para avisarte y procesar el reembolso. El documento, 7 días para su descarga. Del correo con el documento, nuestro proveedor de correo conserva una copia temporal según su política.</li>
       <li><strong>Email:</strong> hasta que solicites la baja o nuestra lista de suscriptores cierre, lo que ocurra primero.</li>
       <li><strong>Registro de intentos de análisis de CV</strong> (email, país, largo del CV, origen y si el análisis se completó, sin el texto del CV): 180 días, para detectar fallas y poder escribirte si tu análisis no se entregó.</li>
       <li><strong>Encuesta de mercado (base de datos interna, anónima):</strong> retención indefinida para análisis agregado de mercado y contenido editorial; no contiene datos que permitan reidentificarte.</li>

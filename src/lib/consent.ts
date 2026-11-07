@@ -23,11 +23,13 @@ import { emailHashFull, type Attribution } from './attribution';
 // Historial: v2-2026-11 (2 nov 2026, casillas separadas). v3-2026-11 (6 nov 2026): cambia solo la casilla de
 // privacidad del revisor de CV (análisis por correo, aviso de falla y reintento con el CV guardado hasta 48 h);
 // los textos de Simulador y Quiz quedan igual. La versión es única para todos los formularios.
-export const CONSENT_VERSION = 'v3-2026-11';
+// v4-2026-11 (6 nov 2026): se agrega la casilla de CV a la medida (`cv-medida`); las demás quedan igual.
+export const CONSENT_VERSION = 'v4-2026-11';
 
 // 'reconfirmacion-es': opt-in desde /api/confirmar-correos (correo único aviso-privacidad-2026-11, legado España).
-export type ConsentForm = 'simulador' | 'simulador-pago' | 'quiz' | 'cv' | 'reconfirmacion-es';
-export type FormKey = 'simulador' | 'quiz' | 'cv';
+// 'cv-medida' (6 nov 2026): CV a la medida; el consentimiento se registra al confirmar el pago (webhook).
+export type ConsentForm = 'simulador' | 'simulador-pago' | 'quiz' | 'cv' | 'cv-medida' | 'reconfirmacion-es';
+export type FormKey = 'simulador' | 'quiz' | 'cv' | 'cv-medida';
 
 export const CONSENT_TEXT: Record<FormKey, { privacidad: string; marketing: string; nota: string }> = {
   simulador: {
@@ -50,6 +52,13 @@ export const CONSENT_TEXT: Record<FormKey, { privacidad: string; marketing: stri
     marketing:
       'Quiero recibir 4 correos de bienvenida en las próximas 3 semanas y el newsletter semanal Solca Insight, con recursos y ofertas de Solca Ciencia (libros, curso y Simulador). Me doy de baja cuando quiera.',
     nota: 'Opcional. Tu análisis funciona igual sin marcarla.',
+  },
+  'cv-medida': {
+    privacidad:
+      'He leído el aviso de privacidad y acepto que el texto de mi CV, la vacante y lo que escriba en el texto libre se procesen con IA para redactar mi CV a la medida. Se guardan hasta 4 días, solo para generar y entregar el documento, y se borran en cuanto el documento está listo. El documento se guarda 7 días para que pueda descargarlo. Mi correo se usa para enviarme el documento y avisos sobre mi compra.',
+    marketing:
+      'Quiero recibir el newsletter semanal Solca Insight y correos con recursos y ofertas de Solca Ciencia (libros, curso y Simulador). Me doy de baja cuando quiera.',
+    nota: 'Opcional. Tu compra funciona igual sin marcarla.',
   },
 };
 
