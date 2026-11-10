@@ -2,21 +2,30 @@
  * CV a la medida · documento Word (DOCX) · 6 nov 2026.
  *
  * Se arma en el Worker con el paquete `docx` (empaqueta con fflate; sin APIs de Node). Formato compatible con ATS,
- * según ../consultoria/investigacion/2026-11-cv-mejores-practicas.md (C1, C2, C3):
- *   - una sola columna, sin tablas, cuadros de texto, imágenes ni encabezados de página con datos clave;
- *   - Calibri 11 pt (nombre 18 pt), márgenes de 0.8", encabezados de sección claros, viñetas reales de Word;
+ * según ../consultoria/investigacion/2026-11-cv-mejores-practicas.md (C1, C2, C3).
+ * 10 nov 2026 (pedido de Oscar): estilo tipo Harvard, plantilla propia inspirada en las guías de carrera
+ * universitarias (no se copia ningún archivo de Harvard ni de MIT):
+ *   - una sola columna, sin tablas, cuadros de texto ni imágenes; las fechas y ubicaciones van a la derecha con un
+ *     tabulador (no con tablas), así el ATS lee el texto en orden;
+ *   - Garamond 11 pt en negro, nombre centrado de 16 pt, contacto centrado, encabezados de sección en mayúsculas con
+ *     línea inferior; carta con márgenes de 0.75";
+ *   - cada puesto: organización en negritas y ubicación a la derecha; cargo en cursiva y fechas a la derecha;
  *   - orden: contacto, resumen, experiencia, educación, habilidades, certificaciones, publicaciones, idiomas;
  *   - los marcadores `[...]` van resaltados en amarillo para que la persona los complete o borre antes de enviar.
  *
  * Probado offline con `node scripts/test-cv-medida.mjs` (el resultado es un zip válido con word/document.xml).
  */
 
-import { AlignmentType, BorderStyle, Document, LevelFormat, Packer, Paragraph, TextRun } from 'docx';
+import { AlignmentType, BorderStyle, Document, LevelFormat, Packer, Paragraph, Tab, TabStopType, TextRun } from 'docx';
 import type { CvMedida, Idioma } from './cv-medida.ts';
 
-const FUENTE = 'Calibri';
+const FUENTE = 'Garamond';
 const TAM = 22; // medios puntos: 11 pt
-const AZUL = '1F3A5F';
+const NEGRO = '000000';
+// Carta (8.5 x 11 in) con márgenes de 0.75 in: ancho útil 10,080 twips; ahí va el tabulador derecho.
+const PAGINA = { width: 12240, height: 15840 };
+const MARGEN = 1080;
+const DERECHA = PAGINA.width - 2 * MARGEN;
 
 const ETIQUETAS: Record<Idioma, Record<string, string>> = {
   es: {
@@ -60,9 +69,25 @@ function tramos(texto: string, opts: { bold?: boolean; italics?: boolean; size?:
 
 function titulo(texto: string): Paragraph {
   return new Paragraph({
-    spacing: { before: 220, after: 80 },
-    border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: AZUL, space: 2 } },
-    children: [new TextRun({ text: texto.toUpperCase(), font: FUENTE, size: 24, bold: true, color: AZUL })],
+    spacing: { before: 200, after: 80 },
+    border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: NEGRO, space: 1 } },
+    children: [new TextRun({ text: texto.toUpperCase(), font: FUENTE, size: 22, bold: true, color: NEGRO })],
+  });
+}
+
+/** Línea con texto a la izquierda y otro alineado a la derecha (tabulador, no tabla). */
+function lineaDoble(
+  izq: string,
+  der: string,
+  opts: { bold?: boolean; italics?: boolean; before?: number; after?: number } = {},
+): Paragraph {
+  const hijos = tramos(izq, { bold: opts.bold, italics: opts.italics });
+  // Ubicación y fechas sin negritas ni cursiva, como en las plantillas de guías de carrera.
+  if (der) hijos.push(new TextRun({ children: [new Tab()], font: FUENTE, size: TAM }), ...tramos(der));
+  return new Paragraph({
+    tabStops: [{ type: TabStopType.RIGHT, position: DERECHA }],
+    spacing: { before: opts.before ?? 0, after: opts.after ?? 0 },
+    children: hijos,
   });
 }
 
@@ -93,24 +118,27 @@ export function parrafosCv(cv: CvMedida): Paragraph[] {
 
   out.push(
     new Paragraph({
-      alignment: AlignmentType.LEFT,
+      alignment: AlignmentType.CENTER,
       spacing: { after: 40 },
-      children: tramos(c.nombre, { bold: true, size: 36, color: AZUL }),
+      children: tramos(c.nombre, { bold: true, size: 32 }),
     }),
   );
-  if (c.titular) out.push(parrafo(c.titular, { bold: true, after: 40 }));
-  const contacto = unir([c.correo, c.telefono, c.ubicacion, c.linkedin], ' | ');
-  if (contacto) out.push(parrafo(contacto, { after: 120 }));
+  const contacto = unir([c.ubicacion, c.telefono, c.correo, c.linkedin], ' • ');
+  if (contacto) out.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 40 }, children: tramos(contacto) }));
+  if (c.titular) out.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 80 }, children: tramos(c.titular, { italics: true }) }));
 
   out.push(titulo(L.resumen), parrafo(cv.resumen, { after: 80 }));
 
   if (cv.experiencia.length) {
     out.push(titulo(L.experiencia));
     for (const e of cv.experiencia) {
-      out.push(parrafo(unir([e.puesto, e.organizacion], ' · '), { bold: true, before: 80, after: 20 }));
       const fechas = unir([e.inicio, e.fin], ' – ');
-      const linea = unir([fechas, e.ubicacion], ' | ');
-      if (linea) out.push(parrafo(linea, { italics: true, after: 40 }));
+      if (e.organizacion) {
+        out.push(lineaDoble(e.organizacion, e.ubicacion, { bold: true, before: 100 }));
+        out.push(lineaDoble(e.puesto, fechas, { italics: true, after: 40 }));
+      } else {
+        out.push(lineaDoble(e.puesto, fechas, { bold: true, before: 100, after: 40 }));
+      }
       for (const v of e.vinetas) out.push(vineta(v.texto));
     }
   }
@@ -118,9 +146,13 @@ export function parrafosCv(cv: CvMedida): Paragraph[] {
   if (cv.educacion.length) {
     out.push(titulo(L.educacion));
     for (const e of cv.educacion) {
-      out.push(parrafo(unir([e.titulo, e.institucion], ' · '), { bold: true, before: 60, after: 20 }));
-      const linea = unir([unir([e.inicio, e.fin], ' – '), e.ubicacion], ' | ');
-      if (linea) out.push(parrafo(linea, { italics: true, after: 20 }));
+      const fechas = unir([e.inicio, e.fin], ' – ');
+      if (e.institucion) {
+        out.push(lineaDoble(e.institucion, e.ubicacion, { bold: true, before: 80 }));
+        out.push(lineaDoble(e.titulo, fechas, { italics: true, after: 20 }));
+      } else {
+        out.push(lineaDoble(e.titulo, unir([fechas, e.ubicacion], ' | '), { bold: true, before: 80, after: 20 }));
+      }
       if (e.detalle) out.push(parrafo(e.detalle, { after: 40 }));
     }
   }
@@ -144,7 +176,7 @@ export function documentoCv(cv: CvMedida): Document {
     creator: 'Solca Ciencia',
     title: cv.contacto.nombre ? `CV · ${cv.contacto.nombre}` : 'CV',
     description: 'CV redactado con asistencia de IA a partir del CV y el texto enviados por la persona.',
-    styles: { default: { document: { run: { font: FUENTE, size: TAM } } } },
+    styles: { default: { document: { run: { font: FUENTE, size: TAM, color: NEGRO } } } },
     numbering: {
       config: [
         {
@@ -163,7 +195,7 @@ export function documentoCv(cv: CvMedida): Document {
     },
     sections: [
       {
-        properties: { page: { margin: { top: 1152, bottom: 1152, left: 1152, right: 1152 } } },
+        properties: { page: { size: PAGINA, margin: { top: MARGEN, bottom: MARGEN, left: MARGEN, right: MARGEN } } },
         children: parrafosCv(cv),
       },
     ],
