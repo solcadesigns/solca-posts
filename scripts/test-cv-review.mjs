@@ -446,6 +446,19 @@ await test('scrubBanned conserva oraciones limpias', () => {
   assert.equal(scrubBanned('Bien. Conseguirás entrevistas rápido. Agrega LinkedIn.'), 'Bien. Agrega LinkedIn.');
 });
 
+// 10 nov 2026: corte conservador (src/lib/frases.ts); nunca pega una oración limpia a una prohibida.
+await test('scrubBanned no borra oraciones limpias tras una letra suelta ni parte grados', () => {
+  assert.equal(
+    scrubBanned('Trabajaste en fase I. Conseguirás entrevistas rápido. Agrega LinkedIn.'),
+    'Trabajaste en fase I. Agrega LinkedIn.',
+  );
+  assert.equal(
+    scrubBanned('Tienes un Ph. D. en Biología y una M. Sc. en Química. Te garantizo entrevistas.'),
+    'Tienes un Ph. D. en Biología y una M. Sc. en Química.',
+  );
+  assert.equal(scrubBanned('Habla con la Dra. López. Conseguirás entrevistas.'), 'Habla con la Dra. López.');
+});
+
 console.log(`\n${n} pruebas OK`);
 
 // Con CV_FIXTURES_DIR=<carpeta> escribe las respuestas validadas (como las devolvería /api/cv-review)

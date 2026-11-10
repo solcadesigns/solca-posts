@@ -503,6 +503,11 @@ export async function procesarCvMedidaUnaVez(d: ProcesadorDeps, listLimit = 50):
       docx_bytes: docx.bytes,
       vinetas: reporte.vinetas_total,
       quitadas: reporte.vinetas_quitadas_cita + reporte.vinetas_quitadas_cifra + reporte.vinetas_quitadas_sigla,
+      relleno: reporte.vinetas_quitadas_relleno,
+      tercera_persona: reporte.frases_tercera_persona,
+      titular_quitado: reporte.titular_quitado,
+      resumen_vacio_tercera: reporte.resumen_vacio_tercera,
+      marcadores_quitados: reporte.marcadores_quitados,
       marcadores: reporte.marcadores.length,
       sin_evidencia: reporte.requisitos_sin_evidencia,
     });

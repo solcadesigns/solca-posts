@@ -91,7 +91,7 @@ function salidaBuena() {
     rol: 'CRA',
     contacto: {
       nombre: 'María López Ruiz, PhD',
-      titular: 'Clinical Research Associate (CRA)',
+      titular: 'Científica bioquímica con interés en investigación clínica (CRA)',
       correo: 'maria.lopez@correo.com',
       telefono: '+52 55 1234 5678',
       ubicacion: 'Ciudad de México',
@@ -211,9 +211,9 @@ await prueba('validación: la salida buena pasa y el filtro quita lo inventado',
   assert.equal(mon.evidencia, '');
   assert.equal(v.reporte.requisitos_sin_evidencia, 1);
   assert.equal(v.cv.coincidencia.find((q) => q.requisito === 'Cumplimiento de GCP').evidencia, '');
-  // Contacto y titular: PhD se queda (el CV dice Doctorado); el titular puede usar la sigla de la vacante.
+  // Contacto y titular: PhD se queda (el CV dice Doctorado); el titular puede nombrar el área con la sigla de la vacante.
   assert.equal(v.cv.contacto.nombre, 'María López Ruiz, PhD');
-  assert.equal(v.cv.contacto.titular, 'Clinical Research Associate (CRA)');
+  assert.equal(v.cv.contacto.titular, 'Científica bioquímica con interés en investigación clínica (CRA)');
   assert.equal(v.cv.idioma, 'es');
   assert.equal(v.cv.rol, 'CRA');
 });
@@ -666,19 +666,19 @@ await prueba('R4: cabecera de experiencia con puesto inflado, sigla nueva u orga
   assert.equal(v.cv.experiencia.length, 1);
 });
 
-await prueba('R5: marcadores con cifras, siglas o largos se cambian por un hueco genérico', () => {
+await prueba('R5: marcadores con cifras, siglas o largos se quitan del texto', () => {
   assert.ok(marcadorValido('n de muestras'));
   assert.ok(!marcadorValido('aumenté 30% la eficiencia'));
   assert.ok(!marcadorValido('certificado GCP'));
   assert.ok(!marcadorValido('lideré el equipo de monitoreo de toda la región'));
-  assert.equal(limpiarMarcadores('Procesé [n de muestras] y [lideré 5 estudios]', 'es').texto, 'Procesé [n de muestras] y [dato por completar]');
+  assert.equal(limpiarMarcadores('Procesé [n de muestras] y analicé [lideré 5 estudios]', 'es').texto, 'Procesé [n de muestras] y analicé');
   const s = salidaBuena();
   s.experiencia[0].vinetas = [
     { texto: 'Procesé muestras de suero [con certificación GCP vigente].', fuente: 'cv', cita: 'Procesé 1,200 muestras de suero para el estudio de biomarcadores.' },
   ];
   const v = validarCvMedida(s, ctxEs);
-  assert.equal(v.cv.experiencia[0].vinetas[0].texto, 'Procesé muestras de suero [dato por completar].');
-  assert.equal(v.reporte.marcadores_corregidos, 1);
+  assert.equal(v.cv.experiencia[0].vinetas[0].texto, 'Procesé muestras de suero.');
+  assert.equal(v.reporte.marcadores_quitados, 1);
 });
 
 await prueba('R6: cupones solo con CVM_PERMITIR_CUPONES=1; total 0 cuenta como interno', async () => {
@@ -720,6 +720,225 @@ await prueba('R7: reembolso antes de generar cancela la entrega; después no toc
   assert.ok(await kv2.get(jobKey('job-1')));
   const wh = (await import('node:fs')).readFileSync(new URL('../src/pages/api/simulator-stripe-webhook.ts', import.meta.url), 'utf8');
   assert.ok(wh.includes('reembolsoCvMedida(env, cvKvR, charge.payment_intent)'));
+});
+
+
+// ── 8. Calidad tras la evaluación con CV reales (10 nov 2026, prompt p2) ─────────────────────────
+
+await prueba('Q1: separador de oraciones respeta grados, iniciales y abreviaturas', async () => {
+  const { partirFrases } = await import('../src/lib/frases.ts');
+  const r = 'Life science professional with a Ph. D. in Biomedical Science, an M. Sc. and a B. Sc. in Biology. Worked with Smith et al. on assays, e.g. ensayos de ELISA. Led data reviews.';
+  assert.deepEqual(partirFrases(r), [
+    'Life science professional with a Ph. D. in Biomedical Science, an M. Sc. and a B. Sc. in Biology.',
+    'Worked with Smith et al. on assays, e.g. ensayos de ELISA.',
+    'Led data reviews.',
+  ]);
+  assert.deepEqual(partirFrases('Bióloga con Lic. en Biología y M. en C. por la UNAM. Coordiné ensayos.'), [
+    'Bióloga con Lic. en Biología y M. en C. por la UNAM.',
+    'Coordiné ensayos.',
+  ]);
+  // El resumen no queda truncado: la frase con la abreviatura se conserva completa.
+  const cv = CV + '\nPh. D. in Biomedical Science, M. Sc. and B. Sc. in Biology';
+  const s = salidaBuena();
+  s.resumen = 'Life science professional with a Ph. D. in Biomedical Science, an M. Sc. and a B. Sc. in Biology. Experienced in sample handling. Has run 9 studies.';
+  const v = validarCvMedida(s, { ...ctxEs, cv, idioma: 'en', vacante: VACANTE_EN });
+  assert.ok(v.ok);
+  assert.ok(v.cv.resumen.startsWith('Life science professional with a Ph. D. in Biomedical Science, an M. Sc. and a B. Sc. in Biology.'));
+  assert.ok(!v.cv.resumen.includes('Has run'));
+  assert.ok(!/ a B\.$/.test(v.cv.resumen));
+});
+
+await prueba('Q1b: scrubBanned del revisor de CV usa el mismo separador', async () => {
+  const { scrubBanned } = await import('../src/lib/cv-review-rubric.ts');
+  assert.equal(
+    scrubBanned('Tienes un Ph. D. en Biología y una M. Sc. en Química. Te garantizo entrevistas.'),
+    'Tienes un Ph. D. en Biología y una M. Sc. en Química.',
+  );
+});
+
+await prueba('Q2: el titular no copia el título de la vacante', async () => {
+  const { copiaTituloVacante } = await import('../src/lib/cv-medida.ts');
+  for (const [tit, puesto] of [
+    ['Associate, Strategy Consulting', 'Associate, Strategy Consulting'],
+    ['Graduate Pharmacovigilance Associate', 'Graduate Pharmacovigilance Associate'],
+    ['PhD | Graduate Pharmacovigilance Associate', 'Graduate Pharmacovigilance Associate'],
+  ]) {
+    const s = salidaBuena();
+    s.puesto_vacante = puesto;
+    s.contacto.titular = tit;
+    const v = validarCvMedida(s, { ...ctxEs, idioma: 'en', vacante: `${puesto}\n${VACANTE_EN}` });
+    assert.equal(v.cv.contacto.titular, '', tit);
+    assert.equal(v.reporte.titular_quitado, true);
+  }
+  assert.ok(!copiaTituloVacante('Biomedical scientist targeting clinical research', ['Clinical Research Associate']));
+  const s = salidaBuena();
+  s.contacto.titular = 'Biochemist targeting clinical research';
+  s.puesto_vacante = 'Clinical Research Associate';
+  assert.equal(validarCvMedida(s, { ...ctxEs, idioma: 'en', vacante: VACANTE_EN }).cv.contacto.titular, 'Biochemist targeting clinical research');
+});
+
+await prueba('Q3: marcadores genéricos se quitan; si la viñeta queda en un simple encabezado, se quita', async () => {
+  const { marcadorGenerico } = await import('../src/lib/cv-medida.ts');
+  for (const g of ['data to complete', 'dato por completar', 'dato', 'TBD', 'n']) assert.ok(marcadorGenerico(g), g);
+  for (const e of ['n of projects', 'type of analysis', 'n de muestras', 'tipo de análisis']) assert.ok(!marcadorGenerico(e), e);
+  assert.equal(limpiarMarcadores('Reduje los tiempos de entrega en [dato por completar].').texto, 'Reduje los tiempos de entrega.');
+  assert.equal(limpiarMarcadores('Analyzed [type of analysis] data for [n of projects] projects').texto, 'Analyzed [type of analysis] data for [n of projects] projects');
+  const s = salidaBuena();
+  s.experiencia[0].vinetas = [
+    { texto: 'Worked as Investigadora posdoctoral at Instituto de Biotecnología [data to complete]', fuente: 'cv', cita: 'Investigadora posdoctoral, Instituto de Biotecnología (2021-2024)' },
+    { texto: 'Coordiné a 4 estudiantes de maestría [dato por completar].', fuente: 'cv', cita: 'Coordiné a 4 estudiantes de maestría.' },
+  ];
+  const v = validarCvMedida(s, ctxEs);
+  const textos = v.cv.experiencia[0].vinetas.map((x) => x.texto);
+  assert.deepEqual(textos, ['Coordiné a 4 estudiantes de maestría.']);
+  assert.equal(v.reporte.vinetas_quitadas_relleno, 1);
+  assert.equal(v.reporte.marcadores_quitados, 2);
+  assert.ok(!JSON.stringify(v.cv).includes('completar') && !JSON.stringify(v.cv).includes('data to complete'));
+});
+
+await prueba('Q4: el resumen no queda en tercera persona', async () => {
+  const { enTerceraPersona } = await import('../src/lib/cv-medida.ts');
+  for (const o of ['Her background spans biochemistry.', 'He has led assays.', 'Su experiencia incluye ensayos.', 'Ella coordinó estudiantes.', 'María coordinó estudiantes.'])
+    assert.ok(enTerceraPersona(o, 'María López Ruiz'), o);
+  for (const o of ['Bióloga con experiencia en ensayos.', 'Led data reviews.', 'El análisis de datos es mi fuerte.', 'Coordiné estudiantes.'])
+    assert.ok(!enTerceraPersona(o, 'María López Ruiz'), o);
+  const s = salidaBuena();
+  s.resumen = 'Investigadora con doctorado en ciencias bioquímicas. Su experiencia incluye el manejo de muestras. Ella coordinó estudiantes de maestría. Busco aplicar esa experiencia en el monitoreo de estudios clínicos.';
+  const v = validarCvMedida(s, ctxEs);
+  assert.equal(v.cv.resumen, 'Investigadora con doctorado en ciencias bioquímicas. Busco aplicar esa experiencia en el monitoreo de estudios clínicos.');
+  assert.equal(v.reporte.frases_tercera_persona, 2);
+});
+
+await prueba('Q5: viñetas de relleno que repiten el encabezado se quitan', async () => {
+  const { esVinetaRelleno } = await import('../src/lib/cv-medida.ts');
+  const cab = 'Postdoctoral Researcher Instituto de Biotecnología  2021 2024';
+  assert.ok(esVinetaRelleno('Held a Postdoctoral Researcher position (2021-2024)', cab));
+  assert.ok(esVinetaRelleno('Worked as Postdoctoral Researcher at Instituto de Biotecnología', cab));
+  assert.ok(esVinetaRelleno('Trabajé como Postdoctoral Researcher en el Instituto de Biotecnología', cab));
+  assert.ok(!esVinetaRelleno('Processed serum samples for a biomarker study', cab));
+  const s = salidaBuena();
+  s.experiencia[0].vinetas.unshift({ texto: 'Ocupé el puesto de Investigadora posdoctoral en el Instituto de Biotecnología (2021-2024).', fuente: 'cv', cita: 'Investigadora posdoctoral, Instituto de Biotecnología (2021-2024)' });
+  const v = validarCvMedida(s, ctxEs);
+  assert.ok(!v.cv.experiencia[0].vinetas.some((x) => x.texto.startsWith('Ocupé')));
+  assert.equal(v.reporte.vinetas_quitadas_relleno, 1);
+});
+
+await prueba('Q6: prompt p2 con las reglas nuevas', async () => {
+  const { CVM_PROMPT_VERSION, CVM_SYSTEM_PROMPT } = await import('../src/lib/cv-medida.ts');
+  assert.equal(CVM_PROMPT_VERSION, 'p2-2026-11');
+  for (const t of ['NUNCA copies el título del puesto', 'primera persona implícita', 'NOMBRE el dato que falta', 'solo repiten el encabezado'])
+    assert.ok(CVM_SYSTEM_PROMPT.includes(t), t);
+});
+
+
+// ── 9. Correcciones de la revisión de p2 (10 nov 2026) ──────────────────────────────────────────
+
+await prueba('S1: letras sueltas, romanos y abreviaturas quitadas de la lista cortan oración', async () => {
+  const { partirFrases } = await import('../src/lib/frases.ts');
+  assert.deepEqual(partirFrases('Ran phase I. Then led phase II.'), ['Ran phase I.', 'Then led phase II.']);
+  assert.deepEqual(partirFrases('Vitamin D. Next'), ['Vitamin D.', 'Next']);
+  assert.deepEqual(partirFrases('Plan B. Next'), ['Plan B.', 'Next']);
+  assert.deepEqual(partirFrases('Answered no. Then left.'), ['Answered no.', 'Then left.']);
+  assert.deepEqual(partirFrases('See art. Then go.'), ['See art.', 'Then go.']);
+  assert.deepEqual(partirFrases('Worked in the U.S. market. Led reviews.'), ['Worked in the U.S. market.', 'Led reviews.']);
+  assert.deepEqual(partirFrases('Worked in the US. market data.'), ['Worked in the US.', 'market data.']);
+});
+
+await prueba('S2: corta aunque siga minúscula y con comillas o paréntesis de cierre', async () => {
+  const { partirFrases } = await import('../src/lib/frases.ts');
+  assert.deepEqual(partirFrases('"done." Next'), ['"done."', 'Next']);
+  assert.deepEqual(partirFrases('(Done.) Next'), ['(Done.)', 'Next']);
+  assert.deepEqual(partirFrases('Done. next step'), ['Done.', 'next step']);
+});
+
+await prueba('S3: tercera persona sin falsos positivos con acentos ni "Es"', async () => {
+  const { enTerceraPersona } = await import('../src/lib/cv-medida.ts');
+  assert.ok(!enTerceraPersona('Isótopos estables y espectrometría son mi área.'));
+  assert.ok(!enTerceraPersona('Es decir, combino laboratorio y análisis de datos.'));
+  assert.ok(enTerceraPersona('Él coordinó estudiantes.'));
+  assert.ok(!enTerceraPersona('Is a researcher with lab experience.'), 'solo pronombres explícitos');
+});
+
+await prueba('S4: el titular se queda si la persona tuvo el puesto o si el título de la vacante es corto', () => {
+  const tuvo = salidaBuena();
+  tuvo.puesto_vacante = 'Investigadora posdoctoral';
+  tuvo.contacto.titular = 'Investigadora posdoctoral en bioquímica';
+  let v = validarCvMedida(tuvo, { ...ctxEs, vacante: `Investigadora posdoctoral\n${VACANTE_ES}` });
+  assert.equal(v.cv.contacto.titular, 'Investigadora posdoctoral en bioquímica');
+  assert.equal(v.reporte.titular_quitado, false);
+  const corto = salidaBuena();
+  corto.puesto_vacante = 'Clinical Research';
+  corto.contacto.titular = 'Biomedical scientist targeting clinical research';
+  v = validarCvMedida(corto, { ...ctxEs, idioma: 'en', vacante: `Clinical Research\n${VACANTE_EN}` });
+  assert.equal(v.cv.contacto.titular, 'Biomedical scientist targeting clinical research');
+  const igual = salidaBuena();
+  igual.puesto_vacante = 'Clinical Research';
+  igual.contacto.titular = 'Clinical Research';
+  v = validarCvMedida(igual, { ...ctxEs, idioma: 'en', vacante: VACANTE_EN });
+  assert.equal(v.cv.contacto.titular, '', 'título corto copiado tal cual sí se quita');
+});
+
+await prueba('S5: limpieza de marcadores sin frases rotas; viñeta con menos de 3 palabras de contenido se quita', () => {
+  assert.equal(limpiarMarcadores('Reduced errors to [data to complete].').texto, 'Reduced errors.');
+  assert.equal(limpiarMarcadores('Analicé muestras de [dato] y [dato].').texto, 'Analicé muestras.');
+  const s = salidaBuena();
+  s.experiencia[0].vinetas = [
+    { texto: 'Reduced errors to [data to complete].', fuente: 'cv', cita: 'Responsable de los experimentos de expresión de proteínas del laboratorio.' },
+    { texto: 'Analicé muestras de [dato] y [dato].', fuente: 'cv', cita: 'Procesé 1,200 muestras de suero para el estudio de biomarcadores.' },
+    { texto: 'Coordiné a 4 estudiantes de maestría.', fuente: 'cv', cita: 'Coordiné a 4 estudiantes de maestría.' },
+  ];
+  const v = validarCvMedida(s, ctxEs);
+  const textos = v.cv.experiencia[0].vinetas.map((x) => x.texto);
+  assert.deepEqual(textos, ['Coordiné a 4 estudiantes de maestría.']);
+  assert.ok(!textos.some((t) => /\b(to|de|y)\.$/.test(t)));
+});
+
+await prueba('S6: resumen todo en tercera persona no reintenta; se entrega sin resumen y se cuenta', async () => {
+  const s = salidaBuena();
+  s.resumen = 'Her background spans biochemistry. She has led sample handling. Su experiencia incluye ensayos.';
+  const v = validarCvMedida(s, ctxEs);
+  assert.ok(v.ok);
+  assert.equal(v.cv.resumen, '');
+  assert.equal(v.reporte.resumen_vacio_tercera, true);
+  const xml = strFromU8(unzipSync(await construirDocx(v.cv))['word/document.xml']);
+  assert.ok(!xml.includes('RESUMEN PROFESIONAL'), 'sin sección vacía');
+  assert.ok(avisosFiltro(v.reporte).some((a) => a.includes('sin resumen')));
+  // Vacío por cifras inventadas (no por tercera persona) sí falla para reintentar.
+  const c = salidaBuena();
+  c.resumen = 'Tengo 25 años de experiencia.';
+  assert.equal(validarCvMedida(c, ctxEs).ok, false);
+});
+
+
+// ── 10. Reglas simples (revisión 10 nov 2026, tercera ronda) ─────────────────────────────────────
+
+await prueba('T1: "El ..." no cuenta como tercera persona; solo pronombres explícitos', async () => {
+  const { enTerceraPersona } = await import('../src/lib/cv-medida.ts');
+  for (const o of ['El hallazgo principal fue un biomarcador.', 'El estudio incluyó tres hospitales.', 'El liderazgo de equipos es mi fuerte.'])
+    assert.ok(!enTerceraPersona(o, 'María López'), o);
+  for (const o of ['He led assays.', 'She has led reviews.', 'His work spans assays.', 'Her background spans biochemistry.', 'They led it.', 'Él coordinó.', 'Ella coordinó.', 'Su experiencia incluye ensayos.'])
+    assert.ok(enTerceraPersona(o), o);
+  const s = salidaBuena();
+  s.resumen = 'El hallazgo principal de mi posdoctorado fue un biomarcador. El estudio incluyó muestras de suero.';
+  assert.equal(validarCvMedida(s, ctxEs).cv.resumen, s.resumen);
+});
+
+await prueba('T2: solo se quita la preposición pegada al marcador', () => {
+  assert.equal(limpiarMarcadores('Trabajé con hepatitis B y E, grupos A y [dato].').texto, 'Trabajé con hepatitis B y E, grupos A.');
+  assert.equal(limpiarMarcadores('Comparé muestras de suero con plasma en [dato].').texto, 'Comparé muestras de suero con plasma.');
+  assert.equal(limpiarMarcadores('Validated assays To [data] and A.').texto, 'Validated assays To and A.', 'mayúsculas no se tocan');
+});
+
+await prueba('T3: lista explícita de abreviaturas; con mayúscula después, corta', async () => {
+  const { partirFrases } = await import('../src/lib/frases.ts');
+  assert.deepEqual(partirFrases('Took vitamin D. The next.'), ['Took vitamin D.', 'The next.']);
+  assert.deepEqual(partirFrases('Tengo un Ph.D. Coordiné ensayos.'), ['Tengo un Ph.D.', 'Coordiné ensayos.']);
+  assert.deepEqual(partirFrases('Tengo un Ph.D. en biología. Coordiné ensayos.'), ['Tengo un Ph.D. en biología.', 'Coordiné ensayos.']);
+  assert.deepEqual(partirFrases('Tengo una M.Sc. y una B.Sc. en química. Listo.'), ['Tengo una M.Sc. y una B.Sc. en química.', 'Listo.']);
+  assert.deepEqual(partirFrases('Trabajé con la Dra. en oncología y el Lic. de datos. Listo.'), ['Trabajé con la Dra. en oncología y el Lic. de datos.', 'Listo.']);
+  assert.deepEqual(partirFrases('Ver No. 5 del protocolo y la dosis de 2.5 mg. Listo.'), ['Ver No. 5 del protocolo y la dosis de 2.5 mg.', 'Listo.']);
+  assert.deepEqual(partirFrases('Lo hice en U.K. y en U.S. con equipos, i.e. en sitio. Listo.'), ['Lo hice en U.K. y en U.S. con equipos, i.e. en sitio.', 'Listo.']);
+  assert.deepEqual(partirFrases('J. K. Rowling escribió.'), ['J.', 'K.', 'Rowling escribió.']);
 });
 
 // ── 6. Correos y consentimiento ─────────────────────────────────────────────────────────────────

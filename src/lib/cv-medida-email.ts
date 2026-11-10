@@ -36,7 +36,14 @@ export function avisosFiltro(rep: CvmReporte): string[] {
     );
   if (rep.entradas_quitadas + rep.items_quitados > 0)
     out.push('Dejamos fuera algunos puestos, estudios o elementos de lista que no encontramos tal cual en lo que enviaste.');
-  if (rep.frases_resumen_quitadas > 0) out.push('Recortamos el resumen para que no lleve cifras ni siglas que no estén en tu CV.');
+  if (rep.frases_resumen_quitadas > 0)
+    out.push('Recortamos el resumen para que no lleve cifras ni siglas que no estén en tu CV ni frases en tercera persona.');
+  if (rep.resumen_vacio_tercera)
+    out.push('El documento va sin resumen profesional porque el que se redactó estaba en tercera persona; escribe 2 a 5 frases sobre tu perfil al inicio.');
+  if (rep.vinetas_quitadas_relleno > 0)
+    out.push('Quitamos viñetas que solo repetían el puesto y las fechas; si tienes logros o tareas concretas de ese puesto, agrégalos.');
+  if (rep.titular_quitado)
+    out.push('Dejamos vacío el titular bajo tu nombre porque repetía el título de la vacante; escribe uno que describa tu perfil real.');
   if (rep.contacto_quitado > 0) out.push('Algún dato de contacto no coincidía con tu CV y lo dejamos vacío; agrégalo tú si hace falta.');
   if (rep.requisitos_sin_evidencia > 0)
     out.push('Algunos requisitos quedaron como "No cumple" porque no encontramos evidencia literal; si sí los tienes, agrégalos al CV con tus palabras.');

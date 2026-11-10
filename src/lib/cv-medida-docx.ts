@@ -127,7 +127,8 @@ export function parrafosCv(cv: CvMedida): Paragraph[] {
   if (contacto) out.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 40 }, children: tramos(contacto) }));
   if (c.titular) out.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 80 }, children: tramos(c.titular, { italics: true }) }));
 
-  out.push(titulo(L.resumen), parrafo(cv.resumen, { after: 80 }));
+  // 10 nov 2026: sin resumen (todo venía en tercera persona) no se pinta la sección vacía.
+  if (cv.resumen) out.push(titulo(L.resumen), parrafo(cv.resumen, { after: 80 }));
 
   if (cv.experiencia.length) {
     out.push(titulo(L.experiencia));

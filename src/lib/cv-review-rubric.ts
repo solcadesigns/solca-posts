@@ -12,6 +12,7 @@
  */
 
 import type { Role } from './simulator-types';
+import { partirFrasesConservador } from './frases.ts';
 
 export const RUBRIC_VERSION = 'v2-2026-11';
 
@@ -326,9 +327,12 @@ export function bannedHits(text: string): string[] {
   return BANNED.filter((b) => b.re.test(text)).map((b) => b.key);
 }
 
-/** Quita las oraciones que contienen una frase prohibida. */
+/**
+ * Quita las oraciones que contienen una frase prohibida. 10 nov 2026: corte conservador (src/lib/frases.ts), igual al
+ * de antes salvo dentro de "Ph. D.", "M. Sc.", "B. Sc.", "Dr." y "Dra.": nunca pega una oración limpia a una prohibida.
+ */
 export function scrubBanned(text: string): string {
-  const sentences = text.split(/(?<=[.!?])\s+/);
+  const sentences = partirFrasesConservador(text);
   return sentences.filter((s) => bannedHits(s).length === 0).join(' ').trim();
 }
 
