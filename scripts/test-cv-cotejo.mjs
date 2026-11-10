@@ -221,4 +221,36 @@ await prueba('revisión: negaciones, marca saltada por otro encabezado, evidenci
   assert.equal(r.requisitos[0].estado, 'cumple');
 });
 
+await prueba('c2: obligación en la frase con encabezado neutro; cita compartida por dos requisitos', () => {
+  assert.equal(prioridadPorMarca('This role typically requires 0 - 2 years of prior relevant experience', 'Experience and skills'), 'indispensable');
+  assert.equal(prioridadPorMarca('Degree in scientific discipline or health care.', 'Experience and skills'), 'deseable');
+  assert.equal(prioridadPorMarca('Good knowledge of clinical research regulatory requirements', 'Experience and skills'), 'deseable');
+  assert.equal(prioridadPorMarca('Conocimiento de requisitos regulatorios', ''), 'deseable');
+  // Cita propia por parte: la obligatoria es indispensable y la preferida deseable; la cita mezclada es dudosa → deseable.
+  assert.equal(prioridadPorMarca("Bachelor's degree in pharmacy", 'Requirements', { requisito: "Bachelor's degree" }), 'indispensable');
+  assert.equal(prioridadPorMarca("Master's preferred", 'Requirements', { requisito: "Master's degree" }), 'deseable');
+  assert.equal(prioridadPorMarca("Bachelor's degree in pharmacy (Master's preferred)", 'Requirements', { requisito: "Bachelor's degree" }), 'deseable');
+});
+
+await prueba('c2 revisión: negaciones y "required" como adjetivo de un tema', () => {
+  const N = 'Experience and skills';
+  for (const c of [
+    'No es requisito indispensable el inglés',
+    'Not mandatory but helpful: SAS',
+    'Prepare documents required by regulatory authorities',
+    'Understand what is required for SOP compliance',
+    'Complete mandatory training',
+    'Willingness to travel when required',
+    'Support sites where required',
+    'Good knowledge of clinical research regulatory requirements',
+  ]) assert.equal(prioridadPorMarca(c, N), 'deseable', c);
+  for (const c of [
+    'This role typically requires 0 - 2 years of prior relevant experience',
+    'Candidates must hold a degree in life sciences',
+    'Fluent English is required',
+    'Inglés avanzado indispensable',
+    'Se requiere licenciatura en química',
+  ]) assert.equal(prioridadPorMarca(c, N), 'indispensable', c);
+});
+
 console.log(`${n} pruebas pasaron.`);

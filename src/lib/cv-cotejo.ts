@@ -18,7 +18,9 @@
 import { chatCompletion, extractText, HAIKU, AnthropicError, AnthropicRefusalError } from './anthropic.ts';
 import { normalizar, prepararFuentes, citaEnFuentes, detectarIdioma, parsearJson, CVM_ROLES, type CvmRol, type Prioridad, type Idioma } from './cv-medida.ts';
 
-export const COTEJO_VERSION = 'c1-2026-11';
+// c2 (10 nov 2026, 9 pruebas reales): obligación en la frase del requisito aunque la marca sea neutra; preferencia
+// también en el nombre del requisito; cita propia por cada parte de un requisito dividido.
+export const COTEJO_VERSION = 'c2-2026-11';
 export const COTEJO_MIN_CV = 200;
 export const COTEJO_MAX_CV = 15_000;
 export const COTEJO_MIN_VACANTE = 200;
@@ -80,6 +82,30 @@ const OBLIGACION = [
   'required', 'requirement', 'requirements', 'requires', 'require', 'must', 'mandatory', 'essential',
   'minimum qualifications', 'basic qualifications', 'minimum requirements',
 ];
+/**
+ * Obligación dentro de la frase del propio requisito (c2). Solo construcciones que obligan a la persona: "requires",
+ * "must", "se requiere", "is required", "es indispensable" o el adjetivo al final ("Inglés avanzado indispensable").
+ * No cuentan "documents required by…", "mandatory training", "regulatory requirements", "as/if/when/where required",
+ * ni una obligación negada ("not mandatory", "no es indispensable", "sin requerir").
+ */
+const ADJ_OBL = '(required|mandatory|indispensable|obligatorio|obligatoria|imprescindible|requerido|requerida|requeridos|requeridas|excluyente)';
+const PATRONES_OBL_CITA = [
+  /\b(requires|requiere|requieren|se requiere|se requieren|must)\b/,
+  new RegExp(`\\b(is|are|es|son|será|sera) ${ADJ_OBL}\\b`),
+  new RegExp(`\\b${ADJ_OBL}$`),
+];
+export function obligacionEnCita(citaNorm: string): boolean {
+  const c = citaNorm;
+  if (/\b(if|as|when|where|si|cuando) (required|requerido|se requiere)\b|\bwhat is required\b/.test(c)) return false;
+  for (const re of PATRONES_OBL_CITA) {
+    const m = re.exec(c);
+    if (!m) continue;
+    const antes = c.slice(0, m.index).split(' ').filter(Boolean).slice(-3);
+    if (antes.some((w) => ['no', 'not', 'nor', 'sin', 'ni'].includes(w))) continue;
+    return true;
+  }
+  return false;
+}
 // Palabras que marcan preferencia; en el texto del propio requisito ganan sobre la marca de su sección.
 const PREFERENCIA = [
   'deseable', 'deseables', 'preferente', 'preferentemente', 'preferible', 'de preferencia', 'se valora', 'se valorara',
@@ -88,7 +114,8 @@ const PREFERENCIA = [
   'advantageous', 'bonus', 'not required', 'a plus', 'beneficial',
   // Negaciones: "No se requiere experiencia previa" no es una obligación.
   'no se requiere', 'no se requieren', 'no es necesario', 'no es necesaria', 'no requerido', 'no requerida', 'sin necesidad',
-  'not necessary', 'no experience required', 'no prior experience required',
+  'not necessary', 'no experience required', 'no prior experience required', 'not mandatory', 'not essential',
+  'no es requisito', 'no es indispensable', 'no es obligatorio', 'no es obligatoria', 'no es imprescindible', 'helpful',
 ];
 
 function contieneFrase(textoNorm: string, frases: string[]): boolean {
@@ -100,13 +127,20 @@ function contieneFrase(textoNorm: string, frases: string[]): boolean {
  * Prioridad decidida por código. Indispensable solo si la marca (literal de la vacante) contiene una palabra de
  * obligación y ni el requisito ni la marca dicen preferencia. Todo lo demás, deseable.
  */
-export function prioridadPorMarca(cita: string, marca: string): Prioridad {
+export function prioridadPorMarca(cita: string, marca: string, opts: { requisito?: string } = {}): Prioridad {
   const c = normalizar(cita);
   const m = normalizar(marca);
-  if (contieneFrase(c, PREFERENCIA)) return 'deseable';
-  if (!m) return contieneFrase(c, OBLIGACION) && !/\bif required\b|\bas required\b|\bsi se requiere\b/.test(c) ? 'indispensable' : 'deseable';
-  if (contieneFrase(m, PREFERENCIA)) return 'deseable';
-  return contieneFrase(m, OBLIGACION) ? 'indispensable' : 'deseable';
+  const r = normalizar(opts.requisito ?? '');
+  // Preferencia en el nombre o en la cita → deseable. Si una cita compartida mezcla obligación y preferencia
+  // ("Bachelor's degree (Master's preferred)"), es dudosa para los dos y queda deseable; por eso el prompt pide una
+  // cita propia para cada parte.
+  if (contieneFrase(r, PREFERENCIA) || contieneFrase(c, PREFERENCIA)) return 'deseable';
+  if (m && !contieneFrase(m, PREFERENCIA) && contieneFrase(m, OBLIGACION)) return 'indispensable';
+  if (m && contieneFrase(m, PREFERENCIA)) return 'deseable';
+  // c2: la obligación también puede venir en la frase del propio requisito ("This role typically requires 0-2 years…")
+  // aunque la marca sea un encabezado neutro ("Experience and skills").
+  if (obligacionEnCita(c)) return 'indispensable';
+  return 'deseable';
 }
 
 // ── Paso 1: clasificar la vacante ──────────────────────────────────────────────────────────────────
@@ -116,7 +150,7 @@ export const COTEJO_VACANTE_PROMPT = `Lees una vacante de la industria farmacéu
 Tu tarea: listar los REQUISITOS que la vacante pide a la persona candidata (formación, experiencia, conocimientos, herramientas, idiomas, certificaciones, disponibilidad). No incluyas responsabilidades del puesto ("you will…", "serás responsable de…"), beneficios, descripción de la empresa ni avisos legales.
 
 Para cada requisito:
-- "requisito": nombre corto del requisito, de 2 a 12 palabras, en el idioma de la vacante. Un requisito por elemento: si una línea junta una parte obligatoria y otra preferida ("Bachelor's degree (Master's preferred)"), sepáralas en dos elementos.
+- "requisito": nombre corto del requisito, de 2 a 12 palabras, en el idioma de la vacante. Un requisito por elemento: si una línea junta una parte obligatoria y otra preferida ("Bachelor's degree (Master's preferred)"), sepáralas en dos elementos, cada uno con su propia cita: solo el fragmento de esa parte (p. ej. "Bachelor's degree in Life Sciences or related fields" y "Master's preferred").
 - "cita": fragmento LITERAL de la vacante, copiado sin cambios, que contiene el requisito (de 3 a 30 palabras).
 - "marca": el encabezado de sección o la frase LITERAL de la vacante que introduce o califica ese requisito, copiada sin cambios (p. ej. "Required qualifications and experience:", "Requisitos:", "What We're Looking For", "This role typically requires", "Preferred:", "Deseable"). Si el requisito no tiene encabezado ni frase que lo introduzca, cadena vacía. No juzgues si es obligatorio: solo copia la marca.
 
@@ -224,10 +258,11 @@ export function validarVacante(salida: unknown, vacante: string): VacanteClasifi
     if (marca && !citaEnFuentes(marca, fuente, 4)) marca = '';
     if (marca && !marcaCalifica(vacante, cita, marca)) marca = '';
     vistos.add(clave);
-    requisitos.push({ requisito, cita, marca, prioridad: prioridadPorMarca(cita, marca) });
+    requisitos.push({ requisito, cita, marca, prioridad: 'deseable' });
     if (requisitos.length >= COTEJO_MAX_REQUISITOS) break;
   }
   if (requisitos.length < 2) return null;
+  for (const q of requisitos) q.prioridad = prioridadPorMarca(q.cita, q.marca, { requisito: q.requisito });
   const rol = (CVM_ROLES as readonly string[]).includes(String(o.rol)) ? (o.rol as CvmRol) : 'Other';
   return {
     version: COTEJO_VERSION,
