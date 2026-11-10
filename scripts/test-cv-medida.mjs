@@ -364,7 +364,7 @@ function trabajo(now = T0) {
       paginas: 2,
       idioma: 'es',
       marketing: false,
-      consentVersion: 'v4-2026-11',
+      consentVersion: 'v5-2026-11',
       consentTs: new Date(now).toISOString(),
       attr: {},
       interno: true,
@@ -825,7 +825,7 @@ await prueba('Q5: viñetas de relleno que repiten el encabezado se quitan', asyn
 
 await prueba('Q6: prompt con las reglas de p2 (versión vigente p3)', async () => {
   const { CVM_PROMPT_VERSION, CVM_SYSTEM_PROMPT } = await import('../src/lib/cv-medida.ts');
-  assert.equal(CVM_PROMPT_VERSION, 'p3-2026-11');
+  assert.equal(CVM_PROMPT_VERSION, 'p4-2026-11');
   for (const t of ['NUNCA copies el título del puesto', 'primera persona implícita', 'NOMBRE el dato que falta', 'solo repiten el encabezado'])
     assert.ok(CVM_SYSTEM_PROMPT.includes(t), t);
 });
@@ -1019,27 +1019,37 @@ await prueba('P4: prioridad indispensable/deseable, orden, etiqueta en el correo
   s.coincidencia = [
     { requisito: 'Experiencia en monitoreo', prioridad: 'deseable', estado: 'no_cumple', evidencia: '', comentario: 'No aparece.' },
     { requisito: 'Inglés avanzado', prioridad: 'indispensable', estado: 'cumple', evidencia: 'Inglés avanzado (C1)', comentario: '' },
-    { requisito: 'Manejo de datos', estado: 'parcial', evidencia: 'Análisis estadístico en SAS y R.', comentario: '' },
+    { requisito: 'Manejo de datos', prioridad: 'required', estado: 'parcial', evidencia: 'Análisis estadístico en SAS y R.', comentario: '' },
     { requisito: 'GCP', prioridad: 'nice to have', estado: 'no_cumple', evidencia: '', comentario: '' },
+    { requisito: 'Viajar', estado: 'no_cumple', evidencia: '', comentario: '' },
   ];
   const v = validarCvMedida(s, ctxEs);
-  // Sin prioridad → indispensable; "nice to have" → deseable; indispensables primero, en orden estable.
+  // p4: "required" → indispensable; "nice to have" o sin prioridad → deseable; indispensables primero, en orden estable.
   assert.deepEqual(v.cv.coincidencia.map((q) => [q.requisito, q.prioridad]), [
     ['Inglés avanzado', 'indispensable'],
     ['Manejo de datos', 'indispensable'],
     ['Experiencia en monitoreo', 'deseable'],
     ['GCP', 'deseable'],
+    ['Viajar', 'deseable'],
   ]);
   const c = conteoPorPrioridad(v.cv);
   assert.equal(c.ind_cumple, 1);
   assert.equal(c.ind_parcial, 1);
   assert.equal(c.ind_no_cumple, 0);
-  assert.equal(c.des_no_cumple, 2);
+  assert.equal(c.des_no_cumple, 3);
   const r = renderEntrega(v.cv, v.reporte, { downloadId: 'x', venceEl: 'hoy' });
   assert.ok(r.text.indexOf('(indispensable)') < r.text.indexOf('(deseable)'));
   assert.ok(r.html.includes('Indispensable') && r.html.includes('Deseable'));
   const { CVM_SYSTEM_PROMPT } = await import('../src/lib/cv-medida.ts');
   assert.ok(CVM_SYSTEM_PROMPT.includes('"prioridad": "indispensable"'));
+  assert.ok(CVM_SYSTEM_PROMPT.includes('Si dudas, "deseable"'));
+  assert.ok(CVM_SYSTEM_PROMPT.includes('siempre AL FINAL'));
+  // p4: el prompt ya no propone la forma "; resultado: [..]" (al quitar un marcador inválido dejaba "resultado:.").
+  assert.ok(!CVM_SYSTEM_PROMPT.includes('resultado: [% de reducción]'));
+  const s2 = salidaBuena();
+  s2.coincidencia = ['Must-have', 'Excluyente', 'Requerida', 'Plus', ''].map((p, i) => ({ requisito: `R${i}`, prioridad: p, estado: 'no_cumple', evidencia: '', comentario: '' }));
+  const v2 = validarCvMedida(s2, ctxEs);
+  assert.deepEqual(v2.cv.coincidencia.map((q) => q.prioridad), ['indispensable', 'indispensable', 'indispensable', 'deseable', 'deseable']);
 });
 
 await prueba('P5: marcadores en el idioma del CV', async () => {
@@ -1107,7 +1117,7 @@ await prueba('consentimiento: casilla de cv-medida describe plazos del código',
   const src = fs.readFileSync(new URL('../src/lib/consent.ts', import.meta.url), 'utf8');
   const bloque = src.slice(src.indexOf("'cv-medida': {"), src.indexOf("'cv-medida': {") + 900);
   assert.ok(bloque.includes('4 días') && bloque.includes('7 días') && bloque.includes('IA'));
-  assert.ok(src.includes("export const CONSENT_VERSION = 'v4-2026-11'"));
+  assert.ok(src.includes("export const CONSENT_VERSION = 'v5-2026-11'"));
   assert.equal(CVM_JOB_TTL_S, 4 * 86400);
 });
 

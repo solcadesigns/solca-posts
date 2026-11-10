@@ -23,11 +23,11 @@ const PRIORIDAD_LABEL = { indispensable: 'Indispensable', deseable: 'Deseable' }
 /** p3: indispensables primero (la validación ya los ordena; aquí se asegura) y etiqueta de prioridad. */
 export function requisitosOrdenados(cv: CvMedida): CvmRequisito[] {
   return [...cv.coincidencia].sort((a, b) =>
-    (a.prioridad ?? 'indispensable') === (b.prioridad ?? 'indispensable') ? 0 : (a.prioridad ?? 'indispensable') === 'indispensable' ? -1 : 1,
+    (a.prioridad ?? 'deseable') === (b.prioridad ?? 'deseable') ? 0 : (a.prioridad ?? 'deseable') === 'indispensable' ? -1 : 1,
   );
 }
 function etiquetaPrioridad(q: CvmRequisito): string {
-  return PRIORIDAD_LABEL[q.prioridad ?? 'indispensable'];
+  return PRIORIDAD_LABEL[q.prioridad ?? 'deseable'];
 }
 
 function esc(s: string): string {

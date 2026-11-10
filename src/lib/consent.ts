@@ -24,7 +24,8 @@ import { emailHashFull, type Attribution } from './attribution';
 // privacidad del revisor de CV (análisis por correo, aviso de falla y reintento con el CV guardado hasta 48 h);
 // los textos de Simulador y Quiz quedan igual. La versión es única para todos los formularios.
 // v4-2026-11 (6 nov 2026): se agrega la casilla de CV a la medida (`cv-medida`); las demás quedan igual.
-export const CONSENT_VERSION = 'v4-2026-11';
+// v5-2026-11 (10 nov 2026, aprobado por Oscar): casilla comercial del revisor de CV corta; las demás quedan igual.
+export const CONSENT_VERSION = 'v5-2026-11';
 
 // 'reconfirmacion-es': opt-in desde /api/confirmar-correos (correo único aviso-privacidad-2026-11, legado España).
 // 'cv-medida' (6 nov 2026): CV a la medida; el consentimiento se registra al confirmar el pago (webhook).
@@ -50,7 +51,7 @@ export const CONSENT_TEXT: Record<FormKey, { privacidad: string; marketing: stri
     privacidad:
       'He leído el aviso de privacidad y acepto que el texto de mi CV se procese con IA para generar mi análisis. El CV no se guarda; solo si el análisis falla, se conserva hasta 48 horas para reintentarlo y después se borra. Mi correo se usa para enviarme el análisis, avisarme si falla y limitar el número de análisis.',
     marketing:
-      'Quiero recibir 4 correos de bienvenida en las próximas 3 semanas y el newsletter semanal Solca Insight, con recursos y ofertas de Solca Ciencia (libros, curso y Simulador). Me doy de baja cuando quiera.',
+      'Quiero recibir el newsletter y correos con recursos y ofertas de Solca Ciencia. Me doy de baja cuando quiera.',
     nota: 'Opcional. Tu análisis funciona igual sin marcarla.',
   },
   'cv-medida': {
