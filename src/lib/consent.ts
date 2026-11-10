@@ -25,12 +25,14 @@ import { emailHashFull, type Attribution } from './attribution';
 // los textos de Simulador y Quiz quedan igual. La versión es única para todos los formularios.
 // v4-2026-11 (6 nov 2026): se agrega la casilla de CV a la medida (`cv-medida`); las demás quedan igual.
 // v5-2026-11 (10 nov 2026, aprobado por Oscar): casilla comercial del revisor de CV corta; las demás quedan igual.
-export const CONSENT_VERSION = 'v5-2026-11';
+// v6-2026-11 (10 nov 2026): se agrega la casilla de la comparación con una vacante (`cotejo`, interna hasta diciembre).
+export const CONSENT_VERSION = 'v6-2026-11';
 
 // 'reconfirmacion-es': opt-in desde /api/confirmar-correos (correo único aviso-privacidad-2026-11, legado España).
 // 'cv-medida' (6 nov 2026): CV a la medida; el consentimiento se registra al confirmar el pago (webhook).
-export type ConsentForm = 'simulador' | 'simulador-pago' | 'quiz' | 'cv' | 'cv-medida' | 'reconfirmacion-es';
-export type FormKey = 'simulador' | 'quiz' | 'cv' | 'cv-medida';
+// 'cotejo' (10 nov 2026): comparación gratis del CV con una vacante. Sin casilla comercial.
+export type ConsentForm = 'simulador' | 'simulador-pago' | 'quiz' | 'cv' | 'cv-medida' | 'cotejo' | 'reconfirmacion-es';
+export type FormKey = 'simulador' | 'quiz' | 'cv' | 'cv-medida' | 'cotejo';
 
 export const CONSENT_TEXT: Record<FormKey, { privacidad: string; marketing: string; nota: string }> = {
   simulador: {
@@ -60,6 +62,12 @@ export const CONSENT_TEXT: Record<FormKey, { privacidad: string; marketing: stri
     marketing:
       'Quiero recibir el newsletter semanal Solca Insight y correos con recursos y ofertas de Solca Ciencia (libros, curso y Simulador). Me doy de baja cuando quiera.',
     nota: 'Opcional. Tu compra funciona igual sin marcarla.',
+  },
+  cotejo: {
+    privacidad:
+      'He leído el aviso de privacidad y acepto que el texto de mi CV y el de la vacante se procesen con IA para compararlos. El CV no se guarda. Mi correo se usa para limitar el número de comparaciones.',
+    marketing: '',
+    nota: '',
   },
 };
 

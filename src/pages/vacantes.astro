@@ -271,6 +271,8 @@ const actualizadoTxt = actualizado
               <a href={linkSimulador(v.rol)} class="vac-tool" data-tool="simulador" data-id={v.id}>Practica la entrevista</a>
             )}
             <a href={linkCv} class="vac-tool" data-tool="cv" data-id={v.id}>Revisa tu CV</a>
+            {/* 10 nov 2026: comparación con esta vacante; oculto salvo tráfico interno (?interno=1) hasta diciembre. */}
+            <a data-href={`/comparar-cv/?vacante=${encodeURIComponent(v.id)}&ref=vacantes`} rel="nofollow" class="vac-tool vac-cotejo" data-tool="cotejo" data-id={v.id} hidden>Compara tu CV con esta vacante</a>
             {libroDe(v) && (
               <a href={linkLibro(libroDe(v)!)} class="vac-tool" data-tool="libro" data-id={v.id}>Libro: {libroDe(v)!.titulo}</a>
             )}
@@ -372,6 +374,7 @@ const actualizadoTxt = actualizado
   .vac-acciones { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font-size: 0.92rem; }
   .vac-ver { font-weight: 600; color: var(--navy); }
   .vac-tool { color: var(--orange); }
+  .vac-cotejo[hidden] { display: none !important; }
   .vac-paginacion { display: flex; justify-content: center; gap: 20px; margin: 28px 0; color: var(--text-mute); }
   .vac-cta {
     display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: center; justify-content: space-between;
@@ -387,6 +390,17 @@ const actualizadoTxt = actualizado
     .vac-card { padding: 16px; }
   }
 </style>
+
+<script>
+  // 10 nov 2026: el botón de comparación solo se ve con tráfico interno hasta el lanzamiento de diciembre.
+  if ((window as unknown as { __interno?: boolean }).__interno) {
+    // Sin href en el HTML (los rastreadores no lo siguen); se pone aquí solo para tráfico interno.
+    document.querySelectorAll<HTMLAnchorElement>('.vac-cotejo').forEach((el) => {
+      el.href = el.dataset.href ?? '';
+      el.hidden = false;
+    });
+  }
+</script>
 
 <script>
   // Medición del buscador (22 oct 2026): vistas, filtros, clics a vacantes y paso a herramientas.

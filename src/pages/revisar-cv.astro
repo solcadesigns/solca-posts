@@ -299,6 +299,8 @@ const atsBlogURL =
       <button type="button" id="waitlist-btn" class="btn btn-secondary btn-navy">{WAITLIST_BOTON}</button>
       <p class="field-help" id="waitlist-note">{WAITLIST_NOTA}</p>
       <p class="bridge-done" id="waitlist-done" role="status" hidden></p>
+      <!-- 10 nov 2026: puente a la comparación con una vacante. Solo tráfico interno (?interno=1) hasta diciembre. -->
+      <a class="btn btn-secondary btn-navy" id="cotejo-link" data-href="/comparar-cv/?ref=cv" rel="nofollow" hidden>¿Tienes una vacante en mente? Compárala gratis</a>
     </aside>
 
     <div class="result-card result-useful" id="useful-card">
@@ -878,6 +880,8 @@ const atsBlogURL =
   }
   .cv-result .result-next-step h4 { margin: 0 0 8px; font-size: 17px; color: var(--off-white); }
   .cv-result .result-next-step .btn { margin-top: 8px; }
+  #cotejo-link { margin-top: 12px; }
+  #cotejo-link[hidden] { display: none !important; }
   .cv-result .result-cta-note {
     font-size: 13px;
     color: var(--off-white-mute);
@@ -1535,6 +1539,8 @@ const atsBlogURL =
     }
   });
 
+  document.getElementById('cotejo-link')?.addEventListener('click', () => cvStep('cotejo_puente'));
+
   // ---- "¿Te sirvió este análisis?" en un clic ----
   document.querySelectorAll<HTMLButtonElement>('[data-useful]').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -1625,6 +1631,17 @@ const atsBlogURL =
       const data = (await res.json()) as Result;
       lastEmail = payload.email.toLowerCase();
       lastRol = payload.rol_objetivo ?? '';
+      // 10 nov 2026: CV, correo y rol pasan a /comparar-cv por sessionStorage (nunca en la URL). Solo interno por ahora.
+      if ((window as unknown as { __interno?: boolean }).__interno) {
+        try {
+          sessionStorage.setItem('solca_cotejo', JSON.stringify({ cv: payload.cv, email: lastEmail, rol: lastRol }));
+        } catch {
+          /* sin sessionStorage: la página pide el CV */
+        }
+        const cl = document.getElementById('cotejo-link') as HTMLAnchorElement | null;
+        if (cl) cl.href = cl.dataset.href ?? '';
+        show(cl);
+      }
       renderResult(data);
       hide(loading);
       show(result);

@@ -1,0 +1,358 @@
+---
+/**
+ * /comparar-cv · comparación gratis del CV con una vacante (10 nov 2026). Interna hasta el lanzamiento de diciembre:
+ * noindex, sin enlaces públicos; la API responde solo a tráfico interno (?interno=1) o con cotejo_publico = 1.
+ * Especificación: ../consultoria/investigacion/2026-12-spec-recorrido-revisor-cv-medida.md
+ *
+ * Entradas:
+ *   - desde el revisor de CV (?ref=cv): CV, correo y rol en sessionStorage `solca_cotejo` (nunca en la URL);
+ *   - desde el buscador (?vacante=<id>&ref=vacantes): la vacante sale de D1 por id; el CV se pega o se sube.
+ * Muestra el conteo de requisitos indispensables y la lista por nombre. Sin consejos de redacción.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { CONSENT_COMMON, CONSENT_MSG, privacidadHtml } from '../lib/consent';
+import { COTEJO_MIN_CV, COTEJO_MAX_CV, COTEJO_MIN_VACANTE, COTEJO_MAX_VACANTE } from '../lib/cv-cotejo';
+
+export const prerender = false;
+
+const consentPrivacidadHtml = privacidadHtml('cotejo');
+const vacanteId = (Astro.url.searchParams.get('vacante') ?? '').slice(0, 120);
+const refParam = Astro.url.searchParams.get('ref') ?? '';
+const ref = ['cv', 'vacantes', 'linkedin', 'correo'].includes(refParam) ? refParam : 'directo';
+let vac: { titulo: string; empresa: string; url: string } | null = null;
+if (vacanteId) {
+  const db = (Astro.locals as { runtime?: { env?: Record<string, unknown> } }).runtime?.env?.SIMULATOR_METRICS_DB as D1Database | undefined;
+  try {
+    vac = db
+      ? await db.prepare('SELECT titulo, empresa, url FROM vacantes WHERE id = ? AND activa = 1 AND length(descripcion) >= 200').bind(vacanteId).first<{ titulo: string; empresa: string; url: string }>()
+      : null;
+  } catch {
+    vac = null;
+  }
+}
+---
+<BaseLayout
+  title="Compara tu CV con una vacante · Solca"
+  description="Pega una vacante y ve cuántos de sus requisitos indispensables aparecen en tu CV."
+  noindex={true}
+>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <span class="dot"></span>
+      <span>Solca</span>
+    </a>
+    <div class="nav-links">
+      <a href="/vacantes">Vacantes</a>
+      <a href="/revisar-cv">Revisar CV</a>
+      <a href="/contacto">Contacto</a>
+    </div>
+  </div>
+</nav>
+
+<section class="cvm-hero">
+  <div class="container cvm-hero-inner">
+    <h1 class="cvm-title">Compara tu CV con <em>una vacante</em></h1>
+    <p class="cvm-lead">Te decimos cuántos de los requisitos indispensables de la vacante aparecen en tu CV y cuáles no aparecen. Gratis.</p>
+  </div>
+</section>
+
+<section class="cvm-body">
+  <div class="container cvm-col">
+    <form id="cot-form" class="cvm-card cvm-form" novalidate>
+      {vac ? (
+        <div class="field">
+          <span class="cot-label">Vacante</span>
+          <p class="cot-vac"><strong>{vac.titulo}</strong> · {vac.empresa} · <a href={vac.url} target="_blank" rel="noopener nofollow">ver publicación</a></p>
+        </div>
+      ) : (
+        <div class="field">
+          {vacanteId && <p class="cvm-aviso" role="status">Esa vacante ya no está activa o no tiene descripción. Pega el texto de la vacante.</p>}
+          <label for="vacante">Texto de la vacante</label>
+          <textarea id="vacante" rows="9" maxlength={COTEJO_MAX_VACANTE} placeholder="Pega la descripción completa, sobre todo la sección de requisitos."></textarea>
+          <p class="field-help">Mínimo {COTEJO_MIN_VACANTE} caracteres, máximo {COTEJO_MAX_VACANTE.toLocaleString('es-MX')}. <span id="vacante-count">0 caracteres</span></p>
+        </div>
+      )}
+
+      <div class="field" id="cv-guardado" hidden>
+        <span class="cot-label">Tu CV</span>
+        <p class="cot-vac">Usaremos el CV que acabas de analizar. <button type="button" class="cot-linkbtn" id="cv-cambiar">Usar otro CV</button></p>
+      </div>
+      <div class="field" id="cv-campo">
+        <label for="cv-upload">Tu CV en PDF <span class="optional-label">(o pega el texto abajo)</span></label>
+        <input type="file" id="cv-upload" accept="application/pdf,.pdf" />
+        <span id="upload-status" class="field-help"></span>
+        <textarea id="cv" rows="9" placeholder="Texto de tu CV"></textarea>
+        <p class="field-help">Mínimo {COTEJO_MIN_CV} caracteres, máximo {COTEJO_MAX_CV.toLocaleString('es-MX')}. El PDF se lee en tu navegador; solo enviamos el texto.</p>
+      </div>
+
+      <div class="field">
+        <label for="email">Tu correo</label>
+        <input type="email" id="email" placeholder="tu@email.com" autocomplete="email" />
+      </div>
+
+      <div class="field consent-field">
+        <label class="consent-label">
+          <input type="checkbox" id="consent" />
+          <span set:html={consentPrivacidadHtml} />
+        </label>
+        <p class="consent-common">{CONSENT_COMMON}</p>
+      </div>
+
+      <p id="form-error" class="cvm-error" role="alert" hidden></p>
+      <button type="submit" id="submit-btn" class="btn btn-orange btn-large btn-block">Comparar</button>
+      <p class="field-help" id="cot-espera" hidden>Analizando la vacante y tu CV. Tarda de 10 a 30 segundos.</p>
+    </form>
+
+    <div class="cvm-card" id="cot-resultado" hidden>
+      <p class="cot-puesto" id="r-puesto"></p>
+      <h2 class="cot-titular" id="r-titular"></h2>
+      <p class="cot-sub" id="r-sub"></p>
+      <h3 id="r-h-ind">Indispensables</h3>
+      <ul class="cot-lista" id="r-ind"></ul>
+      <h3 id="r-h-des">Deseables</h3>
+      <ul class="cot-lista" id="r-des"></ul>
+      <p class="cvm-letra">"Indispensable" es lo que la vacante marca como obligatorio (requisitos, required, must, excluyente). Revisamos solo lo que dice tu CV: si tienes algo que no aparece, el CV no lo está mostrando. Lo compara una inteligencia artificial: puede equivocarse.</p>
+      <div class="cot-siguiente">
+        <p><strong>Siguiente paso (en construcción):</strong> unas preguntas sobre lo que falta y tu CV redactado para esta vacante.</p>
+      </div>
+      <button type="button" class="cot-linkbtn" id="otra">Comparar con otra vacante</button>
+    </div>
+  </div>
+</section>
+
+<div id="cot-config" hidden
+  data-min-cv={COTEJO_MIN_CV} data-max-cv={COTEJO_MAX_CV}
+  data-min-vac={COTEJO_MIN_VACANTE} data-max-vac={COTEJO_MAX_VACANTE}
+  data-vacante-id={vac ? vacanteId : ''} data-ref={ref}
+  data-consent-err={CONSENT_MSG.privacidad_requerida}></div>
+
+<script>
+  const cfg = (document.getElementById('cot-config') as HTMLElement | null)?.dataset ?? {};
+  const MIN_CV = Number(cfg.minCv ?? 200);
+  const MAX_CV = Number(cfg.maxCv ?? 15000);
+  const MIN_VAC = Number(cfg.minVac ?? 200);
+  const MAX_VAC = Number(cfg.maxVac ?? 8000);
+  const vacanteId = cfg.vacanteId ?? '';
+  const ref = cfg.ref ?? 'directo';
+  const $ = (id: string) => document.getElementById(id);
+  const form = $('cot-form') as HTMLFormElement | null;
+  const cvEl = $('cv') as HTMLTextAreaElement | null;
+  const vacEl = $('vacante') as HTMLTextAreaElement | null;
+  const emailEl = $('email') as HTMLInputElement | null;
+  const consentEl = $('consent') as HTMLInputElement | null;
+  const errEl = $('form-error');
+  const btn = $('submit-btn') as HTMLButtonElement | null;
+  const uploadStatus = $('upload-status');
+
+  // CV y correo del revisor (sessionStorage, nunca en la URL).
+  let cvGuardado = '';
+  try {
+    const s = JSON.parse(sessionStorage.getItem('solca_cotejo') || 'null') as { cv?: string; email?: string } | null;
+    if (s?.cv && s.cv.length >= MIN_CV) {
+      cvGuardado = s.cv;
+      $('cv-guardado')!.hidden = false;
+      $('cv-campo')!.hidden = true;
+    }
+    if (s?.email && emailEl) emailEl.value = s.email;
+  } catch {
+    /* sin sessionStorage */
+  }
+  $('cv-cambiar')?.addEventListener('click', () => {
+    cvGuardado = '';
+    $('cv-guardado')!.hidden = true;
+    $('cv-campo')!.hidden = false;
+  });
+  vacEl?.addEventListener('input', () => {
+    const o = $('vacante-count');
+    if (o) o.textContent = `${vacEl.value.trim().length.toLocaleString('es-MX')} caracteres`;
+  });
+
+  function error(msg: string) {
+    if (!errEl) return;
+    errEl.textContent = msg;
+    errEl.hidden = !msg;
+  }
+
+  // PDF: pdf.js desde CDN, igual que /revisar-cv y /cv-a-la-medida.
+  let pdfjsPromise: Promise<any> | null = null;
+  function loadPdfJs() {
+    if (!pdfjsPromise) {
+      pdfjsPromise = (async () => {
+        const lib = await import(/* @vite-ignore */ 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs');
+        lib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs';
+        return lib;
+      })();
+    }
+    return pdfjsPromise;
+  }
+  function pageText(items: Array<{ str?: string; hasEOL?: boolean; transform?: number[] }>): string {
+    let out = '';
+    let lastY: number | null = null;
+    for (const it of items) {
+      const str = it.str ?? '';
+      const y = Array.isArray(it.transform) ? it.transform[5] : null;
+      if (str && lastY !== null && y !== null && Math.abs(y - lastY) > 2 && !out.endsWith('\n')) out += '\n';
+      out += str;
+      if (it.hasEOL) out += '\n';
+      if (str && y !== null) lastY = y;
+    }
+    return out.split('\n').map((l) => l.replace(/[ \t ]+/g, ' ').trim()).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  }
+  $('cv-upload')?.addEventListener('change', async (e) => {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.pdf') || file.size > 10 * 1024 * 1024) {
+      if (uploadStatus) uploadStatus.textContent = 'Solo PDF de hasta 10 MB. Para otros formatos, pega el texto.';
+      input.value = '';
+      return;
+    }
+    if (uploadStatus) uploadStatus.textContent = 'Leyendo el PDF...';
+    try {
+      const lib = await loadPdfJs();
+      const pdf = await lib.getDocument({ data: await file.arrayBuffer() }).promise;
+      const pages: string[] = [];
+      for (let i = 1; i <= pdf.numPages; i++) pages.push(pageText((await (await pdf.getPage(i)).getTextContent()).items));
+      const text = pages.join('\n\n').trim();
+      if (cvEl) cvEl.value = text;
+      if (uploadStatus) uploadStatus.textContent = text.length < MIN_CV ? 'No pudimos leer suficiente texto del PDF. Pega el texto de tu CV.' : 'PDF leído. Revisa el texto en el recuadro.';
+    } catch {
+      if (uploadStatus) uploadStatus.textContent = 'No pudimos leer el PDF. Pega el texto de tu CV.';
+    }
+  });
+
+  const ESTADO: Record<string, string> = { cumple: 'Aparece en tu CV', parcial: 'Aparece en parte', no_aparece: 'No aparece en tu CV' };
+  function esc(s: string) {
+    return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string);
+  }
+  function lista(el: HTMLElement | null, items: Array<{ requisito: string; estado: string }>) {
+    if (!el) return;
+    el.innerHTML = items
+      .map((q) => `<li class="cot-${q.estado}"><span class="cot-estado">${ESTADO[q.estado] ?? ''}</span> ${esc(q.requisito)}</li>`)
+      .join('');
+  }
+
+  type Conteo = { total: number; cumple: number; parcial: number; no_aparece: number };
+  type Res = { ok?: boolean; message?: string; puesto?: string; empresa?: string; indispensables?: Conteo; deseables?: Conteo; requisitos?: Array<{ requisito: string; prioridad: string; estado: string }> };
+
+  function mostrar(r: Res) {
+    const ind = r.indispensables!;
+    const des = r.deseables!;
+    const reqs = r.requisitos ?? [];
+    $('r-puesto')!.textContent = [r.puesto, r.empresa].filter(Boolean).join(' · ');
+    if (ind.total > 0) {
+      $('r-titular')!.textContent = `Cumples ${ind.cumple} de ${ind.total} requisitos indispensables`;
+      $('r-sub')!.textContent = ind.parcial ? `Y ${ind.parcial} en parte.` : '';
+    } else {
+      $('r-titular')!.textContent = `Cumples ${des.cumple} de ${des.total} requisitos`;
+      $('r-sub')!.textContent = 'La vacante no marca ningún requisito como obligatorio.';
+    }
+    const indL = reqs.filter((q) => q.prioridad === 'indispensable');
+    const desL = reqs.filter((q) => q.prioridad !== 'indispensable');
+    $('r-h-ind')!.hidden = indL.length === 0;
+    $('r-h-des')!.hidden = desL.length === 0;
+    lista($('r-ind'), indL);
+    lista($('r-des'), desL);
+    form!.hidden = true;
+    $('cot-resultado')!.hidden = false;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  $('otra')?.addEventListener('click', () => {
+    // Desde el buscador la vacante viene fija: se abre la página sin vacante, conservando CV y correo en sessionStorage.
+    if (vacanteId) {
+      try {
+        const cv = (cvGuardado || cvEl?.value || '').trim();
+        if (cv) sessionStorage.setItem('solca_cotejo', JSON.stringify({ cv, email: emailEl?.value.trim() ?? '' }));
+      } catch {
+        /* sin sessionStorage */
+      }
+      location.href = `/comparar-cv/?ref=${encodeURIComponent(ref)}`;
+      return;
+    }
+    $('cot-resultado')!.hidden = true;
+    form!.hidden = false;
+    if (vacEl) vacEl.value = '';
+  });
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    error('');
+    const cv = (cvGuardado || cvEl?.value || '').trim();
+    const vacante = vacEl?.value.trim() ?? '';
+    const email = emailEl?.value.trim() ?? '';
+    if (!vacanteId && (vacante.length < MIN_VAC || vacante.length > MAX_VAC)) return error(`La vacante debe tener entre ${MIN_VAC} y ${MAX_VAC.toLocaleString('es-MX')} caracteres.`);
+    if (cv.length < MIN_CV || cv.length > MAX_CV) return error(`El CV debe tener entre ${MIN_CV} y ${MAX_CV.toLocaleString('es-MX')} caracteres.`);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return error('Escribe un correo válido.');
+    if (!consentEl?.checked) return error(cfg.consentErr ?? 'Debes aceptar el aviso de privacidad para continuar.');
+    if (btn) { btn.disabled = true; btn.textContent = 'Comparando...'; }
+    $('cot-espera')!.hidden = false;
+    try {
+      const w = window as unknown as { __attr?: () => Record<string, unknown> };
+      const utm = Object.fromEntries([...new URLSearchParams(location.search)].filter(([k]) => k.startsWith('utm_')));
+      const res = await fetch('/api/cv-cotejo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cv, ...(vacanteId ? { vacanteId } : { vacante }), email, consent: true, ref, ...utm, ...(w.__attr ? w.__attr() : {}) }),
+      });
+      const data = (await res.json().catch(() => ({}))) as Res;
+      if (data.ok && data.indispensables) mostrar(data);
+      else error(data.message ?? 'No pudimos comparar. Intenta de nuevo.');
+    } catch {
+      error('No pudimos conectar. Intenta de nuevo.');
+    }
+    if (btn) { btn.disabled = false; btn.textContent = 'Comparar'; }
+    $('cot-espera')!.hidden = true;
+  });
+</script>
+
+<style>
+  .cvm-hero { background: linear-gradient(135deg, var(--navy) 0%, var(--navy-deep) 100%); color: var(--off-white); padding: 48px 0 36px; }
+  .cvm-hero-inner { max-width: 760px; }
+  .cvm-title { font-family: 'Inter', sans-serif; font-weight: 900; font-size: clamp(28px, 5vw, 42px); line-height: 1.1; color: var(--off-white); margin: 0 0 12px; }
+  .cvm-title em { font-style: normal; color: var(--orange); }
+  .cvm-lead { font-size: 17px; line-height: 1.6; color: var(--off-white-mute); max-width: 680px; }
+  .cvm-body { background: var(--bg); padding: 40px 0 80px; }
+  .cvm-col { max-width: 760px; }
+  .cvm-card { background: var(--off-white); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 32px; }
+  .cvm-card[hidden], .field[hidden], .cvm-form[hidden] { display: none !important; }
+  .cvm-card p, .cvm-card li { font-size: 15px; line-height: 1.6; color: var(--text); }
+  .cvm-card a { color: var(--blue-mid); text-decoration: underline; }
+  .cvm-letra { font-size: 13px !important; color: var(--text-mute) !important; margin-top: 16px; }
+  .cvm-aviso { background: #FFF6E5; border: 1px solid #E8C77A; border-radius: 8px; padding: 10px 12px; }
+  .cvm-form { display: flex; flex-direction: column; gap: 18px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label, .cot-label { font-family: 'Inter', sans-serif; font-weight: 600; font-size: 14px; color: var(--text); }
+  .field input[type='email'], .field textarea { padding: 12px 14px; border: 1.5px solid var(--rule); border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 15px; color: var(--text); background: white; }
+  .field textarea { resize: vertical; line-height: 1.5; }
+  .field input:focus, .field textarea:focus { outline: 0; border-color: var(--orange); }
+  .field-help { font-size: 12px; color: var(--text-mute); }
+  .field-help[hidden] { display: none; }
+  .optional-label { font-weight: 400; color: var(--text-mute); font-size: 13px; }
+  .consent-field { padding: 12px 14px; background: var(--bg); border-radius: 8px; border: 1px solid var(--rule); }
+  .consent-label { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; font-size: 14px; line-height: 1.5; font-weight: 400; }
+  .consent-label input[type='checkbox'] { flex-shrink: 0; margin-top: 2px; width: 18px; height: 18px; }
+  .consent-common { margin: 10px 0 0; font-size: 14px; }
+  .cvm-error { color: #B23A2A; font-size: 14px; margin: 0; }
+  .cvm-error[hidden] { display: none !important; }
+  .cot-vac { margin: 0; }
+  .cot-linkbtn { background: none; border: 0; padding: 0; color: var(--blue-mid); text-decoration: underline; cursor: pointer; font: inherit; font-size: 14px; }
+  .cot-puesto { font-size: 14px !important; color: var(--text-mute) !important; margin: 0 0 4px; }
+  .cot-titular { font-family: 'Inter', sans-serif; font-size: 24px; font-weight: 800; color: var(--navy); margin: 0 0 4px; }
+  .cot-sub { margin: 0 0 18px; }
+  .cvm-card h3 { font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 800; color: var(--navy); margin: 18px 0 8px; }
+  .cvm-card h3[hidden] { display: none; }
+  .cot-lista { list-style: none; padding: 0; margin: 0; }
+  .cot-lista li { padding: 8px 0; border-bottom: 1px solid var(--rule); }
+  .cot-estado { display: inline-block; min-width: 150px; font-size: 13px; font-weight: 600; border-radius: 999px; padding: 2px 10px; margin-right: 8px; }
+  .cot-cumple .cot-estado { background: #E7F3EC; color: #1F6B45; }
+  .cot-parcial .cot-estado { background: #FFF6E5; color: #8A5A00; }
+  .cot-no_aparece .cot-estado { background: #F6E3E0; color: #B23A2A; }
+  .cot-siguiente { margin-top: 20px; padding: 14px 16px; background: var(--bg); border-radius: 8px; border: 1px solid var(--rule); }
+  .cot-siguiente p { margin: 0; }
+  #otra { margin-top: 16px; }
+  @media (max-width: 640px) { .cvm-card { padding: 22px; } .cot-estado { min-width: 0; display: block; width: fit-content; margin-bottom: 4px; } }
+</style>
+</BaseLayout>
