@@ -6,7 +6,7 @@
  * marcadores `[...]` se listan para que la persona los complete o borre; la regla de reembolso exacta de términos.
  */
 
-import type { CvMedida, CvmReporte, EstadoRequisito } from './cv-medida.ts';
+import type { CvMedida, CvmReporte, CvmRequisito, EstadoRequisito } from './cv-medida.ts';
 
 export const CVM_EMAIL_FROM = 'Oscar Solís <hola@solcaciencia.com>';
 export const CVM_EMAIL_VERSION = 'cvm-e1-2026-11';
@@ -17,6 +17,18 @@ const ESTADO: Record<EstadoRequisito, { sym: string; label: string; color: strin
   parcial: { sym: '■', label: 'Parcial', color: '#B7791F' },
   no_cumple: { sym: '▲', label: 'No cumple', color: '#B23A2A' },
 };
+
+const PRIORIDAD_LABEL = { indispensable: 'Indispensable', deseable: 'Deseable' } as const;
+
+/** p3: indispensables primero (la validación ya los ordena; aquí se asegura) y etiqueta de prioridad. */
+export function requisitosOrdenados(cv: CvMedida): CvmRequisito[] {
+  return [...cv.coincidencia].sort((a, b) =>
+    (a.prioridad ?? 'indispensable') === (b.prioridad ?? 'indispensable') ? 0 : (a.prioridad ?? 'indispensable') === 'indispensable' ? -1 : 1,
+  );
+}
+function etiquetaPrioridad(q: CvmRequisito): string {
+  return PRIORIDAD_LABEL[q.prioridad ?? 'indispensable'];
+}
 
 function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -37,7 +49,9 @@ export function avisosFiltro(rep: CvmReporte): string[] {
   if (rep.entradas_quitadas + rep.items_quitados > 0)
     out.push('Dejamos fuera algunos puestos, estudios o elementos de lista que no encontramos tal cual en lo que enviaste.');
   if (rep.frases_resumen_quitadas > 0)
-    out.push('Recortamos el resumen para que no lleve cifras ni siglas que no estén en tu CV ni frases en tercera persona.');
+    out.push('Recortamos el resumen para que no lleve cifras ni siglas que no estén en tu CV, frases en tercera persona ni lo que buscas (el resumen dice lo que aportas).');
+  if (rep.adjetivos_quitados > 0)
+    out.push('Quitamos adjetivos sin evidencia al inicio del resumen (por ejemplo, "motivado" o "proactivo"); si quieres usarlos, acompáñalos de un ejemplo concreto.');
   if (rep.resumen_vacio_tercera)
     out.push('El documento va sin resumen profesional porque el que se redactó estaba en tercera persona; escribe 2 a 5 frases sobre tu perfil al inicio.');
   if (rep.vinetas_quitadas_relleno > 0)
@@ -65,12 +79,12 @@ export function renderEntrega(cv: CvMedida, rep: CvmReporte, opts: { downloadId:
   for (const q of cv.coincidencia) conteo[q.estado]++;
   const idiomaTxt = cv.idioma === 'en' ? 'inglés, como la vacante' : 'español, como la vacante';
 
-  const filas = cv.coincidencia
+  const filas = requisitosOrdenados(cv)
     .map((q) => {
       const e = ESTADO[q.estado];
       const ev = q.evidencia ? `<div style="color:#5A6480;font-size:13px;margin-top:2px">Evidencia: "${esc(q.evidencia)}"</div>` : '';
       const com = q.comentario ? `<div style="font-size:13px;margin-top:2px">${esc(q.comentario)}</div>` : '';
-      return `<li style="margin:0 0 10px"><span style="color:${e.color};font-weight:700">${e.sym} ${e.label}</span> · ${esc(q.requisito)}${ev}${com}</li>`;
+      return `<li style="margin:0 0 10px"><span style="color:${e.color};font-weight:700">${e.sym} ${e.label}</span> · <span style="color:#5A6480">${etiquetaPrioridad(q)}</span> · ${esc(q.requisito)}${ev}${com}</li>`;
     })
     .join('');
   const marcadoresHtml = rep.marcadores.length
@@ -104,8 +118,8 @@ ${marcadoresHtml}${avisosHtml}
     ...(avisos.length ? ['', 'Lo que el filtro quitó:', ...avisos.map((a) => `- ${a}`)] : []),
     '',
     `Resumen de coincidencia con la vacante (${conteo.cumple} cumple, ${conteo.parcial} parcial, ${conteo.no_cumple} no cumple):`,
-    ...cv.coincidencia.map(
-      (q) => `- ${ESTADO[q.estado].label}: ${q.requisito}${q.evidencia ? ` · Evidencia: "${q.evidencia}"` : ''}${q.comentario ? ` · ${q.comentario}` : ''}`,
+    ...requisitosOrdenados(cv).map(
+      (q) => `- ${ESTADO[q.estado].label} (${etiquetaPrioridad(q).toLowerCase()}): ${q.requisito}${q.evidencia ? ` · Evidencia: "${q.evidencia}"` : ''}${q.comentario ? ` · ${q.comentario}` : ''}`,
     ),
     '',
     'Lo que no cumples no va en el CV: es información para decidir si aplicas y qué preparar para la entrevista. Este documento no garantiza que te llamen.',

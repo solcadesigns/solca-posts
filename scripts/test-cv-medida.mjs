@@ -98,7 +98,7 @@ function salidaBuena() {
       linkedin: 'linkedin.com/in/marialopez',
     },
     resumen:
-      'Investigadora con doctorado en ciencias bioquímicas y experiencia en manejo de muestras y datos de laboratorio. Coordiné el envío de muestras con hospitales y llevé registros de calidad. Busco aplicar esa experiencia en el monitoreo de estudios clínicos.',
+      'Investigadora con doctorado en ciencias bioquímicas y experiencia en manejo de muestras y datos de laboratorio. Coordiné el envío de muestras con hospitales y llevé registros de calidad. Aporto rigor en la documentación y la revisión de datos para el monitoreo de estudios clínicos.',
     experiencia: [
       {
         puesto: 'Investigadora posdoctoral',
@@ -225,7 +225,7 @@ await prueba('validación: contacto que no está en el CV se vacía; PhD sin doc
   s.contacto.telefono = '+52 55 9999 0000';
   s.educacion[0].titulo = 'Maestría en Ciencias Bioquímicas';
   s.educacion[0].cita = 'Maestría en Ciencias Bioquímicas, Universidad Nacional (2016-2021)';
-  s.resumen = 'Investigadora con maestría en ciencias bioquímicas. Tengo más de 8 años de experiencia. Busco el monitoreo clínico.';
+  s.resumen = 'Investigadora con maestría en ciencias bioquímicas. Tengo más de 8 años de experiencia. Aporto rigor en el manejo de muestras al monitoreo clínico.';
   const v = validarCvMedida(s, { ...ctxEs, cv: cvSinDoc });
   assert.ok(v.ok);
   assert.equal(v.cv.contacto.correo, '');
@@ -300,7 +300,7 @@ await prueba('DOCX: zip válido con el contenido y el marcador resaltado', async
 
 await prueba('DOCX: etiquetas en inglés', async () => {
   const xml = strFromU8(unzipSync(await construirDocx({ ...validado.cv, idioma: 'en' }))['word/document.xml']);
-  assert.ok(xml.includes('PROFESSIONAL SUMMARY') && xml.includes('EDUCATION'));
+  assert.ok(xml.includes('PROFESSIONAL PROFILE') && xml.includes('EDUCATION'));
 });
 
 // ── 4. Ruteo del webhook ────────────────────────────────────────────────────────────────────────
@@ -803,9 +803,9 @@ await prueba('Q4: el resumen no queda en tercera persona', async () => {
   for (const o of ['Bióloga con experiencia en ensayos.', 'Led data reviews.', 'El análisis de datos es mi fuerte.', 'Coordiné estudiantes.'])
     assert.ok(!enTerceraPersona(o, 'María López Ruiz'), o);
   const s = salidaBuena();
-  s.resumen = 'Investigadora con doctorado en ciencias bioquímicas. Su experiencia incluye el manejo de muestras. Ella coordinó estudiantes de maestría. Busco aplicar esa experiencia en el monitoreo de estudios clínicos.';
+  s.resumen = 'Investigadora con doctorado en ciencias bioquímicas. Su experiencia incluye el manejo de muestras. Ella coordinó estudiantes de maestría. Aporto rigor en la documentación y la revisión de datos para el monitoreo de estudios clínicos.';
   const v = validarCvMedida(s, ctxEs);
-  assert.equal(v.cv.resumen, 'Investigadora con doctorado en ciencias bioquímicas. Busco aplicar esa experiencia en el monitoreo de estudios clínicos.');
+  assert.equal(v.cv.resumen, 'Investigadora con doctorado en ciencias bioquímicas. Aporto rigor en la documentación y la revisión de datos para el monitoreo de estudios clínicos.');
   assert.equal(v.reporte.frases_tercera_persona, 2);
 });
 
@@ -823,9 +823,9 @@ await prueba('Q5: viñetas de relleno que repiten el encabezado se quitan', asyn
   assert.equal(v.reporte.vinetas_quitadas_relleno, 1);
 });
 
-await prueba('Q6: prompt p2 con las reglas nuevas', async () => {
+await prueba('Q6: prompt con las reglas de p2 (versión vigente p3)', async () => {
   const { CVM_PROMPT_VERSION, CVM_SYSTEM_PROMPT } = await import('../src/lib/cv-medida.ts');
-  assert.equal(CVM_PROMPT_VERSION, 'p2-2026-11');
+  assert.equal(CVM_PROMPT_VERSION, 'p3-2026-11');
   for (const t of ['NUNCA copies el título del puesto', 'primera persona implícita', 'NOMBRE el dato que falta', 'solo repiten el encabezado'])
     assert.ok(CVM_SYSTEM_PROMPT.includes(t), t);
 });
@@ -901,7 +901,7 @@ await prueba('S6: resumen todo en tercera persona no reintenta; se entrega sin r
   assert.equal(v.cv.resumen, '');
   assert.equal(v.reporte.resumen_vacio_tercera, true);
   const xml = strFromU8(unzipSync(await construirDocx(v.cv))['word/document.xml']);
-  assert.ok(!xml.includes('RESUMEN PROFESIONAL'), 'sin sección vacía');
+  assert.ok(!xml.includes('PERFIL PROFESIONAL'), 'sin sección vacía');
   assert.ok(avisosFiltro(v.reporte).some((a) => a.includes('sin resumen')));
   // Vacío por cifras inventadas (no por tercera persona) sí falla para reintentar.
   const c = salidaBuena();
@@ -939,6 +939,148 @@ await prueba('T3: lista explícita de abreviaturas; con mayúscula después, cor
   assert.deepEqual(partirFrases('Ver No. 5 del protocolo y la dosis de 2.5 mg. Listo.'), ['Ver No. 5 del protocolo y la dosis de 2.5 mg.', 'Listo.']);
   assert.deepEqual(partirFrases('Lo hice en U.K. y en U.S. con equipos, i.e. en sitio. Listo.'), ['Lo hice en U.K. y en U.S. con equipos, i.e. en sitio.', 'Listo.']);
   assert.deepEqual(partirFrases('J. K. Rowling escribió.'), ['J.', 'K.', 'Rowling escribió.']);
+});
+
+
+// ── 11. p3: PVU, sin "busco", adjetivos con evidencia, prioridad, marcadores por idioma (10 nov 2026) ──
+
+await prueba('P1: el resumen no dice lo que busca ni empieza con "Soy"', async () => {
+  const { esOracionDeBusqueda, quitarSoy } = await import('../src/lib/cv-medida.ts');
+  for (const o of ['Busco aplicar mi experiencia en farmacovigilancia.', 'I am seeking a role in clinical research.', 'I am looking for opportunities.', 'Seeking to apply my skills.', 'Mi objetivo es crecer.'])
+    assert.ok(esOracionDeBusqueda(o), o);
+  for (const o of ['Buscando mejoras, optimicé el flujo de muestras.', 'Bióloga con experiencia en búsqueda de literatura.', 'Aporto rigor en la documentación.'])
+    assert.ok(!esOracionDeBusqueda(o), o);
+  assert.equal(quitarSoy('Soy bióloga molecular con experiencia en PCR.'), 'Bióloga molecular con experiencia en PCR.');
+  assert.equal(quitarSoy('I am a biologist with lab experience.'), 'Biologist with lab experience.');
+  const s = salidaBuena();
+  s.resumen = 'Soy investigadora con doctorado en ciencias bioquímicas. Procesé muestras de suero para un estudio de biomarcadores. Busco crecer en investigación clínica. Aporto rigor en la documentación para el monitoreo.';
+  const v = validarCvMedida(s, ctxEs);
+  assert.equal(v.cv.resumen, 'Investigadora con doctorado en ciencias bioquímicas. Procesé muestras de suero para un estudio de biomarcadores. Aporto rigor en la documentación para el monitoreo.');
+  assert.equal(v.reporte.frases_busqueda, 1);
+  assert.equal(v.reporte.soy_quitado, 1);
+  // Si todo era "busco", no se reintenta: se entrega sin resumen.
+  const t = salidaBuena();
+  t.resumen = 'Busco un puesto en investigación clínica. I am seeking growth.';
+  const w = validarCvMedida(t, ctxEs);
+  assert.ok(w.ok);
+  assert.equal(w.cv.resumen, '');
+});
+
+await prueba('P2: adjetivos vacíos al inicio se quitan sin tocar el resto', async () => {
+  const { quitarAdjetivosVacios } = await import('../src/lib/cv-medida.ts');
+  assert.equal(quitarAdjetivosVacios('Dedicated and motivated life science professional with lab experience.').texto, 'Life science professional with lab experience.');
+  assert.equal(quitarAdjetivosVacios('Highly motivated researcher with lab experience.').texto, 'Researcher with lab experience.');
+  assert.equal(quitarAdjetivosVacios('Highly motivated, proactive biologist.').texto, 'Biologist.');
+  assert.equal(quitarAdjetivosVacios('Dedicada y motivada bióloga con experiencia en ensayos.').texto, 'Bióloga con experiencia en ensayos.');
+  for (const o of [
+    'Proactive team player with skills.',
+    'Responsible for quality control.',
+    'Responsable de control de calidad.',
+    'Responsable del laboratorio de microbiología.',
+    'Responsable técnica de estudios de estabilidad.',
+    'Soy responsable del área de PV.',
+    'Passionate about oncology research.',
+    'I am passionate about oncology.',
+    'Dynamic light scattering and HPLC for protein analysis.',
+    'Dedicated to science.',
+    'Motivated by data, I built dashboards.',
+    'Bióloga proactiva con experiencia.',
+    'Motivated.',
+  ])
+    assert.equal(quitarAdjetivosVacios(o).texto, o, o);
+  const { quitarSoy } = await import('../src/lib/cv-medida.ts');
+  assert.equal(quitarAdjetivosVacios(quitarSoy('Soy responsable del área de PV.')).texto, 'Responsable del área de PV.');
+  assert.equal(quitarAdjetivosVacios(quitarSoy('I am passionate about oncology.')).texto, 'Passionate about oncology.');
+  const s = salidaBuena();
+  s.resumen = 'Dedicada y motivada investigadora con doctorado en ciencias bioquímicas. Aporto rigor en la documentación para el monitoreo.';
+  const v = validarCvMedida(s, ctxEs);
+  assert.ok(v.cv.resumen.startsWith('Investigadora con doctorado'));
+  assert.equal(v.reporte.adjetivos_quitados, 1);
+});
+
+await prueba('P3: PVU en el prompt (2 a 4 oraciones, indispensables), encabezado del Word y criterio del revisor', async () => {
+  const { CVM_SYSTEM_PROMPT } = await import('../src/lib/cv-medida.ts');
+  for (const t of ['propuesta de valor (PVU)', '(a) quién es profesionalmente', '(b) evidencia concreta', '(c) qué aporta a ESTA vacante', 'INDISPENSABLES', 'sin "Soy"', 'Busco', 'solo con evidencia'])
+    assert.ok(CVM_SYSTEM_PROMPT.includes(t), t);
+  const s = salidaBuena();
+  s.resumen = 'Investigadora con doctorado. Procesé muestras de suero. Coordiné estudiantes de maestría. Llevé la bitácora de calidad. Aporto rigor en la documentación.';
+  assert.equal(validarCvMedida(s, ctxEs).cv.resumen.split('. ').length, 4, 'máximo 4 oraciones');
+  const xml = strFromU8(unzipSync(await construirDocx(validado.cv))['word/document.xml']);
+  assert.ok(xml.includes('PERFIL PROFESIONAL'));
+  const { CRITERIOS, RUBRIC_VERSION } = await import('../src/lib/cv-review-rubric.ts');
+  assert.equal(RUBRIC_VERSION, 'v3-2026-11');
+  const c2 = CRITERIOS.find((c) => c.id === 2);
+  assert.ok(c2.guia.includes('propuesta de valor (PVU)') && c2.guia.includes('busco') && c2.guia.includes('adjetivos sin evidencia'));
+});
+
+await prueba('P4: prioridad indispensable/deseable, orden, etiqueta en el correo y conteos', async () => {
+  const { conteoPorPrioridad } = await import('../src/lib/cv-medida.ts');
+  const s = salidaBuena();
+  s.coincidencia = [
+    { requisito: 'Experiencia en monitoreo', prioridad: 'deseable', estado: 'no_cumple', evidencia: '', comentario: 'No aparece.' },
+    { requisito: 'Inglés avanzado', prioridad: 'indispensable', estado: 'cumple', evidencia: 'Inglés avanzado (C1)', comentario: '' },
+    { requisito: 'Manejo de datos', estado: 'parcial', evidencia: 'Análisis estadístico en SAS y R.', comentario: '' },
+    { requisito: 'GCP', prioridad: 'nice to have', estado: 'no_cumple', evidencia: '', comentario: '' },
+  ];
+  const v = validarCvMedida(s, ctxEs);
+  // Sin prioridad → indispensable; "nice to have" → deseable; indispensables primero, en orden estable.
+  assert.deepEqual(v.cv.coincidencia.map((q) => [q.requisito, q.prioridad]), [
+    ['Inglés avanzado', 'indispensable'],
+    ['Manejo de datos', 'indispensable'],
+    ['Experiencia en monitoreo', 'deseable'],
+    ['GCP', 'deseable'],
+  ]);
+  const c = conteoPorPrioridad(v.cv);
+  assert.equal(c.ind_cumple, 1);
+  assert.equal(c.ind_parcial, 1);
+  assert.equal(c.ind_no_cumple, 0);
+  assert.equal(c.des_no_cumple, 2);
+  const r = renderEntrega(v.cv, v.reporte, { downloadId: 'x', venceEl: 'hoy' });
+  assert.ok(r.text.indexOf('(indispensable)') < r.text.indexOf('(deseable)'));
+  assert.ok(r.html.includes('Indispensable') && r.html.includes('Deseable'));
+  const { CVM_SYSTEM_PROMPT } = await import('../src/lib/cv-medida.ts');
+  assert.ok(CVM_SYSTEM_PROMPT.includes('"prioridad": "indispensable"'));
+});
+
+await prueba('P5: marcadores en el idioma del CV', async () => {
+  const { idiomaMarcador } = await import('../src/lib/cv-medida.ts');
+  assert.equal(idiomaMarcador('n de muestras'), 'es');
+  assert.equal(idiomaMarcador('n of projects'), 'en');
+  assert.equal(idiomaMarcador('% reducción'), 'es');
+  assert.equal(idiomaMarcador('proceso'), null);
+  assert.equal(limpiarMarcadores('Processed serum samples [n de muestras].', 'en').texto, 'Processed serum samples.');
+  assert.equal(limpiarMarcadores('Processed [n of samples] serum samples.', 'en').texto, 'Processed [n of samples] serum samples.');
+  assert.equal(limpiarMarcadores('Procesé [n of samples] muestras.', 'es').texto, 'Procesé muestras.');
+  const s = salidaBuena();
+  s.experiencia[0].vinetas = [
+    { texto: 'Processed serum samples for a biomarker study [n de muestras].', fuente: 'cv', cita: 'Procesé 1,200 muestras de suero para el estudio de biomarcadores.' },
+  ];
+  s.resumen = 'Researcher with a doctorate in biochemistry.';
+  const v = validarCvMedida(s, { ...ctxEs, idioma: 'en', vacante: VACANTE_EN });
+  assert.equal(v.cv.experiencia[0].vinetas[0].texto, 'Processed serum samples for a biomarker study.');
+  assert.ok(!JSON.stringify(v.cv).includes('[n de muestras]'));
+});
+
+await prueba('P6: relleno se juzga después de quitar los marcadores', () => {
+  const cv = CV + '\nAssociate consultant and data analyst, IQVIA (2019-2020)';
+  const s = salidaBuena();
+  s.experiencia.push({
+    puesto: 'Associate consultant and data analyst',
+    organizacion: 'IQVIA',
+    ubicacion: '',
+    inicio: '2019',
+    fin: '2020',
+    cita: 'Associate consultant and data analyst, IQVIA (2019-2020)',
+    vinetas: [
+      { texto: 'Worked as associate consultant and data analyst at IQVIA [type of analysis] [n of projects].', fuente: 'cv', cita: 'Associate consultant and data analyst, IQVIA (2019-2020)' },
+    ],
+  });
+  s.resumen = 'Researcher with a doctorate in biochemistry.';
+  const v = validarCvMedida(s, { ...ctxEs, cv, idioma: 'en', vacante: VACANTE_EN });
+  const iqvia = v.cv.experiencia.find((e) => e.organizacion === 'IQVIA');
+  assert.ok(iqvia, 'la entrada se queda');
+  assert.equal(iqvia.vinetas.length, 0, 'la viñeta de relleno se quita');
+  assert.ok(v.reporte.vinetas_quitadas_relleno >= 1);
 });
 
 // ── 6. Correos y consentimiento ─────────────────────────────────────────────────────────────────

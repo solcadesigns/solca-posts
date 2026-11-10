@@ -507,6 +507,8 @@ export async function procesarCvMedidaUnaVez(d: ProcesadorDeps, listLimit = 50):
       tercera_persona: reporte.frases_tercera_persona,
       titular_quitado: reporte.titular_quitado,
       resumen_vacio_tercera: reporte.resumen_vacio_tercera,
+      busqueda: reporte.frases_busqueda,
+      adjetivos: reporte.adjetivos_quitados,
       marcadores_quitados: reporte.marcadores_quitados,
       marcadores: reporte.marcadores.length,
       sin_evidencia: reporte.requisitos_sin_evidencia,

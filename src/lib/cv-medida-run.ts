@@ -17,6 +17,7 @@ import {
   parsearJson,
   validarCvMedida,
   conteoCoincidencia,
+  conteoPorPrioridad,
 } from './cv-medida';
 import { construirDocx as docxBytes, nombreArchivo, aBase64 } from './cv-medida-docx';
 import { CVM_EMAIL_FROM, CVM_EMAIL_VERSION, renderEntrega, renderDisculpa, enlaceDescarga } from './cv-medida-email';
@@ -290,6 +291,8 @@ export function depsProcesador(env: Env, kv: KvLike, paused: boolean): Procesado
           n_cumple: conteo?.cumple,
           n_parcial: conteo?.parcial,
           n_no_cumple: conteo?.no_cumple,
+          // p3: por prioridad y estado (ind_cumple, ind_no_cumple, des_parcial...).
+          ...(res ? conteoPorPrioridad(res.cv) : {}),
         },
       );
       if (evento === 'cvmedida_generado') await rolEnVenta(db, job);

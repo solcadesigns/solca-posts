@@ -1,5 +1,6 @@
 /**
- * Prompt del sistema para la revisión de CV · rúbrica v2-2026-11 (6 nov 2026).
+ * Prompt del sistema para la revisión de CV · rúbrica v2-2026-11 (6 nov 2026); v3-2026-11 (10 nov 2026): el criterio 2
+ * evalúa el resumen como PVU (el texto vive en CRITERIOS de cv-review-rubric.ts).
  *
  * La rúbrica (ids, nombres, grupos y guías) vive en src/lib/cv-review-rubric.ts; este archivo solo arma el
  * texto. El grupo de cada criterio lo asigna el código, no el modelo. Cambios al prompt → rebuild + redeploy.

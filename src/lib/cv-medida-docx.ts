@@ -29,7 +29,7 @@ const DERECHA = PAGINA.width - 2 * MARGEN;
 
 const ETIQUETAS: Record<Idioma, Record<string, string>> = {
   es: {
-    resumen: 'Resumen profesional',
+    resumen: 'Perfil profesional', // p3: el resumen es la PVU (perfil, evidencia, aporte a la vacante)
     experiencia: 'Experiencia',
     educacion: 'Educación',
     habilidades: 'Habilidades',
@@ -38,7 +38,7 @@ const ETIQUETAS: Record<Idioma, Record<string, string>> = {
     idiomas: 'Idiomas',
   },
   en: {
-    resumen: 'Professional Summary',
+    resumen: 'Professional Profile',
     experiencia: 'Experience',
     educacion: 'Education',
     habilidades: 'Skills',

@@ -14,7 +14,9 @@
 import type { Role } from './simulator-types';
 import { partirFrasesConservador } from './frases.ts';
 
-export const RUBRIC_VERSION = 'v2-2026-11';
+// v3-2026-11 (10 nov 2026): el criterio 2 evalúa el resumen como propuesta de valor (PVU, curso de Solca, b1 de
+// ../consultoria/investigacion/2026-11-10-curso-vs-mejores-practicas-cv.md). Misma forma del JSON.
+export const RUBRIC_VERSION = 'v3-2026-11';
 
 export type Estado = 'prioritario' | 'mejorable' | 'solido' | 'no_evaluable';
 export const ESTADOS: Estado[] = ['prioritario', 'mejorable', 'solido', 'no_evaluable'];
@@ -63,7 +65,7 @@ export const CRITERIOS: Criterio[] = [
     id: 2,
     nombre: 'Resumen o perfil',
     grupo: 'posicionamiento',
-    guia: 'Hay un resumen al inicio de 2 a 5 frases que dice quién es, qué sabe hacer y por qué encaja en el rol objetivo (C4). Prioritario si no existe; mejorable si es genérico, larguísimo o no se conecta con el rol.',
+    guia: 'Hay un resumen al inicio que funciona como propuesta de valor (PVU), de 2 a 4 frases: (a) quién es profesionalmente, (b) evidencia concreta del CV (logro, alcance, herramientas o resultados) y (c) qué aporta al rol objetivo (C4). Sin pronombres ni "Soy". Prioritario si no existe; mejorable si es genérico, larguísimo, no se conecta con el rol, gira en torno a lo que la persona busca ("busco oportunidades") en vez de lo que aporta, o usa adjetivos sin evidencia ("motivado", "proactivo").',
   },
   {
     id: 3,
