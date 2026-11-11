@@ -156,7 +156,7 @@ import { navLinks, esActual } from '../lib/nav';
 <section class="cvm-body cot-paso" id="cot-resumen" hidden>
   <div class="container cvm-col">
     <form class="cvm-card cvm-form" id="pago-form" novalidate>
-      <h2 class="cot-titular">Esto usaremos en tu CV</h2>
+      <h2 class="cot-titular">Lo que usaremos para redactar tu CV</h2>
       <p>Tu CV y la vacante, más lo que respondiste. Puedes corregir tus respuestas antes de pagar.</p>
       <div id="s-respuestas"></div>
       <h3>Qué recibes</h3>
@@ -487,10 +487,10 @@ import { navLinks, esActual } from '../lib/nav';
     const reqs = r.requisitos ?? [];
     $('r-puesto')!.textContent = [r.puesto, r.empresa].filter(Boolean).join(' · ');
     if (ind.total > 0) {
-      $('r-titular')!.textContent = `Cumples ${ind.cumple} de ${ind.total} requisitos indispensables`;
+      $('r-titular')!.textContent = `Tu CV muestra ${ind.cumple} de ${ind.total} requisitos indispensables`;
       $('r-sub')!.textContent = ind.parcial ? `Y ${ind.parcial} en parte.` : '';
     } else {
-      $('r-titular')!.textContent = `Cumples ${des.cumple} de ${des.total} requisitos`;
+      $('r-titular')!.textContent = `Tu CV muestra ${des.cumple} de ${des.total} requisitos`;
       $('r-sub')!.textContent = 'La vacante no marca ningún requisito como obligatorio.';
     }
     const indL = reqs.filter((q) => q.prioridad === 'indispensable');
