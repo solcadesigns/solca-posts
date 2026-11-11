@@ -368,21 +368,8 @@ export async function retryableChatCompletion(
         }),
       );
 
-      // Respaldo temporal (30 oct 2026): si Sonnet 5.5 rechaza la petición (400/404, p. ej. un
-      // parámetro que no acepta o falta de acceso), se repite una vez con Sonnet 4.5 para no cortar
-      // la sesión. Quitar antes del 30 nov 2026, cuando Sonnet 4.5 se retira.
-      if (
-        options.model === 'claude-sonnet-5-5' &&
-        err instanceof AnthropicError &&
-        (err.status === 400 || err.status === 404)
-      ) {
-        console.warn(`[anthropic-fallback] ${context}: claude-sonnet-5-5 respondió ${err.status}; reintento con claude-sonnet-4-5`, JSON.stringify(err.body).slice(0, 300));
-        // 6 nov 2026: se marca en la respuesta para que quien llama lo registre en D1 (evento llm_modelo).
-        const r = await chatCompletion({ ...options, model: 'claude-sonnet-4-5' });
-        r.respaldo = true;
-        r.statusRespaldo = err.status;
-        return r;
-      }
+      // 11 nov 2026: se quitó el respaldo a Sonnet 4.5 (Anthropic lo retira el 30 nov 2026). Del 4 al 11 nov no se
+      // activó ninguna vez (Workers Observability sin "[anthropic-fallback]"; D1 llm_modelo: 0 de 101 llamadas).
 
       if (!willRetry) {
         throw err;

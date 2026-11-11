@@ -179,13 +179,10 @@ try {
     );
   });
 
-  await t('Respaldo Sonnet 5.5 → 4.5: la respuesta queda marcada (respaldo y status) para el evento llm_modelo', async () => {
+  await t('Sin respaldo a Sonnet 4.5 (11 nov 2026): un 400 de Sonnet 5.5 se propaga y no hay segunda llamada', async () => {
     const calls = mockFetch([{ status: 400, body: {} }, okMsg('claude-sonnet-4-5-20250929', [{ type: 'text', text: 'hola' }])]);
-    const r = await retryableChatCompletion({ ...base, model: 'claude-sonnet-5-5', prefill: undefined, jsonSchema: undefined }, 'init', 1);
-    assert.equal(calls[1].model, 'claude-sonnet-4-5');
-    assert.equal(calls[1].temperature, 0.3);
-    assert.equal(r.respaldo, true);
-    assert.equal(r.statusRespaldo, 400);
+    await assert.rejects(retryableChatCompletion({ ...base, model: 'claude-sonnet-5-5', prefill: undefined, jsonSchema: undefined }, 'init', 1));
+    assert.equal(calls.length, 1);
   });
 
   await t('Sonnet 5.5 sin respaldo: respaldo indefinido (se registra como false)', async () => {

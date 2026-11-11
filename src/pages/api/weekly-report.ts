@@ -382,7 +382,7 @@ async function buildConsentimiento(
                     MAX(COALESCE(json_extract(extra,'$.marketing'), 0)) AS mk
                FROM eventos
               WHERE evento = 'lead_captured' AND interno = 0 AND ts >= ? AND ts <= ?
-                AND COALESCE(json_extract(extra,'$.form'), '') != 'reconfirmacion-es'
+                AND COALESCE(json_extract(extra,'$.form'), '') NOT IN ('reconfirmacion-es', 'cotejo')
               GROUP BY form, win, h)
             GROUP BY form, win`,
         )
@@ -980,7 +980,12 @@ interface HotmartFila {
 }
 
 // ── CV a la medida (6 nov 2026) ────────────────────────────────────────────────────────────────
+// 11 nov 2026: la comparación gratis (cvm_cotejo_*) va al inicio de este embudo y no a los leads con casilla comercial
+// (no tiene casilla comercial y bajaría la tasa de opt-in).
 const CVM_EVENTOS = [
+  'cvm_cotejo_inicio',
+  'cvm_cotejo_visto',
+  'cvm_cotejo_error',
   'cvmedida_inicio',
   'cvmedida_checkout',
   'cvmedida_pagado',

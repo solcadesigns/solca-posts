@@ -38,7 +38,6 @@ type Env = Record<string, unknown>;
 
 /** Modelo de redacción (mismo id que el simulador). Respaldo temporal a Sonnet 4.5 si 5.5 responde 400/404. */
 export const CVM_MODEL = 'claude-sonnet-5-5';
-const CVM_MODEL_RESPALDO = 'claude-sonnet-4-5';
 /**
  * Tiempos (revisión 6 nov 2026). Un CV largo puede pedir ~12k tokens de salida; a 50-80 tokens/s son 150-240 s.
  * Con streaming, Anthropic manda bytes desde el inicio y nada corta la conexión por inactividad; el tope propio
@@ -66,16 +65,8 @@ export async function generarCvMedida(apiKey: string, job: CvmJob, db: D1Databas
   };
   try {
     // Un solo intento por corrida: los reintentos los cuenta la cola (máximo 3).
-    try {
-      resp = await chatCompletionStream(opciones);
-    } catch (err) {
-      const restante = CVM_TIMEOUT_MS - (Date.now() - t0);
-      if (!(err instanceof AnthropicError) || err instanceof AnthropicRefusalError || ![400, 404].includes(err.status) || restante < 30_000) throw err;
-      console.warn(`[anthropic-fallback] cv_medida: ${CVM_MODEL} respondió ${err.status}; reintento con ${CVM_MODEL_RESPALDO}`);
-      resp = await chatCompletionStream({ ...opciones, model: CVM_MODEL_RESPALDO, timeoutMs: restante });
-      resp.respaldo = true;
-      resp.statusRespaldo = err.status;
-    }
+    // 11 nov 2026: sin respaldo a Sonnet 4.5 (se retira el 30 nov 2026; nunca se activó).
+    resp = await chatCompletionStream(opciones);
   } catch (err) {
     const refusal = err instanceof AnthropicRefusalError;
     await registrarModeloD1(db, {
