@@ -99,6 +99,9 @@ export interface CvmJob {
   consentTs: string;
   attr: Attribution;
   interno: boolean;
+  /** 11 nov 2026: lista clasificada de la comparación (si la persona pasó por ella) y de dónde llegó. */
+  requisitos?: Array<{ requisito: string; prioridad: 'indispensable' | 'deseable' }>;
+  ref?: string;
   // Pago
   stripeSessionId?: string;
   paymentIntent?: string;

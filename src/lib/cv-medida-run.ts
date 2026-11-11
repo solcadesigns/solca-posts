@@ -60,7 +60,7 @@ export async function generarCvMedida(apiKey: string, job: CvmJob, db: D1Databas
     apiKey,
     model: CVM_MODEL,
     system: CVM_SYSTEM_PROMPT,
-    messages: [{ role: 'user' as const, content: mensajeUsuario({ cv: job.cv, vacante: job.vacante, textoLibre: job.textoLibre, idioma: job.idioma }) }],
+    messages: [{ role: 'user' as const, content: mensajeUsuario({ cv: job.cv, vacante: job.vacante, textoLibre: job.textoLibre, idioma: job.idioma, requisitos: job.requisitos }) }],
     maxTokens: CVM_MAX_TOKENS,
     timeoutMs: CVM_TIMEOUT_MS,
   };
@@ -106,7 +106,7 @@ export async function generarCvMedida(apiKey: string, job: CvmJob, db: D1Databas
   });
   const parsed = parsearJson(extractText(resp));
   if (!parsed) return { ok: false, status: 'parse_error', ms, outputTokens, modelo: resp.model };
-  const v = validarCvMedida(parsed, { cv: job.cv, textoLibre: job.textoLibre, idioma: job.idioma, vacante: job.vacante });
+  const v = validarCvMedida(parsed, { cv: job.cv, textoLibre: job.textoLibre, idioma: job.idioma, vacante: job.vacante, requisitos: job.requisitos });
   if (!v.ok) {
     console.warn('cv-medida: validación falló', v.motivo);
     return { ok: false, status: `invalido_${v.motivo}`.slice(0, 40), ms, outputTokens, modelo: resp.model };

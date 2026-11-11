@@ -825,7 +825,7 @@ await prueba('Q5: viñetas de relleno que repiten el encabezado se quitan', asyn
 
 await prueba('Q6: prompt con las reglas de p2 (versión vigente p3)', async () => {
   const { CVM_PROMPT_VERSION, CVM_SYSTEM_PROMPT } = await import('../src/lib/cv-medida.ts');
-  assert.equal(CVM_PROMPT_VERSION, 'p4-2026-11');
+  assert.equal(CVM_PROMPT_VERSION, 'p5-2026-11');
   for (const t of ['NUNCA copies el título del puesto', 'primera persona implícita', 'NOMBRE el dato que falta', 'solo repiten el encabezado'])
     assert.ok(CVM_SYSTEM_PROMPT.includes(t), t);
 });
@@ -1117,7 +1117,7 @@ await prueba('consentimiento: casilla de cv-medida describe plazos del código',
   const src = fs.readFileSync(new URL('../src/lib/consent.ts', import.meta.url), 'utf8');
   const bloque = src.slice(src.indexOf("'cv-medida': {"), src.indexOf("'cv-medida': {") + 900);
   assert.ok(bloque.includes('4 días') && bloque.includes('7 días') && bloque.includes('IA'));
-  assert.ok(src.includes("export const CONSENT_VERSION = 'v6-2026-11'"));
+  assert.ok(src.includes("export const CONSENT_VERSION = 'v7-2026-11'"));
   assert.equal(CVM_JOB_TTL_S, 4 * 86400);
 });
 

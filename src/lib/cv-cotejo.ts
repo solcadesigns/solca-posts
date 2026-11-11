@@ -470,3 +470,94 @@ export async function vacanteClasificada(
   }
   return { ...r, cache: false };
 }
+
+// ── Preguntas antes del pago (10-11 nov 2026) ──────────────────────────────────────────────────────
+//
+// Las arma el código, no el modelo: salen de los requisitos que no aparecen o aparecen en parte, en este orden:
+// indispensables que no aparecen, indispensables en parte, deseables que no aparecen, deseables en parte. Máximo 5.
+// Respuesta cerrada primero (empleo / proyecto, tesis o curso / no tengo esto) y, si dice que sí, una frase opcional.
+// Nada se genera hasta el pago; las respuestas viajan al pedido como texto que la persona escribió (fuente citable).
+
+export const COTEJO_MAX_PREGUNTAS = 5;
+export const COTEJO_MAX_DETALLE = 300;
+export type TipoRespuesta = 'empleo' | 'proyecto' | 'no_tengo';
+
+export interface PreguntaCotejo {
+  requisito: string;
+  prioridad: Prioridad;
+  estado: EstadoCotejo;
+}
+
+export interface RespuestaCotejo {
+  requisito: string;
+  tipo: TipoRespuesta;
+  detalle: string;
+}
+
+export function preguntasDeCotejo(requisitos: Array<{ requisito: string; prioridad: Prioridad; estado: EstadoCotejo }>): PreguntaCotejo[] {
+  const peso = (q: { prioridad: Prioridad; estado: EstadoCotejo }) =>
+    (q.prioridad === 'indispensable' ? 0 : 2) + (q.estado === 'no_aparece' ? 0 : 1);
+  return requisitos
+    .map((q, i) => ({ q, i }))
+    .filter(({ q }) => q.estado !== 'cumple')
+    .sort((a, b) => peso(a.q) - peso(b.q) || a.i - b.i)
+    .slice(0, COTEJO_MAX_PREGUNTAS)
+    .map(({ q }) => ({ requisito: q.requisito, prioridad: q.prioridad, estado: q.estado }));
+}
+
+const TIPO_TEXTO: Record<TipoRespuesta, string> = {
+  empleo: 'Sí, en un empleo',
+  proyecto: 'Sí, en un proyecto, tesis o curso',
+  no_tengo: 'No tengo esto',
+};
+
+/** Lee las respuestas del cliente. Descarta lo que no tenga forma válida; recorta textos. Pura (para pruebas). */
+export function leerRespuestas(v: unknown): RespuestaCotejo[] {
+  if (!Array.isArray(v)) return [];
+  const out: RespuestaCotejo[] = [];
+  const vistos = new Set<string>();
+  for (const x of v.slice(0, COTEJO_MAX_PREGUNTAS)) {
+    if (!x || typeof x !== 'object') continue;
+    const o = x as Record<string, unknown>;
+    const requisito = txt(o.requisito, 140);
+    const tipo = o.tipo === 'empleo' || o.tipo === 'proyecto' || o.tipo === 'no_tengo' ? o.tipo : null;
+    if (!requisito || !tipo || vistos.has(normalizar(requisito))) continue;
+    vistos.add(normalizar(requisito));
+    out.push({ requisito, tipo, detalle: tipo === 'no_tengo' ? '' : txt(o.detalle, COTEJO_MAX_DETALLE) });
+  }
+  return out;
+}
+
+/**
+ * Texto que va al pedido (campo texto libre del CV a la medida). Solo lo que la persona afirmó: "No tengo esto" se
+ * omite para que el modelo no lo use como evidencia. Vacío si no hay respuestas afirmativas.
+ */
+export function respuestasATexto(rs: RespuestaCotejo[]): string {
+  return rs
+    .filter((r) => r.tipo !== 'no_tengo')
+    // Sin cifras en el nombre del requisito: "Mínimo 5 años de…" es redacción de la vacante, no un dato de la persona
+    // (si no, "5" pasaría el filtro de cifras como si la persona lo hubiera escrito).
+    .map((r) => `Sobre "${sinCifras(r.requisito)}": ${TIPO_TEXTO[r.tipo]}.${r.detalle ? ` ${r.detalle.replace(/\s+/g, ' ').trim()}` : ''}`)
+    .join('\n');
+}
+
+function sinCifras(s: string): string {
+  return s.replace(/\d+(?:[.,]\d+)*\s*(?:\+|%)?/g, ' ').replace(/\(\s*\)/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/** Texto de una vacante del buscador, igual en la comparación y en el pedido (misma llave de caché). */
+export function textoVacanteBuscador(row: { titulo: string; empresa: string; descripcion: string }): string {
+  return `${row.titulo} · ${row.empresa}\n\n${row.descripcion}`.slice(0, COTEJO_MAX_VACANTE_BUSCADOR);
+}
+
+/** Solo la clasificación guardada (sin llamar al modelo). Para el pedido: si no está, el CV a la medida clasifica solo. */
+export async function clasificacionGuardada(kv: KvLite | undefined, vacante: string): Promise<VacanteClasificada | null> {
+  if (!kv) return null;
+  try {
+    const raw = await kv.get(await claveVacante(vacante));
+    const v = raw ? (JSON.parse(raw) as VacanteClasificada) : null;
+    return v?.version === COTEJO_VERSION && Array.isArray(v.requisitos) ? v : null;
+  } catch {
+    return null;
+  }
+}

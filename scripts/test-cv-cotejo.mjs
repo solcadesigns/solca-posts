@@ -253,4 +253,69 @@ await prueba('c2 revisión: negaciones y "required" como adjetivo de un tema', (
   ]) assert.equal(prioridadPorMarca(c, N), 'indispensable', c);
 });
 
+await prueba('preguntas: orden indispensable no aparece → en parte → deseables; máximo 5; nada si todo cumple', async () => {
+  const { preguntasDeCotejo } = await import('../src/lib/cv-cotejo.ts');
+  const rs = [
+    { requisito: 'D-parcial', prioridad: 'deseable', estado: 'parcial' },
+    { requisito: 'I-cumple', prioridad: 'indispensable', estado: 'cumple' },
+    { requisito: 'I-parcial', prioridad: 'indispensable', estado: 'parcial' },
+    { requisito: 'D-no', prioridad: 'deseable', estado: 'no_aparece' },
+    { requisito: 'I-no-1', prioridad: 'indispensable', estado: 'no_aparece' },
+    { requisito: 'I-no-2', prioridad: 'indispensable', estado: 'no_aparece' },
+    { requisito: 'D-no-2', prioridad: 'deseable', estado: 'no_aparece' },
+  ];
+  assert.deepEqual(preguntasDeCotejo(rs).map((q) => q.requisito), ['I-no-1', 'I-no-2', 'I-parcial', 'D-no', 'D-no-2']);
+  assert.deepEqual(preguntasDeCotejo([{ requisito: 'x', prioridad: 'indispensable', estado: 'cumple' }]), []);
+});
+
+await prueba('respuestas: lectura defensiva y texto para el pedido sin "No tengo esto"', async () => {
+  const { leerRespuestas, respuestasATexto } = await import('../src/lib/cv-cotejo.ts');
+  const r = leerRespuestas([
+    { requisito: 'GCP', tipo: 'proyecto', detalle: 'Curso de 20 horas en 2024   y aplicado en mi tesis' },
+    { requisito: 'gcp', tipo: 'empleo', detalle: 'duplicado' },
+    { requisito: 'Viajar', tipo: 'no_tengo', detalle: 'no debería guardarse' },
+    { requisito: 'SAS', tipo: 'inventado' },
+    { requisito: 'Inglés', tipo: 'empleo', detalle: 'x'.repeat(900) },
+    'basura',
+  ]);
+  assert.deepEqual(r.map((q) => [q.requisito, q.tipo, q.detalle.length]), [['GCP', 'proyecto', 48], ['Viajar', 'no_tengo', 0], ['Inglés', 'empleo', 300]]);
+  const t = respuestasATexto(r);
+  assert.ok(t.startsWith('Sobre "GCP": Sí, en un proyecto, tesis o curso. Curso de 20 horas en 2024 y aplicado en mi tesis'));
+  assert.ok(!t.includes('Viajar'));
+  // Sin cifras del requisito (redacción de la vacante, no dato de la persona).
+  assert.equal(respuestasATexto([{ requisito: 'Mínimo 5 años de experiencia (2+)', tipo: 'empleo', detalle: '' }]), 'Sobre "Mínimo años de experiencia": Sí, en un empleo.');
+  assert.equal(respuestasATexto([]), '');
+  assert.deepEqual(leerRespuestas('x'), []);
+});
+
+await prueba('p5: la lista clasificada va al mensaje y fija la prioridad de COINCIDENCIA por nombre', async () => {
+  const { mensajeUsuario, validarCvMedida, CVM_SYSTEM_PROMPT } = await import('../src/lib/cv-medida.ts');
+  const m = mensajeUsuario({ cv: CV, vacante: VAC, textoLibre: '', idioma: 'es', requisitos: [{ requisito: 'Inglés avanzado', prioridad: 'indispensable' }] });
+  assert.ok(m.includes('<requisitos_clasificados>\n- [indispensable] Inglés avanzado\n</requisitos_clasificados>'));
+  assert.ok(!mensajeUsuario({ cv: CV, vacante: VAC, textoLibre: '', idioma: 'es' }).includes('requisitos_clasificados'));
+  assert.ok(CVM_SYSTEM_PROMPT.includes('COINCIDENCIA usa EXACTAMENTE esos requisitos'));
+  const salida = {
+    puesto_vacante: 'QC', rol: 'Other',
+    contacto: { nombre: 'María Ejemplo', titular: '', correo: '', telefono: '', ubicacion: '', linkedin: '' },
+    resumen: 'Química farmacéutica con experiencia en control de calidad. Liberación de lotes y estudios de estabilidad por HPLC.',
+    experiencia: [{ puesto: 'Analista de control de calidad', organizacion: 'Laboratorio X', inicio: '2020', fin: '2023', cita: 'Analista de control de calidad, Laboratorio X',
+      vinetas: [{ texto: 'Liberé lotes y realicé estudios de estabilidad por HPLC.', fuente: 'cv', cita: 'liberación de lotes y estudios de estabilidad por HPLC' }] }],
+    educacion: [], habilidades: [], certificaciones: [], publicaciones: [], idiomas: [],
+    coincidencia: [
+      { requisito: 'Licenciatura', prioridad: 'indispensable', estado: 'no_cumple', evidencia: '', comentario: '' },
+      { requisito: 'inglés  avanzado', prioridad: 'deseable', estado: 'cumple', evidencia: 'Inglés avanzado (C1)', comentario: '' },
+    ],
+  };
+  const CV2 = 'María Ejemplo\nQuímica Farmacéutico Bióloga, Universidad Nacional, 2019.\nAnalista de control de calidad, Laboratorio X, 2020-2023: liberación de lotes y estudios de estabilidad por HPLC.\nInglés avanzado (C1).';
+  const v2 = validarCvMedida(salida, { cv: CV2, textoLibre: '', idioma: 'es', requisitos: [{ requisito: 'Inglés avanzado', prioridad: 'indispensable' }] });
+  assert.ok(v2.ok, v2.motivo);
+  // "Licenciatura" (modelo) está contenida en "Licenciatura en química o afín" (lista, deseable); "inglés avanzado" igual.
+  const v3 = validarCvMedida(salida, { cv: CV2, textoLibre: '', idioma: 'es', requisitos: [{ requisito: 'Inglés avanzado (C1)', prioridad: 'indispensable' }, { requisito: 'Licenciatura en química o afín', prioridad: 'deseable' }] });
+  assert.deepEqual(v3.cv.coincidencia.map((q) => [q.requisito, q.prioridad]), [['inglés avanzado', 'indispensable'], ['Licenciatura', 'deseable']]);
+  assert.equal(v3.reporte.requisitos_fuera_de_lista, 0);
+  // Sin coincidencia: se conserva la prioridad del modelo y se cuenta.
+  assert.deepEqual(v2.cv.coincidencia.map((q) => [q.requisito, q.prioridad]), [['Licenciatura', 'indispensable'], ['inglés avanzado', 'indispensable']]);
+  assert.equal(v2.reporte.requisitos_fuera_de_lista, 1);
+});
+
 console.log(`${n} pruebas pasaron.`);

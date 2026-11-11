@@ -22,6 +22,11 @@ import { esCorreoDePrueba } from '../../lib/simulator-test-sessions';
 import { leerEntrada, detectarIdioma, CVM_OXXO_DIAS, CVM_CHECKOUT_EXPIRA_S } from '../../lib/cv-medida';
 import { nuevoTrabajo, guardarTrabajo, jobKey, type KvLike } from '../../lib/cv-medida-queue';
 import { registrarEventoCvm } from '../../lib/cv-medida-run';
+import { leerRespuestas, respuestasATexto, textoVacanteBuscador, clasificacionGuardada, COTEJO_MAX_VACANTE_BUSCADOR } from '../../lib/cv-cotejo';
+
+/** 11 nov 2026: texto libre + respuestas de las preguntas (cada respuesta ≤ ~500 caracteres, máximo 5). */
+const MAX_TEXTO_CON_RESPUESTAS = 4_500;
+const REFS = new Set(['cv', 'vacantes', 'linkedin', 'correo', 'directo']);
 
 export const prerender = false;
 
@@ -74,8 +79,29 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
   const email = (typeof body.email === 'string' ? body.email : '').trim().toLowerCase();
   if (body.consent !== true) return json(400, { ok: false, error: 'consent_required', message: CONSENT_MSG.privacidad_requerida });
   if (!EMAIL_RE.test(email) || email.length > 200) return json(400, { ok: false, error: 'invalid_email', message: 'Correo inválido.' });
-  const entrada = leerEntrada(body);
+  // 11 nov 2026: desde la comparación la vacante puede venir del buscador (por id; el texto sale de D1, nunca del cliente).
+  const vacanteId = typeof body.vacanteId === 'string' ? body.vacanteId.slice(0, 120) : '';
+  if (vacanteId) {
+    let texto = '';
+    try {
+      const row = db
+        ? await db.prepare('SELECT descripcion, titulo, empresa FROM vacantes WHERE id = ? AND activa = 1').bind(vacanteId).first<{ descripcion: string | null; titulo: string; empresa: string }>()
+        : null;
+      if (row?.descripcion) texto = textoVacanteBuscador({ titulo: row.titulo, empresa: row.empresa, descripcion: row.descripcion });
+    } catch {
+      /* abajo */
+    }
+    if (!texto) return json(404, { ok: false, error: 'vacante_no_encontrada', message: 'Esta vacante ya no está activa en el buscador. No se hizo ningún cargo.' });
+    body.vacante = texto;
+  }
+  const entrada = leerEntrada(body, vacanteId ? { maxVacante: COTEJO_MAX_VACANTE_BUSCADOR } : {});
   if (!entrada.ok) return json(400, { ok: false, error: entrada.error, message: entrada.mensaje });
+  const respuestas = leerRespuestas(body.respuestas);
+  const textoRespuestas = respuestasATexto(respuestas);
+  if (textoRespuestas) entrada.v.textoLibre = [textoRespuestas, entrada.v.textoLibre].filter(Boolean).join('\n\n').slice(0, MAX_TEXTO_CON_RESPUESTAS);
+  const ref = REFS.has(String(body.ref)) ? String(body.ref) : undefined;
+  // Pedido que viene de la comparación (/comparar-cv): al cancelar en Stripe vuelve ahí, no a /cv-a-la-medida.
+  const flujoCotejo = body.flujo === 'cotejo';
 
   // Kill switch compartido: si la IA está en pausa no se vende.
   const simKV = env.SIMULATOR_SESSIONS as KVNamespace | undefined;
@@ -94,6 +120,8 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
   const idioma = detectarIdioma(entrada.v.vacante);
   const marketing = readMarketing(body);
   const now = Date.now();
+  // Lista clasificada de la comparación (misma vacante → misma llave). Si no existe, el CV a la medida clasifica solo.
+  const clasif = await clasificacionGuardada(kv, entrada.v.vacante);
   const job = nuevoTrabajo(
     {
       id: crypto.randomUUID(),
@@ -109,6 +137,8 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
       consentTs: new Date(now).toISOString(),
       attr,
       interno,
+      ...(clasif ? { requisitos: clasif.requisitos.map((q) => ({ requisito: q.requisito, prioridad: q.prioridad })) } : {}),
+      ...(ref ? { ref } : {}),
     },
     now,
   );
@@ -122,6 +152,11 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     vacante_length: job.vacanteLength,
     texto_libre: job.textoLibreLength > 0,
     marketing,
+    ref,
+    respuestas: respuestas.length,
+    respuestas_si: respuestas.filter((r) => r.tipo !== 'no_tengo').length,
+    clasificada: clasif ? 1 : 0,
+    flujo: flujoCotejo ? 'cotejo' : undefined,
   });
 
   // Fuente de la venta en metadata (mismo formato que el simulador; Stripe: 500 caracteres por valor).
@@ -161,12 +196,16 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
             source: 'cv_a_la_medida',
             consent_version: CONSENT_VERSION,
             marketing: marketing ? '1' : '0',
+            ...(flujoCotejo ? { flujo: 'cotejo' } : {}),
+            ...(ref ? { ref } : {}),
             ...fuente,
           },
           payment_method_options: { oxxo: { expires_after_days: CVM_OXXO_DIAS } },
           expires_at: Math.floor(now / 1000) + CVM_CHECKOUT_EXPIRA_S,
           success_url: 'https://solcaciencia.com/cv-a-la-medida?pago=ok&session_id={CHECKOUT_SESSION_ID}',
-          cancel_url: 'https://solcaciencia.com/cv-a-la-medida?pago=cancelado',
+          cancel_url: flujoCotejo
+            ? `https://solcaciencia.com/comparar-cv/?pago=cancelado${vacanteId ? `&vacante=${encodeURIComponent(vacanteId)}` : ''}${ref ? `&ref=${ref}` : ''}`
+            : 'https://solcaciencia.com/cv-a-la-medida?pago=cancelado',
           ...(env.CVM_PERMITIR_CUPONES === '1' ? { allow_promotion_codes: 'true' } : {}),
           billing_address_collection: 'auto',
         }),

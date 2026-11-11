@@ -10,14 +10,19 @@
  * Muestra el conteo de requisitos indispensables y la lista por nombre. Sin consejos de redacción.
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { CONSENT_COMMON, CONSENT_MSG, privacidadHtml } from '../lib/consent';
-import { COTEJO_MIN_CV, COTEJO_MAX_CV, COTEJO_MIN_VACANTE, COTEJO_MAX_VACANTE } from '../lib/cv-cotejo';
+import { CONSENT_COMMON, CONSENT_MSG, CONSENT_TEXT, privacidadHtml } from '../lib/consent';
+import { COTEJO_MIN_CV, COTEJO_MAX_CV, COTEJO_MIN_VACANTE, COTEJO_MAX_VACANTE, COTEJO_MAX_DETALLE } from '../lib/cv-cotejo';
+import { CVM_PRECIO_TEXTO } from '../lib/cv-medida';
 
 export const prerender = false;
 
 const consentPrivacidadHtml = privacidadHtml('cotejo');
+// 11 nov 2026: preguntas antes del pago y resumen con el pago del CV a la medida.
+const cvmConsent = CONSENT_TEXT['cv-medida'];
+const cvmPrivacidadHtml = privacidadHtml('cv-medida');
 const vacanteId = (Astro.url.searchParams.get('vacante') ?? '').slice(0, 120);
 const refParam = Astro.url.searchParams.get('ref') ?? '';
+const pagoCancelado = Astro.url.searchParams.get('pago') === 'cancelado';
 const ref = ['cv', 'vacantes', 'linkedin', 'correo'].includes(refParam) ? refParam : 'directo';
 let vac: { titulo: string; empresa: string; url: string } | null = null;
 if (vacanteId) {
@@ -58,9 +63,10 @@ if (vacanteId) {
   </div>
 </section>
 
-<section class="cvm-body">
+<section class="cvm-body" id="cot-inicio">
   <div class="container cvm-col">
     <form id="cot-form" class="cvm-card cvm-form" novalidate>
+      {pagoCancelado && <p class="cvm-aviso" role="status">No se completó el pago y no se hizo ningún cargo. Puedes volver a comparar y continuar.</p>}
       {vac ? (
         <div class="field">
           <span class="cot-label">Vacante</span>
@@ -115,10 +121,71 @@ if (vacanteId) {
       <ul class="cot-lista" id="r-des"></ul>
       <p class="cvm-letra">"Indispensable" es lo que la vacante marca como obligatorio (requisitos, required, must, excluyente). Revisamos solo lo que dice tu CV: si tienes algo que no aparece, el CV no lo está mostrando. Lo compara una inteligencia artificial: puede equivocarse.</p>
       <div class="cot-siguiente">
-        <p><strong>Siguiente paso (en construcción):</strong> unas preguntas sobre lo que falta y tu CV redactado para esta vacante.</p>
+        <button type="button" class="btn btn-orange btn-block" id="ir-preguntas"></button>
+        <p class="field-help" id="ir-preguntas-nota"></p>
       </div>
       <button type="button" class="cot-linkbtn" id="otra">Comparar con otra vacante</button>
     </div>
+  </div>
+</section>
+
+<section class="cvm-body cot-paso" id="cot-preguntas" hidden>
+  <div class="container cvm-col">
+    <div class="cvm-card">
+      <p class="cot-progreso" id="q-progreso"></p>
+      <p class="cot-label">La vacante pide</p>
+      <h2 class="cot-q" id="q-requisito"></h2>
+      <p id="q-contexto"></p>
+      <fieldset class="cot-opciones" id="q-opciones" aria-labelledby="q-requisito">
+        <label><input type="radio" name="q-tipo" value="empleo" /> Sí, en un empleo</label>
+        <label><input type="radio" name="q-tipo" value="proyecto" /> Sí, en un proyecto, tesis o curso</label>
+        <label><input type="radio" name="q-tipo" value="no_tengo" /> No tengo esto</label>
+      </fieldset>
+      <div class="field" id="q-detalle-campo" hidden>
+        <label for="q-detalle">En una frase: dónde y qué hiciste. Si tienes un resultado o una cifra, inclúyelo. <span class="optional-label">(opcional)</span></label>
+        <textarea id="q-detalle" rows="3" maxlength={COTEJO_MAX_DETALLE}></textarea>
+      </div>
+      <div class="cot-botones">
+        <button type="button" class="btn btn-orange" id="q-siguiente" disabled>Siguiente</button>
+        <button type="button" class="cot-linkbtn" id="q-saltar">Saltar las preguntas</button>
+      </div>
+      <p class="cvm-letra">Solo usamos lo que respondas tú. Si no lo tienes, no se agrega al CV.</p>
+    </div>
+  </div>
+</section>
+
+<section class="cvm-body cot-paso" id="cot-resumen" hidden>
+  <div class="container cvm-col">
+    <form class="cvm-card cvm-form" id="pago-form" novalidate>
+      <h2 class="cot-titular">Esto usaremos en tu CV</h2>
+      <p>Tu CV y la vacante, más lo que respondiste. Puedes corregir tus respuestas antes de pagar.</p>
+      <div id="s-respuestas"></div>
+      <h3>Qué recibes</h3>
+      <ul class="cot-recibes">
+        <li>Tu CV redactado para esta vacante, en Word para que lo edites, con el detalle de qué requisitos cumples, cuáles en parte y cuáles no.</li>
+        <li>Lo redacta una inteligencia artificial con lo que está en tu CV y en tus respuestas: revísalo antes de enviarlo. No garantiza entrevistas.</li>
+      </ul>
+      <div class="field">
+        <label for="pago-email">Tu correo</label>
+        <input type="email" id="pago-email" autocomplete="email" />
+      </div>
+      <div class="field consent-field">
+        <label class="consent-label">
+          <input type="checkbox" id="pago-consent" />
+          <span set:html={cvmPrivacidadHtml} />
+        </label>
+        <label class="consent-label">
+          <input type="checkbox" id="pago-marketing" />
+          <span>{cvmConsent.marketing}</span>
+        </label>
+        <p class="consent-note">{cvmConsent.nota}</p>
+      </div>
+      <p class="cot-precio"><strong>{CVM_PRECIO_TEXTO}.</strong> Pago único con tarjeta u OXXO a través de Stripe.</p>
+      <p class="cvm-letra">Reembolso solo si la entrega falla o si el documento no corresponde al CV y la vacante que enviaste. Detalle en los <a href="/terminos" target="_blank" rel="noopener">términos</a>.</p>
+      <p id="pago-error" class="cvm-error" role="alert" hidden></p>
+      <button type="submit" class="btn btn-orange btn-large btn-block" id="pago-btn">Pagar {CVM_PRECIO_TEXTO.split(',')[0]} y recibir mi CV</button>
+      <button type="button" class="cot-linkbtn" id="s-volver">Volver a las preguntas</button>
+    </form>
   </div>
 </section>
 
@@ -126,7 +193,8 @@ if (vacanteId) {
   data-min-cv={COTEJO_MIN_CV} data-max-cv={COTEJO_MAX_CV}
   data-min-vac={COTEJO_MIN_VACANTE} data-max-vac={COTEJO_MAX_VACANTE}
   data-vacante-id={vac ? vacanteId : ''} data-ref={ref}
-  data-consent-err={CONSENT_MSG.privacidad_requerida}></div>
+  data-consent-err={CONSENT_MSG.privacidad_requerida}
+  data-precio={CVM_PRECIO_TEXTO.split(',')[0]}></div>
 
 <script>
   const cfg = (document.getElementById('cot-config') as HTMLElement | null)?.dataset ?? {};
@@ -156,6 +224,8 @@ if (vacanteId) {
       $('cv-campo')!.hidden = true;
     }
     if (s?.email && emailEl) emailEl.value = s.email;
+    const sv = (s as { vacante?: string } | null)?.vacante;
+    if (sv && vacEl && !vacEl.value) vacEl.value = sv;
   } catch {
     /* sin sessionStorage */
   }
@@ -174,6 +244,10 @@ if (vacanteId) {
     errEl.textContent = msg;
     errEl.hidden = !msg;
   }
+
+  // Origen del CV para el pedido (medición): 'pdf' si se leyó de un PDF en esta página; si vino del revisor o se pegó, 'pegado'.
+  let origenCv: { origen: 'pdf' | 'pegado'; paginas: number | null } = { origen: 'pegado', paginas: null };
+  cvEl?.addEventListener('input', () => (origenCv = { origen: 'pegado', paginas: null }));
 
   // PDF: pdf.js desde CDN, igual que /revisar-cv y /cv-a-la-medida.
   let pdfjsPromise: Promise<any> | null = null;
@@ -217,6 +291,7 @@ if (vacanteId) {
       for (let i = 1; i <= pdf.numPages; i++) pages.push(pageText((await (await pdf.getPage(i)).getTextContent()).items));
       const text = pages.join('\n\n').trim();
       if (cvEl) cvEl.value = text;
+      origenCv = text.length >= MIN_CV ? { origen: 'pdf', paginas: pdf.numPages } : { origen: 'pegado', paginas: null };
       if (uploadStatus) uploadStatus.textContent = text.length < MIN_CV ? 'No pudimos leer suficiente texto del PDF. Pega el texto de tu CV.' : 'PDF leído. Revisa el texto en el recuadro.';
     } catch {
       if (uploadStatus) uploadStatus.textContent = 'No pudimos leer el PDF. Pega el texto de tu CV.';
@@ -235,7 +310,177 @@ if (vacanteId) {
   }
 
   type Conteo = { total: number; cumple: number; parcial: number; no_aparece: number };
-  type Res = { ok?: boolean; message?: string; puesto?: string; empresa?: string; indispensables?: Conteo; deseables?: Conteo; requisitos?: Array<{ requisito: string; prioridad: string; estado: string }> };
+  type Pregunta = { requisito: string; prioridad: string; estado: string };
+  type Res = { ok?: boolean; message?: string; puesto?: string; empresa?: string; indispensables?: Conteo; deseables?: Conteo; requisitos?: Array<{ requisito: string; prioridad: string; estado: string }>; preguntas?: Pregunta[] };
+
+  // ---- Preguntas antes del pago y resumen (11 nov 2026) ----
+  type Tipo = 'empleo' | 'proyecto' | 'no_tengo';
+  type Respuesta = { requisito: string; tipo: Tipo; detalle: string };
+  let preguntas: Pregunta[] = [];
+  let respuestas: Respuesta[] = [];
+  let qi = 0;
+  let enviado = { cv: '', vacante: '', email: '' };
+  // Al volver con Atrás desde Stripe (bfcache) el botón no debe quedarse en "Abriendo el pago...".
+  window.addEventListener('pageshow', () => {
+    const b = document.getElementById('pago-btn') as HTMLButtonElement | null;
+    if (b && b.disabled) { b.disabled = false; b.textContent = 'Intentar de nuevo'; }
+  });
+  const TIPO: Record<Tipo, string> = { empleo: 'Sí, en un empleo', proyecto: 'Sí, en un proyecto, tesis o curso', no_tengo: 'No tengo esto' };
+
+  function paso(id: 'cot-inicio' | 'cot-preguntas' | 'cot-resumen') {
+    for (const x of ['cot-inicio', 'cot-preguntas', 'cot-resumen']) $(x)!.hidden = x !== id;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function medir(product: string) {
+    try {
+      const w = window as unknown as { __attr?: () => Record<string, unknown> };
+      const utm = Object.fromEntries([...new URLSearchParams(location.search)].filter(([k]) => k.startsWith('utm_')));
+      const body = JSON.stringify({ event: 'cv_step', product, ...utm, ...(w.__attr ? w.__attr() : {}) });
+      if (navigator.sendBeacon) navigator.sendBeacon('/api/simulator-events', new Blob([body], { type: 'application/json' }));
+    } catch {
+      /* medición best-effort */
+    }
+  }
+  const qDetalle = $('q-detalle') as HTMLTextAreaElement | null;
+  const qSig = $('q-siguiente') as HTMLButtonElement | null;
+  function tipoMarcado(): Tipo | null {
+    const r = document.querySelector<HTMLInputElement>('input[name="q-tipo"]:checked');
+    return (r?.value as Tipo) ?? null;
+  }
+  function pintarPregunta() {
+    const q = preguntas[qi];
+    $('q-progreso')!.textContent = `Pregunta ${qi + 1} de ${preguntas.length}`;
+    $('q-requisito')!.textContent = q.requisito;
+    $('q-contexto')!.textContent =
+      q.estado === 'parcial'
+        ? 'Aparece en parte en tu CV. ¿Tienes más experiencia con esto, aunque no esté escrita?'
+        : 'No lo encontramos en tu CV. ¿Lo tienes, aunque no esté escrito?';
+    const previa = respuestas.find((r) => r.requisito === q.requisito);
+    document.querySelectorAll<HTMLInputElement>('input[name="q-tipo"]').forEach((r) => (r.checked = previa?.tipo === r.value));
+    if (qDetalle) qDetalle.value = previa?.detalle ?? '';
+    $('q-detalle-campo')!.hidden = !previa || previa.tipo === 'no_tengo';
+    if (qSig) {
+      qSig.disabled = !previa;
+      qSig.textContent = qi === preguntas.length - 1 ? 'Ver resumen' : 'Siguiente';
+    }
+  }
+  document.querySelectorAll<HTMLInputElement>('input[name="q-tipo"]').forEach((r) =>
+    r.addEventListener('change', () => {
+      $('q-detalle-campo')!.hidden = tipoMarcado() === 'no_tengo';
+      if (qSig) qSig.disabled = false;
+    }),
+  );
+  function guardarActual() {
+    const t = tipoMarcado();
+    if (!t) return;
+    const q = preguntas[qi];
+    respuestas = respuestas.filter((r) => r.requisito !== q.requisito);
+    respuestas.push({ requisito: q.requisito, tipo: t, detalle: t === 'no_tengo' ? '' : (qDetalle?.value.trim() ?? '') });
+    medir(`cotejo_resp_${t}`);
+  }
+  qSig?.addEventListener('click', () => {
+    guardarActual();
+    if (qi < preguntas.length - 1) {
+      qi++;
+      pintarPregunta();
+    } else mostrarResumen();
+  });
+  $('q-saltar')?.addEventListener('click', () => {
+    medir('cotejo_preguntas_saltadas');
+    mostrarResumen();
+  });
+  $('ir-preguntas')?.addEventListener('click', () => {
+    if (preguntas.length) {
+      medir('cotejo_preguntas_inicio');
+      qi = 0;
+      pintarPregunta();
+      paso('cot-preguntas');
+    } else mostrarResumen();
+  });
+  $('s-volver')?.addEventListener('click', () => {
+    if (!preguntas.length) return paso('cot-inicio');
+    qi = 0;
+    pintarPregunta();
+    paso('cot-preguntas');
+  });
+
+  function mostrarResumen() {
+    medir('cotejo_resumen');
+    const cont = $('s-respuestas')!;
+    const si = respuestas.filter((r) => r.tipo !== 'no_tengo');
+    const no = respuestas.filter((r) => r.tipo === 'no_tengo');
+    cont.innerHTML =
+      (si.length
+        ? si
+            .map(
+              (r, i) => `<div class="field cot-resp"><label for="s-det-${i}"><strong>${esc(r.requisito)}</strong> · ${TIPO[r.tipo]}</label>` +
+                `<textarea id="s-det-${i}" data-req="${esc(r.requisito)}" rows="2" maxlength="300">${esc(r.detalle)}</textarea></div>`,
+            )
+            .join('')
+        : '<p class="cot-vac">No agregaremos nada a lo que ya dice tu CV.</p>') +
+      (no.length ? `<p class="field-help">No se agregará: ${no.map((r) => esc(r.requisito)).join('; ')}.</p>` : '');
+    const pe = $('pago-email') as HTMLInputElement | null;
+    if (pe && !pe.value) pe.value = enviado.email;
+    paso('cot-resumen');
+  }
+
+  $('pago-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const err = $('pago-error');
+    const fallo = (m: string) => {
+      if (err) {
+        err.textContent = m;
+        err.hidden = !m;
+      }
+    };
+    fallo('');
+    // Correcciones del resumen.
+    document.querySelectorAll<HTMLTextAreaElement>('#s-respuestas textarea').forEach((t) => {
+      const r = respuestas.find((x) => x.requisito === t.dataset.req);
+      if (r) r.detalle = t.value.trim();
+    });
+    const email = ($('pago-email') as HTMLInputElement | null)?.value.trim() ?? '';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fallo('Escribe un correo válido.');
+    if (!($('pago-consent') as HTMLInputElement | null)?.checked) return fallo(cfg.consentErr ?? 'Debes aceptar el aviso de privacidad para continuar.');
+    const btnPago = $('pago-btn') as HTMLButtonElement | null;
+    if (btnPago) { btnPago.disabled = true; btnPago.textContent = 'Abriendo el pago...'; }
+    medir('cotejo_pagar');
+    try {
+      const w = window as unknown as { __attr?: () => Record<string, unknown> };
+      const res = await fetch('/api/cv-medida-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cv: enviado.cv,
+          ...(vacanteId ? { vacanteId } : { vacante: enviado.vacante }),
+          respuestas,
+          flujo: 'cotejo',
+          email,
+          consent: true,
+          marketing: ($('pago-marketing') as HTMLInputElement | null)?.checked === true,
+          ref,
+          origen: origenCv.origen,
+          paginas: origenCv.paginas ?? undefined,
+          ...(w.__attr ? w.__attr() : {}),
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; url?: string; message?: string };
+      if (data.ok && data.url) {
+        // Si cancela en Stripe vuelve a /comparar-cv: CV, correo y vacante pegada quedan en sessionStorage.
+        try {
+          sessionStorage.setItem('solca_cotejo', JSON.stringify({ cv: enviado.cv, email, vacante: vacanteId ? '' : enviado.vacante }));
+        } catch {
+          /* sin sessionStorage */
+        }
+        window.location.href = data.url;
+        return;
+      }
+      fallo(data.message ?? 'No pudimos abrir el pago. No se hizo ningún cargo. Intenta de nuevo.');
+    } catch {
+      fallo('No pudimos conectar. No se hizo ningún cargo. Intenta de nuevo.');
+    }
+    if (btnPago) { btnPago.disabled = false; btnPago.textContent = 'Intentar de nuevo'; }
+  });
 
   function mostrar(r: Res) {
     const ind = r.indispensables!;
@@ -255,6 +500,15 @@ if (vacanteId) {
     $('r-h-des')!.hidden = desL.length === 0;
     lista($('r-ind'), indL);
     lista($('r-des'), desL);
+    preguntas = r.preguntas ?? [];
+    respuestas = [];
+    const ir = $('ir-preguntas');
+    if (ir) ir.textContent = preguntas.length
+      ? `Responder ${preguntas.length} ${preguntas.length === 1 ? 'pregunta' : 'preguntas'} y ver tu CV para esta vacante`
+      : 'Ver tu CV para esta vacante';
+    $('ir-preguntas-nota')!.textContent = preguntas.length
+      ? `Las preguntas son sobre lo que no aparece en tu CV. Lo que respondas se puede usar en tu CV a la medida (${cfg.precio ?? '$119 MXN'}). Todavía no pagas nada.`
+      : `Tu CV a la medida cuesta ${cfg.precio ?? '$119 MXN'}. Todavía no pagas nada.`;
     form!.hidden = true;
     $('cot-resultado')!.hidden = false;
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -298,7 +552,10 @@ if (vacanteId) {
         body: JSON.stringify({ cv, ...(vacanteId ? { vacanteId } : { vacante }), email, consent: true, ref, ...utm, ...(w.__attr ? w.__attr() : {}) }),
       });
       const data = (await res.json().catch(() => ({}))) as Res;
-      if (data.ok && data.indispensables) mostrar(data);
+      if (data.ok && data.indispensables) {
+        enviado = { cv, vacante, email };
+        mostrar(data);
+      }
       else error(data.message ?? 'No pudimos comparar. Intenta de nuevo.');
     } catch {
       error('No pudimos conectar. Intenta de nuevo.');
@@ -353,6 +610,19 @@ if (vacanteId) {
   .cot-siguiente { margin-top: 20px; padding: 14px 16px; background: var(--bg); border-radius: 8px; border: 1px solid var(--rule); }
   .cot-siguiente p { margin: 0; }
   #otra { margin-top: 16px; }
+  .cot-paso[hidden], #cot-inicio[hidden] { display: none !important; }
+  .cot-progreso { font-size: 13px !important; color: var(--text-mute) !important; margin: 0 0 10px; }
+  .cot-q { font-family: 'Inter', sans-serif; font-size: 20px; font-weight: 800; color: var(--navy); margin: 2px 0 8px; }
+  .cot-opciones { border: 0; padding: 0; margin: 12px 0; display: flex; flex-direction: column; gap: 10px; }
+  .cot-opciones label { display: flex; gap: 10px; align-items: center; padding: 12px 14px; border: 1.5px solid var(--rule); border-radius: 8px; background: white; cursor: pointer; font-size: 15px; }
+  .cot-opciones label:has(input:checked) { border-color: var(--orange); }
+  .cot-botones { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 8px; }
+  .cot-precio { font-size: 17px !important; color: var(--navy) !important; margin: 6px 0 0; }
+  .cot-recibes { padding-left: 20px; margin: 0 0 8px; }
+  #s-respuestas :global(.cot-resp) { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+  #s-respuestas :global(.cot-resp label) { font-size: 14px; color: var(--text); }
+  #s-respuestas :global(textarea) { padding: 10px 12px; border: 1.5px solid var(--rule); border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 15px; resize: vertical; }
+  #s-volver { margin-top: 8px; align-self: flex-start; }
   @media (max-width: 640px) { .cvm-card { padding: 22px; } .cot-lista :global(.cot-estado) { min-width: 0; display: block; width: fit-content; margin-bottom: 4px; } }
 </style>
 </BaseLayout>

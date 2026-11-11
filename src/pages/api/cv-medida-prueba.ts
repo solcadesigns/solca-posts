@@ -11,6 +11,7 @@ import { generarCvMedida } from '../../lib/cv-medida-run';
 import { construirDocx, aBase64, nombreArchivo } from '../../lib/cv-medida-docx';
 import { detectarIdioma, CVM_MAX_CV, CVM_MAX_VACANTE, CVM_MAX_TEXTO_LIBRE } from '../../lib/cv-medida';
 import type { CvmJob } from '../../lib/cv-medida-queue';
+import { leerRespuestas, respuestasATexto, clasificacionGuardada } from '../../lib/cv-cotejo';
 
 export const prerender = false;
 
@@ -24,7 +25,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const apiKey = env.ANTHROPIC_API_KEY as string | undefined;
   if (!apiKey) return json({ error: 'no_api_key' }, 500);
 
-  let body: { cv?: string; vacante?: string; textoLibre?: string };
+  // 11 nov 2026: `respuestas` (preguntas antes del pago) y la lista clasificada guardada de la comparación (p5).
+  let body: { cv?: string; vacante?: string; textoLibre?: string; respuestas?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -32,7 +34,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
   const cv = String(body.cv ?? '').slice(0, CVM_MAX_CV);
   const vacante = String(body.vacante ?? '').slice(0, CVM_MAX_VACANTE);
-  const textoLibre = String(body.textoLibre ?? '').slice(0, CVM_MAX_TEXTO_LIBRE);
+  const textoLibre = [respuestasATexto(leerRespuestas(body.respuestas)), String(body.textoLibre ?? '').slice(0, CVM_MAX_TEXTO_LIBRE)]
+    .filter(Boolean)
+    .join('\n\n');
+  const clasif = await clasificacionGuardada(env.CV_LIMITS as KVNamespace | undefined, vacante);
   if (cv.length < 200 || vacante.length < 200) return json({ error: 'muy_corto' }, 400);
 
   const id = `prueba-${crypto.randomUUID()}`;
@@ -43,6 +48,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     textoLibre,
     idioma: detectarIdioma(vacante),
     interno: true,
+    ...(clasif ? { requisitos: clasif.requisitos.map((q) => ({ requisito: q.requisito, prioridad: q.prioridad })) } : {}),
   } as unknown as CvmJob;
   const g = await generarCvMedida(apiKey, job, env.SIMULATOR_METRICS_DB as D1Database | undefined);
   if (!g.ok || !g.cv) return json({ ok: false, status: g.status, ms: g.ms, outputTokens: g.outputTokens, modelo: g.modelo }, 502);
@@ -55,6 +61,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     archivo: nombreArchivo(g.cv),
     cv: g.cv,
     reporte: g.reporte,
+    clasificada: Boolean(clasif),
+    textoLibre,
     docxBase64: aBase64(docx),
   });
 };

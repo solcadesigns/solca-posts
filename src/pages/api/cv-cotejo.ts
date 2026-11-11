@@ -23,8 +23,9 @@ import {
   COTEJO_MAX_CV,
   COTEJO_MIN_VACANTE,
   COTEJO_MAX_VACANTE,
-  COTEJO_MAX_VACANTE_BUSCADOR,
   COTEJO_VERSION,
+  preguntasDeCotejo,
+  textoVacanteBuscador,
 } from '../../lib/cv-cotejo';
 import { extractAttribution, emailHashFull } from '../../lib/attribution';
 import { extractUtms } from '../../lib/utm';
@@ -83,7 +84,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
       const row = db
         ? await db.prepare('SELECT descripcion, titulo, empresa FROM vacantes WHERE id = ? AND activa = 1').bind(vacanteId).first<{ descripcion: string | null; titulo: string; empresa: string }>()
         : null;
-      if (row?.descripcion) vacante = `${row.titulo} · ${row.empresa}\n\n${row.descripcion}`.slice(0, COTEJO_MAX_VACANTE_BUSCADOR);
+      if (row?.descripcion) vacante = textoVacanteBuscador({ titulo: row.titulo, empresa: row.empresa, descripcion: row.descripcion });
     } catch {
       /* cae al error de abajo */
     }
@@ -179,6 +180,8 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     indispensables: r.indispensables,
     deseables: r.deseables,
     requisitos: r.requisitos.map((q) => ({ requisito: q.requisito, prioridad: q.prioridad, estado: q.estado })),
+    // 11 nov 2026: preguntas antes del pago, armadas por código a partir de lo que no aparece o aparece en parte.
+    preguntas: preguntasDeCotejo(r.requisitos),
     ...(conLlave ? { prueba: { requisitosVacante: vac.valor.requisitos, evidencias: r.requisitos.map((q) => q.evidencia), descartados: vac.valor.descartados, evidenciasDescartadas: r.evidenciasDescartadas, cache: vac.cache } } : {}),
   });
 };
