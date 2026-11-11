@@ -318,4 +318,18 @@ await prueba('p5: la lista clasificada va al mensaje y fija la prioridad de COIN
   assert.equal(v2.reporte.requisitos_fuera_de_lista, 1);
 });
 
+await prueba('evidencia: tramos de líneas separadas, Ph.D./PhD y guion al final de línea; sin palabras sueltas', async () => {
+  const { evidenciaLiteral } = await import('../src/lib/cv-cotejo.ts');
+  const cv = `Education\nUniversity of Sheffield, UK\n-PhD in Biomedical Science. (2019).\n-Master’s in Biomedical science.\nDistinction (2014).\nUTEL-Mexico\n-Master’s in Directive Management\nof health institutions (Jul 2020-\nPresent).\nUNAM-Mexico\n-B.Sc. Biology. Honours (2013).\nIQVIA (2022-2025)\nAssociate consultant and data analyst:`;
+  assert.ok(evidenciaLiteral("Ph.D. in Biomedical Science (2019). Master's in Biomedical science. Distinction (2014). B.Sc. Biology. Honours (2013).", cv));
+  assert.ok(evidenciaLiteral("Master's in Directive Management of health institutions (Jul 2020- Present).", cv));
+  assert.ok(evidenciaLiteral('Associate consultant and data analyst: IQVIA (2022-2025)', cv));
+  assert.equal(evidenciaLiteral('PhD in Molecular Medicine (2019). Master in Biomedical science.', cv), false); // un tramo inventado
+  assert.equal(evidenciaLiteral('biomedical science sheffield degree', cv), false); // palabras sueltas
+  assert.equal(evidenciaLiteral('Honours. Distinction.', cv), false); // ningún tramo de 3+ palabras
+  for (const x of ['Associate consultant and data analyst: SAS.', 'PhD in Biomedical Science. Harvard. Oxford.', 'Associate consultant and data analyst | Novartis', 'Associate consultant and data analyst // SQL'])
+    assert.equal(evidenciaLiteral(x, cv), false, x); // un tramo real no salva una palabra inventada
+  assert.ok(evidenciaLiteral('IQVIA (2022-2025) – Associate consultant and data analyst', cv));
+});
+
 console.log(`${n} pruebas pasaron.`);

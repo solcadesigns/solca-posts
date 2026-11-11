@@ -229,11 +229,33 @@ export function marcaCalifica(vacante: string, cita: string, marca: string): boo
   return true;
 }
 
-/** Evidencia literal del CV: subcadena normalizada (palabras completas) de al menos 3 palabras. */
+/**
+ * Evidencia del CV (11 nov 2026, prueba con un CV real en PDF): el modelo a veces une líneas que en el PDF están
+ * separadas ("Ph.D. in Biomedical Science (2019). Master's in… B.Sc. Biology…") o escribe "Ph.D." donde el CV dice
+ * "PhD". Se acepta si CADA tramo de la cita (separado por . ; : • | // y guiones con espacios) está tal cual en el CV,
+ * y al menos un tramo tiene 3+ palabras. Las palabras sueltas o reordenadas siguen sin contar.
+ */
+function canonGrados(s: string): string {
+  return (s || '')
+    .replace(/\bPh\.?\s?D\b\.?/gi, 'PhD')
+    .replace(/\bM\.?\s?Sc\b\.?/gi, 'MSc')
+    .replace(/\bB\.?\s?Sc\b\.?/gi, 'BSc')
+    .replace(/\bM\.?\s?D\b\.(?=\s)/g, 'MD');
+}
+function cvNormalizado(cv: string): string {
+  // Dos versiones: la normal (une "palabra-\nsigue") y una con los saltos de línea como espacio ("2020-\nPresent").
+  const c = canonGrados(cv);
+  return ` ${normalizar(c)} | ${normalizar(c.replace(/\s*\n\s*/g, ' '))} `;
+}
 export function evidenciaLiteral(evidencia: string, cv: string): boolean {
-  const e = normalizar(evidencia.replace(/^["'«»“”]+|["'«»“”]+$/g, '').replace(/(\.\.\.|…)$/, ''));
-  if (e.split(' ').filter(Boolean).length < 3) return false;
-  return ` ${normalizar(cv)} `.includes(` ${e} `);
+  const limpia = canonGrados(evidencia.replace(/^["'«»“”]+|["'«»“”]+$/g, '').replace(/(\.\.\.|…)$/, ''));
+  const base = cvNormalizado(cv);
+  const tramos = limpia
+    .split(/[.;:•|]+(?=\s|$)|\s\/\/\s|\s[–—-]\s/)
+    .map((t) => normalizar(t))
+    .filter(Boolean); // también los tramos de 1 palabra: "data analyst: SAS" no pasa si SAS no está en el CV
+  if (!tramos.some((t) => t.split(' ').length >= 3)) return false;
+  return tramos.every((t) => base.includes(` ${t} `));
 }
 
 /** Valida la salida del paso 1 contra el texto de la vacante y decide la prioridad. Pura (para pruebas). */
