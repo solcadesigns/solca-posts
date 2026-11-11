@@ -28,7 +28,8 @@ import { emailHashFull, type Attribution } from './attribution';
 // v6-2026-11 (10 nov 2026): se agrega la casilla de la comparación con una vacante (`cotejo`, interna hasta diciembre).
 // v7-2026-11 (11 nov 2026): la casilla de CV a la medida menciona las respuestas a las preguntas.
 // v8-2026-11 (11 nov 2026): la casilla de CV a la medida menciona la pregunta de resultado a los 14 días.
-export const CONSENT_VERSION = 'v8-2026-11';
+// v9-2026-11 (11 nov 2026): texto de la casilla de la comparación (`cotejo`) aprobado por Oscar.
+export const CONSENT_VERSION = 'v9-2026-11';
 
 // 'reconfirmacion-es': opt-in desde /api/confirmar-correos (correo único aviso-privacidad-2026-11, legado España).
 // 'cv-medida' (6 nov 2026): CV a la medida; el consentimiento se registra al confirmar el pago (webhook).
@@ -67,7 +68,7 @@ export const CONSENT_TEXT: Record<FormKey, { privacidad: string; marketing: stri
   },
   cotejo: {
     privacidad:
-      'He leído el aviso de privacidad y acepto que el texto de mi CV y el de la vacante se procesen con IA para compararlos. El CV no se guarda. Mi correo se usa para limitar el número de comparaciones.',
+      'He leído el aviso de privacidad y acepto que mi CV y la vacante sean procesados con IA para realizar la comparación. Mi CV no se guarda. Mi correo se utiliza para limitar el número de comparaciones.',
     marketing: '',
     nota: '',
   },

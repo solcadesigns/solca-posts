@@ -22,12 +22,12 @@ export const ENCUESTA_MAX_INTENTOS = 3;
 export const ENCUESTA_MAX_POR_CORRIDA = 50;
 
 export const OPCIONES = [
-  { code: 'sin_llamada', texto: 'No me han llamado' },
-  { code: 'llamada_sin_avance', texto: 'Me llamaron, pero no avancé' },
-  { code: 'siguiente_ronda', texto: 'Pasé a la siguiente ronda' },
-  { code: 'final_sin_contratacion', texto: 'Llegué a la entrevista final, pero no me contrataron' },
-  { code: 'contratado', texto: 'Me contrataron' },
-  { code: 'no_postule', texto: 'Todavía no me postulo' },
+  { code: 'sin_llamada', texto: 'No me han llamado.' },
+  { code: 'llamada_sin_avance', texto: 'Me llamaron, pero no avancé.' },
+  { code: 'siguiente_ronda', texto: 'Pasé a la siguiente ronda.' },
+  { code: 'final_sin_contratacion', texto: 'Llegué a la entrevista final, pero no me contrataron.' },
+  { code: 'contratado', texto: 'Me contrataron.' },
+  { code: 'no_postule', texto: 'Todavía no me he postulado.' },
 ] as const;
 export type CodigoRespuesta = (typeof OPCIONES)[number]['code'];
 
@@ -129,11 +129,13 @@ export function enlaceRespuesta(token: string, code: string): string {
 export function renderEncuesta(p: { puesto: string }, token: string): { subject: string; html: string; text: string } {
   const puesto = (p.puesto || '').trim() || 'la vacante';
   const subject = `¿Qué pasó con tu postulación a ${puesto}?`.slice(0, 120);
-  const intro = `Hace dos semanas te enviamos tu CV a la medida para ${puesto}. Nos ayuda saber qué pasó después para mejorar la herramienta. Elige la opción que mejor lo describe:`;
-  const cierre = 'Es el único correo que te enviaremos sobre esto. Tu respuesta se guarda sin tu nombre ni tu correo.';
+  const intro = `Hace dos semanas recibiste tu CV adaptado para ${puesto}. Queremos saber cómo te fue.`;
+  const pregunta = '¿En qué etapa estás?';
+  const cierre = 'Es el único correo de seguimiento que recibirás. Tu respuesta se registrará de forma anónima, sin asociarla a tu nombre ni correo.';
   const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a;max-width:560px">
 <p>Hola:</p>
 <p>${esc(intro)}</p>
+<p><strong>${esc(pregunta)}</strong></p>
 <ul style="padding-left:0;list-style:none">
 ${OPCIONES.map((o) => `<li style="margin:8px 0"><a href="${enlaceRespuesta(token, o.code)}" style="display:inline-block;padding:10px 14px;border:1px solid #0F2748;border-radius:6px;color:#0F2748;text-decoration:none">${esc(o.texto)}</a></li>`).join('\n')}
 </ul>
@@ -144,6 +146,8 @@ ${OPCIONES.map((o) => `<li style="margin:8px 0"><a href="${enlaceRespuesta(token
     'Hola:',
     '',
     intro,
+    '',
+    pregunta,
     '',
     ...OPCIONES.map((o) => `- ${o.texto}: ${enlaceRespuesta(token, o.code)}`),
     '',

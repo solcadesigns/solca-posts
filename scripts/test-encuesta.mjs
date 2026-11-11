@@ -59,8 +59,9 @@ await prueba('correo: 6 opciones con enlace, asunto con el puesto, sin datos de 
     assert.ok(r.html.includes(`r=${o.code}`));
   }
   assert.ok(r.html.includes('&lt;I&gt;') && !r.html.includes('<I>'));
-  assert.ok(r.text.includes('Es el único correo que te enviaremos sobre esto.'));
-  assert.equal(opcion('contratado').texto, 'Me contrataron');
+  assert.ok(r.text.includes('Es el único correo de seguimiento que recibirás.'));
+  assert.ok(r.text.includes('¿En qué etapa estás?'));
+  assert.equal(opcion('contratado').texto, 'Me contrataron.');
   assert.equal(opcion('x'), null);
 });
 

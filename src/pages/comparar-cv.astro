@@ -58,7 +58,7 @@ import { navLinks, esActual } from '../lib/nav';
 <section class="cvm-hero">
   <div class="container cvm-hero-inner">
     <h1 class="cvm-title">Compara tu CV con <em>una vacante</em></h1>
-    <p class="cvm-lead">Te decimos cuántos de los requisitos indispensables de la vacante aparecen en tu CV y cuáles no aparecen. Gratis.</p>
+    <p class="cvm-lead">Identificamos cuántos requisitos indispensables de la vacante aparecen en tu CV, cuáles aparecen parcialmente y cuáles faltan.<br />Gratis.</p>
   </div>
 </section>
 
@@ -118,10 +118,11 @@ import { navLinks, esActual } from '../lib/nav';
       <ul class="cot-lista" id="r-ind"></ul>
       <h3 id="r-h-des">Deseables</h3>
       <ul class="cot-lista" id="r-des"></ul>
-      <p class="cvm-letra">"Indispensable" es lo que la vacante marca como obligatorio (requisitos, required, must, excluyente). Revisamos solo lo que dice tu CV: si tienes algo que no aparece, el CV no lo está mostrando. Lo compara una inteligencia artificial: puede equivocarse.</p>
+      <p class="cvm-letra">Consideramos indispensables los requisitos que la vacante identifica como obligatorios (required, must, excluyente). Evaluamos únicamente la información escrita en tu CV. Si algo no aparece, no podemos considerarlo acreditado. La comparación se realiza con IA y puede contener errores.</p>
       <div class="cot-siguiente">
+        <h3 id="ir-preguntas-titulo">Completa tu información para esta vacante</h3>
+        <p id="ir-preguntas-nota"></p>
         <button type="button" class="btn btn-orange btn-block" id="ir-preguntas"></button>
-        <p class="field-help" id="ir-preguntas-nota"></p>
       </div>
       <button type="button" class="cot-linkbtn" id="otra">Comparar con otra vacante</button>
     </div>
@@ -132,23 +133,23 @@ import { navLinks, esActual } from '../lib/nav';
   <div class="container cvm-col">
     <div class="cvm-card">
       <p class="cot-progreso" id="q-progreso"></p>
-      <p class="cot-label">La vacante pide</p>
+      <p class="cot-label">La vacante solicita:</p>
       <h2 class="cot-q" id="q-requisito"></h2>
       <p id="q-contexto"></p>
       <fieldset class="cot-opciones" id="q-opciones" aria-labelledby="q-requisito">
-        <label><input type="radio" name="q-tipo" value="empleo" /> Sí, en un empleo</label>
-        <label><input type="radio" name="q-tipo" value="proyecto" /> Sí, en un proyecto, tesis o curso</label>
-        <label><input type="radio" name="q-tipo" value="no_tengo" /> No tengo esto</label>
+        <label><input type="radio" name="q-tipo" value="empleo" /> Sí, en un empleo.</label>
+        <label><input type="radio" name="q-tipo" value="proyecto" /> Sí, en un proyecto, tesis o curso.</label>
+        <label><input type="radio" name="q-tipo" value="no_tengo" /> No tengo experiencia en esto.</label>
       </fieldset>
       <div class="field" id="q-detalle-campo" hidden>
-        <label for="q-detalle">En una frase: dónde y qué hiciste. Si tienes un resultado o una cifra, inclúyelo. <span class="optional-label">(opcional)</span></label>
+        <label for="q-detalle">Cuéntanos brevemente dónde y qué hiciste. Si tienes resultados o cifras, inclúyelos. <span class="optional-label">(Opcional)</span></label>
         <textarea id="q-detalle" rows="3" maxlength={COTEJO_MAX_DETALLE}></textarea>
       </div>
       <div class="cot-botones">
         <button type="button" class="btn btn-orange" id="q-siguiente" disabled>Siguiente</button>
-        <button type="button" class="cot-linkbtn" id="q-saltar">Saltar las preguntas</button>
+        <button type="button" class="cot-linkbtn" id="q-saltar">Saltar preguntas</button>
       </div>
-      <p class="cvm-letra">Solo usamos lo que respondas tú. Si no lo tienes, no se agrega al CV.</p>
+      <p class="cvm-letra">Solo incorporamos información que tú confirmes. Si no tienes experiencia en un requisito, no lo agregaremos a tu CV.</p>
     </div>
   </div>
 </section>
@@ -156,14 +157,12 @@ import { navLinks, esActual } from '../lib/nav';
 <section class="cvm-body cot-paso" id="cot-resumen" hidden>
   <div class="container cvm-col">
     <form class="cvm-card cvm-form" id="pago-form" novalidate>
-      <h2 class="cot-titular">Lo que usaremos para redactar tu CV</h2>
-      <p>Tu CV y la vacante, más lo que respondiste. Puedes corregir tus respuestas antes de pagar.</p>
+      <h2 class="cot-titular">Información para tu CV</h2>
+      <p>Usaremos tu CV, la vacante y tus respuestas. Puedes revisar y corregir estas últimas antes de pagar.</p>
       <div id="s-respuestas"></div>
-      <h3>Qué recibes</h3>
-      <ul class="cot-recibes">
-        <li>Tu CV redactado para esta vacante, en Word para que lo edites, con el detalle de qué requisitos cumples, cuáles en parte y cuáles no.</li>
-        <li>Lo redacta una inteligencia artificial con lo que está en tu CV y en tus respuestas: revísalo antes de enviarlo. No garantiza entrevistas.</li>
-      </ul>
+      <h3>¿Qué recibes?</h3>
+      <p>Tu CV adaptado a la vacante, en formato Word editable, con un desglose de los requisitos que cumples, cumples parcialmente o no cumples.</p>
+      <p>La redacción se genera con IA a partir de tu CV y tus respuestas. Revísala antes de utilizarla. El servicio no garantiza entrevistas ni contratación.</p>
       <div class="field">
         <label for="pago-email">Tu correo</label>
         <input type="email" id="pago-email" autocomplete="email" />
@@ -179,10 +178,11 @@ import { navLinks, esActual } from '../lib/nav';
         </label>
         <p class="consent-note">{cvmConsent.nota}</p>
       </div>
-      <p class="cot-precio"><strong>{CVM_PRECIO_TEXTO}.</strong> Pago único con tarjeta u OXXO a través de Stripe.</p>
-      <p class="cvm-letra">Reembolso solo si la entrega falla o si el documento no corresponde al CV y la vacante que enviaste. Detalle en los <a href="/terminos" target="_blank" rel="noopener">términos</a>.</p>
+      <p class="cot-precio"><strong>$119 MXN · IVA incluido</strong></p>
+      <p>Pago único con tarjeta u OXXO mediante Stripe.</p>
+      <p class="cvm-letra">Política de reembolso: aplica únicamente si la entrega falla o el documento no corresponde al CV y la vacante enviados. Consulta los <a href="/terminos" target="_blank" rel="noopener">términos</a>.</p>
       <p id="pago-error" class="cvm-error" role="alert" hidden></p>
-      <button type="submit" class="btn btn-orange btn-large btn-block" id="pago-btn">Pagar {CVM_PRECIO_TEXTO.split(',')[0]} y recibir mi CV</button>
+      <button type="submit" class="btn btn-orange btn-large btn-block" id="pago-btn">Pagar $119 MXN y recibir mi CV.</button>
       <button type="button" class="cot-linkbtn" id="s-volver">Volver a las preguntas</button>
     </form>
   </div>
@@ -297,7 +297,7 @@ import { navLinks, esActual } from '../lib/nav';
     }
   });
 
-  const ESTADO: Record<string, string> = { cumple: 'Aparece en tu CV', parcial: 'Aparece en parte', no_aparece: 'No aparece en tu CV' };
+  const ESTADO: Record<string, string> = { cumple: 'Aparece en tu CV', parcial: 'Aparece parcialmente', no_aparece: 'No aparece en tu CV' };
   function esc(s: string) {
     return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string);
   }
@@ -324,7 +324,7 @@ import { navLinks, esActual } from '../lib/nav';
     const b = document.getElementById('pago-btn') as HTMLButtonElement | null;
     if (b && b.disabled) { b.disabled = false; b.textContent = 'Intentar de nuevo'; }
   });
-  const TIPO: Record<Tipo, string> = { empleo: 'Sí, en un empleo', proyecto: 'Sí, en un proyecto, tesis o curso', no_tengo: 'No tengo esto' };
+  const TIPO: Record<Tipo, string> = { empleo: 'Sí, en un empleo', proyecto: 'Sí, en un proyecto, tesis o curso', no_tengo: 'No tengo experiencia en esto' };
 
   function paso(id: 'cot-inicio' | 'cot-preguntas' | 'cot-resumen') {
     for (const x of ['cot-inicio', 'cot-preguntas', 'cot-resumen']) $(x)!.hidden = x !== id;
@@ -352,15 +352,15 @@ import { navLinks, esActual } from '../lib/nav';
     $('q-requisito')!.textContent = q.requisito;
     $('q-contexto')!.textContent =
       q.estado === 'parcial'
-        ? 'Aparece en parte en tu CV. ¿Tienes más experiencia con esto, aunque no esté escrita?'
-        : 'No lo encontramos en tu CV. ¿Lo tienes, aunque no esté escrito?';
+        ? 'Tu CV menciona este requisito parcialmente. ¿Tienes más experiencia que no hayas incluido?'
+        : 'No encontramos este requisito en tu CV. ¿Tienes experiencia con él, aunque no la hayas incluido?';
     const previa = respuestas.find((r) => r.requisito === q.requisito);
     document.querySelectorAll<HTMLInputElement>('input[name="q-tipo"]').forEach((r) => (r.checked = previa?.tipo === r.value));
     if (qDetalle) qDetalle.value = previa?.detalle ?? '';
     $('q-detalle-campo')!.hidden = !previa || previa.tipo === 'no_tengo';
     if (qSig) {
       qSig.disabled = !previa;
-      qSig.textContent = qi === preguntas.length - 1 ? 'Ver resumen' : 'Siguiente';
+      qSig.textContent = 'Siguiente';
     }
   }
   document.querySelectorAll<HTMLInputElement>('input[name="q-tipo"]').forEach((r) =>
@@ -487,11 +487,11 @@ import { navLinks, esActual } from '../lib/nav';
     const reqs = r.requisitos ?? [];
     $('r-puesto')!.textContent = [r.puesto, r.empresa].filter(Boolean).join(' · ');
     if (ind.total > 0) {
-      $('r-titular')!.textContent = `Tu CV muestra ${ind.cumple} de ${ind.total} requisitos indispensables`;
-      $('r-sub')!.textContent = ind.parcial ? `Y ${ind.parcial} en parte.` : '';
+      $('r-titular')!.textContent = `Tu CV cumple con ${ind.cumple} de ${ind.total} requisitos indispensables.`;
+      $('r-sub')!.textContent = ind.parcial ? `${ind.parcial} ${ind.parcial === 1 ? 'aparece' : 'aparecen'} parcialmente.` : '';
     } else {
-      $('r-titular')!.textContent = `Tu CV muestra ${des.cumple} de ${des.total} requisitos`;
-      $('r-sub')!.textContent = 'La vacante no marca ningún requisito como obligatorio.';
+      $('r-titular')!.textContent = `Tu CV cumple con ${des.cumple} de ${des.total} requisitos.`;
+      $('r-sub')!.textContent = 'La vacante no especifica cuáles son indispensables.';
     }
     const indL = reqs.filter((q) => q.prioridad === 'indispensable');
     const desL = reqs.filter((q) => q.prioridad !== 'indispensable');
@@ -503,11 +503,12 @@ import { navLinks, esActual } from '../lib/nav';
     respuestas = [];
     const ir = $('ir-preguntas');
     if (ir) ir.textContent = preguntas.length
-      ? `Responder ${preguntas.length} ${preguntas.length === 1 ? 'pregunta' : 'preguntas'} y ver tu CV para esta vacante`
+      ? `Responder ${preguntas.length === 1 ? 'la pregunta' : `las ${preguntas.length} preguntas`}`
       : 'Ver tu CV para esta vacante';
+    $('ir-preguntas-titulo')!.hidden = !preguntas.length;
     $('ir-preguntas-nota')!.textContent = preguntas.length
-      ? `Las preguntas son sobre lo que no aparece en tu CV. Lo que respondas se puede usar en tu CV a la medida (${cfg.precio ?? '$119 MXN'}). Todavía no pagas nada.`
-      : `Tu CV a la medida cuesta ${cfg.precio ?? '$119 MXN'}. Todavía no pagas nada.`;
+      ? `Responde ${preguntas.length} ${preguntas.length === 1 ? 'pregunta' : 'preguntas'} sobre los requisitos que no aparecen en tu CV. Utilizaremos tus respuestas para redactar una versión adaptada a la vacante ($119 MXN). No pagas nada todavía.`
+      : 'Tu CV adaptado a la vacante cuesta $119 MXN. No pagas nada todavía.';
     form!.hidden = true;
     $('cot-resultado')!.hidden = false;
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -608,6 +609,9 @@ import { navLinks, esActual } from '../lib/nav';
   .cot-lista :global(.cot-no_aparece .cot-estado) { background: #F6E3E0; color: #B23A2A; }
   .cot-siguiente { margin-top: 20px; padding: 14px 16px; background: var(--bg); border-radius: 8px; border: 1px solid var(--rule); }
   .cot-siguiente p { margin: 0; }
+  .cot-siguiente h3 { margin: 0 0 6px !important; }
+  .cot-siguiente h3[hidden] { display: none; }
+  .cot-siguiente .btn { margin-top: 10px; }
   #otra { margin-top: 16px; }
   .cot-paso[hidden], #cot-inicio[hidden] { display: none !important; }
   .cot-progreso { font-size: 13px !important; color: var(--text-mute) !important; margin: 0 0 10px; }
