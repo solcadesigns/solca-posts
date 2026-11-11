@@ -122,7 +122,7 @@ function esc(s: string): string {
 }
 
 export function enlaceRespuesta(token: string, code: string): string {
-  return `https://solcaciencia.com/encuesta-resultado?t=${encodeURIComponent(token)}&r=${encodeURIComponent(code)}`;
+  return `https://solcaciencia.com/encuesta-resultado/?t=${encodeURIComponent(token)}&r=${encodeURIComponent(code)}`;
 }
 
 /** Correo de la encuesta. Pura (para pruebas). */

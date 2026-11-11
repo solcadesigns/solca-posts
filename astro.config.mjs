@@ -49,7 +49,10 @@ export default defineConfig({
         !page.includes('/simulador-entrevistas/gracias') &&
         !page.includes('/simulador-entrevistas/mis-reportes') &&
         // 6 nov 2026: CV a la medida es noindex hasta que Oscar decida abrirlo.
-        !page.includes('/cv-a-la-medida'),
+        !page.includes('/cv-a-la-medida') &&
+        // 11 nov 2026: comparación (interna hasta diciembre) y encuesta de resultado (solo desde el correo).
+        !page.includes('/comparar-cv') &&
+        !page.includes('/encuesta-resultado'),
     }),
   ],
   vite: {

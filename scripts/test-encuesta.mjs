@@ -55,7 +55,7 @@ await prueba('correo: 6 opciones con enlace, asunto con el puesto, sin datos de 
   const r = renderEncuesta({ puesto: 'Clinical Research Associate <I>' }, 'tok-1');
   assert.ok(r.subject.startsWith('¿Qué pasó con tu postulación a Clinical Research Associate'));
   for (const o of OPCIONES) {
-    assert.ok(r.text.includes(`${o.texto}: https://solcaciencia.com/encuesta-resultado?t=tok-1&r=${o.code}`));
+    assert.ok(r.text.includes(`${o.texto}: https://solcaciencia.com/encuesta-resultado/?t=tok-1&r=${o.code}`));
     assert.ok(r.html.includes(`r=${o.code}`));
   }
   assert.ok(r.html.includes('&lt;I&gt;') && !r.html.includes('<I>'));
