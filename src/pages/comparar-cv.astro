@@ -345,14 +345,14 @@ if (vacanteId) {
   .cvm-card h3 { font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 800; color: var(--navy); margin: 18px 0 8px; }
   .cvm-card h3[hidden] { display: none; }
   .cot-lista { list-style: none; padding: 0; margin: 0; }
-  .cot-lista li { padding: 8px 0; border-bottom: 1px solid var(--rule); }
-  .cot-estado { display: inline-block; min-width: 150px; font-size: 13px; font-weight: 600; border-radius: 999px; padding: 2px 10px; margin-right: 8px; }
-  .cot-cumple .cot-estado { background: #E7F3EC; color: #1F6B45; }
-  .cot-parcial .cot-estado { background: #FFF6E5; color: #8A5A00; }
-  .cot-no_aparece .cot-estado { background: #F6E3E0; color: #B23A2A; }
+  .cot-lista :global(li) { padding: 8px 0; border-bottom: 1px solid var(--rule); }
+  .cot-lista :global(.cot-estado) { display: inline-block; min-width: 150px; font-size: 13px; font-weight: 600; border-radius: 999px; padding: 2px 10px; margin-right: 8px; }
+  .cot-lista :global(.cot-cumple .cot-estado) { background: #E7F3EC; color: #1F6B45; }
+  .cot-lista :global(.cot-parcial .cot-estado) { background: #FFF6E5; color: #8A5A00; }
+  .cot-lista :global(.cot-no_aparece .cot-estado) { background: #F6E3E0; color: #B23A2A; }
   .cot-siguiente { margin-top: 20px; padding: 14px 16px; background: var(--bg); border-radius: 8px; border: 1px solid var(--rule); }
   .cot-siguiente p { margin: 0; }
   #otra { margin-top: 16px; }
-  @media (max-width: 640px) { .cvm-card { padding: 22px; } .cot-estado { min-width: 0; display: block; width: fit-content; margin-bottom: 4px; } }
+  @media (max-width: 640px) { .cvm-card { padding: 22px; } .cot-lista :global(.cot-estado) { min-width: 0; display: block; width: fit-content; margin-bottom: 4px; } }
 </style>
 </BaseLayout>
