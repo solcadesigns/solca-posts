@@ -16,7 +16,7 @@
  */
 
 import type { APIRoute } from 'astro';
-import { extractAttribution } from '../../lib/attribution';
+import { extractAttribution, emailHashFull } from '../../lib/attribution';
 import { readMarketing, CONSENT_VERSION, CONSENT_MSG } from '../../lib/consent';
 import { esCorreoDePrueba } from '../../lib/simulator-test-sessions';
 import { leerEntrada, detectarIdioma, CVM_OXXO_DIAS, CVM_CHECKOUT_EXPIRA_S } from '../../lib/cv-medida';
@@ -110,7 +110,9 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
   }
 
   // Tope por IP y día.
-  const ipKey = `cvmd_ip:${new Date().toISOString().slice(0, 10)}:${clientAddress ?? 'sin-ip'}`;
+  // 11 nov 2026: la IP solo como hash (antes quedaba sin cifrar en la llave de KV por 26 h).
+  const ipHash = (await emailHashFull(clientAddress ?? request.headers.get('cf-connecting-ip') ?? 'sin-ip')).slice(0, 24);
+  const ipKey = `cvmd_ip:${new Date().toISOString().slice(0, 10)}:${ipHash}`;
   const nIp = Number.parseInt((await kv.get(ipKey)) ?? '0', 10) || 0;
   if (nIp >= MAX_POR_IP_DIA) return json(429, { ok: false, error: 'rate_limited', message: 'Demasiados pedidos desde esta conexión hoy. Intenta mañana.' });
   await kv.put(ipKey, String(nIp + 1), { expirationTtl: 60 * 60 * 26 });

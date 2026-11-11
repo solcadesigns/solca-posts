@@ -122,6 +122,30 @@ img { max-width: 100%; height: auto; display: block; }
 .nav-links a:hover { color: var(--off-white); opacity: 1; }
 @media (max-width: 720px) { .nav-links { display: none; } }
 
+/* Menú móvil (11 nov 2026): botón de tres rayas que agrega BaseLayout a cada .nav-inner con .nav-links.
+   !important porque algunas páginas (simulador) declaran .nav-links con estilo propio de mayor especificidad. */
+.nav-toggle { display: none; }
+@media (max-width: 720px) {
+  .nav-toggle {
+    display: inline-flex; flex-direction: column; justify-content: center; gap: 5px;
+    width: 44px; height: 44px; padding: 10px; margin-right: -10px;
+    background: none; border: 0; cursor: pointer; color: inherit;
+  }
+  .nav-toggle span { display: block; height: 2px; width: 24px; border-radius: 2px; background: currentColor; transition: transform .2s, opacity .2s; }
+  .nav.nav-open .nav-toggle span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .nav.nav-open .nav-toggle span:nth-child(2) { opacity: 0; }
+  .nav.nav-open .nav-toggle span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+  .nav .nav-links { display: none !important; }
+  .nav.nav-open .nav-links {
+    display: flex !important; flex-direction: column; gap: 0;
+    position: absolute; top: 100%; left: 0; right: 0;
+    background: var(--navy-deep); padding: 4px 24px 12px; /* el script pone el fondo opaco del nav de cada página */
+    box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+  }
+  .nav.nav-open .nav-links a { padding: 13px 0; font-size: 16px; border-bottom: 1px solid rgba(127,127,127,0.18); }
+  .nav.nav-open .nav-links a:last-child { border-bottom: 0; }
+}
+
 /* ============ Hero ============ */
 .hero {
   position: relative;

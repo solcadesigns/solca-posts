@@ -333,5 +333,44 @@ const ogImageURL = new URL(ogImage, siteUrl).toString();
 </head>
 <body>
 <slot />
+<script is:inline>
+  // Menú móvil (11 nov 2026): en pantallas de 720 px o menos los enlaces del encabezado se ocultan; este botón de
+  // tres rayas en la esquina superior derecha los abre y cierra. Estilos en src/styles/global.css (.nav-toggle).
+  (function () {
+    document.querySelectorAll('.nav-inner').forEach(function (inner, i) {
+      var links = inner.querySelector('.nav-links');
+      var nav = inner.closest('.nav');
+      if (!links || !nav || inner.querySelector('.nav-toggle')) return;
+      if (!links.id) links.id = 'nav-links-' + i;
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'nav-toggle';
+      b.setAttribute('aria-label', 'Abrir menú');
+      b.setAttribute('aria-expanded', 'false');
+      b.setAttribute('aria-controls', links.id);
+      b.innerHTML = '<span></span><span></span><span></span>';
+      var brand = inner.querySelector('.nav-brand');
+      if (brand) b.style.color = getComputedStyle(brand).color;
+      // Fondo del desplegable: el del nav de esta página, sin transparencia (oscuro en el sitio, claro en el simulador).
+      var m = getComputedStyle(nav).backgroundColor.match(/rgba?\(([^)]+)\)/);
+      if (m) {
+        var c = m[1].split(',').map(function (x) { return x.trim(); });
+        if (c.length >= 3) links.style.background = 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')';
+      }
+      inner.appendChild(b);
+      function set(open) {
+        nav.classList.toggle('nav-open', open);
+        b.setAttribute('aria-expanded', String(open));
+        b.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú');
+      }
+      b.addEventListener('click', function () { set(!nav.classList.contains('nav-open')); });
+      links.addEventListener('click', function (e) { if (e.target.closest('a')) set(false); });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && nav.classList.contains('nav-open')) { set(false); b.focus(); }
+      });
+      document.addEventListener('click', function (e) { if (!nav.contains(e.target)) set(false); });
+    });
+  })();
+</script>
 </body>
 </html>

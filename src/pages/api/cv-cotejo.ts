@@ -182,6 +182,6 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     requisitos: r.requisitos.map((q) => ({ requisito: q.requisito, prioridad: q.prioridad, estado: q.estado })),
     // 11 nov 2026: preguntas antes del pago, armadas por código a partir de lo que no aparece o aparece en parte.
     preguntas: preguntasDeCotejo(r.requisitos),
-    ...(conLlave ? { prueba: { requisitosVacante: vac.valor.requisitos, evidencias: r.requisitos.map((q) => q.evidencia), descartados: vac.valor.descartados, evidenciasDescartadas: r.evidenciasDescartadas, cache: vac.cache } } : {}),
+    ...(conLlave ? { prueba: { requisitosVacante: vac.valor.requisitos, evidencias: r.requisitos.map((q) => q.evidencia), descartados: vac.valor.descartados, evidenciasDescartadas: r.evidenciasDescartadas, rechazadas: r.rechazadas, cache: vac.cache } } : {}),
   });
 };

@@ -70,6 +70,8 @@ export interface ResultadoCotejo {
   requisitos: RequisitoEvaluado[];
   /** Evidencias del modelo que no se encontraron en el CV (se bajaron a "no aparece"). */
   evidenciasDescartadas: number;
+  /** Diagnóstico (solo sale en la respuesta con x-stats-key): qué citó el modelo en las evidencias descartadas. */
+  rechazadas?: Array<{ requisito: string; estado: string; evidencia: string }>;
 }
 
 // ── Prioridad: lista cerrada ──────────────────────────────────────────────────────────────────────
@@ -398,12 +400,14 @@ export function unirEvaluacion(salida: unknown, vac: VacanteClasificada, cv: str
     for (const [k, v] of corrido) porN.set(k, v);
   }
   let evidenciasDescartadas = 0;
+  const rechazadas: Array<{ requisito: string; estado: string; evidencia: string }> = [];
   const requisitos: RequisitoEvaluado[] = vac.requisitos.map((r, i) => {
     const e = porN.get(i + 1);
     let estado: EstadoCotejo = e && (e.estado === 'cumple' || e.estado === 'parcial') ? e.estado : 'no_aparece';
     let evidencia = estado === 'no_aparece' ? '' : (e?.evidencia ?? '');
     if (estado !== 'no_aparece' && !evidenciaLiteral(evidencia, cv)) {
       evidenciasDescartadas++;
+      rechazadas.push({ requisito: r.requisito, estado, evidencia });
       estado = 'no_aparece';
       evidencia = '';
     }
@@ -419,6 +423,7 @@ export function unirEvaluacion(salida: unknown, vac: VacanteClasificada, cv: str
     deseables: conteo(des),
     requisitos: [...ind, ...des],
     evidenciasDescartadas,
+    rechazadas,
   };
 }
 
