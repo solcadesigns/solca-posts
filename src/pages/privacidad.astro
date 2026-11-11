@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 
 const lastUpdated = '6 de noviembre de 2026';
+import { navLinks, esActual } from '../lib/nav';
 ---
 <BaseLayout
   title="Aviso de privacidad · Solca"
@@ -15,11 +16,7 @@ const lastUpdated = '6 de noviembre de 2026';
       <span>Solca</span>
     </a>
     <div class="nav-links">
-      <a href="/#libros">Libros</a>
-      <a href="/#curso">Curso</a>
-      <a href="/revisar-cv">Revisar CV</a>
-      <a href="/#sobre">Sobre</a>
-      <a href="/contacto">Contacto</a>
+      {navLinks({ inicio: false }).map((l) => <a href={l.href} aria-current={esActual(l.href, Astro.url.pathname) ? 'page' : undefined}>{l.texto}</a>)}
     </div>
   </div>
 </nav>

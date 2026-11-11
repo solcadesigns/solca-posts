@@ -155,6 +155,7 @@ const QUESTIONS = [
     ],
   },
 ];
+import { navLinks, esActual } from '../lib/nav';
 ---
 <BaseLayout
   title="¿Qué rol en pharma te queda? · Quiz de 3 minutos · Solca"
@@ -168,11 +169,7 @@ const QUESTIONS = [
       <span>Solca</span>
     </a>
     <div class="nav-links">
-      <a href="/#libros">Libros</a>
-      <a href="/#curso">Curso</a>
-      <a href="/revisar-cv">Revisar CV</a>
-      <a href="/quiz-rol">Quiz de rol</a>
-      <a href="/contacto">Contacto</a>
+      {navLinks({ inicio: false }).map((l) => <a href={l.href} aria-current={esActual(l.href, Astro.url.pathname) ? 'page' : undefined}>{l.texto}</a>)}
     </div>
   </div>
 </nav>

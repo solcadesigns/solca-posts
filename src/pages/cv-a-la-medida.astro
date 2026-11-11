@@ -17,6 +17,7 @@ const consent = CONSENT_TEXT['cv-medida'];
 const consentPrivacidadHtml = privacidadHtml('cv-medida');
 const pago = Astro.url.searchParams.get('pago');
 const estado = pago === 'ok' ? 'ok' : pago === 'cancelado' ? 'cancelado' : 'form';
+import { navLinks, esActual } from '../lib/nav';
 ---
 <BaseLayout
   title="CV a la medida de una vacante · Solca"
@@ -31,11 +32,7 @@ const estado = pago === 'ok' ? 'ok' : pago === 'cancelado' ? 'cancelado' : 'form
       <span>Solca</span>
     </a>
     <div class="nav-links">
-      <a href="/#libros">Libros</a>
-      <a href="/#curso">Curso</a>
-      <a href="/revisar-cv">Revisar CV</a>
-      <a href="/#sobre">Sobre</a>
-      <a href="/contacto">Contacto</a>
+      {navLinks({ inicio: false }).map((l) => <a href={l.href} aria-current={esActual(l.href, Astro.url.pathname) ? 'page' : undefined}>{l.texto}</a>)}
     </div>
   </div>
 </nav>

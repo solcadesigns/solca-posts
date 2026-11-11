@@ -91,6 +91,7 @@ const breadcrumbSchema = {
   ],
 };
 import { FUENTES } from '../lib/vacantes-fuentes';
+import { navLinks, esActual } from '../lib/nav';
 ---
 <BaseLayout
   title={`${data.title} · Solca`}
@@ -110,10 +111,7 @@ import { FUENTES } from '../lib/vacantes-fuentes';
         <span>Solca</span>
       </a>
       <div class="nav-links">
-        <a href="/blog">Blog</a>
-        <a href="/quiz-rol">Quiz</a>
-        <a href="/revisar-cv">Revisar CV</a>
-        <a href="/contacto">Contacto</a>
+        {navLinks({ inicio: false }).map((l) => <a href={l.href} aria-current={esActual(l.href, Astro.url.pathname) ? 'page' : undefined}>{l.texto}</a>)}
       </div>
     </div>
   </nav>

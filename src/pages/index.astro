@@ -21,6 +21,7 @@ const linkedIn = {
 const youtube = {
   channel: 'https://youtube.com/@oscarsolca', // se rehabilita en footer cuando haya canal con contenido
 };
+import { navLinks, esActual } from '../lib/nav';
 ---
 <BaseLayout
   title="Carrera en industria farmacéutica LATAM · CV, entrevistas y roles · Solca Ciencia"
@@ -35,15 +36,7 @@ const youtube = {
       <span>Solca</span>
     </a>
     <div class="nav-links">
-      <a href="#libros">Libros</a>
-      <a href="/vacantes">Vacantes</a>
-      <a href="#curso">Curso</a>
-      <a href="/simulador-entrevistas">Simulador</a>
-      <a href="/blog">Blog</a>
-      <a href="/quiz-rol">Quiz</a>
-      <a href="/revisar-cv">Revisar CV</a>
-      <a href="#sobre">Sobre</a>
-      <a href="/contacto">Contacto</a>
+      {navLinks({ inicio: true }).map((l) => <a href={l.href} aria-current={esActual(l.href, Astro.url.pathname) ? 'page' : undefined}>{l.texto}</a>)}
     </div>
   </div>
 </nav>

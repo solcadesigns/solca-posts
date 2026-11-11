@@ -334,13 +334,14 @@ const ogImageURL = new URL(ogImage, siteUrl).toString();
 <body>
 <slot />
 <script is:inline>
-  // Menú móvil (11 nov 2026): en pantallas de 720 px o menos los enlaces del encabezado se ocultan; este botón de
+  // Menú móvil (11 nov 2026): en pantallas de 960 px o menos los enlaces del encabezado se ocultan; este botón de
   // tres rayas en la esquina superior derecha los abre y cierra. Estilos en src/styles/global.css (.nav-toggle).
   (function () {
     document.querySelectorAll('.nav-inner').forEach(function (inner, i) {
       var links = inner.querySelector('.nav-links');
       var nav = inner.closest('.nav');
-      if (!links || !nav || inner.querySelector('.nav-toggle')) return;
+      // .nav-links-fijo (sesión del simulador: solo "← Salir") se queda visible, sin botón.
+      if (!links || !nav || links.classList.contains('nav-links-fijo') || inner.querySelector('.nav-toggle')) return;
       if (!links.id) links.id = 'nav-links-' + i;
       var b = document.createElement('button');
       b.type = 'button';

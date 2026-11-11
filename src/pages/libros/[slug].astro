@@ -20,6 +20,7 @@ const otros = LIBROS.filter((l) => l.slug !== libro.slug);
 const ref = `libro-${libro.slug}`;
 const linkSimulador = `/simulador-entrevistas/?modulo=${libro.modulo}&ref=${ref}`;
 const linkVacantes = `/vacantes/?rol=${libro.rol}&ref=${ref}`;
+import { navLinks, esActual } from '../../lib/nav';
 ---
 
 <BaseLayout
@@ -31,11 +32,7 @@ const linkVacantes = `/vacantes/?rol=${libro.rol}&ref=${ref}`;
   <div class="nav-inner">
     <a href="/" class="nav-brand"><span class="dot"></span><span>Solca</span></a>
     <div class="nav-links">
-      <a href="/#libros">Libros</a>
-      <a href="/vacantes">Vacantes</a>
-      <a href="/simulador-entrevistas/">Simulador</a>
-      <a href="/revisar-cv">Revisar CV</a>
-      <a href="/contacto">Contacto</a>
+      {navLinks({ inicio: false }).map((l) => <a href={l.href} aria-current={esActual(l.href, Astro.url.pathname) ? 'page' : undefined}>{l.texto}</a>)}
     </div>
   </div>
 </nav>

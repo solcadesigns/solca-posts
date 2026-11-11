@@ -35,6 +35,7 @@ if (vacanteId) {
     vac = null;
   }
 }
+import { navLinks, esActual } from '../lib/nav';
 ---
 <BaseLayout
   title="Compara tu CV con una vacante · Solca"
@@ -49,9 +50,7 @@ if (vacanteId) {
       <span>Solca</span>
     </a>
     <div class="nav-links">
-      <a href="/vacantes">Vacantes</a>
-      <a href="/revisar-cv">Revisar CV</a>
-      <a href="/contacto">Contacto</a>
+      {navLinks({ inicio: false }).map((l) => <a href={l.href} aria-current={esActual(l.href, Astro.url.pathname) ? 'page' : undefined}>{l.texto}</a>)}
     </div>
   </div>
 </nav>

@@ -22,6 +22,7 @@ import { CONSENT_TEXT, CONSENT_COMMON, CONSENT_MSG, privacidadHtml } from '../..
 const consentSim = CONSENT_TEXT.simulador;
 const consentPrivacidadHtml = privacidadHtml('simulador');
 const consentErrMsg = CONSENT_MSG.privacidad_requerida;
+import { navLinks, esActual } from '../../lib/nav';
 ---
 <BaseLayout
   title="Simulador de Entrevistas Pharma · Solca Ciencia"
@@ -34,10 +35,7 @@ const consentErrMsg = CONSENT_MSG.privacidad_requerida;
         <span>Solca</span>
       </a>
       <div class="nav-links">
-        <a href="/blog">Blog</a>
-        <a href="/quiz-rol">Quiz</a>
-        <a href="/revisar-cv">Revisar CV</a>
-        <a href="/contacto">Contacto</a>
+        {navLinks({ inicio: false }).map((l) => <a href={l.href} aria-current={esActual(l.href, Astro.url.pathname) ? 'page' : undefined}>{l.texto}</a>)}
       </div>
     </div>
   </nav>

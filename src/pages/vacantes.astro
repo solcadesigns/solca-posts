@@ -156,6 +156,7 @@ const hayFiltros = Object.values(filtros).some(Boolean);
 const actualizadoTxt = actualizado
   ? new Date(actualizado).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Mexico_City' })
   : null;
+import { navLinks, esActual } from '../lib/nav';
 ---
 
 <BaseLayout
@@ -167,11 +168,7 @@ const actualizadoTxt = actualizado
   <div class="nav-inner">
     <a href="/" class="nav-brand"><span class="dot"></span><span>Solca</span></a>
     <div class="nav-links">
-      <a href="/vacantes">Vacantes</a>
-      <a href="/revisar-cv">Revisar CV</a>
-      <a href="/simulador-entrevistas/">Simulador</a>
-      <a href="/quiz-rol">Quiz de rol</a>
-      <a href="/contacto">Contacto</a>
+      {navLinks({ inicio: false }).map((l) => <a href={l.href} aria-current={esActual(l.href, Astro.url.pathname) ? 'page' : undefined}>{l.texto}</a>)}
     </div>
   </div>
 </nav>

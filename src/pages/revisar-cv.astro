@@ -17,6 +17,7 @@ const newsletterURL =
   'https://www.linkedin.com/build-relation/newsletter-follow?entityUrn=7432492458158120960';
 const atsBlogURL =
   'https://www.linkedin.com/pulse/por-qu%C3%A9-tu-cv-pasa-filtros-ats-oscar-solis-ciencia-y-consultoria--xxlce/';
+import { navLinks, esActual } from '../lib/nav';
 ---
 <BaseLayout
   title="Análisis gratis de tu CV · Solca"
@@ -31,11 +32,7 @@ const atsBlogURL =
       <span>Solca</span>
     </a>
     <div class="nav-links">
-      <a href="/#libros">Libros</a>
-      <a href="/#curso">Curso</a>
-      <a href="/revisar-cv">Revisar CV</a>
-      <a href="/#sobre">Sobre</a>
-      <a href="/contacto">Contacto</a>
+      {navLinks({ inicio: false }).map((l) => <a href={l.href} aria-current={esActual(l.href, Astro.url.pathname) ? 'page' : undefined}>{l.texto}</a>)}
     </div>
   </div>
 </nav>

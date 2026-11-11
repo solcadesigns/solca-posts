@@ -120,12 +120,13 @@ img { max-width: 100%; height: auto; display: block; }
   letter-spacing: 0.02em;
 }
 .nav-links a:hover { color: var(--off-white); opacity: 1; }
-@media (max-width: 720px) { .nav-links { display: none; } }
+@media (max-width: 960px) { .nav-links:not(.nav-links-fijo) { display: none; } }
+.nav-links a[aria-current="page"] { color: var(--orange) !important; } /* 11 nov 2026: 9 enlaces; debajo de 960 px va el menú de tres rayas */
 
 /* Menú móvil (11 nov 2026): botón de tres rayas que agrega BaseLayout a cada .nav-inner con .nav-links.
    !important porque algunas páginas (simulador) declaran .nav-links con estilo propio de mayor especificidad. */
 .nav-toggle { display: none; }
-@media (max-width: 720px) {
+@media (max-width: 960px) {
   .nav-toggle {
     display: inline-flex; flex-direction: column; justify-content: center; gap: 5px;
     width: 44px; height: 44px; padding: 10px; margin-right: -10px;
@@ -135,7 +136,7 @@ img { max-width: 100%; height: auto; display: block; }
   .nav.nav-open .nav-toggle span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
   .nav.nav-open .nav-toggle span:nth-child(2) { opacity: 0; }
   .nav.nav-open .nav-toggle span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
-  .nav .nav-links { display: none !important; }
+  .nav .nav-links:not(.nav-links-fijo) { display: none !important; }
   .nav.nav-open .nav-links {
     display: flex !important; flex-direction: column; gap: 0;
     position: absolute; top: 100%; left: 0; right: 0;
