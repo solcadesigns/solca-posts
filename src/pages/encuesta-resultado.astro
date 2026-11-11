@@ -1,0 +1,88 @@
+---
+/**
+ * /encuesta-resultado · respuesta a la encuesta de 14 días del CV a la medida (11 nov 2026).
+ * GET muestra la opción elegida y pide confirmar (los antivirus de correo abren enlaces); POST la registra en D1
+ * (evento `encuesta_resultado`, sin nombre ni correo) y borra el token. Lógica en src/lib/encuesta-resultado.ts.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { opcion, OPCIONES, PREFIJO_TOKEN, type EncuestaToken } from '../lib/encuesta-resultado';
+import { guardarEventoD1 } from '../lib/eventos-d1';
+
+export const prerender = false;
+
+const env = ((Astro.locals as { runtime?: { env?: Record<string, unknown> } }).runtime?.env ?? {}) as Record<string, unknown>;
+const kv = env.CV_LIMITS as KVNamespace | undefined;
+const db = env.SIMULATOR_METRICS_DB as D1Database | undefined;
+
+let token = (Astro.url.searchParams.get('t') ?? '').slice(0, 64);
+let code = Astro.url.searchParams.get('r') ?? '';
+let estado: 'confirmar' | 'gracias' | 'usado' | 'invalido' = 'confirmar';
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  token = String(form.get('t') ?? '').slice(0, 64);
+  code = String(form.get('r') ?? '');
+}
+const elegida = opcion(code);
+if (!token || !/^[0-9a-f-]{36}$/.test(token) || !elegida) estado = 'invalido';
+else {
+  const raw = kv ? await kv.get(PREFIJO_TOKEN + token) : null;
+  if (!raw) estado = 'usado';
+  else if (Astro.request.method === 'POST') {
+    let t: EncuestaToken | null = null;
+    try {
+      t = JSON.parse(raw) as EncuestaToken;
+    } catch {
+      t = null;
+    }
+    await kv!.delete(PREFIJO_TOKEN + token);
+    if (t) {
+      const ts = new Date().toISOString();
+      const dias = Math.round((Date.parse(ts) - Date.parse(t.entregado)) / 864e5);
+      // Id fijo por token: un doble envío (KV tarda en propagar el borrado) no registra dos respuestas.
+      await guardarEventoD1(db, `encuesta:${token}`, {
+        ts,
+        event: 'encuesta_resultado',
+        product: 'cv-medida',
+        interno: t.interno,
+        extra: { respuesta: elegida.code, rol: t.rol, idioma: t.idioma, ind_cumple: t.ind_cumple, ind_total: t.ind_total, dias },
+      }).catch(() => {});
+    }
+    estado = 'gracias';
+  }
+}
+---
+<BaseLayout title="Tu resultado · Solca" description="Una pregunta sobre tu postulación." noindex={true}>
+<section class="enc">
+  <div class="container enc-card">
+    {estado === 'confirmar' && elegida && (
+      <form method="post">
+        <h1>¿Qué pasó con tu postulación?</h1>
+        <p>Elegiste: <strong>{elegida.texto}</strong></p>
+        <p class="enc-nota">Si no es correcta, elige otra:</p>
+        <div class="enc-opciones">
+          {OPCIONES.map((o) => (
+            <label><input type="radio" name="r" value={o.code} checked={o.code === elegida.code} /> {o.texto}</label>
+          ))}
+        </div>
+        <input type="hidden" name="t" value={token} />
+        <button type="submit" class="btn btn-orange">Enviar mi respuesta</button>
+        <p class="enc-nota">Tu respuesta se guarda sin tu nombre ni tu correo.</p>
+      </form>
+    )}
+    {estado === 'gracias' && (<><h1>Gracias.</h1><p>Recibimos tu respuesta. Nos ayuda a mejorar la herramienta para quienes vienen después.</p><p><a href="/vacantes">Ver vacantes</a></p></>)}
+    {estado === 'usado' && (<><h1>Este enlace ya se usó o venció.</h1><p>Si ya respondiste, gracias. No hace falta hacer nada más.</p></>)}
+    {estado === 'invalido' && (<><h1>Enlace no válido.</h1><p>Abre el enlace directamente desde el correo.</p></>)}
+  </div>
+</section>
+<style>
+  .enc { background: var(--bg); padding: 56px 0 80px; min-height: 60vh; }
+  .enc-card { max-width: 620px; background: var(--off-white); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 32px; }
+  .enc-card h1 { font-family: 'Inter', sans-serif; font-size: 26px; font-weight: 800; color: var(--navy); margin: 0 0 12px; }
+  .enc-card p { font-size: 16px; line-height: 1.6; }
+  .enc-nota { font-size: 14px !important; color: var(--text-mute); }
+  .enc-opciones { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 18px; }
+  .enc-opciones label { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border: 1.5px solid var(--rule); border-radius: 8px; background: white; cursor: pointer; }
+  .enc-card a { color: var(--blue-mid); text-decoration: underline; }
+</style>
+</BaseLayout>

@@ -27,7 +27,8 @@ import { emailHashFull, type Attribution } from './attribution';
 // v5-2026-11 (10 nov 2026, aprobado por Oscar): casilla comercial del revisor de CV corta; las demás quedan igual.
 // v6-2026-11 (10 nov 2026): se agrega la casilla de la comparación con una vacante (`cotejo`, interna hasta diciembre).
 // v7-2026-11 (11 nov 2026): la casilla de CV a la medida menciona las respuestas a las preguntas.
-export const CONSENT_VERSION = 'v7-2026-11';
+// v8-2026-11 (11 nov 2026): la casilla de CV a la medida menciona la pregunta de resultado a los 14 días.
+export const CONSENT_VERSION = 'v8-2026-11';
 
 // 'reconfirmacion-es': opt-in desde /api/confirmar-correos (correo único aviso-privacidad-2026-11, legado España).
 // 'cv-medida' (6 nov 2026): CV a la medida; el consentimiento se registra al confirmar el pago (webhook).
@@ -59,7 +60,7 @@ export const CONSENT_TEXT: Record<FormKey, { privacidad: string; marketing: stri
   },
   'cv-medida': {
     privacidad:
-      'He leído el aviso de privacidad y acepto que el texto de mi CV, la vacante, lo que escriba en el texto libre y mis respuestas a las preguntas se procesen con IA para redactar mi CV a la medida. Se guardan hasta 4 días, solo para generar y entregar el documento, y se borran en cuanto el documento está listo. El documento se guarda 7 días para que pueda descargarlo. Mi correo se usa para enviarme el documento y avisos sobre mi compra.',
+      'He leído el aviso de privacidad y acepto que el texto de mi CV, la vacante, lo que escriba en el texto libre y mis respuestas a las preguntas se procesen con IA para redactar mi CV a la medida. Se guardan hasta 4 días, solo para generar y entregar el documento, y se borran en cuanto el documento está listo. El documento se guarda 7 días para que pueda descargarlo. Mi correo se usa para enviarme el documento, avisos sobre mi compra y, 14 días después, una sola pregunta sobre el resultado de mi postulación.',
     marketing:
       'Quiero recibir el newsletter semanal Solca Insight y correos con recursos y ofertas de Solca Ciencia (libros, curso y Simulador). Me doy de baja cuando quiera.',
     nota: 'Opcional. Tu compra funciona igual sin marcarla.',

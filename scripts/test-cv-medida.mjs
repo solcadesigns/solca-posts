@@ -1117,7 +1117,7 @@ await prueba('consentimiento: casilla de cv-medida describe plazos del código',
   const src = fs.readFileSync(new URL('../src/lib/consent.ts', import.meta.url), 'utf8');
   const bloque = src.slice(src.indexOf("'cv-medida': {"), src.indexOf("'cv-medida': {") + 900);
   assert.ok(bloque.includes('4 días') && bloque.includes('7 días') && bloque.includes('IA'));
-  assert.ok(src.includes("export const CONSENT_VERSION = 'v7-2026-11'"));
+  assert.ok(src.includes("export const CONSENT_VERSION = 'v8-2026-11'"));
   assert.equal(CVM_JOB_TTL_S, 4 * 86400);
 });
 

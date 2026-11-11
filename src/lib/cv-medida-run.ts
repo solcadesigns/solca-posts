@@ -4,6 +4,7 @@
  * Todo con await: ctx.waitUntil no ejecuta el callback en Astro sobre Workers.
  */
 
+import { programarEncuesta, type KvEncuesta } from './encuesta-resultado.ts';
 import { chatCompletionStream, extractText, AnthropicError, AnthropicRefusalError, type AnthropicResponse } from './anthropic';
 import { registrarModeloD1, guardarEventoD1 } from './eventos-d1';
 import { sendEmail } from './postmark';
@@ -36,14 +37,14 @@ import { CVM_DOCX_TTL_S } from './cv-medida';
 
 type Env = Record<string, unknown>;
 
-/** Modelo de redacción (mismo id que el simulador). Respaldo temporal a Sonnet 4.5 si 5.5 responde 400/404. */
+/** Modelo de redacción (mismo id que el simulador). Sin respaldo desde el 11 nov 2026 (Sonnet 4.5 se retira el 30 nov). */
 export const CVM_MODEL = 'claude-sonnet-5-5';
 /**
  * Tiempos (revisión 6 nov 2026). Un CV largo puede pedir ~12k tokens de salida; a 50-80 tokens/s son 150-240 s.
  * Con streaming, Anthropic manda bytes desde el inicio y nada corta la conexión por inactividad; el tope propio
  * es CVM_TIMEOUT_MS (300 s). La corrida del cron: cv-process-pending antes (~85 s) + generación (≤ 300 s) + DOCX
  * y correo (~15 s) ≈ 400 s, debajo del reclamo de 10 min (CVM_LEASE_MS en cv-medida-queue.ts) y del límite de
- * 15 min de un Cron Trigger. Si el respaldo entra, usa solo el tiempo que sobra de los 300 s.
+ * 15 min de un Cron Trigger.
  */
 const CVM_TIMEOUT_MS = 300_000;
 const CVM_MAX_TOKENS = 16_000;
@@ -287,6 +288,25 @@ export function depsProcesador(env: Env, kv: KvLike, paused: boolean): Procesado
         },
       );
       if (evento === 'cvmedida_generado') await rolEnVenta(db, job);
+    },
+    programarEncuesta: async (job) => {
+      // Nunca lanza: un error aquí no debe impedir que el pedido se borre después de la entrega.
+      try {
+        const res = job.resultado;
+        const c = res ? conteoPorPrioridad(res.cv) : {};
+        const indTotal = (c.ind_cumple ?? 0) + (c.ind_parcial ?? 0) + (c.ind_no_cumple ?? 0);
+        await programarEncuesta(kv as unknown as KvEncuesta, {
+          email: job.email,
+          puesto: (res?.puesto ?? res?.cv.puesto_vacante ?? '').slice(0, 120),
+          rol: job.rol ?? res?.rol,
+          idioma: job.idioma,
+          ind_cumple: c.ind_cumple,
+          ind_total: indTotal,
+          interno: job.interno,
+        });
+      } catch (err) {
+        console.warn('cv-medida: no se programó la encuesta', String(err).slice(0, 160));
+      }
     },
   };
 }

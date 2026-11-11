@@ -290,6 +290,8 @@ export interface ProcesadorDeps {
   alertar: (job: CvmJob | null, motivo: string, apologySent: boolean, extra?: Record<string, string>) => Promise<boolean>;
   /** Evento cvmedida_* en D1 (sin texto ni correo). Nunca lanza. */
   registrar: (evento: string, job: CvmJob, extra?: Record<string, string | number | boolean | undefined>) => Promise<void>;
+  /** 11 nov 2026: programa la encuesta de resultado a 14 días (src/lib/encuesta-resultado.ts). Nunca lanza. */
+  programarEncuesta?: (job: CvmJob) => Promise<void>;
 }
 
 export interface ResultadoCorrida {
@@ -391,6 +393,8 @@ async function procesarEnvio(d: ProcesadorDeps, job: CvmJob, claimId: string): P
     return { processed: 1, status: `correo_reprogramado · ${job.sendAttempts}`, job: job.id };
   }
   job.emailSent = true;
+  // 11 nov 2026: antes de borrar el pedido se programa la encuesta de 14 días (guarda solo correo, puesto y encaje).
+  if (d.programarEncuesta) await d.programarEncuesta(job);
   // Entregado: se borra el pedido (correo y resumen de coincidencia). Queda solo el DOCX, 7 días.
   await borrarTodo(d.kv, job.id);
   await d.registrar('cvmedida_entregado', job, { envios: job.sendAttempts });

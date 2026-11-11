@@ -994,6 +994,10 @@ const CVM_EVENTOS = [
   'cvmedida_descarga',
   'cvmedida_falla',
   'cvmedida_reembolso',
+  // 11 nov 2026: encuesta de resultado a 14 días (envíos y respuestas).
+  'encuesta_enviada',
+  'encuesta_envio_fallido',
+  'encuesta_resultado',
 ] as const;
 
 interface CvMedidaStats {

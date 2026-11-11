@@ -91,7 +91,7 @@ export interface AnthropicResponse {
   };
   /** Agregado por este wrapper: el prefill que se mandó (solo en el respaldo). Anteponerlo al texto. */
   prefill?: string;
-  /** Agregado por este wrapper: true si respondió el respaldo (Haiku 4.5 o Sonnet 4.5). */
+  /** Agregado por este wrapper: true si respondió el respaldo (Haiku 4.5). */
   respaldo?: boolean;
   /** Agregado por este wrapper: status HTTP del modelo principal que activó el respaldo. */
   statusRespaldo?: number;
