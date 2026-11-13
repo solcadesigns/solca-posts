@@ -37,6 +37,7 @@ import type { APIRoute } from 'astro';
 import { sendEmailWithTemplate, PostmarkError } from '../../lib/postmark';
 import { PLAN_CONFIG, type Plan } from '../../lib/simulator-types';
 import { emailHashFull } from '../../lib/attribution';
+import { esDesdeCurso } from '../../lib/cv-review-rubric';
 import { registrarConsentimiento, consentFields, consentKvMeta } from '../../lib/consent';
 // 6 nov 2026: el mismo endpoint atiende CV a la medida (metadata.producto = 'cv-medida').
 import { rutaStripe } from '../../lib/stripe-route';
@@ -585,12 +586,22 @@ export const POST: APIRoute = async ({ request, locals }) => {
       // El template Postmark simulator-purchase-confirmation usa condicionales
       // Mustache: {{#coupon_code}}...{{/coupon_code}} para mostrar la sección
       // solo cuando existe el cupón. Básico recibe strings vacíos.
+      // 13 nov 2026: quien llegó desde el curso (primer o último toque con utm_medium=curso, utm_source=hotmart
+      // o utm_content *-alumno en la metadata del checkout) ya lo compró: sin cupón ni enlace al curso.
+      const mAttr = session.metadata;
+      const alumnoCurso = (['ft', 'lt'] as const).some((p) =>
+        esDesdeCurso({
+          utm_source: meta(mAttr, `${p}_source`),
+          utm_medium: meta(mAttr, `${p}_medium`),
+          utm_content: meta(mAttr, `${p}_content`),
+        }),
+      );
       const premiumCoupon =
-        plan === 'premium'
+        plan === 'premium' && !alumnoCurso
           ? (env.HOTMART_COUPON_PREMIUM as string | undefined) ?? 'SIMULADOR40'
           : '';
       const courseUrl =
-        plan === 'premium'
+        plan === 'premium' && !alumnoCurso
           ? 'https://solcadesigns.hotmart.host/cv-en-ciencias-biologicas-y-de-de-la-salud-ats-linkedin-e78259bd-c882-4b61-b496-9d3da84d06b2?src=sim-compra-premium'
           : '';
       await sendEmailWithTemplate(postmarkToken, {

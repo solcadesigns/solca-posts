@@ -100,7 +100,7 @@ export const CRITERIOS: Criterio[] = [
     id: 7,
     nombre: 'Verbos de acción y autoría propia',
     grupo: 'logros',
-    guia: 'Verbos que muestran lo que hizo la persona ("diseñé", "coordiné", "validé"); deja claro su papel cuando el logro fue de un equipo y no se atribuye resultados colectivos (C17). "Apoyé" o "participé" son correctos cuando describen con exactitud un papel de apoyo y van seguidos de la acción concreta ("apoyé el inventario: registré…"): no los marques como problema. Si falta esa acción concreta, pide nombrarla. Nunca sugieras un verbo de liderazgo ("lideré", "dirigí", "coordiné") que exagere el papel.',
+    guia: 'Verbos que muestran lo que hizo la persona ("diseñé", "coordiné", "validé"); deja claro su papel cuando el logro fue de un equipo y no se atribuye resultados colectivos (C17). "Apoyé" o "participé" son correctos cuando describen con exactitud un papel de apoyo y van seguidos de la acción concreta ("apoyé el inventario: registré…"): no los marques como problema. Si falta esa acción concreta, pide nombrarla. Nunca sugieras un verbo de liderazgo ("lideré", "dirigí") que exagere el papel; "coordiné" vale solo cuando describe lo que la persona de verdad hizo.',
   },
   {
     id: 8,
@@ -185,7 +185,7 @@ export const CRITERIOS: Criterio[] = [
     id: 20,
     nombre: 'Consistencia y señales de alerta',
     grupo: 'datos_riesgos',
-    guia: 'Fechas consistentes, ortografía, tiempos verbales y afirmaciones exageradas o difíciles de sostener (C17). Huecos de empleo: marca como problema solo un hueco ACTUAL (del fin del último puesto o actividad hasta la fecha de hoy) de más de 8 meses; en ese caso sugiere una actividad verificable para el periodo actual (proyecto, curso con constancia, voluntariado). Un hueco pasado seguido de empleo no es problema: no lo marques ni pidas explicarlo.',
+    guia: 'Fechas consistentes, ortografía, tiempos verbales y afirmaciones exageradas o difíciles de sostener (C17). Huecos de empleo: marca como problema solo un hueco ACTUAL (del fin del último puesto o actividad hasta la fecha de hoy) de más de 8 meses; en ese caso sugiere una actividad verificable para el periodo actual (proyecto, curso con constancia, voluntariado). Un hueco pasado seguido de empleo no es problema: no lo marques ni pidas explicarlo. Si la persona nunca ha tenido empleo, su formación (fin de la carrera o del posgrado) cuenta como actividad: marca solo si pasaron más de 8 meses desde que terminó sin ninguna actividad posterior; a quien egresó hace menos de 8 meses no lo marques.',
   },
 ];
 
@@ -719,14 +719,19 @@ export type NextStep = 'quiz' | 'curso' | 'simulador';
 
 /**
  * ¿La visita llega desde el curso de Hotmart? (13 nov 2026). Convención de enlaces del curso V2.0:
- * utm_source=hotmart&utm_medium=curso. A quien ya compró el curso no se le ofrece el curso: el siguiente paso
- * "curso" cambia por la práctica en el simulador (pantalla, PDF y correo).
+ * utm_source=hotmart&utm_medium=curso; además, los enlaces que Solca muestra a un alumno llevan utm_content
+ * terminado en "-alumno". A quien ya compró el curso no se le ofrece el curso: el siguiente paso "curso" cambia
+ * por la práctica en el simulador (pantalla, PDF y correo). Regla del servidor; la del navegador es la misma y
+ * vive en BaseLayout.astro (window.__alumno, localStorage solca_alumno).
  */
-export function esDesdeCurso(utms?: { utm_source?: string; utm_medium?: string } | null): boolean {
+export function esDesdeCurso(
+  utms?: { utm_source?: string | null; utm_medium?: string | null; utm_content?: string | null } | null,
+): boolean {
   if (!utms) return false;
   const src = String(utms.utm_source ?? '').trim().toLowerCase();
   const med = String(utms.utm_medium ?? '').trim().toLowerCase();
-  return med === 'curso' || src === 'hotmart';
+  const con = String(utms.utm_content ?? '').trim().toLowerCase();
+  return med === 'curso' || src === 'hotmart' || con.endsWith('-alumno');
 }
 
 /** Texto del siguiente paso para alumnos del curso cuando tocaría ofrecer el curso (mismo en pantalla y correo). */

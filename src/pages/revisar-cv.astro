@@ -1046,7 +1046,6 @@ import { navLinks, esActual } from '../lib/nav';
   import {
     countByEstado,
     cursoLead,
-    esDesdeCurso,
     ALUMNO_PASO,
     groupObservaciones,
     pickNextStep,
@@ -1304,8 +1303,8 @@ import { navLinks, esActual } from '../lib/nav';
   // next_step_clicked); el curso no, para que BaseLayout le ponga src y registre book_clicked.
   const cursoUrl = (document.getElementById('next-step') as HTMLElement | null)?.dataset.curso || 'https://go.hotmart.com/B104495115T';
   const PDF_UTM = 'utm_source=pdf&utm_medium=cv-report&utm_campaign=revisar-cv';
-  // UTM de la sesión (BaseLayout, sessionStorage `solca_utm`): sobrevive a la navegación dentro de la visita.
-  const desdeCurso = esDesdeCurso((window as unknown as { __utm?: { utm_source?: string; utm_medium?: string } }).__utm);
+  // Alumno del curso: regla única del navegador en BaseLayout (window.__alumno, persistente en localStorage).
+  const desdeCurso = !!(window as unknown as { __alumno?: boolean }).__alumno;
   function nextStepCopy(step: NextStep, data: Result) {
     if (step === 'quiz') {
       return {
@@ -1336,7 +1335,7 @@ import { navLinks, esActual } from '../lib/nav';
         body: `${cursoLead(data, lastRol)} ${ALUMNO_PASO.body}`,
         cta: ALUMNO_PASO.cta,
         href: '/simulador-entrevistas/?ref=cv',
-        hrefPdf: `https://solcaciencia.com/simulador-entrevistas/?ref=cv&${PDF_UTM}`,
+        hrefPdf: `https://solcaciencia.com/simulador-entrevistas/?ref=cv&${PDF_UTM}&utm_content=siguiente-simulador-alumno`,
         track: 'cv-simulador-alumno',
       };
     }

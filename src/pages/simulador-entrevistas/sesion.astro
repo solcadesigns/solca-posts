@@ -686,6 +686,7 @@ import MarketSurvey from '../../components/MarketSurvey.astro';
       difficulty: Difficulty;
       interviewStage: InterviewStage;
       questionCount: 5 | 10 | 15;
+      desdeCurso?: boolean;
     }
 
     interface SessionState {
@@ -1030,6 +1031,8 @@ import MarketSurvey from '../../components/MarketSurvey.astro';
         difficulty: (formData.get('difficulty') as Difficulty) || 'moderado',
         interviewStage,
         questionCount: questionCountForStage(interviewStage),
+        // 13 nov 2026: el servidor quita del prompt la invitación al curso y su cupón (simulator-prompt.ts).
+        ...((window as unknown as { __alumno?: boolean }).__alumno ? { desdeCurso: true } : {}),
       };
 
       const startBtn = document.getElementById('start-btn') as HTMLButtonElement;
@@ -1757,14 +1760,13 @@ import MarketSurvey from '../../components/MarketSurvey.astro';
         `).join('');
     }
 
-    // 13 nov 2026: a quien llega desde el curso (utm_medium=curso o utm_source=hotmart, UTM de la sesión en
-    // window.__utm) no se le ofrece el curso en el reporte (roles sin libro). Los CTA de libros sí se muestran.
+    // 13 nov 2026: al alumno del curso (regla única en BaseLayout: window.__alumno) no se le ofrece el curso en
+    // el reporte (roles sin libro). Los CTA de libros sí se muestran.
     const CURSO_HOTMART_ID = 'B104495115T';
     function ctaVisible(cta: FinalReport['cta'] | undefined | null): boolean {
       if (!cta) return false;
-      const u = (window as unknown as { __utm?: { utm_source?: string; utm_medium?: string } }).__utm || {};
-      const desdeCurso = (u.utm_medium || '').toLowerCase() === 'curso' || (u.utm_source || '').toLowerCase() === 'hotmart';
-      return !(desdeCurso && (cta.url || '').includes(CURSO_HOTMART_ID));
+      const alumno = !!(window as unknown as { __alumno?: boolean }).__alumno;
+      return !(alumno && (cta.url || '').includes(CURSO_HOTMART_ID));
     }
 
     function escapeHtml(s: string): string {

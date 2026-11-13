@@ -466,6 +466,8 @@ await test('rúbrica v4: guías de los criterios 7, 19 y 20', () => {
   assert.ok(!g(7).includes('en vez de "participé en" o "apoyé"'));
   assert.ok(g(19).includes('edad o fecha de nacimiento') && g(19).includes('datos de salud') && g(19).includes('estado civil'));
   assert.ok(!g(20).includes('huecos sin explicar') && g(20).includes('hueco ACTUAL') && g(20).includes('más de 8 meses'));
+  assert.ok(g(20).includes('nunca ha tenido empleo') && g(20).includes('egresó hace menos de 8 meses'));
+  assert.ok(!g(7).includes('"dirigí", "coordiné")') && g(7).includes('"coordiné" vale solo cuando'));
 });
 
 await test('alumno del curso: no se ofrece el curso', () => {
@@ -473,6 +475,7 @@ await test('alumno del curso: no se ofrece el curso', () => {
   assert.equal(esDesdeCurso({ utm_medium: 'Curso' }), true);
   assert.equal(esDesdeCurso({ utm_source: 'linkedin', utm_medium: 'social' }), false);
   assert.equal(esDesdeCurso(undefined), false);
+  assert.equal(esDesdeCurso({ utm_source: 'email', utm_content: 'siguiente-simulador-alumno' }), true);
   const res = validateCvReview(BUENA, ctxPdf).result;
   assert.equal(pickNextStep(res, 'MSL'), 'curso');
   const normal = nextStepEmail(res, 'MSL', true);

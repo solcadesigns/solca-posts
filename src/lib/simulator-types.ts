@@ -183,6 +183,10 @@ export interface CandidateProfile {
   // Inferido del backend
   role?: Role; // si se puede mapear de roleTitle
   countryInferred?: string; // de la vacante o del idioma
+
+  // 13 nov 2026: la visita viene del curso de Hotmart (window.__alumno en el navegador). El prompt no menciona
+  // el curso ni su cupón a quien ya lo compró. Opcional; sesiones anteriores no lo traen.
+  desdeCurso?: boolean;
 }
 
 // ──────────────────────────────────────────────────────────────────

@@ -76,7 +76,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             <p>Guía práctica para científicos de la salud · LATAM y España</p>
             <span class="product-cta">Ver en Hotmart →</span>
           </a>
-          <a href="https://go.hotmart.com/B104495115T?dp=1" target="_blank" rel="noopener" class="product-card">
+          <a href="https://go.hotmart.com/B104495115T?dp=1" target="_blank" rel="noopener" class="product-card" data-oferta-curso>
             <span class="product-label">Curso</span>
             <h3>CV y entrevistas pharma</h3>
             <p>Aplicar de forma efectiva · módulo de simulación · ideal como base</p>
@@ -88,6 +88,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   </main>
 
   <script>
+    // 13 nov 2026: al alumno del curso (regla única en BaseLayout: window.__alumno) no se le ofrece el curso.
+    if ((window as unknown as { __alumno?: boolean }).__alumno) {
+      document.querySelectorAll<HTMLElement>('[data-oferta-curso]').forEach((el) => { el.hidden = true; });
+    }
+
     interface SessionEntry {
       sessionId: string;
       startedAt: string;
@@ -400,6 +405,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 14px;
     }
+    .product-card[hidden] { display: none; }
     .product-card {
       display: block;
       padding: 16px 18px;

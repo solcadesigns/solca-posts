@@ -357,6 +357,8 @@ async function handleInit(
   const profile: CandidateProfile = {
     ...body.profile,
     role: body.profile.role ?? inferRole(body.profile.roleTitle),
+    // 13 nov 2026: solo booleano true o nada (viene del navegador).
+    desdeCurso: body.profile.desdeCurso === true ? true : undefined,
   };
   if (profile.interviewStage) {
     profile.questionCount = getStageInfo(profile.interviewStage).questionCount;

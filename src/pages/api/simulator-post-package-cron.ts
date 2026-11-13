@@ -27,6 +27,7 @@
 import type { APIRoute } from 'astro';
 import { sendEmailWithTemplate, PostmarkError } from '../../lib/postmark';
 import { ConsentLookup, legacyPolicy, marketingDecisionForEmail } from '../../lib/consent';
+import { emailHashFull } from '../../lib/attribution';
 
 export const prerender = false;
 
@@ -43,6 +44,28 @@ function jsonResponse(data: unknown, status = 200): Response {
     status,
     headers: { 'Content-Type': 'application/json; charset=utf-8' },
   });
+}
+
+/**
+ * 13 nov 2026: ¿la compra del simulador vino desde el curso de Hotmart? El pkg_end no trae atribución; se lee del
+ * libro de ventas (D1 `ventas`, primer y último toque del checkout). Misma regla que esDesdeCurso. Best-effort:
+ * si falla la consulta, se trata como no alumno (comportamiento anterior).
+ */
+async function compraDesdeCurso(db: D1Database, email: string): Promise<boolean> {
+  try {
+    const row = await db
+      .prepare(
+        `SELECT id FROM ventas WHERE email_hash = ? AND producto = 'simulador' AND (
+           lower(ft_medium) = 'curso' OR lower(lt_medium) = 'curso' OR
+           lower(ft_source) = 'hotmart' OR lower(lt_source) = 'hotmart' OR
+           lower(ft_content) LIKE '%-alumno' OR lower(lt_content) LIKE '%-alumno') LIMIT 1`,
+      )
+      .bind(await emailHashFull(email))
+      .first();
+    return !!row;
+  } catch {
+    return false;
+  }
 }
 
 async function alreadyFedback(db: D1Database, sessionId: string): Promise<boolean> {
@@ -143,6 +166,9 @@ export const GET: APIRoute = async ({ request, locals }) => {
       db,
       consentLookup,
     );
+    // 13 nov 2026: al alumno del curso no se le ofrece el curso (sin cupón ni enlace), igual que sin consentimiento.
+    const alumno = db ? await compraDesdeCurso(db, target.email) : false;
+    const oferta = mk.allowed && !alumno;
     // 2 nov 2026: se borra el pkg_end ANTES de enviar, así un fallo al borrar después del envío ya no provoca reenvío.
     // Si el envío falla, se restaura (con su caducidad original) para reintentar; un timeout después de que Postmark
     // aceptó el correo sí puede reenviarlo, igual que antes. Errores permanentes del destinatario (406 inactivo, 300 correo inválido) no se restauran.
@@ -163,20 +189,21 @@ export const GET: APIRoute = async ({ request, locals }) => {
           first_name: target.firstName || 'ahí',
           plan_label: planLabel,
           role_practiced: target.role || 'tu rol',
-          marketing: mk.allowed,
-          coupon_code: mk.allowed ? couponCode : '',
-          course_url: mk.allowed ? courseUrl : '',
+          marketing: oferta,
+          coupon_code: oferta ? couponCode : '',
+          course_url: oferta ? courseUrl : '',
           feedback_url: `https://solcaciencia.com/simulador-entrevistas/sesion?email=${encodeURIComponent(target.email)}&feedback=1`,
         },
         metadata: {
           source: 'post-package-cron',
           session_id: sessionId,
           plan: target.plan,
-          marketing: mk.allowed ? '1' : '0',
+          marketing: oferta ? '1' : '0',
           marketing_decision: mk.decision,
+          alumno_curso: alumno ? '1' : '0',
         },
       });
-      results.push({ sessionId, status: `sent${mk.allowed ? '' : ' · sin_oferta'} · deleted` });
+      results.push({ sessionId, status: `sent${oferta ? '' : alumno ? ' · sin_oferta_alumno' : ' · sin_oferta'} · deleted` });
     } catch (err) {
       const why = err instanceof PostmarkError ? `postmark_${err.status}` : 'send_error';
       const errorCode = err instanceof PostmarkError ? (err.body as { ErrorCode?: number } | undefined)?.ErrorCode : undefined;

@@ -406,13 +406,10 @@ import { navLinks, esActual } from '../../lib/nav';
       // sessionStorage bloqueado o URL inválido. No pasa nada.
     }
 
-    // 13 nov 2026: a quien llega desde el curso (utm_medium=curso o utm_source=hotmart; UTM de la sesión en
-    // window.__utm) no se le anuncia el cupón del curso que ya compró.
-    {
-      const u = (window as unknown as { __utm?: { utm_source?: string; utm_medium?: string } }).__utm || {};
-      if ((u.utm_medium || '').toLowerCase() === 'curso' || (u.utm_source || '').toLowerCase() === 'hotmart') {
-        document.querySelectorAll<HTMLElement>('[data-oferta-curso]').forEach((el) => { el.hidden = true; });
-      }
+    // 13 nov 2026: al alumno del curso (regla única en BaseLayout: window.__alumno) no se le anuncia el cupón del
+    // curso que ya compró.
+    if ((window as unknown as { __alumno?: boolean }).__alumno) {
+      document.querySelectorAll<HTMLElement>('[data-oferta-curso]').forEach((el) => { el.hidden = true; });
     }
 
     const planCards = document.querySelectorAll<HTMLButtonElement>('.plan-cta');

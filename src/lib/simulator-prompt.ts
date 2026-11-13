@@ -437,7 +437,7 @@ CTA CONTEXTUAL POR PLAN Y MOMENTO (v0.3)
 ═══════════════════════════════════════════════════════════════
 Plan: ${plan} · Sesión número: ${sessionNumberInPackage}
 
-${ctaInstructions(plan, sessionNumberInPackage, profile.roleTitle)}
+${ctaInstructions(plan, sessionNumberInPackage, profile.roleTitle, profile.desdeCurso === true)}
 
 ═══════════════════════════════════════════════════════════════
 FORMATO DEL REPORTE FINAL EXPANDIDO (v0.7 — al cerrar la sesión)
@@ -682,7 +682,19 @@ function ctaInstructions(
   plan: Plan,
   sessionNumber: number,
   roleTitle?: string,
+  desdeCurso = false,
 ): string {
+  // 13 nov 2026: la persona llega desde el curso de Hotmart (ya lo compró). Se agrega una regla al final y se
+  // quita la invitación al curso del plan Premium; el resto de las reglas no cambia.
+  if (desdeCurso) {
+    const base = ctaInstructions(plan, sessionNumber, roleTitle, false).replace(
+      ' + invitación a Curso Solca CV+ATS+LinkedIn con cupón SIMULADOR40 (40% off) como siguiente paso',
+      '',
+    );
+    return `${base}
+
+REGLA PARA ALUMNOS DEL CURSO: esta persona ya tiene el Curso Solca de CV y entrevistas. En la recomendación final y en el CTA no menciones ni recomiendes ese curso ni ningún cupón o descuento del curso (SIMULADOR40, FEEDBACK35 u otro).`;
+  }
   const roleHint = roleTitle ?? 'el rol que practicaste';
 
   // OVERRIDE POR DESEMPEÑO (aplica a todos los planes, antes de cualquier regla)

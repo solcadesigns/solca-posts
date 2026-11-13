@@ -183,6 +183,26 @@ const ogImageURL = new URL(ogImage, siteUrl).toString();
       window.__lt = lt || undefined;
       window.__interno = interno;
     } catch (_) {}
+    // ── Alumno del curso · 13 nov 2026 ──
+    // Regla única del navegador (la del servidor es esDesdeCurso en src/lib/cv-review-rubric.ts, mismas
+    // condiciones): utm_medium=curso, utm_source=hotmart o utm_content que termina en "-alumno". Se guarda en
+    // localStorage solca_alumno=1 para no ofrecerle el curso en visitas posteriores. window.__alumno lo exponen
+    // el revisor, el simulador y Mis reportes.
+    var alumno = false;
+    try {
+      var pa = new URLSearchParams(window.location.search);
+      var aMed = sanitize(pa.get('utm_medium')) || '';
+      var aSrc = sanitize(pa.get('utm_source')) || '';
+      var aCon = sanitize(pa.get('utm_content')) || '';
+      if (aMed === 'curso' || aSrc === 'hotmart' || /-alumno$/.test(aCon)) {
+        try { localStorage.setItem('solca_alumno', '1'); } catch (_) {}
+        alumno = true;
+      }
+      try { if (localStorage.getItem('solca_alumno') === '1') alumno = true; } catch (_) {}
+      var uS = window.__utm || {};
+      if (uS.utm_medium === 'curso' || uS.utm_source === 'hotmart' || /-alumno$/.test(uS.utm_content || '')) alumno = true;
+    } catch (_) {}
+    window.__alumno = alumno;
     // Campos que viajan en cada evento, lead y checkout.
     window.__attr = function () {
       return { aid: window.__aid, ft: window.__ft, lt: window.__lt, interno: window.__interno ? true : undefined };

@@ -61,21 +61,22 @@ function jsonResponse(data: unknown, status = 200) {
   });
 }
 
-// Tope diario global (20 oct 2026): un pico de 29 análisis en un día (vs 1-2 normal)
-// llegó sin aviso. El tope corta el gasto si el pico crece; al alcanzarlo se avisa
-// una sola vez a hello@ para decidir si se sube.
-/** Aviso de cupo agotado: la regla exacta (2 por correo cada 30 días desde el primero) y cuándo se libera. */
+/**
+ * Aviso de cupo agotado: la regla exacta (2 por correo cada 30 días desde el primero) y cuándo se libera.
+ * La fecha es la del primer día completo (hora de México) en que ya se puede: si el cupo se libera a media
+ * jornada, se da el día siguiente, para que "a partir del" nunca falle por unas horas.
+ */
 function mensajeCupo(max: number, resetInDays: number, resetAt?: string): string {
   let cuando = `en ${resetInDays} ${resetInDays === 1 ? 'día' : 'días'}`;
   if (resetAt) {
     try {
-      const fecha = new Date(resetAt).toLocaleDateString('es-MX', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-        timeZone: 'America/Mexico_City',
-      });
-      cuando = `a partir del ${fecha} (${cuando})`;
+      const TZ = 'America/Mexico_City';
+      let ms = new Date(resetAt).getTime();
+      const hm = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23', timeZone: TZ })
+        .format(new Date(ms));
+      if (hm !== '00:00:00') ms += 24 * 60 * 60 * 1000; // México sin horario de verano desde 2022: un día = 24 h
+      const fecha = new Date(ms).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric', timeZone: TZ });
+      cuando = `a partir del ${fecha}`;
     } catch {
       // sin Intl: queda solo el número de días
     }
@@ -83,6 +84,9 @@ function mensajeCupo(max: number, resetInDays: number, resetAt?: string): string
   return `Ya usaste tus ${max} análisis gratuitos. El cupo es de ${max} análisis por correo cada 30 días, contados desde tu primer análisis: podrás hacer otro ${cuando}. Si necesitas otro análisis antes, escríbenos en /contacto.`;
 }
 
+// Tope diario global (20 oct 2026): un pico de 29 análisis en un día (vs 1-2 normal)
+// llegó sin aviso. El tope corta el gasto si el pico crece; al alcanzarlo se avisa
+// una sola vez a hello@ para decidir si se sube.
 const DAILY_CAP = 50;
 
 async function bumpDailyCount(kv: KVNamespace | undefined): Promise<number> {
