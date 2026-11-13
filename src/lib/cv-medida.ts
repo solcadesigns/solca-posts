@@ -2,7 +2,7 @@
  * CV a la medida · núcleo puro (6 nov 2026). Especificación vinculante:
  *   ../consultoria/investigacion/2026-11-plan-revisor-cv.md, sección "CV a la medida · decisiones y especificación".
  * Mejores prácticas que sigue el documento: ../consultoria/investigacion/2026-11-cv-mejores-practicas.md
- * (una columna sin tablas, resumen de 2 a 5 frases ligado a la vacante, logros con cifra solo si existe, idioma de
+ * (una columna sin tablas, resumen de 2 a 4 frases ligado a la vacante, logros con cifra solo si existe, idioma de
  * la vacante, términos de la vacante sin relleno, máximo 2 páginas).
  *
  * Archivo puro: no importa runtime de Workers. Lo usan el checkout, el cron y `node scripts/test-cv-medida.mjs`.
@@ -576,7 +576,7 @@ export function validarCvMedida(
   }
   // (la revisión contra el título de la vacante va después de la experiencia: si la persona tuvo ese puesto, vale)
 
-  // Resumen: síntesis sin cita, pero cada frase pasa el filtro de cifras y siglas; máximo 5 frases.
+  // Resumen: síntesis sin cita, pero cada frase pasa el filtro de cifras y siglas; máximo 4 frases (curso: 2 a 4).
   // 10 nov 2026: también se quitan las oraciones en tercera persona. Siempre oraciones completas.
   const frasesResumen = frases(str(r.resumen, 1500));
   const enPrimera = frasesResumen.filter((s) => !enTerceraPersona(s, nombre));

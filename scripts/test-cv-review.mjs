@@ -21,7 +21,12 @@ import {
   normalizeForMatch,
   scrubBanned,
   cursoLead,
+  rolLabel,
+  rolContexto,
+  esDesdeCurso,
+  ROLE_OPTIONS,
 } from '../src/lib/cv-review-rubric.ts';
+import { buildCvReviewUserMessage } from '../src/lib/cv-review-prompt.ts';
 import { renderCvAnalysisEmail, renderCvApologyEmail, nextStepEmail, cvEmailFooter } from '../src/lib/cv-review-email.ts';
 import { processCvPendingOnce, markCvDone, saveCvJob, CV_MAX_SEND_ATTEMPTS } from '../src/lib/cv-pending.ts';
 
@@ -440,6 +445,43 @@ await test('rol del formulario: solo valores del catálogo', () => {
   assert.equal(readRolObjetivo('Other'), undefined);
   assert.equal(readRolObjetivo('<script>'), undefined);
   assert.equal(readRolObjetivo('toString'), undefined);
+});
+
+// 13 nov 2026 (rúbrica v4): CRC solo del revisor, curso no ofrecido a alumnos, guías 7/19/20.
+await test('CRC: rol solo del revisor con contexto en el mensaje', () => {
+  assert.equal(readRolObjetivo('CRC'), 'CRC');
+  assert.equal(rolLabel('CRC'), 'Coordinador de estudios clínicos (CRC)');
+  assert.ok(ROLE_OPTIONS.some(([v]) => v === 'CRC') && ROLE_OPTIONS.length === 11);
+  assert.equal(rolContexto('CRA'), undefined);
+  const msg = buildCvReviewUserMessage({ cv: CV, rolLabel: rolLabel('CRC'), rolContexto: rolContexto('CRC'), origen: 'pdf', paginas: 2, saltos: 10, hoy: new Date('2026-11-13T12:00:00Z') });
+  assert.ok(msg.includes('Fecha de hoy (año-mes): 2026-11'));
+  assert.ok(msg.includes('Coordinador de estudios clínicos (CRC)\n- Funciones típicas de ese rol: coordinación de estudios clínicos'));
+  assert.ok(!buildCvReviewUserMessage({ cv: CV, rolLabel: rolLabel('CRA'), origen: 'pdf', paginas: 2, saltos: 10 }).includes('Funciones típicas'));
+});
+
+await test('rúbrica v4: guías de los criterios 7, 19 y 20', () => {
+  assert.equal(RUBRIC_VERSION, 'v4-2026-11');
+  const g = (id) => CRITERIOS.find((c) => c.id === id).guia;
+  assert.ok(g(7).includes('"Apoyé" o "participé" son correctos') && g(7).includes('Nunca sugieras un verbo de liderazgo'));
+  assert.ok(!g(7).includes('en vez de "participé en" o "apoyé"'));
+  assert.ok(g(19).includes('edad o fecha de nacimiento') && g(19).includes('datos de salud') && g(19).includes('estado civil'));
+  assert.ok(!g(20).includes('huecos sin explicar') && g(20).includes('hueco ACTUAL') && g(20).includes('más de 8 meses'));
+});
+
+await test('alumno del curso: no se ofrece el curso', () => {
+  assert.equal(esDesdeCurso({ utm_source: 'hotmart', utm_medium: 'curso' }), true);
+  assert.equal(esDesdeCurso({ utm_medium: 'Curso' }), true);
+  assert.equal(esDesdeCurso({ utm_source: 'linkedin', utm_medium: 'social' }), false);
+  assert.equal(esDesdeCurso(undefined), false);
+  const res = validateCvReview(BUENA, ctxPdf).result;
+  assert.equal(pickNextStep(res, 'MSL'), 'curso');
+  const normal = nextStepEmail(res, 'MSL', true);
+  assert.equal(normal.cta, 'Ver el curso en Hotmart');
+  const alumno = nextStepEmail(res, 'MSL', true, true);
+  assert.notEqual(alumno.cta, 'Ver el curso en Hotmart');
+  assert.ok(alumno.href.includes('/simulador-entrevistas/'));
+  const mail = renderCvAnalysisEmail(res, { rolFormulario: 'MSL', marketing: true, desdeCurso: true });
+  assert.ok(!mail.html.includes('Ver el curso en Hotmart') && !mail.text.includes('Ver el curso en Hotmart'));
 });
 
 await test('scrubBanned conserva oraciones limpias', () => {

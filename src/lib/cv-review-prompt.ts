@@ -9,7 +9,7 @@
  * Se quitó la regla sin fuente "Junior: 1 página" de la v1.
  */
 
-import { CRITERIOS, NIVELES, RUBRIC_VERSION } from './cv-review-rubric';
+import { CRITERIOS, NIVELES, RUBRIC_VERSION } from './cv-review-rubric.ts';
 
 const rubrica = CRITERIOS.map((c) => `${c.id}. ${c.nombre}: ${c.guia}`).join('\n');
 const niveles = NIVELES.map((n) => `"${n}"`).join(', ');
@@ -76,10 +76,13 @@ export function buildCvReviewUserMessage(args: {
   cv: string;
   country?: string;
   rolLabel?: string;
+  /** Funciones típicas del rol (solo roles que el modelo podría no distinguir, p. ej. CRC). */
+  rolContexto?: string;
   rolNoSeguro?: boolean;
   origen: 'pdf' | 'pegado';
   paginas: number | null;
   saltos: number;
+  hoy?: Date;
 }): string {
   const rol = args.rolLabel
     ? args.rolLabel
@@ -90,9 +93,12 @@ export function buildCvReviewUserMessage(args: {
     args.origen === 'pdf'
       ? `PDF leído en el navegador; ${args.paginas ?? 'número desconocido de'} ${args.paginas === 1 ? 'página' : 'páginas'}`
       : 'texto pegado; número de páginas desconocido; no se ve el diseño';
+  // Fecha de hoy (año y mes) para el criterio 20: solo cuenta un hueco ACTUAL de más de 8 meses.
+  const hoy = (args.hoy ?? new Date()).toISOString().slice(0, 7);
   return `Datos del formulario (no forman parte del CV):
+- Fecha de hoy (año-mes): ${hoy}
 - País: ${args.country || 'no especificado'}
-- Rol objetivo declarado: ${rol}
+- Rol objetivo declarado: ${rol}${args.rolContexto ? `\n- Funciones típicas de ese rol: ${args.rolContexto}` : ''}
 - Origen del texto: ${origen}
 - Caracteres: ${args.cv.length}
 - Saltos de línea en el texto: ${args.saltos}

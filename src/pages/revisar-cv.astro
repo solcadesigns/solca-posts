@@ -9,19 +9,18 @@ const consentCv = CONSENT_TEXT.cv;
 const consentPrivacidadHtml = privacidadHtml('cv');
 const consentErrMsg = CONSENT_MSG.privacidad_requerida;
 // 6 nov 2026 (rúbrica v2): rol objetivo opcional con los 10 roles del simulador y textos del "Avísame".
-import { ROLE_LABELS, ROL_NO_SEGURO, ROL_NO_SEGURO_LABEL, WAITLIST_BOTON, WAITLIST_NOTA } from '../lib/cv-review-rubric';
-const roleOptions = Object.entries(ROLE_LABELS);
+// 13 nov 2026: + roles solo del revisor (CRC), sin tocar el catálogo del simulador.
+import { ROLE_OPTIONS, ROL_NO_SEGURO, ROL_NO_SEGURO_LABEL, WAITLIST_BOTON, WAITLIST_NOTA } from '../lib/cv-review-rubric';
+const roleOptions = ROLE_OPTIONS;
 
 const cursoURL = 'https://go.hotmart.com/B104495115T';
 const newsletterURL =
   'https://www.linkedin.com/build-relation/newsletter-follow?entityUrn=7432492458158120960';
-const atsBlogURL =
-  'https://www.linkedin.com/pulse/por-qu%C3%A9-tu-cv-pasa-filtros-ats-oscar-solis-ciencia-y-consultoria--xxlce/';
 import { navLinks, esActual } from '../lib/nav';
 ---
 <BaseLayout
   title="Análisis gratis de tu CV · Solca"
-  description="Recibe feedback estructurado contra 20 criterios de selección en industria farmacéutica. Coherencia, métricas, palabras clave, compatibilidad ATS, posicionamiento. Gratis, sin pago, sin compromiso."
+  description="Recibe feedback estructurado contra 20 criterios de selección en industria farmacéutica. Coherencia, métricas, palabras clave, formato fácil de leer para los portales de empleo, posicionamiento. Gratis, sin pago, sin compromiso."
 >
 
 <!-- ==================== NAV ==================== -->
@@ -47,11 +46,11 @@ import { navLinks, esActual } from '../lib/nav';
     </div>
     <h1 class="cv-hero-title">Análisis profesional de <em>tu CV</em></h1>
     <p class="cv-hero-lead">
-      Pega tu CV y recibe feedback estructurado en 20 criterios de redacción y estructura para procesos de selección en la industria farmacéutica: coherencia, métricas, palabras clave, compatibilidad ATS, posicionamiento profesional. Sin pago, sin compromiso.
+      Pega tu CV y recibe feedback estructurado en 20 criterios de redacción y estructura para procesos de selección en la industria farmacéutica: coherencia, métricas, palabras clave, formato (una columna sin tablas ni gráficos facilita que los portales de empleo lean bien tu CV), posicionamiento profesional. Sin pago, sin compromiso.
     </p>
     <div class="cv-hero-meta">
       <span class="meta-item"><span class="meta-dot"></span>Análisis cualitativo</span>
-      <span class="meta-item"><span class="meta-dot"></span>20 categorías evaluadas</span>
+      <span class="meta-item"><span class="meta-dot"></span>20 criterios evaluados</span>
       <span class="meta-item"><span class="meta-dot"></span>Recomendaciones accionables</span>
     </div>
   </div>
@@ -72,7 +71,7 @@ import { navLinks, esActual } from '../lib/nav';
             El PDF se procesa localmente en tu navegador. No se sube a nuestro servidor.
           </p>
 
-          <!-- Aviso · PDF no legible · también pista sobre ATS · oculto por default -->
+          <!-- Aviso · PDF no legible · también pista sobre lectura automática · oculto por default -->
           <aside class="pdf-warning" id="pdf-warning" hidden>
             <div class="pdf-warning-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -87,15 +86,10 @@ import { navLinks, esActual } from '../lib/nav';
                 Esto suele significar que el PDF tiene el texto como imagen (escaneado), usa una fuente que los parsers no entienden, o tiene un layout complejo (columnas, gráficos, íconos).
               </p>
               <p class="pdf-warning-callout">
-                <strong>Importante:</strong> muchas plataformas de postulación leen el CV de forma automática. Si tu PDF no se pudo leer aquí, <strong>es posible que esas plataformas tampoco lo lean bien</strong>.
+                <strong>Importante:</strong> muchas plataformas de postulación leen el CV de forma automática. Si tu PDF no se pudo leer aquí, <strong>es posible que esas plataformas tampoco lo lean bien</strong>. Un PDF con texto (no escaneado), en una sola columna y sin tablas ni gráficos, facilita que se lea bien.
               </p>
               <p class="pdf-warning-actions-label">Antes de seguir, vale la pena leer:</p>
               <ul class="pdf-warning-actions">
-                <li>
-                  <a href={atsBlogURL} target="_blank" rel="noopener">
-                    → Por qué tu CV no pasa filtros ATS (artículo)
-                  </a>
-                </li>
                 <li>
                   <a href={newsletterURL} target="_blank" rel="noopener">
                     → Suscribirte al newsletter Solca Insight en LinkedIn
@@ -1052,6 +1046,8 @@ import { navLinks, esActual } from '../lib/nav';
   import {
     countByEstado,
     cursoLead,
+    esDesdeCurso,
+    ALUMNO_PASO,
     groupObservaciones,
     pickNextStep,
     topGrupo,
@@ -1308,6 +1304,8 @@ import { navLinks, esActual } from '../lib/nav';
   // next_step_clicked); el curso no, para que BaseLayout le ponga src y registre book_clicked.
   const cursoUrl = (document.getElementById('next-step') as HTMLElement | null)?.dataset.curso || 'https://go.hotmart.com/B104495115T';
   const PDF_UTM = 'utm_source=pdf&utm_medium=cv-report&utm_campaign=revisar-cv';
+  // UTM de la sesión (BaseLayout, sessionStorage `solca_utm`): sobrevive a la navegación dentro de la visita.
+  const desdeCurso = esDesdeCurso((window as unknown as { __utm?: { utm_source?: string; utm_medium?: string } }).__utm);
   function nextStepCopy(step: NextStep, data: Result) {
     if (step === 'quiz') {
       return {
@@ -1329,6 +1327,17 @@ import { navLinks, esActual } from '../lib/nav';
         href: '/simulador-entrevistas/?ref=cv',
         hrefPdf: `https://solcaciencia.com/simulador-entrevistas/?ref=cv&${PDF_UTM}`,
         track: 'cv-simulador',
+      };
+    }
+    // 13 nov 2026: a quien llega desde el curso (utm_medium=curso o utm_source=hotmart) no se le ofrece el curso.
+    if (desdeCurso) {
+      return {
+        title: ALUMNO_PASO.title,
+        body: `${cursoLead(data, lastRol)} ${ALUMNO_PASO.body}`,
+        cta: ALUMNO_PASO.cta,
+        href: '/simulador-entrevistas/?ref=cv',
+        hrefPdf: `https://solcaciencia.com/simulador-entrevistas/?ref=cv&${PDF_UTM}`,
+        track: 'cv-simulador-alumno',
       };
     }
     return {
@@ -1477,7 +1486,7 @@ import { navLinks, esActual } from '../lib/nav';
 <p class="ns-body">${escapeHtml(ns.body)}</p>
 <a href="${escapeHtml(ns.href)}" class="btn btn-orange btn-large"${external ? ' target="_blank" rel="noopener"' : ''}${ns.track ? ` data-next-step="${ns.track}"` : ''}>${escapeHtml(ns.cta)}</a>`,
     );
-    cvStep(`next_step_shown:${step}`);
+    cvStep(`next_step_shown:${step === 'curso' && desdeCurso ? 'curso_alumno' : step}`);
 
     // Estados de los botones de un clic.
     const wlBtn = document.getElementById('waitlist-btn') as HTMLButtonElement | null;

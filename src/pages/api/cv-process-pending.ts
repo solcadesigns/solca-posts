@@ -23,6 +23,7 @@ import {
   sendCvApology,
   alertCvFailure,
 } from '../../lib/cv-review-run';
+import { esDesdeCurso } from '../../lib/cv-review-rubric';
 
 export const prerender = false;
 
@@ -82,7 +83,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
         : { ok: false, status: o.status, outputTokens: o.outputTokens, ms: o.ms, modelo: o.modelo };
     },
     sendAnalysis: (job, result) =>
-      sendCvAnalysisEmail(token, job.email, result, { rolFormulario: job.rolObjetivo, marketing: job.marketing, reintento: true }),
+      sendCvAnalysisEmail(token, job.email, result, { rolFormulario: job.rolObjetivo, marketing: job.marketing, reintento: true, desdeCurso: esDesdeCurso(job.utms) }),
     finalize: async (job, result) => {
       await finalizeCvSuccess(env, jobLeadContext(job), result, {
         rolFormulario: job.rolObjetivo,

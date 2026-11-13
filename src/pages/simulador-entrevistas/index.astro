@@ -148,7 +148,7 @@ import { navLinks, esActual } from '../../lib/nav';
             <li>Español, inglés o bilingüe</li>
             <li><strong>Reporte PDF por email</strong> al terminar cada sesión</li>
             <li>Panel "Mis reportes" con historial descargable</li>
-            <li><strong>Bonus:</strong> cupón <strong>40% off</strong> en el Curso Solca CV+ATS+LinkedIn (válido 90 días)</li>
+            <li data-oferta-curso><strong>Bonus:</strong> cupón <strong>40% off</strong> en el Curso Solca CV+ATS+LinkedIn (válido 90 días)</li>
             <li>Vigencia 240 días · pago único, sin suscripción</li>
           </ul>
           <button type="button" class="btn btn-secondary plan-cta" data-plan="premium" data-cta="card">Comprar Premium</button>
@@ -219,8 +219,8 @@ import { navLinks, esActual } from '../../lib/nav';
           sin suscripciones automáticas. Vigencia 240 días.
         </span>
         <span id="signup-lead-premium" hidden>
-          Al confirmar el pago recibes por email tu código de acceso a 5 sesiones + cupón
-          <strong>SIMULADOR40</strong> con 40% off en el Curso Solca CV+ATS+LinkedIn.
+          Al confirmar el pago recibes por email tu código de acceso a 5 sesiones<span data-oferta-curso> + cupón
+          <strong>SIMULADOR40</strong> con 40% off en el Curso Solca CV+ATS+LinkedIn</span>.
           Pago único, sin suscripciones automáticas. Vigencia 240 días.
         </span>
       </p>
@@ -404,6 +404,15 @@ import { navLinks, esActual } from '../../lib/nav';
       }
     } catch {
       // sessionStorage bloqueado o URL inválido. No pasa nada.
+    }
+
+    // 13 nov 2026: a quien llega desde el curso (utm_medium=curso o utm_source=hotmart; UTM de la sesión en
+    // window.__utm) no se le anuncia el cupón del curso que ya compró.
+    {
+      const u = (window as unknown as { __utm?: { utm_source?: string; utm_medium?: string } }).__utm || {};
+      if ((u.utm_medium || '').toLowerCase() === 'curso' || (u.utm_source || '').toLowerCase() === 'hotmart') {
+        document.querySelectorAll<HTMLElement>('[data-oferta-curso]').forEach((el) => { el.hidden = true; });
+      }
     }
 
     const planCards = document.querySelectorAll<HTMLButtonElement>('.plan-cta');

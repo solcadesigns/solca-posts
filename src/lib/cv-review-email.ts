@@ -20,6 +20,7 @@ import {
   countByEstado,
   cursoLead,
   pickNextStep,
+  ALUMNO_PASO,
   rolLabel,
   type CvReviewResult,
   type Estado,
@@ -80,8 +81,19 @@ export function nextStepEmail(
   res: CvReviewResult,
   rolFormulario: string | undefined,
   marketing: boolean,
+  desdeCurso = false,
 ): NextStepEmail | null {
   const step = pickNextStep(res, rolFormulario);
+  // Alumno del curso (utm_medium=curso): no se le ofrece lo que ya compró.
+  if (step === 'curso' && desdeCurso) {
+    return {
+      step: 'simulador',
+      title: ALUMNO_PASO.title,
+      body: `${cursoLead(res, rolFormulario)} ${ALUMNO_PASO.body}`,
+      cta: ALUMNO_PASO.cta,
+      href: cvEmailLink('/simulador-entrevistas/', 'revisar-cv', 'siguiente-simulador-alumno'),
+    };
+  }
   if (step === 'quiz') {
     return {
       step,
@@ -118,6 +130,8 @@ export interface CvEmailOptions {
   rolFormulario?: string;
   /** Casilla comercial marcada en este formulario. */
   marketing: boolean;
+  /** La visita llegó desde el curso (esDesdeCurso): no se ofrece el curso. */
+  desdeCurso?: boolean;
   /** El análisis salió en un reintento (la persona no lo vio en pantalla). */
   reintento?: boolean;
   /** Fecha legible del análisis (es-MX). */
@@ -160,7 +174,7 @@ ${esc(cvEmailFooter(marketing))}
 /** Correo con el análisis (en el momento o después de un reintento). */
 export function renderCvAnalysisEmail(res: CvReviewResult, opts: CvEmailOptions): RenderedEmail {
   const counts = countByEstado(res.observaciones);
-  const ns = nextStepEmail(res, opts.rolFormulario, opts.marketing);
+  const ns = nextStepEmail(res, opts.rolFormulario, opts.marketing, opts.desdeCurso);
   const rol = rolLabel(opts.rolFormulario);
   const campaign = opts.reintento ? 'revisar-cv-reintento' : 'revisar-cv';
   const volver = cvEmailLink('/revisar-cv', campaign, 'volver');

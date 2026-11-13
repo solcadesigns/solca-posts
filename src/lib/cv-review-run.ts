@@ -13,6 +13,8 @@ import {
   RUBRIC_VERSION,
   ROL_NO_SEGURO,
   rolLabel,
+  rolContexto,
+  esDesdeCurso,
   lineBreakCount,
   parseJsonLenient,
   validateCvReview,
@@ -72,6 +74,7 @@ export async function runCvAnalysis(apiKey: string, input: CvAnalysisInput): Pro
     cv: input.cv,
     country: input.country,
     rolLabel: rolLabel(input.rolObjetivo),
+    rolContexto: rolContexto(input.rolObjetivo),
     rolNoSeguro: input.rolObjetivo === ROL_NO_SEGURO,
     origen: input.origen,
     paginas: input.paginas,
@@ -229,7 +232,7 @@ export async function sendCvAnalysisEmail(
   token: string | undefined,
   email: string,
   result: CvReviewResult,
-  opts: { rolFormulario?: string; marketing: boolean; reintento: boolean },
+  opts: { rolFormulario?: string; marketing: boolean; reintento: boolean; desdeCurso?: boolean },
 ): Promise<boolean> {
   if (!token) {
     console.log('cv-review:analysis-email-skipped (no POSTMARK_SERVER_TOKEN)');
@@ -296,6 +299,7 @@ export async function finalizeCvSuccess(
     rolFormulario: opts.rolFormulario,
     marketing: c.marketing,
     reintento: opts.reintento,
+    desdeCurso: esDesdeCurso(c.utms),
   });
   return { emailSent };
 }

@@ -64,6 +64,25 @@ function jsonResponse(data: unknown, status = 200) {
 // Tope diario global (20 oct 2026): un pico de 29 análisis en un día (vs 1-2 normal)
 // llegó sin aviso. El tope corta el gasto si el pico crece; al alcanzarlo se avisa
 // una sola vez a hello@ para decidir si se sube.
+/** Aviso de cupo agotado: la regla exacta (2 por correo cada 30 días desde el primero) y cuándo se libera. */
+function mensajeCupo(max: number, resetInDays: number, resetAt?: string): string {
+  let cuando = `en ${resetInDays} ${resetInDays === 1 ? 'día' : 'días'}`;
+  if (resetAt) {
+    try {
+      const fecha = new Date(resetAt).toLocaleDateString('es-MX', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'America/Mexico_City',
+      });
+      cuando = `a partir del ${fecha} (${cuando})`;
+    } catch {
+      // sin Intl: queda solo el número de días
+    }
+  }
+  return `Ya usaste tus ${max} análisis gratuitos. El cupo es de ${max} análisis por correo cada 30 días, contados desde tu primer análisis: podrás hacer otro ${cuando}. Si necesitas otro análisis antes, escríbenos en /contacto.`;
+}
+
 const DAILY_CAP = 50;
 
 async function bumpDailyCount(kv: KVNamespace | undefined): Promise<number> {
@@ -155,14 +174,14 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     );
   }
 
-  // Rate limit: max 2 análisis por email cada 30 días
+  // Rate limit: max 2 análisis por email cada 30 días, contados desde el primero (ver rate-limit.ts)
   const limitsKV = runtime?.env?.CV_LIMITS as KVNamespace | undefined;
   const limitCheck = await checkCvSubmitLimit(limitsKV, email);
   if (!limitCheck.allowed) {
     return jsonResponse(
       {
         error: 'rate_limited',
-        message: `Ya usaste tus ${limitCheck.max} análisis gratuitos. Tu cupo se renueva en ~${limitCheck.resetInDays} días. Si necesitas otro análisis antes, escríbenos en /contacto.`,
+        message: mensajeCupo(limitCheck.max, limitCheck.resetInDays, limitCheck.resetAt),
       },
       429,
     );

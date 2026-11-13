@@ -1008,7 +1008,7 @@ await prueba('P3: PVU en el prompt (2 a 4 oraciones, indispensables), encabezado
   const xml = strFromU8(unzipSync(await construirDocx(validado.cv))['word/document.xml']);
   assert.ok(xml.includes('PERFIL PROFESIONAL'));
   const { CRITERIOS, RUBRIC_VERSION } = await import('../src/lib/cv-review-rubric.ts');
-  assert.equal(RUBRIC_VERSION, 'v3-2026-11');
+  assert.equal(RUBRIC_VERSION, 'v4-2026-11');
   const c2 = CRITERIOS.find((c) => c.id === 2);
   assert.ok(c2.guia.includes('propuesta de valor (PVU)') && c2.guia.includes('busco') && c2.guia.includes('adjetivos sin evidencia'));
 });

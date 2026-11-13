@@ -16,7 +16,11 @@ import { partirFrasesConservador } from './frases.ts';
 
 // v3-2026-11 (10 nov 2026): el criterio 2 evalúa el resumen como propuesta de valor (PVU, curso de Solca, b1 de
 // ../consultoria/investigacion/2026-11-10-curso-vs-mejores-practicas-cv.md). Misma forma del JSON.
-export const RUBRIC_VERSION = 'v3-2026-11';
+// v4-2026-11 (13 nov 2026, coherencia con el curso V2.0; ../consultoria/curso-cv-v2/revisiones/
+// 2026-11-13-coherencia-curso-revisor.md): criterio 7 acepta "apoyé"/"participé" cuando describen un papel de apoyo;
+// criterio 19 suma edad o fecha de nacimiento y datos de salud; criterio 20 solo marca un hueco ACTUAL de más de
+// 8 meses. Rol nuevo solo del revisor: CRC. Misma forma del JSON.
+export const RUBRIC_VERSION = 'v4-2026-11';
 
 export type Estado = 'prioritario' | 'mejorable' | 'solido' | 'no_evaluable';
 export const ESTADOS: Estado[] = ['prioritario', 'mejorable', 'solido', 'no_evaluable'];
@@ -96,7 +100,7 @@ export const CRITERIOS: Criterio[] = [
     id: 7,
     nombre: 'Verbos de acción y autoría propia',
     grupo: 'logros',
-    guia: 'Verbos que muestran lo que hizo la persona ("diseñé", "coordiné", "validé") en vez de "participé en" o "apoyé"; deja claro su papel cuando el logro fue de un equipo y no se atribuye resultados colectivos (C17).',
+    guia: 'Verbos que muestran lo que hizo la persona ("diseñé", "coordiné", "validé"); deja claro su papel cuando el logro fue de un equipo y no se atribuye resultados colectivos (C17). "Apoyé" o "participé" son correctos cuando describen con exactitud un papel de apoyo y van seguidos de la acción concreta ("apoyé el inventario: registré…"): no los marques como problema. Si falta esa acción concreta, pide nombrarla. Nunca sugieras un verbo de liderazgo ("lideré", "dirigí", "coordiné") que exagere el papel.',
   },
   {
     id: 8,
@@ -175,13 +179,13 @@ export const CRITERIOS: Criterio[] = [
     id: 19,
     nombre: 'Contacto y LinkedIn',
     grupo: 'datos_riesgos',
-    guia: 'Correo, teléfono y enlace a LinkedIn (C19). Sin datos sensibles innecesarios (estado civil, religión, CURP o DNI completo, dirección completa). La foto no se ve en el texto: no la evalúes.',
+    guia: 'Correo, teléfono y enlace a LinkedIn (C19). Sin datos sensibles innecesarios (edad o fecha de nacimiento, estado civil, datos de salud, religión, CURP o DNI completo, dirección completa). La foto no se ve en el texto: no la evalúes.',
   },
   {
     id: 20,
     nombre: 'Consistencia y señales de alerta',
     grupo: 'datos_riesgos',
-    guia: 'Fechas consistentes, huecos sin explicar, ortografía, tiempos verbales y afirmaciones exageradas o difíciles de sostener (C17).',
+    guia: 'Fechas consistentes, ortografía, tiempos verbales y afirmaciones exageradas o difíciles de sostener (C17). Huecos de empleo: marca como problema solo un hueco ACTUAL (del fin del último puesto o actividad hasta la fecha de hoy) de más de 8 meses; en ese caso sugiere una actividad verificable para el periodo actual (proyecto, curso con constancia, voluntariado). Un hueco pasado seguido de empleo no es problema: no lo marques ni pidas explicarlo.',
   },
 ];
 
@@ -211,6 +215,24 @@ export const ROLE_LABELS: Record<Exclude<Role, 'Other'>, string> = {
   Associate_Clinical_Scientist: 'Associate Clinical Scientist',
   Medical_Affairs: 'Asuntos médicos (Medical Affairs)',
 };
+
+/**
+ * Roles que solo existen en el revisor de CV (13 nov 2026): no están en el tipo `Role` del simulador, así que no
+ * tocan su catálogo, paywall, prompts ni getRoleCta. El valor viaja como texto a D1 (`extra.rol_objetivo`) y a KV.
+ */
+export const ROLES_SOLO_REVISOR: Record<string, string> = {
+  CRC: 'Coordinador de estudios clínicos (CRC)',
+};
+
+/** Contexto de funciones típicas para roles que el modelo podría no distinguir (va en el mensaje de usuario). */
+const ROL_CONTEXTO: Record<string, string> = {
+  CRC:
+    'coordinación de estudios clínicos en el sitio de investigación: consentimiento informado, documentos fuente, agenda de visitas de pacientes, captura en CRF o EDC y comunicación con el patrocinador y el monitor',
+};
+
+/** Opciones del formulario: catálogo del simulador + roles solo del revisor. */
+export const ROLE_OPTIONS: Array<[string, string]> = [...Object.entries(ROLE_LABELS), ...Object.entries(ROLES_SOLO_REVISOR)];
+
 export const ROL_NO_SEGURO = 'no_seguro';
 export const ROL_NO_SEGURO_LABEL = 'Aún no lo decido';
 
@@ -219,12 +241,19 @@ export function readRolObjetivo(raw: unknown): string | undefined {
   if (typeof raw !== 'string') return undefined;
   const v = raw.trim();
   if (v === ROL_NO_SEGURO) return v;
-  return Object.prototype.hasOwnProperty.call(ROLE_LABELS, v) ? v : undefined;
+  const has = (o: object) => Object.prototype.hasOwnProperty.call(o, v);
+  return has(ROLE_LABELS) || has(ROLES_SOLO_REVISOR) ? v : undefined;
 }
 
 export function rolLabel(value: string | undefined): string | undefined {
   if (!value || value === ROL_NO_SEGURO) return undefined;
-  return (ROLE_LABELS as Record<string, string>)[value];
+  const has = (o: object) => Object.prototype.hasOwnProperty.call(o, value);
+  if (has(ROLE_LABELS)) return (ROLE_LABELS as Record<string, string>)[value];
+  return has(ROLES_SOLO_REVISOR) ? ROLES_SOLO_REVISOR[value] : undefined;
+}
+
+export function rolContexto(value: string | undefined): string | undefined {
+  return value && Object.prototype.hasOwnProperty.call(ROL_CONTEXTO, value) ? ROL_CONTEXTO[value] : undefined;
 }
 
 /**
@@ -687,6 +716,25 @@ export function topGrupo(obs: Observacion[]): GrupoId | null {
 }
 
 export type NextStep = 'quiz' | 'curso' | 'simulador';
+
+/**
+ * ¿La visita llega desde el curso de Hotmart? (13 nov 2026). Convención de enlaces del curso V2.0:
+ * utm_source=hotmart&utm_medium=curso. A quien ya compró el curso no se le ofrece el curso: el siguiente paso
+ * "curso" cambia por la práctica en el simulador (pantalla, PDF y correo).
+ */
+export function esDesdeCurso(utms?: { utm_source?: string; utm_medium?: string } | null): boolean {
+  if (!utms) return false;
+  const src = String(utms.utm_source ?? '').trim().toLowerCase();
+  const med = String(utms.utm_medium ?? '').trim().toLowerCase();
+  return med === 'curso' || src === 'hotmart';
+}
+
+/** Texto del siguiente paso para alumnos del curso cuando tocaría ofrecer el curso (mismo en pantalla y correo). */
+export const ALUMNO_PASO = {
+  title: 'Aplica estos cambios con tu curso',
+  body: 'Trabaja estos puntos con las lecciones del curso que ya tienes. Cuando tu CV esté listo, ensaya la llamada inicial con un reclutador en el simulador; la primera sesión no tiene costo.',
+  cta: 'Ensayar mi primera llamada',
+};
 
 /** Grupo del hallazgo principal: la primera prioridad o, si no hay, el grupo con más ▲. */
 export function topFindingGrupo(res: Pick<CvReviewResult, 'observaciones' | 'prioridades'>): GrupoId | null {

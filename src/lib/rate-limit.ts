@@ -1,6 +1,12 @@
 /**
  * Rate limiting por email vía Cloudflare KV.
  * Default: 2 análisis por email cada 30 días.
+ *
+ * 13 nov 2026: la ventana de 30 días se cuenta desde el PRIMER análisis (`firstAt`), que es lo que dice el
+ * mensaje y el curso ("2 análisis por correo cada 30 días"). Antes el TTL se reiniciaba en cada análisis y el
+ * bloqueo duraba 30 días después del segundo, mientras el aviso calculaba los días desde el primero (podía decir
+ * "~0 días" estando bloqueado). La llave sigue viviendo 30 días desde el último análisis (TTL deslizante) porque
+ * `cv-waitlist.ts` la usa como prueba de un análisis reciente; la regla del cupo la decide `firstAt`.
  */
 
 const DEFAULT_MAX_SUBMISSIONS = 2;
@@ -25,7 +31,15 @@ export interface RateLimitCheck {
   count: number;
   max: number;
   resetInDays: number;
+  /** ISO del momento en que se libera el cupo (firstAt + ventana). Solo cuando hay un análisis en la ventana. */
+  resetAt?: string;
   state?: RateLimitState;
+}
+
+/** ¿La ventana que abrió `firstAt` ya terminó? (estado ilegible = terminada). */
+function ventanaVencida(state: RateLimitState, ttlSeconds: number, now = Date.now()): boolean {
+  const firstAtMs = new Date(state.firstAt).getTime();
+  return !Number.isFinite(firstAtMs) || now - firstAtMs >= ttlSeconds * 1000;
 }
 
 /**
@@ -55,14 +69,18 @@ export async function checkCvSubmitLimit(
 
   try {
     const state = JSON.parse(raw) as RateLimitState;
-    const firstAtMs = new Date(state.firstAt).getTime();
-    const ageSeconds = (Date.now() - firstAtMs) / 1000;
-    const resetInSeconds = Math.max(0, ttlSeconds - ageSeconds);
+    // Ventana vencida: el cupo ya se liberó aunque la llave siga viva (TTL deslizante).
+    if (ventanaVencida(state, ttlSeconds)) {
+      return { allowed: true, count: 0, max, resetInDays: ttlSeconds / 86400, state };
+    }
+    const resetAtMs = new Date(state.firstAt).getTime() + ttlSeconds * 1000;
+    const resetInSeconds = Math.max(0, (resetAtMs - Date.now()) / 1000);
     return {
       allowed: state.count < max,
       count: state.count,
       max,
-      resetInDays: Math.ceil(resetInSeconds / 86400),
+      resetInDays: Math.max(1, Math.ceil(resetInSeconds / 86400)),
+      resetAt: new Date(resetAtMs).toISOString(),
       state,
     };
   } catch {
@@ -91,8 +109,13 @@ export async function incrementCvSubmitCount(
   if (raw) {
     try {
       state = JSON.parse(raw) as RateLimitState;
-      state.count += 1;
-      state.lastAt = now;
+      if (ventanaVencida(state, ttlSeconds)) {
+        // Ventana nueva: este análisis es el primero de los siguientes 30 días.
+        state = { count: 1, firstAt: now, lastAt: now };
+      } else {
+        state.count += 1;
+        state.lastAt = now;
+      }
     } catch {
       state = { count: 1, firstAt: now, lastAt: now };
     }

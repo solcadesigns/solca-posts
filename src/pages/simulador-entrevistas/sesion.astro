@@ -1726,7 +1726,7 @@ import MarketSurvey from '../../components/MarketSurvey.astro';
         ${vocabHtml}
         <h3>Recomendación final</h3>
         <p class="report-recomendacion">${escapeHtml(s.recomendacionFinal || '')}</p>
-        ${finalReport.cta ? `
+        ${finalReport.cta && ctaVisible(finalReport.cta) ? `
           <div class="report-cta">
             <h3>${escapeHtml(finalReport.cta.title || 'Siguiente paso')}</h3>
             <p>${escapeHtml(finalReport.cta.description || '')}</p>
@@ -1755,6 +1755,16 @@ import MarketSurvey from '../../components/MarketSurvey.astro';
             <p class="qb-alertas"><strong>Alertas:</strong> ${escapeHtml(q.scores.alertas || 'sin alertas')}</p>
           </article>
         `).join('');
+    }
+
+    // 13 nov 2026: a quien llega desde el curso (utm_medium=curso o utm_source=hotmart, UTM de la sesión en
+    // window.__utm) no se le ofrece el curso en el reporte (roles sin libro). Los CTA de libros sí se muestran.
+    const CURSO_HOTMART_ID = 'B104495115T';
+    function ctaVisible(cta: FinalReport['cta'] | undefined | null): boolean {
+      if (!cta) return false;
+      const u = (window as unknown as { __utm?: { utm_source?: string; utm_medium?: string } }).__utm || {};
+      const desdeCurso = (u.utm_medium || '').toLowerCase() === 'curso' || (u.utm_source || '').toLowerCase() === 'hotmart';
+      return !(desdeCurso && (cta.url || '').includes(CURSO_HOTMART_ID));
     }
 
     function escapeHtml(s: string): string {
@@ -2327,7 +2337,7 @@ import MarketSurvey from '../../components/MarketSurvey.astro';
       });
 
       // ===== CTA box =====
-      if (fr.cta && (fr.cta.title || fr.cta.description)) {
+      if (fr.cta && ctaVisible(fr.cta) && (fr.cta.title || fr.cta.description)) {
         doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
         const descLines = doc.splitTextToSize(sanitizePdfText(fr.cta.description || ''), C_W - 12);
         // FIX (10 sept 2026): también wrap del título del CTA. Los títulos

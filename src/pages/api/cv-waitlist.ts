@@ -74,8 +74,10 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     }
     // Prueba de que este correo hizo un análisis (contador vivo 30 días). Sin análisis la respuesta es la
     // misma que con éxito y no se guarda nada: así el endpoint no revela quién usó el revisor.
+    // `st.state` existe mientras la llave vive (30 días desde el último análisis), aunque la ventana del cupo ya
+    // se haya liberado (entonces `st.count` es 0).
     const st = await checkCvSubmitLimit(limits, email);
-    if (st.count < 1) return json({ ok: true });
+    if ((st.state?.count ?? st.count) < 1) return json({ ok: true });
   }
 
   const hash = await emailHashFull(email);
