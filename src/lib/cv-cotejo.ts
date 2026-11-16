@@ -24,7 +24,7 @@ import { normalizar, prepararFuentes, citaEnFuentes, detectarIdioma, parsearJson
 export const COTEJO_VERSION = 'c3-2026-11';
 /** Versión de la clasificación de vacantes (llave KV y v.version). Separada de COTEJO_VERSION para que un cambio
  * solo en la evaluación no invalide la caché ni cambie los requisitos que ya vio la persona. */
-export const CLASIFICACION_VERSION = 'c2-2026-11';
+export const COTEJO_CLASIFICACION_VERSION = 'c2-2026-11';
 export const COTEJO_MIN_CV = 200;
 export const COTEJO_MAX_CV = 15_000;
 export const COTEJO_MIN_VACANTE = 200;
@@ -295,7 +295,7 @@ export function validarVacante(salida: unknown, vacante: string): VacanteClasifi
   for (const q of requisitos) q.prioridad = prioridadPorMarca(q.cita, q.marca, { requisito: q.requisito });
   const rol = (CVM_ROLES as readonly string[]).includes(String(o.rol)) ? (o.rol as CvmRol) : 'Other';
   return {
-    version: CLASIFICACION_VERSION,
+    version: COTEJO_CLASIFICACION_VERSION,
     puesto: txt(o.puesto, 160),
     empresa: txt(o.empresa, 120),
     rol,
@@ -310,7 +310,7 @@ export async function claveVacante(vacante: string): Promise<string> {
   const bytes = new TextEncoder().encode(normalizar(vacante));
   const h = await crypto.subtle.digest('SHA-256', bytes);
   const hex = [...new Uint8Array(h)].map((b) => b.toString(16).padStart(2, '0')).join('');
-  return `cotejo:vac:${CLASIFICACION_VERSION}:${hex.slice(0, 40)}`;
+  return `cotejo:vac:${COTEJO_CLASIFICACION_VERSION}:${hex.slice(0, 40)}`;
 }
 
 export interface Llamada<T> {
@@ -531,7 +531,7 @@ export async function vacanteClasificada(
       const raw = await kv.get(clave);
       if (raw) {
         const v = JSON.parse(raw) as VacanteClasificada;
-        if (v?.version === CLASIFICACION_VERSION && Array.isArray(v.requisitos)) return { ok: true, valor: v, status: 'ok', ms: 0, cache: true };
+        if (v?.version === COTEJO_CLASIFICACION_VERSION && Array.isArray(v.requisitos)) return { ok: true, valor: v, status: 'ok', ms: 0, cache: true };
       }
     } catch {
       /* se clasifica de nuevo */
@@ -633,7 +633,7 @@ export async function clasificacionGuardada(kv: KvLite | undefined, vacante: str
   try {
     const raw = await kv.get(await claveVacante(vacante));
     const v = raw ? (JSON.parse(raw) as VacanteClasificada) : null;
-    return v?.version === CLASIFICACION_VERSION && Array.isArray(v.requisitos) ? v : null;
+    return v?.version === COTEJO_CLASIFICACION_VERSION && Array.isArray(v.requisitos) ? v : null;
   } catch {
     return null;
   }

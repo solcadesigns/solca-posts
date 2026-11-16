@@ -14,7 +14,7 @@ import {
   COTEJO_VACANTE_PROMPT,
   COTEJO_CV_PROMPT,
   COTEJO_VERSION,
-  CLASIFICACION_VERSION,
+  COTEJO_CLASIFICACION_VERSION,
 } from '../src/lib/cv-cotejo.ts';
 
 let n = 0;
@@ -83,7 +83,7 @@ await prueba('validarVacante: descarta citas que no están en la vacante y marca
   };
   const v = validarVacante(salida, VAC);
   assert.ok(v);
-  assert.equal(v.version, CLASIFICACION_VERSION);
+  assert.equal(v.version, COTEJO_CLASIFICACION_VERSION);
   assert.equal(v.rol, 'Pharmacovigilance');
   assert.deepEqual(v.requisitos.map((r) => [r.requisito, r.prioridad]), [
     ["Bachelor's degree", 'indispensable'],
@@ -129,7 +129,7 @@ await prueba('validarVacante: marca que no está en la vacante se ignora; rol de
 });
 
 const VACC = {
-  version: CLASIFICACION_VERSION,
+  version: COTEJO_CLASIFICACION_VERSION,
   puesto: 'QC Analyst',
   empresa: 'Acme',
   rol: 'Other',
@@ -174,7 +174,7 @@ await prueba('claveVacante: misma vacante con otro formato → misma llave; otra
   const c = await claveVacante(VAC + ' Mexico City');
   assert.equal(a, b);
   assert.notEqual(a, c);
-  assert.ok(a.startsWith(`cotejo:vac:${CLASIFICACION_VERSION}:`));
+  assert.ok(a.startsWith(`cotejo:vac:${COTEJO_CLASIFICACION_VERSION}:`));
 });
 
 await prueba('vacanteClasificada: usa la caché sin llamar al modelo', async () => {
@@ -233,6 +233,12 @@ await prueba('idioma: sugerencia MCER solo si la vacante pide idioma y el CV no 
   assert.equal(r.requisitos[0].sugerencia, SUGERENCIA_IDIOMA);
   assert.equal(r.requisitos[0].estado, 'cumple');
   assert.equal(r.requisitos[1].sugerencia, undefined);
+  // Una sola sugerencia por comparación aunque el modelo divida el requisito de idioma en dos.
+  const vac2 = { ...vac, requisitos: [
+    { requisito: 'Inglés escrito', cita: 'Inglés escrito avanzado', prioridad: 'indispensable' },
+    { requisito: 'Inglés oral', cita: 'Inglés oral avanzado', prioridad: 'indispensable' } ] };
+  const r2 = unirEvaluacion({ evaluacion: [] }, vac2, cv);
+  assert.equal(r2.requisitos.filter((q) => q.sugerencia).length, 1);
 });
 
 await prueba('revisión: negaciones, marca saltada por otro encabezado, evidencia de palabras sueltas, numeración desde 0', async () => {
