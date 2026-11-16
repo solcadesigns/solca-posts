@@ -460,7 +460,7 @@ await test('CRC: rol solo del revisor con contexto en el mensaje', () => {
 });
 
 await test('rúbrica v4: guías de los criterios 7, 19 y 20', () => {
-  assert.equal(RUBRIC_VERSION, 'v4-2026-11');
+  assert.equal(RUBRIC_VERSION, 'v5-2026-11');
   const g = (id) => CRITERIOS.find((c) => c.id === id).guia;
   assert.ok(g(7).includes('"Apoyé" o "participé" son correctos') && g(7).includes('Nunca sugieras un verbo de liderazgo'));
   assert.ok(!g(7).includes('en vez de "participé en" o "apoyé"'));

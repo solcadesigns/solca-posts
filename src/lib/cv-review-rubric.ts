@@ -20,7 +20,7 @@ import { partirFrasesConservador } from './frases.ts';
 // 2026-11-13-coherencia-curso-revisor.md): criterio 7 acepta "apoyé"/"participé" cuando describen un papel de apoyo;
 // criterio 19 suma edad o fecha de nacimiento y datos de salud; criterio 20 solo marca un hueco ACTUAL de más de
 // 8 meses. Rol nuevo solo del revisor: CRC. Misma forma del JSON.
-export const RUBRIC_VERSION = 'v4-2026-11';
+export const RUBRIC_VERSION = 'v5-2026-11';
 
 export type Estado = 'prioritario' | 'mejorable' | 'solido' | 'no_evaluable';
 export const ESTADOS: Estado[] = ['prioritario', 'mejorable', 'solido', 'no_evaluable'];
@@ -185,7 +185,7 @@ export const CRITERIOS: Criterio[] = [
     id: 20,
     nombre: 'Consistencia y señales de alerta',
     grupo: 'datos_riesgos',
-    guia: 'Fechas consistentes, ortografía, tiempos verbales y afirmaciones exageradas o difíciles de sostener (C17). Huecos de empleo: marca como problema solo un hueco ACTUAL (del fin del último puesto o actividad hasta la fecha de hoy) de más de 8 meses; en ese caso sugiere una actividad verificable para el periodo actual (proyecto, curso con constancia, voluntariado). Un hueco pasado seguido de empleo no es problema: no lo marques ni pidas explicarlo. Si la persona nunca ha tenido empleo, su formación (fin de la carrera o del posgrado) cuenta como actividad: marca solo si pasaron más de 8 meses desde que terminó sin ninguna actividad posterior; a quien egresó hace menos de 8 meses no lo marques.',
+    guia: 'Fechas consistentes, ortografía, tiempos verbales y afirmaciones exageradas o difíciles de sostener (C17). Huecos de empleo: marca como problema solo un hueco ACTUAL (del fin del último puesto o actividad hasta la fecha de hoy) de más de 8 meses; en ese caso sugiere una actividad verificable para el periodo actual (proyecto, curso con constancia, voluntariado). Un hueco pasado seguido de empleo no es problema: no lo marques ni pidas explicarlo. Si la persona nunca ha tenido empleo, su formación (fin de la carrera o del posgrado) cuenta como actividad: marca solo si pasaron más de 8 meses desde que terminó sin ninguna actividad posterior; a quien egresó hace menos de 8 meses no lo marques. Nivel de idiomas: si un idioma aparece con un nivel vago ("profesional", "avanzado", "fluido", "intermedio", "bilingüe") sin nivel del Marco Común Europeo (A1 a C2) ni examen con puntaje, sugiere expresarlo con el MCER (por ejemplo, B2 o C1) o con el examen y su puntaje; nunca le asignes un nivel tú.',
   },
 ];
 

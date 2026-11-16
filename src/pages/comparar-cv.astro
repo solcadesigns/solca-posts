@@ -301,16 +301,16 @@ import { navLinks, esActual } from '../lib/nav';
   function esc(s: string) {
     return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string);
   }
-  function lista(el: HTMLElement | null, items: Array<{ requisito: string; estado: string }>) {
+  function lista(el: HTMLElement | null, items: Array<{ requisito: string; estado: string; sugerencia?: string }>) {
     if (!el) return;
     el.innerHTML = items
-      .map((q) => `<li class="cot-${q.estado}"><span class="cot-estado">${ESTADO[q.estado] ?? ''}</span> ${esc(q.requisito)}</li>`)
+      .map((q) => `<li class="cot-${q.estado}"><span class="cot-estado">${ESTADO[q.estado] ?? ''}</span> ${esc(q.requisito)}${q.sugerencia ? `<p class="cot-sugerencia">${esc(q.sugerencia)}</p>` : ''}</li>`)
       .join('');
   }
 
   type Conteo = { total: number; cumple: number; parcial: number; no_aparece: number };
   type Pregunta = { requisito: string; prioridad: string; estado: string };
-  type Res = { ok?: boolean; message?: string; puesto?: string; empresa?: string; indispensables?: Conteo; deseables?: Conteo; requisitos?: Array<{ requisito: string; prioridad: string; estado: string }>; preguntas?: Pregunta[] };
+  type Res = { ok?: boolean; message?: string; puesto?: string; empresa?: string; indispensables?: Conteo; deseables?: Conteo; requisitos?: Array<{ requisito: string; prioridad: string; estado: string; sugerencia?: string }>; preguntas?: Pregunta[] };
 
   // ---- Preguntas antes del pago y resumen (11 nov 2026) ----
   type Tipo = 'empleo' | 'proyecto' | 'no_tengo';
@@ -607,6 +607,7 @@ import { navLinks, esActual } from '../lib/nav';
   .cot-lista :global(.cot-cumple .cot-estado) { background: #E7F3EC; color: #1F6B45; }
   .cot-lista :global(.cot-parcial .cot-estado) { background: #FFF6E5; color: #8A5A00; }
   .cot-lista :global(.cot-no_aparece .cot-estado) { background: #F6E3E0; color: #B23A2A; }
+  .cot-lista :global(.cot-sugerencia) { margin: 6px 0 0; font-size: 14px; color: #4A5568; }
   .cot-siguiente { margin-top: 20px; padding: 14px 16px; background: var(--bg); border-radius: 8px; border: 1px solid var(--rule); }
   .cot-siguiente p { margin: 0; }
   .cot-siguiente h3 { margin: 0 0 6px !important; }

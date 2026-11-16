@@ -8,7 +8,7 @@
  *
  * Body: { cv, vacante? | vacanteId?, email, consent: true, ref?, aid/ft/lt/interno, utm_* }
  *   vacanteId: id de la tabla `vacantes` (buscador); el texto sale de D1, nunca del cliente ni de la URL.
- * Respuesta: { ok, puesto, empresa, rol, indispensables, deseables, requisitos[{requisito, prioridad, estado}] }
+ * Respuesta: { ok, puesto, empresa, rol, indispensables, deseables, requisitos[{requisito, prioridad, estado, sugerencia?}] }
  *   Sin la evidencia del CV (no hace falta en pantalla y evita devolver texto del CV).
  *
  * Costo y abuso: kill switch `anthropic_paused`, 5 comparaciones por correo al día, 10 por IP al día, tope global
@@ -179,7 +179,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     rol: r.rol,
     indispensables: r.indispensables,
     deseables: r.deseables,
-    requisitos: r.requisitos.map((q) => ({ requisito: q.requisito, prioridad: q.prioridad, estado: q.estado })),
+    requisitos: r.requisitos.map((q) => ({ requisito: q.requisito, prioridad: q.prioridad, estado: q.estado, ...(q.sugerencia ? { sugerencia: q.sugerencia } : {}) })),
     // 11 nov 2026: preguntas antes del pago, armadas por código a partir de lo que no aparece o aparece en parte.
     preguntas: preguntasDeCotejo(r.requisitos),
     ...(conLlave ? { prueba: { requisitosVacante: vac.valor.requisitos, evidencias: r.requisitos.map((q) => q.evidencia), descartados: vac.valor.descartados, evidenciasDescartadas: r.evidenciasDescartadas, rechazadas: r.rechazadas, cache: vac.cache } } : {}),

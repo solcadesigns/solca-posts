@@ -20,7 +20,8 @@ import { normalizar, prepararFuentes, citaEnFuentes, detectarIdioma, parsearJson
 
 // c2 (10 nov 2026, 9 pruebas reales): obligación en la frase del requisito aunque la marca sea neutra; preferencia
 // también en el nombre del requisito; cita propia por cada parte de un requisito dividido.
-export const COTEJO_VERSION = 'c2-2026-11';
+// c3 (16 nov 2026): sugerencia fija de expresar el nivel de idioma con el MCER (B1, B2, C1) o un examen con puntaje.
+export const COTEJO_VERSION = 'c3-2026-11';
 export const COTEJO_MIN_CV = 200;
 export const COTEJO_MAX_CV = 15_000;
 export const COTEJO_MIN_VACANTE = 200;
@@ -59,6 +60,8 @@ export interface RequisitoEvaluado {
   estado: EstadoCotejo;
   /** Cita literal del CV que lo respalda; '' si no aparece. */
   evidencia: string;
+  /** Sugerencia fija para el alumno (hoy solo idioma sin nivel MCER); ausente si no aplica. */
+  sugerencia?: string;
 }
 
 export interface ResultadoCotejo {
@@ -384,6 +387,18 @@ export const COTEJO_CV_SCHEMA: Record<string, unknown> = {
   },
 };
 
+
+// ── Nivel de idioma (16 nov 2026) ──────────────────────────────────────────────────────────────────
+// Si la vacante pide un idioma y el CV no trae ningún nivel MCER (A1-C2) ni un examen reconocido, se sugiere
+// expresarlo así. Es una regla fija: no asigna niveles ni cambia el estado del requisito.
+const RE_REQ_IDIOMA = /\b(ingl[eé]s|english|idioma|idiomas|language|languages|bilingüe|bilingue|bilingual|portugu[eé]s|portuguese|franc[eé]s|french|alem[aá]n|german)\b/i;
+const RE_NIVEL_MCER = /\b[ABC][12]\b|\b(toefl|ielts|toeic|cambridge|fce|cae|cpe|duolingo english test|dele|celpe-?bras|delf|dalf|goethe)\b/i;
+export const SUGERENCIA_IDIOMA = 'Escribe tu nivel con el Marco Común Europeo (por ejemplo, B2 o C1) o con un examen y su puntaje, en lugar de "profesional", "avanzado" o "fluido". Pon solo el nivel que puedas sostener en una entrevista en ese idioma.';
+export function sugerenciaIdioma(requisito: string, cita: string, cv: string): string {
+  if (!RE_REQ_IDIOMA.test(`${requisito} ${cita}`)) return '';
+  return RE_NIVEL_MCER.test(cv) ? '' : SUGERENCIA_IDIOMA;
+}
+
 export function mensajeEvaluacion(cv: string, requisitos: RequisitoVacante[]): string {
   const lista = requisitos.map((r, i) => `${i + 1}. ${r.requisito} (texto de la vacante: "${r.cita}")`).join('\n');
   return `<requisitos>\n${lista}\n</requisitos>\n\n<cv>\n${cv}\n</cv>`;
@@ -433,7 +448,8 @@ export function unirEvaluacion(salida: unknown, vac: VacanteClasificada, cv: str
       estado = 'no_aparece';
       evidencia = '';
     }
-    return { requisito: r.requisito, prioridad: r.prioridad, estado, evidencia };
+    const sugerencia = sugerenciaIdioma(r.requisito, r.cita, cv);
+    return { requisito: r.requisito, prioridad: r.prioridad, estado, evidencia, ...(sugerencia ? { sugerencia } : {}) };
   });
   const ind = requisitos.filter((r) => r.prioridad === 'indispensable');
   const des = requisitos.filter((r) => r.prioridad === 'deseable');

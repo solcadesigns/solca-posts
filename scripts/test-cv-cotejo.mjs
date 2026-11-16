@@ -201,7 +201,26 @@ await prueba('endpoint: interno hasta diciembre, sin evidencia del CV en la resp
   assert.ok(src.includes("return json({ error: 'no_disponible'"));
   assert.ok(src.includes("anthropic_paused"));
   assert.ok(src.includes('nunca la IP'));
-  assert.ok(/requisitos: r\.requisitos\.map\(\(q\) => \(\{ requisito: q\.requisito, prioridad: q\.prioridad, estado: q\.estado \}\)\)/.test(src));
+  // La respuesta pública lleva requisito, prioridad, estado y, si aplica, la sugerencia fija de idioma; nunca la evidencia.
+  assert.ok(/requisitos: r\.requisitos\.map\(\(q\) => \(\{ requisito: q\.requisito, prioridad: q\.prioridad, estado: q\.estado, \.\.\.\(q\.sugerencia \? \{ sugerencia: q\.sugerencia \} : \{\}\) \}\)\)/.test(src));
+  assert.ok(!/evidencia: q\.evidencia/.test(src.split('prueba:')[0]));
+});
+
+await prueba('idioma: sugerencia MCER solo si la vacante pide idioma y el CV no trae nivel ni examen', async () => {
+  const { sugerenciaIdioma, SUGERENCIA_IDIOMA, unirEvaluacion } = await import('../src/lib/cv-cotejo.ts');
+  assert.equal(sugerenciaIdioma('Inglés avanzado', 'Inglés avanzado indispensable', 'Idiomas: inglés profesional'), SUGERENCIA_IDIOMA);
+  assert.equal(sugerenciaIdioma('Inglés avanzado', 'Advanced English', 'Idiomas: inglés C1'), '');
+  assert.equal(sugerenciaIdioma('Fluent English', 'Fluent English required', 'English (IELTS 7.0)'), '');
+  assert.equal(sugerenciaIdioma('Licenciatura en QFB', 'Licenciatura en QFB', 'inglés fluido'), '');
+  assert.equal(sugerenciaIdioma('Portugués', 'Portugués deseable', 'Portugués intermedio'), SUGERENCIA_IDIOMA);
+  const vac = { puesto: 'CRA', empresa: 'X', rol: 'CRA', requisitos: [
+    { requisito: 'Inglés avanzado', cita: 'Inglés avanzado', prioridad: 'indispensable' },
+    { requisito: 'Licenciatura en QFB', cita: 'Licenciatura en QFB', prioridad: 'indispensable' } ], descartados: 0 };
+  const cv = 'Licenciatura en QFB por la Universidad Nacional. Idiomas: inglés avanzado para lectura y conversación técnica.';
+  const r = unirEvaluacion({ evaluacion: [{ n: 1, estado: 'cumple', evidencia: 'inglés avanzado para lectura y conversación técnica' }, { n: 2, estado: 'cumple', evidencia: 'Licenciatura en QFB por la Universidad Nacional' }] }, vac, cv);
+  assert.equal(r.requisitos[0].sugerencia, SUGERENCIA_IDIOMA);
+  assert.equal(r.requisitos[0].estado, 'cumple');
+  assert.equal(r.requisitos[1].sugerencia, undefined);
 });
 
 await prueba('revisión: negaciones, marca saltada por otro encabezado, evidencia de palabras sueltas, numeración desde 0', async () => {
