@@ -14,6 +14,7 @@ import {
   COTEJO_VACANTE_PROMPT,
   COTEJO_CV_PROMPT,
   COTEJO_VERSION,
+  CLASIFICACION_VERSION,
 } from '../src/lib/cv-cotejo.ts';
 
 let n = 0;
@@ -82,7 +83,7 @@ await prueba('validarVacante: descarta citas que no están en la vacante y marca
   };
   const v = validarVacante(salida, VAC);
   assert.ok(v);
-  assert.equal(v.version, COTEJO_VERSION);
+  assert.equal(v.version, CLASIFICACION_VERSION);
   assert.equal(v.rol, 'Pharmacovigilance');
   assert.deepEqual(v.requisitos.map((r) => [r.requisito, r.prioridad]), [
     ["Bachelor's degree", 'indispensable'],
@@ -128,7 +129,7 @@ await prueba('validarVacante: marca que no está en la vacante se ignora; rol de
 });
 
 const VACC = {
-  version: COTEJO_VERSION,
+  version: CLASIFICACION_VERSION,
   puesto: 'QC Analyst',
   empresa: 'Acme',
   rol: 'Other',
@@ -173,7 +174,7 @@ await prueba('claveVacante: misma vacante con otro formato → misma llave; otra
   const c = await claveVacante(VAC + ' Mexico City');
   assert.equal(a, b);
   assert.notEqual(a, c);
-  assert.ok(a.startsWith(`cotejo:vac:${COTEJO_VERSION}:`));
+  assert.ok(a.startsWith(`cotejo:vac:${CLASIFICACION_VERSION}:`));
 });
 
 await prueba('vacanteClasificada: usa la caché sin llamar al modelo', async () => {
@@ -213,6 +214,17 @@ await prueba('idioma: sugerencia MCER solo si la vacante pide idioma y el CV no 
   assert.equal(sugerenciaIdioma('Fluent English', 'Fluent English required', 'English (IELTS 7.0)'), '');
   assert.equal(sugerenciaIdioma('Licenciatura en QFB', 'Licenciatura en QFB', 'inglés fluido'), '');
   assert.equal(sugerenciaIdioma('Portugués', 'Portugués deseable', 'Portugués intermedio'), SUGERENCIA_IDIOMA);
+  // Falsos positivos (revisión independiente, 16 nov)
+  assert.equal(sugerenciaIdioma('Programming languages', 'Programming languages (R, Python, SAS)', 'R y Python'), '');
+  assert.equal(sugerenciaIdioma('Plain language summaries', 'Plain language summaries', 'Redacción'), '');
+  assert.equal(sugerenciaIdioma('Redacción en español', 'Excelente redacción en idioma español', 'Español nativo'), '');
+  // Falsos negativos: el nivel tiene que estar cerca del idioma pedido
+  assert.equal(sugerenciaIdioma('Inglés', 'Inglés avanzado', 'Visa B1/B2 vigente. Idiomas: inglés avanzado'), SUGERENCIA_IDIOMA);
+  assert.equal(sugerenciaIdioma('Portugués', 'Portugués deseable', 'Inglés C1. Experiencia en laboratorio, cultivo celular y documentación. Portugués intermedio'), SUGERENCIA_IDIOMA);
+  assert.equal(sugerenciaIdioma('Inglés', 'Inglés avanzado', 'Idiomas: inglés (TOEFL iBT 100)'), '');
+  // No aparece en el CV: variante "si manejas este idioma"
+  const { SUGERENCIA_IDIOMA_AUSENTE } = await import('../src/lib/cv-cotejo.ts');
+  assert.equal(sugerenciaIdioma('Inglés', 'Inglés avanzado', 'Licenciatura en QFB', 'no_aparece'), SUGERENCIA_IDIOMA_AUSENTE);
   const vac = { puesto: 'CRA', empresa: 'X', rol: 'CRA', requisitos: [
     { requisito: 'Inglés avanzado', cita: 'Inglés avanzado', prioridad: 'indispensable' },
     { requisito: 'Licenciatura en QFB', cita: 'Licenciatura en QFB', prioridad: 'indispensable' } ], descartados: 0 };

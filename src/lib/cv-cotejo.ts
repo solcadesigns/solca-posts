@@ -22,6 +22,9 @@ import { normalizar, prepararFuentes, citaEnFuentes, detectarIdioma, parsearJson
 // también en el nombre del requisito; cita propia por cada parte de un requisito dividido.
 // c3 (16 nov 2026): sugerencia fija de expresar el nivel de idioma con el MCER (B1, B2, C1) o un examen con puntaje.
 export const COTEJO_VERSION = 'c3-2026-11';
+/** Versión de la clasificación de vacantes (llave KV y v.version). Separada de COTEJO_VERSION para que un cambio
+ * solo en la evaluación no invalide la caché ni cambie los requisitos que ya vio la persona. */
+export const CLASIFICACION_VERSION = 'c2-2026-11';
 export const COTEJO_MIN_CV = 200;
 export const COTEJO_MAX_CV = 15_000;
 export const COTEJO_MIN_VACANTE = 200;
@@ -292,7 +295,7 @@ export function validarVacante(salida: unknown, vacante: string): VacanteClasifi
   for (const q of requisitos) q.prioridad = prioridadPorMarca(q.cita, q.marca, { requisito: q.requisito });
   const rol = (CVM_ROLES as readonly string[]).includes(String(o.rol)) ? (o.rol as CvmRol) : 'Other';
   return {
-    version: COTEJO_VERSION,
+    version: CLASIFICACION_VERSION,
     puesto: txt(o.puesto, 160),
     empresa: txt(o.empresa, 120),
     rol,
@@ -307,7 +310,7 @@ export async function claveVacante(vacante: string): Promise<string> {
   const bytes = new TextEncoder().encode(normalizar(vacante));
   const h = await crypto.subtle.digest('SHA-256', bytes);
   const hex = [...new Uint8Array(h)].map((b) => b.toString(16).padStart(2, '0')).join('');
-  return `cotejo:vac:${COTEJO_VERSION}:${hex.slice(0, 40)}`;
+  return `cotejo:vac:${CLASIFICACION_VERSION}:${hex.slice(0, 40)}`;
 }
 
 export interface Llamada<T> {
@@ -389,14 +392,42 @@ export const COTEJO_CV_SCHEMA: Record<string, unknown> = {
 
 
 // ── Nivel de idioma (16 nov 2026) ──────────────────────────────────────────────────────────────────
-// Si la vacante pide un idioma y el CV no trae ningún nivel MCER (A1-C2) ni un examen reconocido, se sugiere
-// expresarlo así. Es una regla fija: no asigna niveles ni cambia el estado del requisito.
-const RE_REQ_IDIOMA = /\b(ingl[eé]s|english|idioma|idiomas|language|languages|bilingüe|bilingue|bilingual|portugu[eé]s|portuguese|franc[eé]s|french|alem[aá]n|german)\b/i;
-const RE_NIVEL_MCER = /\b[ABC][12]\b|\b(toefl|ielts|toeic|cambridge|fce|cae|cpe|duolingo english test|dele|celpe-?bras|delf|dalf|goethe)\b/i;
-export const SUGERENCIA_IDIOMA = 'Escribe tu nivel con el Marco Común Europeo (por ejemplo, B2 o C1) o con un examen y su puntaje, en lugar de "profesional", "avanzado" o "fluido". Pon solo el nivel que puedas sostener en una entrevista en ese idioma.';
-export function sugerenciaIdioma(requisito: string, cita: string, cv: string): string {
-  if (!RE_REQ_IDIOMA.test(`${requisito} ${cita}`)) return '';
-  return RE_NIVEL_MCER.test(cv) ? '' : SUGERENCIA_IDIOMA;
+// Si la vacante pide un idioma concreto (no el español) y en el CV ese idioma no aparece con un nivel MCER (A1-C2)
+// o un examen reconocido cerca, se sugiere expresarlo así. Regla fija: no asigna niveles ni cambia el estado.
+const IDIOMAS: Record<string, RegExp> = {
+  en: /\b(ingl[eé]s|english|biling[uü]e|bilingual)\b/gi,
+  pt: /\b(portugu[eé]s|portuguese)\b/gi,
+  fr: /\b(franc[eé]s|french)\b/gi,
+  de: /\b(alem[aá]n|german)\b/gi,
+};
+// Nivel: A1-C2 en mayúsculas (sin /i) o examen reconocido (con /i); las menciones de visa ("Visa B1/B2") se quitan antes.
+const RE_NIVEL = /\b[ABC][12]\b/;
+const RE_EXAMEN = /\b(?:toefl|ielts|toeic|duolingo english test|cambridge (?:english|exam|certificate|[abc][12])|dele|celpe-?bras|delf|dalf|goethe)\b/i;
+const RE_VISA = /\bvisa\s*[ABC][12](?:\s*\/\s*[ABC][12])?\b/gi;
+const VENTANA = 40;
+function idiomasEn(texto: string): string[] {
+  return Object.keys(IDIOMAS).filter((k) => new RegExp(IDIOMAS[k].source, 'i').test(texto));
+}
+/** true si en el CV el idioma aparece con un nivel o examen a menos de VENTANA caracteres. */
+function idiomaConNivel(cv: string, k: string): boolean {
+  const re = new RegExp(IDIOMAS[k].source, 'gi');
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(cv))) {
+    const tramo = cv.slice(Math.max(0, m.index - VENTANA), m.index + m[0].length + VENTANA).replace(RE_VISA, ' ');
+    if (RE_NIVEL.test(tramo) || RE_EXAMEN.test(tramo)) return true;
+  }
+  return false;
+}
+const MCER = 'Marco Común Europeo de Referencia para las lenguas (MCER)';
+export const SUGERENCIA_IDIOMA = `Escribe tu nivel con el ${MCER}, por ejemplo B2 o C1, o con un examen y su puntaje, en lugar de "profesional", "avanzado" o "fluido". Pon solo el nivel que puedas sostener en una entrevista en ese idioma.`;
+export const SUGERENCIA_IDIOMA_AUSENTE = `Si manejas este idioma, agrégalo a tu CV con su nivel del ${MCER}, por ejemplo B2 o C1, o con un examen y su puntaje. Pon solo el nivel que puedas sostener en una entrevista en ese idioma.`;
+export function sugerenciaIdioma(requisito: string, cita: string, cv: string, estado: EstadoCotejo = 'cumple'): string {
+  const pedidos = idiomasEn(`${requisito} ${cita}`);
+  if (!pedidos.length) return '';
+  const sinNivel = pedidos.filter((k) => !idiomaConNivel(cv, k));
+  if (!sinNivel.length) return '';
+  const enCv = sinNivel.some((k) => new RegExp(IDIOMAS[k].source, 'i').test(cv));
+  return estado === 'no_aparece' && !enCv ? SUGERENCIA_IDIOMA_AUSENTE : SUGERENCIA_IDIOMA;
 }
 
 export function mensajeEvaluacion(cv: string, requisitos: RequisitoVacante[]): string {
@@ -437,6 +468,7 @@ export function unirEvaluacion(salida: unknown, vac: VacanteClasificada, cv: str
     for (const [k, v] of corrido) porN.set(k, v);
   }
   let evidenciasDescartadas = 0;
+  let sugerenciaDada = false;
   const rechazadas: Array<{ requisito: string; estado: string; evidencia: string }> = [];
   const requisitos: RequisitoEvaluado[] = vac.requisitos.map((r, i) => {
     const e = porN.get(i + 1);
@@ -448,7 +480,9 @@ export function unirEvaluacion(salida: unknown, vac: VacanteClasificada, cv: str
       estado = 'no_aparece';
       evidencia = '';
     }
-    const sugerencia = sugerenciaIdioma(r.requisito, r.cita, cv);
+    // Una sola sugerencia de idioma por comparación (si el modelo dividió el requisito, no se repite).
+    const sugerencia = sugerenciaDada ? '' : sugerenciaIdioma(r.requisito, r.cita, cv, estado);
+    if (sugerencia) sugerenciaDada = true;
     return { requisito: r.requisito, prioridad: r.prioridad, estado, evidencia, ...(sugerencia ? { sugerencia } : {}) };
   });
   const ind = requisitos.filter((r) => r.prioridad === 'indispensable');
@@ -497,7 +531,7 @@ export async function vacanteClasificada(
       const raw = await kv.get(clave);
       if (raw) {
         const v = JSON.parse(raw) as VacanteClasificada;
-        if (v?.version === COTEJO_VERSION && Array.isArray(v.requisitos)) return { ok: true, valor: v, status: 'ok', ms: 0, cache: true };
+        if (v?.version === CLASIFICACION_VERSION && Array.isArray(v.requisitos)) return { ok: true, valor: v, status: 'ok', ms: 0, cache: true };
       }
     } catch {
       /* se clasifica de nuevo */
@@ -599,7 +633,7 @@ export async function clasificacionGuardada(kv: KvLite | undefined, vacante: str
   try {
     const raw = await kv.get(await claveVacante(vacante));
     const v = raw ? (JSON.parse(raw) as VacanteClasificada) : null;
-    return v?.version === COTEJO_VERSION && Array.isArray(v.requisitos) ? v : null;
+    return v?.version === CLASIFICACION_VERSION && Array.isArray(v.requisitos) ? v : null;
   } catch {
     return null;
   }
