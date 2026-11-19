@@ -8,6 +8,10 @@ Fuente de verdad del contenido del welcome email disparado desde:
 
 ---
 
+## Cambio aplicado en Postmark el 19 nov 2026 (frase del quiz en la rama is_cv)
+
+Aplicado por Claude con OK de Oscar, en la plantilla viva (versiones HTML y texto, línea 15). Texto de GPT-6.1 Sol (gen-1795123841-cvPLZMLIdSG2qcOfQEFv). Antes: "Si quieres explorar qué rol pharma se ajusta a tu perfil antes del próximo viernes, tengo un quiz corto que te da cinco roles candidatos en tres minutos:" (el tiempo no está medido y el quiz sugiere un rol de cinco). Ahora: "Antes de que te llegue el newsletter el próximo viernes, te invito a explorar cuál de cinco roles se ajusta más a tu perfil con un quiz de 12 preguntas y resultado inmediato:". El enlace pasó de `https://solcaciencia.com/quiz-rol` a `https://solcaciencia.com/quiz-rol/?utm_source=email&utm_medium=welcome-cv&utm_campaign=welcome-cv-cta&utm_content=quiz`. Nota: el bloque "Mientras tanto, dos recursos…" de este runbook no existe en la plantilla viva.
+
 ## Cambio aplicado en Postmark el 2 nov 2026 (casilla separada para correos comerciales)
 
 Aplicado por Claude con OK de Oscar sobre la plantilla viva (que difería de este runbook): en `is_quiz`, la línea "Con esto quedas suscrito", el bloque de Solca Insight, el siguiente paso con el CTA y "Nos leemos el viernes" van dentro de `{{#marketing}}`; el pie de opt-in solo con `marketing` y, sin él, "Recibiste este correo porque hiciste el quiz de rol en solcaciencia.com." La rama `is_cv` no cambió (no decía que el análisis se enviaba aparte).
