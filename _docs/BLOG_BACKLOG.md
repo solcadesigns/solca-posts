@@ -6,7 +6,28 @@
 
 ---
 
-## Pendientes (siguiente semana → cuatro semanas)
+## Pendientes · sprint 23 nov 2026 – 15 ene 2027 (vigente desde 19 nov 2026)
+
+Decisión de Oscar (19 nov 2026): un blog por semana, versión larga de una pieza del sprint LinkedIn de esa semana, redactado por GPT-6.1 Sol con brief de Claude y las reglas del sprint. Instrucciones: `/Users/oscar/Documents/Claude/Scheduled/solca-blog-weekly-lunes/SKILL.md`. Texto fuente: `estrategia-linkedin/sprint-dic-2026/piezas/LEER-sprint-23nov-15ene-v2.md`.
+
+Criterio de elección por semana: se prefiere el Solca Insight; se usa otra pieza de la semana cuando el Insight depende de cifras que se capturan después del lunes (S4-V, S7-V, S8-V) o cuando su tema ya está cubierto por un post del blog. El destino y el `cta` son los de la pieza de origen (primer enlace).
+
+| # | Draft (lun) | pubDate (vie) | Pieza de origen | Tema | Keyword tentativa | cta | Revisar canibalización con |
+|---|---|---|---|---|---|---|---|
+| S1 | 23 nov 2026 | 27 nov 2026 | S1-V (Solca Insight 27 nov) | Cuatro pasos para buscar vacantes de entrada con el buscador | vacantes de entrada industria farmacéutica | vacantes | entry-level-pharma-realidad-vacantes-latam, trabajar-industria-farmaceutica-sin-experiencia-latam, vacantes-pharma-latam-espana-octubre-2026 |
+| S2 | 30 nov 2026 | 4 dic 2026 | S2-B (mié 2 dic) | ChatGPT y tu CV: qué sí hace la IA y qué no (RC03, RC04) | usar chatgpt para hacer cv | revisar-cv | cv-industria-farmaceutica-guia-latam, cv-pharma-cinco-ajustes-desde-phd. S2-V se descartó: su tema (3 ajustes del CV) ya lo cubren esos dos posts |
+| S3 | 7 dic 2026 | 11 dic 2026 | S3-C (lun 7 dic) | Prepararte para la industria durante el posgrado sin retrasar la tesis (U5) | prepararse para la industria durante el doctorado | quiz-rol | posdoc-industria-farmaceutica-latam-que-revisar, academia-industria-farmaceutica-que-revisar. S3-V se descartó: lo cubre requisitos-vacante-pharma-duros-vs-deseables |
+| S4 | 14 dic 2026 | 18 dic 2026 | S4-C (mié 16 dic) | Plan de desarrollo individual (IDP) en una tarde (U4, myIDP) | plan de desarrollo individual doctorado | quiz-rol | tres-puertas-academia-pharma-latam. S4-V espera cifras del 14 dic |
+| S5 | 21 dic 2026 | 25 dic 2026 | S5-V (Solca Insight 25 dic) | Qué significa codificar eventos adversos (MedDRA) en una vacante de farmacovigilancia | que es meddra farmacovigilancia | quiz-rol | farmacovigilancia-entry-level-trainee-cro-latam, farmacovigilancia-mexico-empezar-sin-experiencia, preguntas-entrevista-farmacovigilancia-senales-rmp-icsr. Confirmar que la vacante siga publicada |
+| S6 | 28 dic 2026 | 1 ene 2027 | S6-V (Solca Insight 1 ene) | Tu plan de búsqueda de enero en una página | plan de busqueda de empleo farmaceutica | quiz-rol | preparar-entrevista-pharma-30-dias-checklist |
+| S7 | 4 ene 2027 | 8 ene 2027 | S7-C (jue 7 ene) | PhD "sobrecalificado": qué se reencuadra y qué no (U11) | sobrecalificado doctorado industria | revisar-cv | cros-no-piden-phd-pero-hacen-trabajo-phd, el-error-mas-comun-cv-phd-pharma. S7-V espera corte del 4 ene |
+| S8 | 11 ene 2027 | 15 ene 2027 | S8-C (jue 14 ene) | Tres meses fuera del laboratorio: prácticas durante el doctorado y la versión pequeña desde LATAM (U7) | practicas profesionales durante el doctorado | quiz-rol | calidad-regulatorio-practicas-entry-level-pharma-latam. S8-V espera corte del 13 ene |
+
+Nota de medición: cada blog lleva `cta` en el frontmatter y su enlace final al mismo destino. Se mide con la página de entrada (`landing_path`) que registra el sitio en cada visita, Search Console (impresiones, clics) a 7 y 30 días, y el reporte semanal. Sin UTM en enlaces internos para no borrar la fuente real de la visita.
+
+## Pendientes previos (eje del 14 sept; en pausa desde el 19 nov 2026)
+
+Quedan como reserva para cuando termine el sprint o para un slot de fix. No se consumen mientras haya filas del sprint.
 
 | Semana | Fecha objetivo | Fuente LinkedIn | Keyword primary tentativa | Slug propuesto |
 |---|---|---|---|---|

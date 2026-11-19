@@ -1,11 +1,13 @@
 # Workflow · Blog semanal solcaciencia.com
 
-> **Establecido:** 21 jul 2026
+> **Establecido:** 21 jul 2026 · **Actualizado:** 19 nov 2026 (decisión de Oscar)
 > **Cadencia:** 1 blog por semana, publicado los **viernes**
-> **Fuente:** contenido ya publicado en LinkedIn del sprint mensual (semana anterior)
+> **Fuente:** una pieza del sprint LinkedIn vigente de esa misma semana (de preferencia el Solca Insight)
+> **Redacción:** GPT-6.1 Sol (OpenRouter) con brief de Claude; Claude verifica, edición con el prompt de editor senior, revisor editorial y revisor independiente
+> **Instrucciones operativas:** `/Users/oscar/Documents/Claude/Scheduled/solca-blog-weekly-lunes/SKILL.md` · **Temas:** `BLOG_BACKLOG.md`, sección "Pendientes · sprint"
 > **Distribución:** broadcast a suscriptores KV EMAILS vía Postmark
 
-Este flujo complementa al sprint LinkedIn mensual sin duplicar trabajo. Los posts LinkedIn son la fuente primaria; el blog es la versión SEO-optimizada, indexable y linkeable.
+El blog es la versión larga, indexable y enlazable de una pieza del sprint. Usa las mismas reglas de redacción del sprint (`estrategia-linkedin/sprint-dic-2026/BRIEF-redaccion.md`) y el mismo destino que la pieza de origen.
 
 ---
 
@@ -13,26 +15,21 @@ Este flujo complementa al sprint LinkedIn mensual sin duplicar trabajo. Los post
 
 | Día | Acción | Responsable |
 |---|---|---|
-| Lun 8am (scheduled task) | Draft del blog semanal a partir del contenido LinkedIn de la semana anterior. Elige el post con mayor potencial SEO (Mié serie vacantes o Vie Solca Insight). Research de tendencias, keywords y PAA. Genera cover. Abre PR. | Claude |
-| Mar-Mié | Review del PR. Aprueba con merge, o comenta y pide ajustes. | Oscar |
-| Al merge del PR | Auto-deploy Cloudflare Workers Builds. Blog live. | Cloudflare |
-| Vie 8am (cron Worker) | Broadcast a KV EMAILS vía Postmark: hook + link al blog. Uno por uno con throttling. | Cloudflare Worker |
+| Lun 8am (tarea programada) | Toma la fila de la semana del backlog, arma el brief, GPT-6.1 Sol redacta, Claude verifica y corrige, edición con editor senior, revisor editorial e independiente, cover. Deja el .md listo, sin commit. | Claude + GPT-6.1 Sol |
+| Mar-Mié | Revisa el .md. Aprueba o pide ajustes. | Oscar |
+| Al aprobar | `npm run deploy` desde la terminal de Oscar (git push no despliega). El post aparece el viernes de su pubDate. | Oscar |
+| Vie 8am (cron Worker) | Broadcast a KV EMAILS vía Postmark: hook + link al blog. | Cloudflare Worker |
 
-**Regla operativa:** el blog debe estar merged antes del jueves para dar margen al cron del viernes. Si el PR sigue abierto el jueves, el cron salta esa semana (no broadcast basura).
+**Regla operativa:** el blog debe estar desplegado antes del jueves para dar margen al cron del viernes.
 
 ---
 
 ## Fuentes de contenido
 
-**Fuentes válidas para transformación SEO:**
-- Mié serie "Lo que dicen las vacantes" — insights sobre patrones detectados en vacantes del mes.
-- Vie Solca Insight — análisis editorial mensual sobre carrera en pharma LATAM.
-
-**Fuentes NO válidas:**
-- Lun teasers — cortos y promocionales, sin cuerpo SEO.
-- Posts dedicados (ej. Vie 7 ago del simulador) — promoción de producto, no editorial.
-
-**Regla de rotación:** no publicar 2 semanas seguidas del mismo Mié o Vie. Alterna fuentes.
+- **Válidas:** las piezas del sprint vigente (Solca Insight y posts B, C o E con cuerpo suficiente). La fila del backlog dice cuál.
+- **Se evita:** una pieza cuyo tema ya cubre un post del blog (se elige otra de la misma semana) y piezas que dependen de cifras que se capturan después del lunes.
+- **Reglas de copy:** las del sprint (`BRIEF-redaccion.md`): sin ATS, sin experiencia propia de Oscar, tono mesurado y empático, "sin costo" en vez de "gratis", afirmaciones de herramientas solo las verificables (revisor 20 criterios y 2 análisis por correo cada 30 días; quiz 12 preguntas y 5 roles; simulador 5 preguntas en la sesión sin costo).
+- **CTA:** el destino de la pieza de origen, en el `cta` del frontmatter (`vacantes | revisar-cv | quiz-rol | simulador`) y en el enlace final del cuerpo.
 
 ---
 
@@ -41,7 +38,7 @@ Este flujo complementa al sprint LinkedIn mensual sin duplicar trabajo. Los post
 Cada blog semanal debe cumplir:
 
 - Título 50-65 chars con keyword primary natural.
-- Meta description 130-155 chars con keyword primary.
+- Meta description 130-155 chars recomendado (máximo 180 por el schema) con keyword primary.
 - H1 = título del blog (no repite).
 - 3-5 H2 descriptivos con keywords long-tail.
 - 800-1500 palabras (300-500 más largo que el post LinkedIn).
@@ -54,7 +51,7 @@ Cada blog semanal debe cumplir:
 
 ## Checklist obligatorio pre-publicación (verificación de fuentes)
 
-Antes de abrir el PR, revisar cada afirmación con número, porcentaje, tendencia, estudio citado, o "en promedio X":
+Antes de entregar el draft, revisar cada afirmación con número, porcentaje, tendencia, estudio citado, o "en promedio X":
 
 1. **¿Tiene URL verificable en fuente primaria (no cita de tercera mano)?** Si sí, incluir el link inline.
 2. **Si no tiene URL, ¿puede reformularse como observación acotada al material propio?** Ejemplo válido: "en las vacantes que revisé este mes…". Ejemplo NO válido: "en promedio los reclutadores…".
