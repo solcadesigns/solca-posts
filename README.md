@@ -50,6 +50,6 @@ _docs/            estrategia, calendario, templates · referencia, no se incluye
 - Las imágenes de portadas de libros van en `public/covers/portada_pm.png|portada_msl.png|portada_cr.png`.
 - La foto del about va en `public/oscar.jpg`.
 - El PDF de la guía gratis (lead magnet) va en `public/guia-pdf-28pp.pdf`.
-- El placeholder `og-image.png` va en `public/og-image.png` (recomendado 1200×630 px).
+- Imágenes de vista previa (Open Graph, 1200×627): `public/og/<herramienta>.png` y la general `public/og/solca.png`, generadas con `scripts/generate-og-images.py`. `public/og-image.png` es copia de la general (logo en el JSON-LD del blog).
 
 — Oscar Solís Castro · Solca · Ciencia y Consultoría

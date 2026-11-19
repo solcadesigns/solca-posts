@@ -60,7 +60,7 @@ prefiérela sobre la paráfrasis cuando la pregunta sea estrictamente regulatori
 
 - [Simulador de entrevistas](${site}/simulador-entrevistas/): práctica de entrevista pharma con reporte de scores por respuesta. La sesión gratuita es un screening inicial con reclutador de 5 preguntas, sin tarjeta.
 - [Revisar CV](${site}/revisar-cv/): revisión automatizada de CV orientado a industria farmacéutica.
-- [Quiz de rol](${site}/quiz-rol/): cuestionario de 8 preguntas que orienta entre Project Manager clínico, MSL y Clinical Research.
+- [Quiz de rol](${site}/quiz-rol/): cuestionario de 12 preguntas que orienta entre cinco roles: Project Manager clínico, MSL, investigación clínica, farmacovigilancia y consultoría en ciencias de la vida.
 
 ## Blog · Carreras pharma (${carreras.length})
 
