@@ -152,7 +152,7 @@ Cada semana publico un Solca Insight: un análisis corto, con dato citable, sobr
 
 Mientras tanto, dos recursos que quizá te sirvan:
 
-1. Toma el quiz de rol pharma (11 preguntas, 3 minutos, resultado inmediato):
+1. Toma el quiz de rol pharma (12 preguntas, resultado inmediato):
    https://solcaciencia.com/quiz-rol?utm_source=email&utm_medium=welcome-cv&utm_campaign=welcome-cv-cta&utm_content=quiz
 
 2. Post sobre las 13 siglas pharma para incluir en el CV:

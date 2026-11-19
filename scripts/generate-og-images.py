@@ -33,42 +33,13 @@ PUBLIC = os.path.join(AQUI, "..", "public")
 
 # clave → (kicker, título, palabras en naranja, subtítulo)
 TARJETAS = {
-    "revisar-cv": (
-        "Revisor de CV",
-        "Revisa tu CV para la industria farmacéutica",
-        "industria farmacéutica",
-        "20 criterios de redacción y estructura · sin costo",
-    ),
-    "quiz-rol": (
-        "Quiz de rol",
-        "¿Qué rol de la industria se ajusta a cómo trabajas?",
-        "cómo trabajas?",
-        "12 preguntas · 5 roles de farma y ciencias de la vida",
-    ),
-    "vacantes": (
-        "Buscador de vacantes",
-        "Vacantes de farma y CRO en América Latina y España",
-        "farma CRO",
-        "Tomadas de los portales oficiales de las empresas",
-    ),
-    "simulador": (
-        "Simulador de entrevistas",
-        "Practica tu entrevista para la industria farmacéutica",
-        "tu entrevista",
-        "Primera sesión sin costo: 5 preguntas de llamada inicial con reclutador",
-    ),
-    "comparar-cv": (
-        "Compara tu CV",
-        "Compara tu CV con una vacante",
-        "una vacante",
-        "Ve cuántos requisitos indispensables de la vacante aparecen en tu CV",
-    ),
-    "solca": (
-        "Solca Ciencia",
-        "De la ciencia a la industria farmacéutica",
-        "industria farmacéutica",
-        "Herramientas para tu CV, tu búsqueda de vacantes y tus entrevistas",
-    ),
+    # Textos de GPT-6.1 Sol (gen-1795120109-ivBtnnv3RgTdkN7KyH8H), aprobados por Oscar el 19 nov 2026.
+    "revisar-cv": ("Revisor de CV", "Revisa tu CV para la industria farmacéutica", "industria farmacéutica", "20 criterios de redacción y estructura. Sin costo."),
+    "quiz-rol": ("Quiz de rol", "¿Qué rol pharma se ajusta más a ti?", "rol pharma", "12 preguntas sobre cómo trabajas. Resultado inmediato."),
+    "vacantes": ("Buscador de vacantes", "Vacantes en América Latina y España", "América Latina España", "Farma, CROs, tecnología médica y consultoras. De sus portales oficiales."),
+    "simulador": ("Simulador de entrevistas", "Practica con tu CV y la vacante", "tu CV vacante", "Primera sesión: 5 preguntas de llamada inicial. Sin costo ni tarjeta."),
+    "comparar-cv": ("Compara tu CV", "Compara tu CV con una vacante", "una vacante", "Ve cuántos requisitos indispensables de la vacante aparecen en tu CV."),
+    "solca": ("Solca Ciencia", "De la ciencia a la industria", "industria", "Acompañamos a científicos en su paso a la industria farmacéutica."),
 }
 
 
@@ -82,8 +53,11 @@ def tarjeta(kicker: str, titulo: str, keyword: str, subtitulo: str, salida: str)
     d.rectangle([m, 76, m + sq, 76 + sq], fill=cover.ORANGE)
     d.text((m + sq + 16, 70), kicker.upper(), font=kf, fill=cover.CREAM)
 
-    tf = cover._font(64, bold=True)
-    lineas = cover._wrap_title_with_keyword(d, titulo, keyword, tf, W - 2 * m)
+    for size in (64, 60, 56):  # evita una palabra sola en la última línea
+        tf = cover._font(size, bold=True)
+        lineas = cover._wrap_title_with_keyword(d, titulo, keyword, tf, W - 2 * m)
+        if len(lineas) == 1 or len(lineas[-1]) > 1:
+            break
     if len(lineas) > 3:
         raise ValueError(f"Título demasiado largo para {salida}: {len(lineas)} líneas")
     y = cover._draw_title_lines(d, lineas, m, 150, tf, 80)
