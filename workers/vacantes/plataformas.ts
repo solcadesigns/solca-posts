@@ -191,9 +191,13 @@ export function rutasDe(f: Fuente): { origen: string; rutas: string[] } {
 
 // ──────────────────────────────── Workday
 
+const RX_PAIS_EN = /^(United States( of America)?|United Kingdom.*|Germany|China|India|Japan|France|Canada|Switzerland|Italy|Netherlands|Belgium|Poland|Ireland|Australia)$/i;
+
 /** Busca en las facetas de ubicación los ids de los países objetivo. Prefiere la faceta de país. */
-function facetasPais(facets: any[]): { param: string; ids: string[] } | null {
+function facetasPais(facets: any[]): { param: string; ids: string[] } | 'ninguno' | null {
   const found: Record<string, string[]> = {};
+  let paisesReconocidos = 0; // valores de una faceta de país (Country) que el portal sí publica
+  let enIngles = 0; // de esos, cuántos son países conocidos en inglés: prueba de que el idioma se puede leer
   const walk = (list: any[], parent?: string) => {
     for (const f of list ?? []) {
       const param: string | undefined = f.facetParameter ?? parent;
@@ -203,13 +207,20 @@ function facetasPais(facets: any[]): { param: string; ids: string[] } | null {
           continue;
         }
         if (!param || !/ocation|ountry/i.test(param)) continue;
+        if (/ountry/i.test(f.descriptor ?? '') || /ountry/i.test(param)) {
+          paisesReconocidos++;
+          if (RX_PAIS_EN.test(v.descriptor ?? '')) enIngles++;
+        }
         if (paisesEnTexto(v.descriptor).length) (found[param] ??= []).push(v.id);
       }
     }
   };
   walk(facets);
   const params = Object.keys(found);
-  if (!params.length) return null;
+  // Workday solo lista países con al menos una vacante. Si hay faceta de país pero ninguno es objetivo,
+  // la empresa no tiene vacantes en los 7 países hoy: es un listado vacío, no un error (BMS, 19 nov 2026).
+  // Si las facetas vienen en otro idioma o formato (p. ej. "Mexique" o "MX"), no se puede saber: sigue siendo error.
+  if (!params.length) return paisesReconocidos >= 3 && enIngles >= 1 ? 'ninguno' : null;
   const pref = params.find((p) => /ountry/i.test(p)) ?? params.find((p) => p === 'locations') ?? params[0];
   return { param: pref, ids: found[pref] };
 }
@@ -219,6 +230,7 @@ async function listarWorkday(f: FuenteWorkday): Promise<Listado> {
   const first = await postJson(`${base}/jobs`, { appliedFacets: {}, limit: 1, offset: 0, searchText: '' });
   const fac = facetasPais(first.facets);
   if (!fac) throw new Error('sin facetas de país objetivo');
+  if (fac === 'ninguno') return { items: [], completo: (first.total ?? 0) > 0 };
   const items: ItemListado[] = [];
   let total = Infinity;
   let leidas = 0;

@@ -61,6 +61,7 @@ Lista tomada de la herramienta de referencia. Para cada empresa se revisó si su
 - **Llave para la carga manual** (una vez): `npx wrangler secret put RUN_KEY`
 - **Carga manual** (primera carga o pruebas): `https://solca-vacantes.<subdominio>.workers.dev/run?key=<RUN_KEY>[&fuente=iqvia]`
 - **Fallas:** `SELECT * FROM vacantes_corridas WHERE estado != 'ok' ORDER BY ts DESC`
+- **Workday sin vacantes en los 7 países (23 nov 2026):** Workday solo lista en la faceta de país los países con vacantes. Si la faceta de país existe (3 o más valores, al menos uno legible en inglés, como "United States") y ninguno es objetivo, el listado sale vacío y completo, y se cierran las vacantes que quedaban. Antes lanzaba "sin facetas de país objetivo" y dejaba abiertas vacantes ya cerradas (BMS, 19 al 23 nov: 2 vacantes de BR y CO). Si falta la faceta de país o viene en otro idioma o formato, sigue siendo error (así no se cierra todo por un cambio del portal).
 - **Agregar fuente Workday:** una línea en `vacantes-fuentes.ts`, con host, tenant y site tomados de la URL del portal.
 
 ## Descriptores para análisis de contenido (desde 22 oct 2026)
