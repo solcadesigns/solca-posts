@@ -1,0 +1,311 @@
+---
+/**
+ * /encuesta-curso/<tipo> · encuestas del curso V2.0 (24 nov 2026): inicio (0.5), cierre (C.1), 30-dias y 90-dias.
+ * Las preguntas salen del catálogo src/lib/encuesta-curso.ts (copia fiel de 06-encuestas-y-correos.md).
+ * El envío va a /api/encuesta-curso (D1 `curso_encuestas`). La vista la registra BaseLayout (page_viewed,
+ * page 'encuesta-curso'). Estática: no hay datos del servidor en la página.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { ENCUESTAS, TIPOS, MENSAJES_ERROR, type Pregunta, type TipoEncuesta } from '../../lib/encuesta-curso';
+
+export const prerender = true;
+
+export function getStaticPaths() {
+  return TIPOS.map((tipo) => ({ params: { tipo } }));
+}
+
+const tipo = Astro.params.tipo as TipoEncuesta;
+const enc = ENCUESTAS[tipo];
+const meta = enc.preguntas.map((p: Pregunta) => ({ id: p.id, tipo: p.tipo }));
+const rango = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+const anioActual = new Date().getFullYear();
+---
+<BaseLayout title={`${enc.titulo} · Solca Ciencia`} description="Encuesta para alumnos del curso De la ciencia a la industria." noindex={true}>
+<section class="ec">
+  <div class="container ec-card">
+    <p class="ec-kicker">De la ciencia a la industria · {tipo === 'inicio' || tipo === 'cierre' ? `Lección ${enc.leccion}` : enc.leccion}</p>
+    <h1>{enc.titulo}</h1>
+    {enc.intro && <p class="ec-intro">{enc.intro}</p>}
+
+    <noscript><p class="ec-error-global">Para enviar la encuesta necesitas activar JavaScript en tu navegador.</p></noscript>
+
+    <form id="ec-form" novalidate data-tipo={tipo} data-meta={JSON.stringify(meta)} data-mensajes={JSON.stringify(MENSAJES_ERROR)}>
+      <div id="ec-resumen" class="ec-error-global" role="alert" tabindex="-1" hidden></div>
+      <ol class="ec-lista">
+        {enc.preguntas.map((p: Pregunta) => {
+          const idErr = `err-${p.id}`;
+          const etiqueta = (
+            <>
+              <span class="ec-q">{p.texto}</span>
+              {p.ayuda && <span class="ec-ayuda"> ({p.ayuda})</span>}
+              {p.opcional && !p.ayuda?.includes('opcional') && <span class="ec-ayuda"> (opcional)</span>}
+            </>
+          );
+          if (p.tipo === 'una' || p.tipo === 'varias' || p.tipo === 'escala') {
+            const opciones = p.tipo === 'escala' ? rango(p.min ?? 1, p.max ?? 5).map((n) => ({ v: String(n), t: String(n), extra: undefined })) : p.opciones ?? [];
+            return (
+              <li class="ec-item" data-pregunta={p.id}>
+                <fieldset aria-describedby={idErr}>
+                  <legend>{etiqueta}</legend>
+                  {p.tipo === 'escala' && p.extremos && <p class="ec-extremos" aria-hidden="true"><span>{p.extremos[0]}</span><span>{p.extremos[1]}</span></p>}
+                  <div class={p.tipo === 'escala' ? 'ec-escala' : 'ec-opciones'}>
+                    {opciones.map((o) => (
+                      <div class="ec-op">
+                        <label>
+                          <input
+                            type={p.tipo === 'varias' ? 'checkbox' : 'radio'}
+                            name={p.id}
+                            value={o.v}
+                            required={p.tipo !== 'varias' && !p.opcional}
+                            data-extra={o.extra}
+                          />
+                          <span>{o.t}</span>
+                        </label>
+                        {o.extra === 'texto' && (
+                          <input type="text" class="ec-extra" name={`${p.id}_otro`} maxlength="200" aria-label={`${p.texto}: escribe cuál`} placeholder="Escribe cuál" disabled />
+                        )}
+                        {o.extra === 'anio' && (
+                          <input type="number" class="ec-extra ec-anio" name={`${p.id}_anio`} inputmode="numeric" min="2020" max="2040" placeholder={String(anioActual + 1)} aria-label="Año en que terminas la licenciatura" disabled />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </fieldset>
+                <p class="ec-err" id={idErr} aria-live="polite"></p>
+              </li>
+            );
+          }
+          if (p.tipo === 'leccion') {
+            return (
+              <li class="ec-item" data-pregunta={p.id}>
+                <fieldset aria-describedby={idErr}>
+                  <legend>{etiqueta}</legend>
+                  <div class="ec-leccion">
+                    <label class="ec-sub">Lección
+                      <input type="text" name={`${p.id}_num`} maxlength="20" placeholder="3.11" inputmode="decimal" required />
+                    </label>
+                    <label class="ec-sub ec-grow">Una frase
+                      <input type="text" name={`${p.id}_frase`} maxlength={p.max ?? 500} required />
+                    </label>
+                  </div>
+                </fieldset>
+                <p class="ec-err" id={idErr} aria-live="polite"></p>
+              </li>
+            );
+          }
+          const inputId = `in-${p.id}`;
+          return (
+            <li class="ec-item" data-pregunta={p.id}>
+              <label for={inputId} class="ec-label">{etiqueta}</label>
+              {p.tipo === 'email' && (
+                <input id={inputId} type="email" name={p.id} autocomplete="email" inputmode="email" maxlength="254" required aria-describedby={idErr} />
+              )}
+              {p.tipo === 'numero' && (
+                <input id={inputId} type="number" name={p.id} inputmode="numeric" min={p.min ?? 0} max={p.max} step="1" required={!p.opcional} aria-describedby={idErr} class="ec-num" />
+              )}
+              {p.tipo === 'texto' && (
+                (p.max ?? 0) > 500
+                  ? <textarea id={inputId} name={p.id} rows="3" maxlength={p.max} required={!p.opcional} aria-describedby={idErr}></textarea>
+                  : <input id={inputId} type="text" name={p.id} maxlength={p.max} required={!p.opcional} aria-describedby={idErr} />
+              )}
+              <p class="ec-err" id={idErr} aria-live="polite"></p>
+            </li>
+          );
+        })}
+      </ol>
+      <p class="ec-nota">
+        Usamos tu correo solo para unir tus respuestas de las encuestas del curso.
+        {tipo === 'cierre' && ' A los 30 y a los 90 días te escribiremos para preguntarte cómo va tu búsqueda.'}
+        {' '}Consulta el <a href="/privacidad/">aviso de privacidad</a>.
+      </p>
+      <button type="submit" class="btn btn-orange ec-btn" id="ec-enviar">Enviar mis respuestas</button>
+    </form>
+
+    <div id="ec-gracias" hidden tabindex="-1">
+      <h2>Gracias por responder.</h2>
+      <p>Recibimos tus respuestas.</p>
+    </div>
+  </div>
+</section>
+
+<script is:inline>
+  (function () {
+    var form = document.getElementById('ec-form');
+    if (!form) return;
+    var tipo = form.getAttribute('data-tipo');
+    var meta = JSON.parse(form.getAttribute('data-meta') || '[]');
+    var MSG = JSON.parse(form.getAttribute('data-mensajes') || '{}');
+    var resumen = document.getElementById('ec-resumen');
+    var boton = document.getElementById('ec-enviar');
+
+    // Campo extra (Otro / año): activo y obligatorio solo con su opción marcada.
+    function syncExtras() {
+      form.querySelectorAll('input[data-extra]').forEach(function (inp) {
+        var extra = inp.closest('.ec-op').querySelector('.ec-extra');
+        if (!extra) return;
+        extra.disabled = !inp.checked;
+        extra.required = inp.checked;
+      });
+    }
+    form.addEventListener('change', syncExtras);
+    syncExtras();
+
+    function limpiarErrores() {
+      form.querySelectorAll('.ec-err').forEach(function (e) { e.textContent = ''; });
+      form.querySelectorAll('[aria-invalid]').forEach(function (e) { e.removeAttribute('aria-invalid'); });
+      resumen.hidden = true;
+      resumen.textContent = '';
+    }
+    function marcarError(id, texto) {
+      var item = form.querySelector('[data-pregunta="' + id + '"]');
+      if (!item) { resumen.hidden = false; resumen.textContent = texto; resumen.focus(); return; }
+      item.querySelector('.ec-err').textContent = texto;
+      var foco = item.querySelector('input:not([disabled]), textarea');
+      item.querySelectorAll('input, textarea').forEach(function (e) { e.setAttribute('aria-invalid', 'true'); });
+      return foco;
+    }
+
+    // Validación en el navegador (la del servidor es la que manda).
+    function validar() {
+      var primero = null, errores = 0;
+      meta.forEach(function (m) {
+        var item = form.querySelector('[data-pregunta="' + m.id + '"]');
+        var campos = item.querySelectorAll('input:not([disabled]), textarea');
+        var malo = null;
+        if (m.tipo === 'una' || m.tipo === 'escala') {
+          var r = item.querySelector('input[name="' + m.id + '"]');
+          var marcado = item.querySelector('input[name="' + m.id + '"]:checked');
+          if (r && r.required && !marcado) malo = MSG.requerida;
+        }
+        if (!malo) {
+          for (var i = 0; i < campos.length; i++) {
+            var c = campos[i];
+            if (c.type === 'radio' || c.type === 'checkbox') continue;
+            if (!c.checkValidity()) {
+              malo = c.validity.valueMissing ? (c.classList.contains('ec-extra') ? (c.name.slice(-5) === '_anio' ? MSG.anio_invalido : MSG.falta_texto) : MSG.requerida)
+                : c.type === 'email' ? MSG.correo_invalido
+                : c.name.slice(-5) === '_anio' ? MSG.anio_invalido
+                : c.type === 'number' ? MSG.numero_invalido : MSG.requerida;
+              break;
+            }
+          }
+        }
+        if (malo) { errores++; var f = marcarError(m.id, malo); if (!primero) primero = f; }
+      });
+      if (errores) {
+        resumen.hidden = false;
+        resumen.textContent = errores === 1 ? 'Falta revisar una pregunta.' : 'Faltan ' + errores + ' preguntas por revisar.';
+        if (primero) primero.focus(); else resumen.focus();
+      }
+      return errores === 0;
+    }
+
+    function recolectar() {
+      var fd = new FormData(form), out = {};
+      meta.forEach(function (m) {
+        if (m.tipo === 'varias') { out[m.id] = fd.getAll(m.id); return; }
+        if (m.tipo === 'leccion') { out[m.id + '_num'] = fd.get(m.id + '_num') || ''; out[m.id + '_frase'] = fd.get(m.id + '_frase') || ''; return; }
+        var v = fd.get(m.id);
+        if (v !== null && v !== '') out[m.id] = String(v);
+        ['_otro', '_anio'].forEach(function (s) { var x = fd.get(m.id + s); if (x) out[m.id + s] = String(x); });
+      });
+      return out;
+    }
+
+    form.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      limpiarErrores();
+      if (!validar()) return;
+      boton.disabled = true;
+      boton.textContent = 'Enviando...';
+      var utm = window.__utm || {};
+      var body = Object.assign({
+        tipo: tipo,
+        respuestas: recolectar(),
+        utm_source: utm.utm_source, utm_medium: utm.utm_medium, utm_campaign: utm.utm_campaign,
+        utm_content: utm.utm_content, utm_term: utm.utm_term,
+        referrer: document.referrer || undefined,
+        alumno: window.__alumno === true ? true : undefined,
+      }, window.__attr ? window.__attr() : {});
+      fetch('/api/encuesta-curso', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+        .then(function (d) {
+          if (d && d.ok) {
+            form.hidden = true;
+            var g = document.getElementById('ec-gracias');
+            g.hidden = false;
+            g.focus();
+            window.scrollTo(0, 0);
+            return;
+          }
+          var texto = (d && d.message) || 'No pudimos enviar tus respuestas. Intenta de nuevo.';
+          var f = d && d.pregunta ? marcarError(d.pregunta, texto) : null;
+          resumen.hidden = false;
+          resumen.textContent = texto;
+          if (f) f.focus(); else resumen.focus();
+        })
+        .catch(function () {
+          resumen.hidden = false;
+          resumen.textContent = 'No pudimos enviar tus respuestas. Revisa tu conexión e intenta de nuevo.';
+          resumen.focus();
+        })
+        .finally(function () {
+          boton.disabled = false;
+          boton.textContent = 'Enviar mis respuestas';
+        });
+    });
+  })();
+</script>
+
+<style>
+  .ec { background: var(--bg); padding: 40px 0 72px; min-height: 60vh; }
+  .ec-card { max-width: 680px; background: var(--off-white); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 28px 24px; }
+  .ec-kicker { font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--text-mute); margin: 0 0 6px; }
+  .ec-card h1 { font-family: 'Inter', sans-serif; font-size: 28px; font-weight: 800; color: var(--navy); margin: 0 0 10px; line-height: 1.2; }
+  .ec-card h2 { font-size: 22px; color: var(--navy); margin: 0 0 8px; }
+  .ec-intro { font-size: 16px; line-height: 1.6; margin: 0 0 20px; }
+  /* Número con contador (no ::marker): con <fieldset> el marcador del <li> cae junto a la primera opción, no junto a la pregunta. */
+  .ec-lista { list-style: none; padding: 0; margin: 0; counter-reset: ecq; }
+  .ec-item { margin: 0 0 26px; counter-increment: ecq; }
+  .ec-q::before { content: counter(ecq) ". "; color: var(--navy); }
+  fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+  legend, .ec-label { display: block; font-size: 16px; line-height: 1.5; margin-bottom: 10px; padding: 0; }
+  .ec-q { font-weight: 700; color: var(--text); }
+  .ec-ayuda { color: var(--text-mute); font-size: 14px; }
+  .ec-opciones { display: flex; flex-direction: column; gap: 8px; }
+  .ec-op { display: flex; flex-direction: column; gap: 6px; }
+  .ec-op label { display: flex; gap: 10px; align-items: flex-start; padding: 11px 12px; min-height: 44px; border: 1.5px solid var(--rule); border-radius: 8px; background: #fff; cursor: pointer; font-size: 15px; line-height: 1.4; }
+  .ec-op label:has(input:checked) { border-color: var(--blue-mid); background: var(--blue-soft); }
+  .ec-op input[type="radio"], .ec-op input[type="checkbox"] { margin-top: 2px; width: 18px; height: 18px; flex: none; accent-color: var(--navy); }
+  .ec-escala { display: flex; flex-wrap: wrap; gap: 6px; }
+  .ec-escala .ec-op label { min-width: 44px; justify-content: center; align-items: center; padding: 10px; }
+  .ec-escala .ec-op input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .ec-escala .ec-op label:has(input:focus-visible) { outline: 3px solid var(--blue-mid); outline-offset: 2px; }
+  .ec-extremos { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--text-mute); margin: -4px 0 6px; }
+  input[type="email"], input[type="text"], input[type="number"], textarea {
+    width: 100%; box-sizing: border-box; font: inherit; font-size: 16px; padding: 11px 12px; border: 1.5px solid var(--rule); border-radius: 8px; background: #fff; color: var(--text);
+  }
+  .ec-num, .ec-anio { max-width: 180px; }
+  .ec-extra { margin-left: 30px; width: calc(100% - 30px); }
+  .ec-extra[disabled] { display: none; }
+  input:focus-visible, textarea:focus-visible { outline: 3px solid var(--blue-mid); outline-offset: 1px; }
+  [aria-invalid="true"] { border-color: #B3261E !important; }
+  .ec-leccion { display: flex; gap: 10px; flex-wrap: wrap; }
+  .ec-sub { display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: var(--text-mute); flex: 0 0 120px; }
+  .ec-grow { flex: 1 1 240px; }
+  .ec-err { color: #B3261E; font-size: 14px; margin: 6px 0 0; min-height: 0; }
+  .ec-err:empty { display: none; }
+  .ec-error-global { background: #FDECEA; color: #8C1D18; border-radius: 8px; padding: 12px 14px; margin: 0 0 18px; font-size: 15px; }
+  .ec-error-global[hidden] { display: none !important; }
+  .ec-nota { font-size: 14px; color: var(--text-mute); line-height: 1.5; }
+  .ec-nota a { color: var(--blue-mid); text-decoration: underline; }
+  .ec-btn { width: 100%; max-width: 360px; min-height: 48px; font-size: 16px; border: 0; cursor: pointer; }
+  .ec-btn[disabled] { opacity: .6; cursor: wait; }
+  #ec-gracias[hidden], #ec-form[hidden] { display: none !important; }
+  @media (max-width: 560px) {
+    .ec { padding: 16px 0 48px; }
+    .ec-card { padding: 22px 16px; border-radius: 0; box-shadow: none; }
+    .ec-card h1 { font-size: 24px; }
+  }
+</style>
+</BaseLayout>
