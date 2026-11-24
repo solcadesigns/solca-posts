@@ -207,7 +207,8 @@ export const ROLE_LABELS: Record<Exclude<Role, 'Other'>, string> = {
   CRA: 'Monitor clínico (CRA)',
   MSL: 'Medical Science Liaison (MSL)',
   Clinical_PM: 'Project Manager clínico',
-  Healthcare_Analyst: 'Analista de datos en salud',
+  // 24 nov 2026: antes "Analista de datos en salud"; en las pruebas del curso se confundía con HEOR.
+  Healthcare_Analyst: 'Analista de datos comerciales y de mercado en salud',
   Strategy_Consulting: 'Consultoría estratégica en ciencias de la vida',
   Regulatory: 'Asuntos regulatorios',
   Pharmacovigilance: 'Farmacovigilancia',
@@ -217,17 +218,52 @@ export const ROLE_LABELS: Record<Exclude<Role, 'Other'>, string> = {
 };
 
 /**
- * Roles que solo existen en el revisor de CV (13 nov 2026): no están en el tipo `Role` del simulador, así que no
- * tocan su catálogo, paywall, prompts ni getRoleCta. El valor viaja como texto a D1 (`extra.rol_objetivo`) y a KV.
+ * Roles que solo existen en el revisor de CV (13 nov 2026: CRC; 24 nov 2026: calidad, laboratorio e I+D, gestión de
+ * datos clínicos y ciencia de datos y bioestadística, que el curso V2.0 manda a elegir). No están en el tipo `Role`
+ * del simulador, así que no tocan su catálogo, paywall, prompts ni getRoleCta. El valor viaja como texto a D1
+ * (`extra.rol_objetivo`) y a KV. Cada uno lleva etiqueta, funciones típicas (ROL_CONTEXTO) y términos estándar
+ * (ROL_TERMINOS); los 20 criterios son los mismos para todos los roles.
  */
 export const ROLES_SOLO_REVISOR: Record<string, string> = {
   CRC: 'Coordinador de estudios clínicos (CRC)',
+  Quality: 'Calidad (aseguramiento y control de calidad, BPF)',
+  Lab_RD: 'Laboratorio / I+D',
+  Clinical_Data_Management: 'Gestión de datos clínicos',
+  Biostat_Data_Science: 'Ciencia de datos y bioestadística en farma',
 };
 
-/** Contexto de funciones típicas para roles que el modelo podría no distinguir (va en el mensaje de usuario). */
+/**
+ * Contexto de funciones típicas para roles que el modelo podría no distinguir (va en el mensaje de usuario). Incluye
+ * a Healthcare_Analyst y HEOR (24 nov 2026) para separarlos entre sí y de la gestión de datos clínicos.
+ */
 const ROL_CONTEXTO: Record<string, string> = {
   CRC:
     'coordinación de estudios clínicos en el sitio de investigación: consentimiento informado, documentos fuente, agenda de visitas de pacientes, captura en CRF o EDC y comunicación con el patrocinador y el monitor',
+  Quality:
+    'aseguramiento y control de calidad en la fabricación o el análisis de medicamentos y dispositivos bajo Buenas Prácticas de Fabricación (BPF o GMP): análisis de materias primas y producto, liberación de lotes, desviaciones, CAPA, control de cambios, auditorías, validación y documentación controlada',
+  Lab_RD:
+    'trabajo de laboratorio y de investigación y desarrollo en la industria: ejecución y desarrollo de métodos analíticos o experimentales, diseño de experimentos, análisis e interpretación de datos, registro en bitácora o cuaderno de laboratorio y trabajo bajo procedimientos normalizados',
+  Clinical_Data_Management:
+    'gestión de datos de estudios clínicos: diseño y prueba de la base de datos o el EDC, revisión y limpieza de datos con validaciones y consultas (queries), codificación médica de eventos adversos y medicamentos, reconciliación de datos y cierre de la base de datos; no es análisis estadístico ni análisis comercial',
+  Biostat_Data_Science:
+    'bioestadística y ciencia de datos en la industria farmacéutica: diseño estadístico de estudios, plan de análisis estadístico, programación del análisis (tablas, listados y figuras), modelos estadísticos y análisis de datos clínicos o de mundo real; no es gestión de datos clínicos ni análisis comercial',
+  Healthcare_Analyst:
+    'análisis de datos comerciales y de mercado en la industria (ventas, mercado, prescripción, tableros e insights para áreas comerciales o de estrategia); no es HEOR ni gestión de datos clínicos',
+  HEOR:
+    'economía de la salud e investigación de resultados: evaluaciones económicas (costo-efectividad, impacto presupuestal), revisiones de literatura, modelos y evidencia para acceso al mercado y agencias de evaluación de tecnologías sanitarias; no es análisis comercial ni de ventas',
+};
+
+/**
+ * Términos estándar de la industria para los roles solo del revisor (referencia para los criterios 10 y 11). Solo
+ * nombres de normas, procesos y herramientas de uso común en el rol; sin afirmaciones de mercado ni de frecuencia.
+ * El mensaje al modelo aclara que no se exigen todos ni se sugiere agregar lo que el CV no respalde.
+ */
+const ROL_TERMINOS: Record<string, string[]> = {
+  CRC: ['Buenas Prácticas Clínicas (ICH E6, GCP)', 'consentimiento informado', 'documentos fuente', 'CRF o eCRF', 'EDC', 'visitas de pacientes', 'reporte de eventos adversos', 'archivo del investigador'],
+  Quality: ['Buenas Prácticas de Fabricación (BPF, GMP)', 'aseguramiento de calidad (QA)', 'control de calidad (QC)', 'desviaciones', 'CAPA', 'control de cambios', 'auditorías', 'liberación de lotes', 'validación', 'procedimientos normalizados (PNO o SOP)', 'integridad de datos (ALCOA+)'],
+  Lab_RD: ['desarrollo de métodos', 'validación de métodos analíticos (ICH Q2)', 'técnicas del área (por ejemplo HPLC, PCR o cultivo celular)', 'diseño de experimentos', 'Buenas Prácticas de Laboratorio (BPL, GLP)', 'bitácora o cuaderno de laboratorio', 'procedimientos normalizados (PNO o SOP)', 'análisis de datos'],
+  Clinical_Data_Management: ['EDC', 'CRF o eCRF', 'plan de manejo de datos (DMP)', 'validaciones (edit checks)', 'consultas (queries)', 'limpieza de datos', 'codificación médica (MedDRA, WHODrug)', 'reconciliación de eventos adversos serios', 'cierre de base de datos (database lock)', 'CDISC (CDASH, SDTM)'],
+  Biostat_Data_Science: ['plan de análisis estadístico (SAP)', 'SAS', 'R', 'Python', 'CDISC (SDTM, ADaM)', 'tablas, listados y figuras (TLF)', 'tamaño de muestra', 'principios estadísticos para ensayos clínicos (ICH E9)', 'análisis de supervivencia', 'datos de mundo real (RWD)'],
 };
 
 /** Opciones del formulario: catálogo del simulador + roles solo del revisor. */
@@ -254,6 +290,10 @@ export function rolLabel(value: string | undefined): string | undefined {
 
 export function rolContexto(value: string | undefined): string | undefined {
   return value && Object.prototype.hasOwnProperty.call(ROL_CONTEXTO, value) ? ROL_CONTEXTO[value] : undefined;
+}
+
+export function rolTerminos(value: string | undefined): string[] | undefined {
+  return value && Object.prototype.hasOwnProperty.call(ROL_TERMINOS, value) ? ROL_TERMINOS[value] : undefined;
 }
 
 /**

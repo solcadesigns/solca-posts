@@ -78,6 +78,8 @@ export function buildCvReviewUserMessage(args: {
   rolLabel?: string;
   /** Funciones típicas del rol (solo roles que el modelo podría no distinguir, p. ej. CRC). */
   rolContexto?: string;
+  /** Términos estándar del rol (solo roles del revisor; referencia para los criterios 10 y 11). */
+  rolTerminos?: string[];
   rolNoSeguro?: boolean;
   origen: 'pdf' | 'pegado';
   paginas: number | null;
@@ -98,7 +100,11 @@ export function buildCvReviewUserMessage(args: {
   return `Datos del formulario (no forman parte del CV):
 - Fecha de hoy (año-mes): ${hoy}
 - País: ${args.country || 'no especificado'}
-- Rol objetivo declarado: ${rol}${args.rolContexto ? `\n- Funciones típicas de ese rol: ${args.rolContexto}` : ''}
+- Rol objetivo declarado: ${rol}${args.rolContexto ? `\n- Funciones típicas de ese rol: ${args.rolContexto}` : ''}${
+    args.rolTerminos?.length
+      ? `\n- Términos estándar de ese rol (referencia para los criterios 10 y 11; no exijas que aparezcan todos ni sugieras agregar uno que el CV no respalde): ${args.rolTerminos.join('; ')}`
+      : ''
+  }
 - Origen del texto: ${origen}
 - Caracteres: ${args.cv.length}
 - Saltos de línea en el texto: ${args.saltos}
