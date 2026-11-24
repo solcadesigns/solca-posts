@@ -1582,6 +1582,8 @@ import { navLinks, esActual } from '../lib/nav';
       ...(window.__attr ? window.__attr() : {}),
       // Página de origen externa (20 oct 2026): para ubicar picos que llegan sin UTM.
       referrer: landingReferrer(),
+      // 24 nov 2026: alumno del curso (marca de BaseLayout) → cupo de 5 análisis cada 30 días en el servidor.
+      alumno: !!(window as unknown as { __alumno?: boolean }).__alumno,
     };
 
     // Validación en cliente: el largo se avisa junto al recuadro (antes con alert y sin dónde recortar).

@@ -10,6 +10,8 @@
  */
 
 const DEFAULT_MAX_SUBMISSIONS = 2;
+/** Alumnos del curso (24 nov 2026): 5 análisis por correo cada 30 días si llegan con el enlace del curso. */
+export const CUPO_ALUMNO = 5;
 const DEFAULT_TTL_SECONDS = 30 * 24 * 60 * 60; // 30 días
 
 async function sha256Hex(input: string): Promise<string> {

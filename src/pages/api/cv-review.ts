@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
-import { readRolObjetivo } from '../../lib/cv-review-rubric';
-import { checkCvSubmitLimit } from '../../lib/rate-limit';
+import { readRolObjetivo, esDesdeCurso } from '../../lib/cv-review-rubric';
+import { checkCvSubmitLimit, CUPO_ALUMNO } from '../../lib/rate-limit';
 import { sendEmail } from '../../lib/postmark';
 import { extractUtms } from '../../lib/utm';
 import { extractAttribution, emailHashFull } from '../../lib/attribution';
@@ -43,6 +43,8 @@ interface CVReviewRequest {
   ft?: unknown;
   lt?: unknown;
   interno?: boolean;
+  // 24 nov 2026: marca de alumno del curso (window.__alumno) → cupo CUPO_ALUMNO.
+  alumno?: boolean;
   // 6 nov 2026 (rúbrica v2): rol objetivo opcional y señales de la extracción. No llevan texto del CV.
   rol_objetivo?: string;
   origen?: string;
@@ -81,7 +83,8 @@ function mensajeCupo(max: number, resetInDays: number, resetAt?: string): string
       // sin Intl: queda solo el número de días
     }
   }
-  return `Ya usaste tus ${max} análisis gratuitos. El cupo es de ${max} análisis por correo cada 30 días, contados desde tu primer análisis: podrás hacer otro ${cuando}. Si necesitas otro análisis antes, escríbenos en /contacto.`;
+  const curso = max < CUPO_ALUMNO ? ` Si eres alumno del curso, entra con el enlace de recursos de la lección: con él tienes ${CUPO_ALUMNO} análisis.` : '';
+  return `Ya usaste tus ${max} análisis gratuitos. El cupo es de ${max} análisis por correo cada 30 días, contados desde tu primer análisis: podrás hacer otro ${cuando}.${curso} Si necesitas otro análisis antes, escríbenos en /contacto.`;
 }
 
 // Tope diario global (20 oct 2026): un pico de 29 análisis en un día (vs 1-2 normal)
@@ -178,9 +181,13 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     );
   }
 
-  // Rate limit: max 2 análisis por email cada 30 días, contados desde el primero (ver rate-limit.ts)
+  // Rate limit: max 2 análisis por email cada 30 días, contados desde el primero (ver rate-limit.ts).
+  // 24 nov 2026 (Oscar): alumnos del curso, 5. Se reconocen por la marca del navegador (window.__alumno, que
+  // pone BaseLayout al entrar con un enlace del curso) o por los UTM del enlace (esDesdeCurso). No verifica la
+  // compra: quien copie un enlace del curso también tiene 5; el tope diario global (DAILY_CAP) acota el gasto.
   const limitsKV = runtime?.env?.CV_LIMITS as KVNamespace | undefined;
-  const limitCheck = await checkCvSubmitLimit(limitsKV, email);
+  const alumnoCurso = body.interno !== true && (body.alumno === true || esDesdeCurso(extractUtms(body as unknown as Record<string, unknown>)));
+  const limitCheck = await checkCvSubmitLimit(limitsKV, email, alumnoCurso ? { max: CUPO_ALUMNO } : undefined);
   if (!limitCheck.allowed) {
     return jsonResponse(
       {
