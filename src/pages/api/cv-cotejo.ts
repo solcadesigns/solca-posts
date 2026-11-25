@@ -8,7 +8,8 @@
  *
  * Body: { cv, vacante? | vacanteId?, email, consent: true, ref?, aid/ft/lt/interno, utm_* }
  *   vacanteId: id de la tabla `vacantes` (buscador); el texto sale de D1, nunca del cliente ni de la URL.
- * Respuesta: { ok, puesto, empresa, rol, indispensables, deseables, requisitos[{requisito, prioridad, estado, sugerencia?}] }
+ * Respuesta: { ok, puesto, empresa, rol, indispensables, deseables, sin_indicar, requisitos[{requisito, prioridad, estado, sugerencia?}] }
+ * (prioridad: indispensable | deseable | sin_indicar; sin_indicar desde c4, 24 nov 2026)
  *   Sin la evidencia del CV (no hace falta en pantalla y evita devolver texto del CV).
  *
  * Costo y abuso: kill switch `anthropic_paused`, 5 comparaciones por correo al día, 10 por IP al día, tope global
@@ -167,6 +168,9 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     des_total: r.deseables.total,
     des_cumple: r.deseables.cumple,
     des_parcial: r.deseables.parcial,
+    sin_total: r.sin_indicar.total,
+    sin_cumple: r.sin_indicar.cumple,
+    sin_parcial: r.sin_indicar.parcial,
     evid_descartadas: r.evidenciasDescartadas,
     cache: vac.cache ? 1 : 0,
     ms: (vac.ms ?? 0) + (ev.ms ?? 0),
@@ -179,6 +183,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     rol: r.rol,
     indispensables: r.indispensables,
     deseables: r.deseables,
+    sin_indicar: r.sin_indicar,
     requisitos: r.requisitos.map((q) => ({ requisito: q.requisito, prioridad: q.prioridad, estado: q.estado, ...(q.sugerencia ? { sugerencia: q.sugerencia } : {}) })),
     // 11 nov 2026: preguntas antes del pago, armadas por código a partir de lo que no aparece o aparece en parte.
     preguntas: preguntasDeCotejo(r.requisitos),

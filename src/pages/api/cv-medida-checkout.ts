@@ -22,7 +22,7 @@ import { esCorreoDePrueba } from '../../lib/simulator-test-sessions';
 import { leerEntrada, detectarIdioma, CVM_OXXO_DIAS, CVM_CHECKOUT_EXPIRA_S } from '../../lib/cv-medida';
 import { nuevoTrabajo, guardarTrabajo, jobKey, type KvLike } from '../../lib/cv-medida-queue';
 import { registrarEventoCvm } from '../../lib/cv-medida-run';
-import { leerRespuestas, respuestasATexto, textoVacanteBuscador, clasificacionGuardada, COTEJO_MAX_VACANTE_BUSCADOR } from '../../lib/cv-cotejo';
+import { leerRespuestas, respuestasATexto, textoVacanteBuscador, clasificacionGuardada, requisitosParaMedida, COTEJO_MAX_VACANTE_BUSCADOR } from '../../lib/cv-cotejo';
 
 /** 11 nov 2026: texto libre + respuestas de las preguntas (cada respuesta ≤ ~500 caracteres, máximo 5). */
 const MAX_TEXTO_CON_RESPUESTAS = 4_500;
@@ -139,7 +139,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
       consentTs: new Date(now).toISOString(),
       attr,
       interno,
-      ...(clasif ? { requisitos: clasif.requisitos.map((q) => ({ requisito: q.requisito, prioridad: q.prioridad })) } : {}),
+      ...(clasif ? { requisitos: requisitosParaMedida(clasif) } : {}),
       ...(ref ? { ref } : {}),
     },
     now,

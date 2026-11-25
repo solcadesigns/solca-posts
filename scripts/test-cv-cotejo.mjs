@@ -45,11 +45,11 @@ Química Farmacéutico Bióloga, Universidad Nacional, 2019.
 Analista de control de calidad, Laboratorio X, 2020-2023: liberación de lotes y estudios de estabilidad por HPLC.
 Inglés avanzado (C1).`;
 
-await prueba('prioridad: obligación en la marca → indispensable; sin marca o "What we are looking for" → deseable', () => {
+await prueba('prioridad: obligación en la marca → indispensable; sin señal (sin marca o "What we are looking for") → sin_indicar', () => {
   assert.equal(prioridadPorMarca("Bachelor's degree in pharmacy", 'Required qualifications and experience:'), 'indispensable');
-  assert.equal(prioridadPorMarca('Advanced proficiency in English', "What We're Looking For"), 'deseable');
+  assert.equal(prioridadPorMarca('Advanced proficiency in English', "What We're Looking For"), 'sin_indicar');
   assert.equal(prioridadPorMarca('Licenciatura en Química', 'Requisitos:'), 'indispensable');
-  assert.equal(prioridadPorMarca('Inglés avanzado', ''), 'deseable');
+  assert.equal(prioridadPorMarca('Inglés avanzado', ''), 'sin_indicar');
   assert.equal(prioridadPorMarca('Experiencia en HPLC', 'Deseable'), 'deseable');
   assert.equal(prioridadPorMarca('Experiencia en HPLC', 'Excluyente'), 'indispensable');
 });
@@ -64,7 +64,7 @@ await prueba('prioridad: la preferencia del propio requisito gana sobre la secci
 
 await prueba('prioridad: obligación en la cita sin marca; "as required" no cuenta', () => {
   assert.equal(prioridadPorMarca('This role typically requires 0 - 2 years of prior relevant experience', ''), 'indispensable');
-  assert.equal(prioridadPorMarca('Willingness to travel as required (approximately 10%)', ''), 'deseable');
+  assert.equal(prioridadPorMarca('Willingness to travel as required (approximately 10%)', ''), 'sin_indicar');
 });
 
 await prueba('validarVacante: descarta citas que no están en la vacante y marcas inventadas', () => {
@@ -87,7 +87,7 @@ await prueba('validarVacante: descarta citas que no están en la vacante y marca
   assert.equal(v.rol, 'Pharmacovigilance');
   assert.deepEqual(v.requisitos.map((r) => [r.requisito, r.prioridad]), [
     ["Bachelor's degree", 'indispensable'],
-    ['Inglés avanzado', 'deseable'], // "Required qualifications" está antes, pero "What We're Looking For" abre otra sección
+    ['Inglés avanzado', 'sin_indicar'], // "Required qualifications" está antes, pero "What We're Looking For" abre otra sección
     ['Experiencia', 'indispensable'],
   ]);
   assert.equal(v.descartados, 3);
@@ -105,7 +105,7 @@ await prueba('validarVacante: una marca que aparece después del requisito no lo
     VAC,
   );
   assert.equal(v.requisitos[0].marca, '');
-  assert.equal(v.requisitos[0].prioridad, 'deseable');
+  assert.equal(v.requisitos[0].prioridad, 'sin_indicar');
 });
 
 await prueba('validarVacante: marca que no está en la vacante se ignora; rol desconocido → Other; <2 requisitos → null', () => {
@@ -123,7 +123,7 @@ await prueba('validarVacante: marca que no está en la vacante se ignora; rol de
   );
   assert.equal(v.rol, 'Other');
   assert.equal(v.requisitos[0].marca, '');
-  assert.equal(v.requisitos[0].prioridad, 'deseable');
+  assert.equal(v.requisitos[0].prioridad, 'sin_indicar');
   assert.equal(validarVacante({ requisitos: [] }, VAC), null);
   assert.equal(validarVacante(null, VAC), null);
 });
@@ -260,9 +260,10 @@ await prueba('revisión: negaciones, marca saltada por otro encabezado, evidenci
 
 await prueba('c2: obligación en la frase con encabezado neutro; cita compartida por dos requisitos', () => {
   assert.equal(prioridadPorMarca('This role typically requires 0 - 2 years of prior relevant experience', 'Experience and skills'), 'indispensable');
-  assert.equal(prioridadPorMarca('Degree in scientific discipline or health care.', 'Experience and skills'), 'deseable');
-  assert.equal(prioridadPorMarca('Good knowledge of clinical research regulatory requirements', 'Experience and skills'), 'deseable');
-  assert.equal(prioridadPorMarca('Conocimiento de requisitos regulatorios', ''), 'deseable');
+  // c3 (24 nov 2026): el título exigido es indispensable aunque el encabezado sea neutro.
+  assert.equal(prioridadPorMarca('Degree in scientific discipline or health care.', 'Experience and skills'), 'indispensable');
+  assert.equal(prioridadPorMarca('Good knowledge of clinical research regulatory requirements', 'Experience and skills'), 'sin_indicar');
+  assert.equal(prioridadPorMarca('Conocimiento de requisitos regulatorios', ''), 'sin_indicar');
   // Cita propia por parte: la obligatoria es indispensable y la preferida deseable; la cita mezclada es dudosa → deseable.
   assert.equal(prioridadPorMarca("Bachelor's degree in pharmacy", 'Requirements', { requisito: "Bachelor's degree" }), 'indispensable');
   assert.equal(prioridadPorMarca("Master's preferred", 'Requirements', { requisito: "Master's degree" }), 'deseable');
@@ -274,13 +275,16 @@ await prueba('c2 revisión: negaciones y "required" como adjetivo de un tema', (
   for (const c of [
     'No es requisito indispensable el inglés',
     'Not mandatory but helpful: SAS',
+  ]) assert.equal(prioridadPorMarca(c, N), 'deseable', c);
+  // Sin señal de obligación ni de preferencia: sin_indicar (c3; antes, deseable). Lo que importa es que no sean indispensables.
+  for (const c of [
     'Prepare documents required by regulatory authorities',
     'Understand what is required for SOP compliance',
     'Complete mandatory training',
     'Willingness to travel when required',
     'Support sites where required',
     'Good knowledge of clinical research regulatory requirements',
-  ]) assert.equal(prioridadPorMarca(c, N), 'deseable', c);
+  ]) assert.equal(prioridadPorMarca(c, N), 'sin_indicar', c);
   for (const c of [
     'This role typically requires 0 - 2 years of prior relevant experience',
     'Candidates must hold a degree in life sciences',
@@ -367,6 +371,167 @@ await prueba('evidencia: tramos de líneas separadas, Ph.D./PhD y guion al final
   for (const x of ['Associate consultant and data analyst: SAS.', 'PhD in Biomedical Science. Harvard. Oxford.', 'Associate consultant and data analyst | Novartis', 'Associate consultant and data analyst // SQL'])
     assert.equal(evidenciaLiteral(x, cv), false, x); // un tramo real no salva una palabra inventada
   assert.ok(evidenciaLiteral('IQVIA (2022-2025) – Associate consultant and data analyst', cv));
+});
+
+// ── c3 (24 nov 2026): encabezados neutros ("Qualifications", "What you bring") ─────────────────────────────
+// Dos anuncios de ejemplo (redactados para la prueba). Se pasan por validarVacante, como saldrían del modelo, y la
+// prioridad se comprueba por código requisito por requisito.
+const VAC_NEUTRA_1 = `Clinical Data Coordinator
+About the role
+You will review and clean data from clinical studies.
+Qualifications
+• Bachelor's degree in life sciences, pharmacy or a related field.
+• 2+ years of experience in clinical data management.
+• Working knowledge of MedDRA coding.
+• Experience with SAS is a plus.
+• Strong attention to detail.
+• Minimum B2 level of English.
+• Familiarity with CDISC standards preferred.`;
+
+const VAC_NEUTRA_2 = `Analista de Calidad
+Lo que buscamos
+• Título universitario en Química, QFB o carrera afín.
+• Mínimo dos años de experiencia en control de calidad bajo BPF.
+• Manejo de HPLC.
+• Conocimiento de SAP QM, deseable.
+• Disponibilidad para trabajar por turnos.
+What you bring
+• You must be able to work on site in Toluca.
+• Experience in a regulated environment would be nice to have.
+• Excellent communication skills.`;
+
+function salidaDe(vac, pares) {
+  return { puesto: vac.split('\n')[0], empresa: '', rol: 'Other', requisitos: pares.map(([requisito, cita, marca]) => ({ requisito, cita, marca })) };
+}
+
+await prueba('c3 anuncio 1 (Qualifications): títulos, años y "minimum" → indispensable; "a plus"/"preferred" → deseable; resto → sin_indicar', () => {
+  const v = validarVacante(salidaDe(VAC_NEUTRA_1, [
+    ["Bachelor's degree in life sciences", "Bachelor's degree in life sciences, pharmacy or a related field.", 'Qualifications'],
+    ['2+ years in clinical data management', '2+ years of experience in clinical data management.', 'Qualifications'],
+    ['MedDRA coding', 'Working knowledge of MedDRA coding.', 'Qualifications'],
+    ['SAS', 'Experience with SAS is a plus.', 'Qualifications'],
+    ['Attention to detail', 'Strong attention to detail.', 'Qualifications'],
+    ['English B2', 'Minimum B2 level of English.', 'Qualifications'],
+    ['CDISC standards', 'Familiarity with CDISC standards preferred.', 'Qualifications'],
+  ]), VAC_NEUTRA_1);
+  assert.ok(v, 'clasificación nula');
+  assert.equal(v.requisitos.length, 7);
+  assert.ok(v.requisitos.every((r) => r.marca === 'Qualifications'), 'la marca neutra debe calificar a todos');
+  assert.deepEqual(v.requisitos.map((r) => [r.requisito, r.prioridad]), [
+    ["Bachelor's degree in life sciences", 'indispensable'],
+    ['2+ years in clinical data management', 'indispensable'],
+    ['MedDRA coding', 'sin_indicar'],
+    ['SAS', 'deseable'],
+    ['Attention to detail', 'sin_indicar'],
+    ['English B2', 'indispensable'],
+    ['CDISC standards', 'deseable'],
+  ]);
+  // Ya no sale todo "deseable".
+  assert.ok(v.requisitos.filter((r) => r.prioridad === 'deseable').length < v.requisitos.length);
+});
+
+await prueba('c3 anuncio 2 ("Lo que buscamos" / "What you bring"): título, mínimo de años y "must" → indispensable', () => {
+  const v = validarVacante(salidaDe(VAC_NEUTRA_2, [
+    ['Título en Química o QFB', 'Título universitario en Química, QFB o carrera afín.', 'Lo que buscamos'],
+    ['Experiencia en control de calidad', 'Mínimo dos años de experiencia en control de calidad bajo BPF.', 'Lo que buscamos'],
+    ['HPLC', 'Manejo de HPLC.', 'Lo que buscamos'],
+    ['SAP QM', 'Conocimiento de SAP QM, deseable.', 'Lo que buscamos'],
+    ['Turnos', 'Disponibilidad para trabajar por turnos.', 'Lo que buscamos'],
+    ['Trabajo presencial', 'You must be able to work on site in Toluca.', 'What you bring'],
+    ['Entorno regulado', 'Experience in a regulated environment would be nice to have.', 'What you bring'],
+    ['Comunicación', 'Excellent communication skills.', 'What you bring'],
+  ]), VAC_NEUTRA_2);
+  assert.ok(v, 'clasificación nula');
+  assert.deepEqual(v.requisitos.map((r) => r.prioridad), [
+    'indispensable', 'indispensable', 'sin_indicar', 'deseable', 'sin_indicar', 'indispensable', 'deseable', 'sin_indicar',
+  ]);
+  // La marca "Lo que buscamos" no califica a lo que está bajo "What you bring" (otro encabezado en medio).
+  assert.equal(v.requisitos[5].marca, 'What you bring');
+});
+
+await prueba('c3 exigencia implícita: casos adversarios', async () => {
+  const { exigenciaImplicita } = await import('../src/lib/cv-cotejo.ts');
+  const { normalizar } = await import('../src/lib/cv-medida.ts');
+  const si = [
+    '3+ years of experience in pharmacovigilance',
+    '1-4 years of business experience',
+    'At least two years in a CRO',
+    'Al menos un año de experiencia en farmacovigilancia',
+    'Experiencia comprobable de 2 años en monitoreo',
+    "Master's degree in Public Health",
+    'PhD or PharmD in a relevant discipline',
+    'Licenciatura en Biología, Química o afín',
+    'Required: fluent English',
+    'Minimum of a bachelor degree',
+    'Nivel de inglés mínimo B2',
+  ];
+  const no = [
+    'A high degree of autonomy',
+    'Ability to work with minimum supervision',
+    'Strong communication skills',
+    'No degree required for this internship',
+    "No bachelor's degree needed",
+    'Sin título universitario; aceptamos pasantes',
+    'Not 5 years: we train you',
+    'Sin título: aceptamos estudiantes de último semestre',
+    'Willingness to travel up to 20% of the time',
+    'Knowledge of ICH E6 guidelines',
+    'Experience with master data management tools',
+    'Our company has more than 100 employees',
+  ];
+  for (const c of si) assert.equal(exigenciaImplicita(normalizar(c)), true, c);
+  for (const c of no) assert.equal(exigenciaImplicita(normalizar(c)), false, c);
+  // La preferencia gana sobre años o título: "3+ years preferred" es deseable, no indispensable.
+  assert.equal(prioridadPorMarca('3+ years of experience preferred', 'Qualifications'), 'deseable');
+  assert.equal(prioridadPorMarca("PhD is a plus", 'Qualifications'), 'deseable');
+  // Un encabezado de preferencia gana sobre años o título del propio requisito.
+  assert.equal(prioridadPorMarca("Master's degree in statistics", 'Preferred qualifications'), 'deseable');
+  assert.equal(prioridadPorMarca('5 years of experience', 'Nice to have'), 'deseable');
+});
+
+await prueba('c3 unirEvaluacion: conteo sin_indicar aparte y orden indispensable → deseable → sin indicar', () => {
+  const vac = { version: COTEJO_CLASIFICACION_VERSION, puesto: 'X', empresa: '', rol: 'Other', idioma: 'en', descartados: 0, requisitos: [
+    { requisito: 'MedDRA', prioridad: 'sin_indicar', cita: 'Working knowledge of MedDRA coding', marca: 'Qualifications' },
+    { requisito: 'Degree', prioridad: 'indispensable', cita: "Bachelor's degree", marca: 'Qualifications' },
+    { requisito: 'SAS', prioridad: 'deseable', cita: 'SAS is a plus', marca: 'Qualifications' },
+    { requisito: 'Viejo', cita: 'sin prioridad en una caché vieja', marca: '' },
+  ] };
+  const r = unirEvaluacion({ evaluacion: [] }, vac, CV);
+  assert.deepEqual(r.requisitos.map((q) => q.requisito), ['Degree', 'SAS', 'MedDRA', 'Viejo']);
+  assert.equal(r.indispensables.total, 1);
+  assert.equal(r.deseables.total, 1);
+  assert.deepEqual(r.sin_indicar, { total: 2, cumple: 0, parcial: 0, no_aparece: 2 });
+  assert.equal(r.indispensables.total + r.deseables.total + r.sin_indicar.total, vac.requisitos.length);
+});
+
+await prueba('c3 preguntas y CV a la medida: sin_indicar va entre indispensables y deseables; a la medida viaja como deseable', async () => {
+  const { preguntasDeCotejo, requisitosParaMedida } = await import('../src/lib/cv-cotejo.ts');
+  const qs = preguntasDeCotejo([
+    { requisito: 'D-no', prioridad: 'deseable', estado: 'no_aparece' },
+    { requisito: 'S-no', prioridad: 'sin_indicar', estado: 'no_aparece' },
+    { requisito: 'I-parcial', prioridad: 'indispensable', estado: 'parcial' },
+    { requisito: 'S-parcial', prioridad: 'sin_indicar', estado: 'parcial' },
+  ]);
+  assert.deepEqual(qs.map((q) => q.requisito), ['I-parcial', 'S-no', 'S-parcial', 'D-no']);
+  const m = requisitosParaMedida({ requisitos: [
+    { requisito: 'A', prioridad: 'indispensable', cita: '', marca: '' },
+    { requisito: 'B', prioridad: 'sin_indicar', cita: '', marca: '' },
+    { requisito: 'C', prioridad: 'deseable', cita: '', marca: '' },
+  ] });
+  assert.deepEqual(m, [{ requisito: 'A', prioridad: 'indispensable' }, { requisito: 'B', prioridad: 'deseable' }, { requisito: 'C', prioridad: 'deseable' }]);
+});
+
+await prueba('c3 interfaz y endpoint: sección "Sin indicar" y conteo en la respuesta', () => {
+  const pag = readFileSync(new URL('../src/pages/comparar-cv.astro', import.meta.url), 'utf8');
+  assert.ok(pag.includes('id="r-h-sin"') && pag.includes('id="r-sin"'));
+  assert.ok(pag.includes("lista($('r-sin'), sinL)"));
+  assert.ok(pag.includes("q.prioridad === 'deseable'"), 'deseables ya no es "todo lo que no es indispensable"');
+  const api = readFileSync(new URL('../src/pages/api/cv-cotejo.ts', import.meta.url), 'utf8');
+  assert.ok(api.includes('sin_indicar: r.sin_indicar'));
+  for (const f of ['../src/pages/api/cv-medida-checkout.ts', '../src/pages/api/cv-medida-prueba.ts'])
+    assert.ok(readFileSync(new URL(f, import.meta.url), 'utf8').includes('requisitosParaMedida(clasif)'), f);
+  assert.equal(COTEJO_CLASIFICACION_VERSION, 'c3-2026-11');
+  assert.equal(COTEJO_VERSION, 'c4-2026-11');
 });
 
 console.log(`${n} pruebas pasaron.`);
