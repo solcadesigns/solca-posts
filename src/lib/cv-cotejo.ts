@@ -156,6 +156,23 @@ function experienciaCerca(c: string, ini: number, fin: number): boolean {
   const despues = c.slice(fin).split(' ').filter(Boolean).slice(0, 4);
   return [...antes, ...despues].some((w) => w.startsWith('experien'));
 }
+/**
+ * Revisión 4 (24 nov 2026): años como experiencia exigida. Cuentan "years of …", "years in/en …", "años de/en …",
+ * "experience"/"experiencia" a ±4 palabras y "minimum/at least/al menos/mínimo" antes de los años. No cuentan: una
+ * cifra mayor de 20 ("100 years of development"), los años sueltos ("Fixed Term, 2 Years") ni una duración con
+ * "for/por/durante" ("for one year") sin la palabra experiencia cerca.
+ */
+function aniosExigidos(c: string, match: string, ini: number): boolean {
+  const fin = ini + match.length;
+  const num = /^\d+/.exec(match);
+  if (num && Number(num[0]) > 20) return false;
+  const antes = c.slice(0, ini).split(' ').filter(Boolean);
+  const despues = c.slice(fin).split(' ').filter(Boolean);
+  if (experienciaCerca(c, ini, fin)) return true;
+  if (['for', 'por', 'durante'].includes(antes[antes.length - 1] ?? '')) return false;
+  if (['of', 'in', 'de', 'en'].includes(despues[0] ?? '')) return true;
+  return antes.slice(-3).some((w) => ['minimum', 'minimo', 'minima', 'least', 'menos'].includes(w));
+}
 function negado(c: string, idx: number): boolean {
   return c.slice(0, idx).split(' ').filter(Boolean).slice(-3).some((w) => NEGACION.includes(w));
 }
@@ -174,9 +191,8 @@ export function exigenciaImplicita(cita: string): boolean {
       for (const m of c.matchAll(new RegExp(re.source, 'g'))) {
         // Un rango que empieza en 0 ("0 to 2 years", "0-2 años") acepta a quien no tiene experiencia: no exige.
         if (re === RE_ANIOS && RE_DESDE_CERO.test(m[0])) continue;
-        // Revisión 4: los años solo cuentan con "experience"/"experiencia" a ±4 palabras ("100 years of development",
-        // "Fixed Term, 2 Years" y "for one year" no son experiencia).
-        if (re === RE_ANIOS && !experienciaCerca(c, m.index ?? 0, (m.index ?? 0) + m[0].length)) continue;
+        // Revisión 4: los años solo cuentan si son experiencia exigida (ver aniosExigidos).
+        if (re === RE_ANIOS && !aniosExigidos(c, m[0], m.index ?? 0)) continue;
         if (!negado(c, m.index ?? 0)) return true;
       }
     }

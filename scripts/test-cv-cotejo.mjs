@@ -566,11 +566,11 @@ await prueba('revisión 3: título con experiencia equivalente como alternativa 
   assert.equal(exigenciaImplicita("Bachelor's degree or equivalent experience; 3+ years of experience in QA"), true);
 });
 
-await prueba('revisión 4: años solo con "experience"/"experiencia" a ±4 palabras', async () => {
+await prueba('revisión 4: años como experiencia exigida (of/in/de/en, experiencia cerca o mínimo); duraciones sueltas no', async () => {
   const { exigenciaImplicita } = await import('../src/lib/cv-cotejo.ts');
-  for (const c of ['Company with 100 years of development', 'Fixed Term, 2 Years', 'Contract for one year', 'At least two years in a CRO'])
+  for (const c of ['Company with 100 years of development', 'Fixed Term, 2 Years', 'Contract for one year', 'for one year', '0 to 2 years in clinical research', '0-2 años en farmacovigilancia'])
     assert.equal(exigenciaImplicita(c), false, c);
-  for (const c of ['3+ years of experience in pharmacovigilance', 'Experiencia comprobable de 2 años en monitoreo', '1-4 years of business experience', 'Two years of clinical research experience'])
+  for (const c of ['At least two years in a CRO', '3+ years in clinical research', '2 años en farmacovigilancia', 'Mínimo 2 años', '3+ years of experience in pharmacovigilance', 'Experiencia comprobable de 2 años en monitoreo', '1-4 years of business experience', 'Two years of clinical research experience'])
     assert.equal(exigenciaImplicita(c), true, c);
   assert.equal(prioridadPorMarca('Fixed Term, 2 Years', 'Job details'), 'sin_indicar');
 });
