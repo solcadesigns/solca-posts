@@ -313,7 +313,7 @@ import { navLinks, esActual } from '../lib/nav';
 
   type Conteo = { total: number; cumple: number; parcial: number; no_aparece: number };
   type Pregunta = { requisito: string; prioridad: string; estado: string };
-  type Res = { ok?: boolean; message?: string; puesto?: string; empresa?: string; indispensables?: Conteo; deseables?: Conteo; sin_indicar?: Conteo; requisitos?: Array<{ requisito: string; prioridad: string; estado: string; sugerencia?: string }>; preguntas?: Pregunta[] };
+  type Res = { ok?: boolean; message?: string; puesto?: string; empresa?: string; indispensables?: Conteo; deseables?: Conteo; deseables_solo?: Conteo; sin_indicar?: Conteo; requisitos?: Array<{ requisito: string; prioridad: string; estado: string; sugerencia?: string }>; preguntas?: Pregunta[] };
 
   // ---- Preguntas antes del pago y resumen (11 nov 2026) ----
   type Tipo = 'empleo' | 'proyecto' | 'no_tengo';
@@ -486,7 +486,8 @@ import { navLinks, esActual } from '../lib/nav';
 
   function mostrar(r: Res) {
     const ind = r.indispensables!;
-    const des = r.deseables!;
+    // Transición c4: `deseables` llega sumado con sin_indicar para el JS viejo; aquí se usan los estrictos.
+    const des = r.deseables_solo ?? r.deseables!;
     const sin = r.sin_indicar ?? { total: 0, cumple: 0, parcial: 0, no_aparece: 0 };
     const reqs = r.requisitos ?? [];
     $('r-puesto')!.textContent = [r.puesto, r.empresa].filter(Boolean).join(' · ');

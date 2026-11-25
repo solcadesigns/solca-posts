@@ -8,7 +8,7 @@
  *
  * Body: { cv, vacante? | vacanteId?, email, consent: true, ref?, aid/ft/lt/interno, utm_* }
  *   vacanteId: id de la tabla `vacantes` (buscador); el texto sale de D1, nunca del cliente ni de la URL.
- * Respuesta: { ok, puesto, empresa, rol, indispensables, deseables, sin_indicar, requisitos[{requisito, prioridad, estado, sugerencia?}] }
+ * Respuesta: { ok, puesto, empresa, rol, indispensables, deseables (transición: + sin_indicar), deseables_solo, sin_indicar, requisitos[{requisito, prioridad, estado, sugerencia?}] }
  * (prioridad: indispensable | deseable | sin_indicar; sin_indicar desde c4, 24 nov 2026)
  *   Sin la evidencia del CV (no hace falta en pantalla y evita devolver texto del CV).
  *
@@ -27,6 +27,7 @@ import {
   COTEJO_VERSION,
   preguntasDeCotejo,
   textoVacanteBuscador,
+  deseablesTransicion,
 } from '../../lib/cv-cotejo';
 import { extractAttribution, emailHashFull } from '../../lib/attribution';
 import { extractUtms } from '../../lib/utm';
@@ -182,7 +183,10 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     empresa: r.empresa,
     rol: r.rol,
     indispensables: r.indispensables,
-    deseables: r.deseables,
+    // Transición c4: `deseables` suma los sin_indicar para el JS viejo; el nuevo lee `deseables_solo`. Quitar después
+    // (ver deseablesTransicion en lib/cv-cotejo.ts).
+    deseables: deseablesTransicion(r),
+    deseables_solo: r.deseables,
     sin_indicar: r.sin_indicar,
     requisitos: r.requisitos.map((q) => ({ requisito: q.requisito, prioridad: q.prioridad, estado: q.estado, ...(q.sugerencia ? { sugerencia: q.sugerencia } : {}) })),
     // 11 nov 2026: preguntas antes del pago, armadas por código a partir de lo que no aparece o aparece en parte.

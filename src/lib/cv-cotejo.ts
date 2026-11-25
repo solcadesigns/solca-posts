@@ -710,6 +710,18 @@ export function textoVacanteBuscador(row: { titulo: string; empresa: string; des
 }
 
 /**
+ * Transición c4 (24 nov 2026): el JS de /comparar-cv anterior a c4 (pestañas abiertas antes del despliegue) lee
+ * `deseables` como "todo lo que no es indispensable"; sin los sin_indicar mostraría "0 de 0". La API manda en
+ * `deseables` esta suma y los deseables estrictos en `deseables_solo`. Se puede quitar (y volver a
+ * `deseables: r.deseables`) cuando ya no haya páginas viejas abiertas, p. ej. una semana después del despliegue.
+ */
+export function deseablesTransicion(r: Pick<ResultadoCotejo, 'deseables' | 'sin_indicar'>): ResultadoCotejo['deseables'] {
+  const a = r.deseables;
+  const b = r.sin_indicar;
+  return { total: a.total + b.total, cumple: a.cumple + b.cumple, parcial: a.parcial + b.parcial, no_aparece: a.no_aparece + b.no_aparece };
+}
+
+/**
  * Lista clasificada para el CV a la medida, que solo distingue indispensable/deseable: "sin_indicar" viaja como
  * deseable (allá lo dudoso es deseable).
  */

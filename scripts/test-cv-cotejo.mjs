@@ -588,4 +588,14 @@ await prueba('c3 interfaz y endpoint: sección "Sin indicar" y conteo en la resp
   assert.equal(COTEJO_VERSION, 'c4-2026-11');
 });
 
+await prueba('revisión 5: transición, `deseables` suma sin_indicar para el JS viejo', async () => {
+  const { deseablesTransicion } = await import('../src/lib/cv-cotejo.ts');
+  const d = deseablesTransicion({ deseables: { total: 1, cumple: 1, parcial: 0, no_aparece: 0 }, sin_indicar: { total: 3, cumple: 1, parcial: 1, no_aparece: 1 } });
+  assert.deepEqual(d, { total: 4, cumple: 2, parcial: 1, no_aparece: 1 });
+  const api = readFileSync(new URL('../src/pages/api/cv-cotejo.ts', import.meta.url), 'utf8');
+  assert.ok(api.includes('deseables: deseablesTransicion(r)') && api.includes('deseables_solo: r.deseables'));
+  const pag = readFileSync(new URL('../src/pages/comparar-cv.astro', import.meta.url), 'utf8');
+  assert.ok(pag.includes('r.deseables_solo ?? r.deseables'));
+});
+
 console.log(`${n} pruebas pasaron.`);
