@@ -19,7 +19,8 @@
  *     v7 · 11 nov 2026: el diario (0 15) llama también a /api/encuesta-resultado-tick, después de drip-tick.
  *     Sin trigger nuevo: la cuenta está en el tope de 5 Cron Triggers. Las dos llamadas van en serie y un
  *     fallo de la primera no impide la segunda.
- *     v8 · 24 nov 2026: el diario (0 15) llama también a /api/encuesta-curso-tick (correos de 30 y 90 días del curso V2.0).
+ *     v8 · 24 nov 2026: el diario (0 15) llama también a /api/encuesta-curso-tick (correos de 30 y 90 días del curso V2.0;
+ *       &enviar=1 porque el tick simula en cualquier host que no sea solcaciencia.com).
  *
  * Por qué un patch post-build: el adapter de Astro solo expone `fetch`. No hay
  * forma documentada de añadir otros handlers (scheduled, queue, etc.) desde
@@ -73,7 +74,7 @@ const __solcaCronWrapper = {
       const rutas = [
         \`https://internal.cron/api/drip-tick?key=\${key}&trigger=\${trig}\`,
         \`https://internal.cron/api/encuesta-resultado-tick?key=\${key}&trigger=\${trig}\`,
-        \`https://internal.cron/api/encuesta-curso-tick?key=\${key}&trigger=\${trig}\`,
+        \`https://internal.cron/api/encuesta-curso-tick?key=\${key}&trigger=\${trig}&enviar=1\`,
       ];
       ctx.waitUntil((async () => {
         for (const u of rutas) {

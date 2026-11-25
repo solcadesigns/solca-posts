@@ -12,6 +12,10 @@
  * confirmación, no del correo, para que los escáneres de enlaces no lo disparen)
  * setea además `unsub:<email>:newsletter`, que `blog-broadcast.ts` excluye.
  *
+ * Con `&scope=curso-encuestas` (25 nov 2026, pie de los correos de 30/90 días del curso V2.0) setea solo
+ * `unsub:<email>:curso-encuestas`, que /api/encuesta-curso-tick excluye. No toca drip, newsletter ni
+ * consentimientos (no es una baja comercial).
+ *
  * Auth: solo por HMAC firmado. Sin sesión, sin form. Un enlace de un clic.
  *
  * Responde HTML de confirmación (o error) porque el usuario aterriza aquí
@@ -22,6 +26,7 @@ import type { APIRoute } from 'astro';
 import { hmacVerifyEmail } from '../../lib/drip';
 import { emailHashFull } from '../../lib/attribution';
 import { registrarRevocacion } from '../../lib/consent';
+import { guardarEventoD1 } from '../../lib/eventos-d1';
 
 export const prerender = false;
 
@@ -74,6 +79,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
   const email = (url.searchParams.get('email') ?? '').trim().toLowerCase();
   const sig = url.searchParams.get('sig') ?? '';
   const alsoNewsletter = url.searchParams.get('scope') === 'newsletter';
+  const soloCurso = url.searchParams.get('scope') === 'curso-encuestas';
 
   if (!email || !EMAIL_RE.test(email)) {
     return htmlResponse(
@@ -101,6 +107,25 @@ export const GET: APIRoute = async ({ url, locals }) => {
       500,
       page('Error de configuración', 'No pudimos completar la baja en este momento. Escribe a <a href="mailto:hello@solcaciencia.com">hello@solcaciencia.com</a> y lo hacemos manualmente.'),
     );
+  }
+
+  if (soloCurso) {
+    try {
+      await kv.put(`unsub:${email}:curso-encuestas`, JSON.stringify({ ts: new Date().toISOString(), via: 'drip-unsubscribe' }));
+    } catch (err) {
+      console.error('drip-unsubscribe KV put failed (curso-encuestas)', err);
+      return htmlResponse(
+        500,
+        page('Error al procesar', 'La baja no se pudo guardar. Escribe a <a href="mailto:hello@solcaciencia.com">hello@solcaciencia.com</a> y lo hacemos manualmente.'),
+      );
+    }
+    const ts = new Date().toISOString();
+    await guardarEventoD1(env.SIMULATOR_METRICS_DB as D1Database | undefined, `curso-baja:${ts}:${(await emailHashFull(email)).slice(0, 12)}`, {
+      ts,
+      event: 'encuesta_curso_baja',
+      product: 'curso_cv_v2',
+    }).catch(() => {});
+    return htmlResponse(200, page('Baja registrada', 'Listo. Ya no vas a recibir los correos de las encuestas del curso.'));
   }
 
   try {
