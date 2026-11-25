@@ -52,7 +52,9 @@ export default defineConfig({
         !page.includes('/cv-a-la-medida') &&
         // 11 nov 2026: comparación (interna hasta diciembre) y encuesta de resultado (solo desde el correo).
         !page.includes('/comparar-cv') &&
-        !page.includes('/encuesta-resultado'),
+        !page.includes('/encuesta-resultado') &&
+        // 25 nov 2026: encuestas del curso V2.0 (solo desde Hotmart y los correos del curso; noindex).
+        !page.includes('/encuesta-curso'),
     }),
   ],
   vite: {

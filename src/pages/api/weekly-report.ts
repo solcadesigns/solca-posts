@@ -216,7 +216,8 @@ interface WeeklyReport {
     share_clicks_7d: Record<string, number>;
     // 14 oct 2026: visitas registradas por page_viewed en la semana (7 días),
     // con y sin UTM. Desde antes de esa fecha no hay datos.
-    page_views_7d: { 'quiz-rol': number; 'revisar-cv': number; blog: number; vacantes: number; libro: number; con_utm: number };
+    // 25 nov 2026: + encuesta-curso (vistas de las encuestas del curso V2.0).
+    page_views_7d: { 'quiz-rol': number; 'revisar-cv': number; blog: number; vacantes: number; libro: number; 'encuesta-curso': number; con_utm: number };
   };
   // Postmark Analytics — se llena si POSTMARK_SERVER_TOKEN está presente.
   // Datos de últimos 30 días por tag. Requiere Open + Link tracking activo
@@ -1738,7 +1739,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
       next_step_clicks_7d: {} as Record<string, number>,
       cv_steps_7d: {} as Record<string, number>,
       share_clicks_7d: {} as Record<string, number>,
-      page_views_7d: { 'quiz-rol': 0, 'revisar-cv': 0, blog: 0, vacantes: 0, libro: 0, con_utm: 0 },
+      page_views_7d: { 'quiz-rol': 0, 'revisar-cv': 0, blog: 0, vacantes: 0, libro: 0, 'encuesta-curso': 0, con_utm: 0 },
       eventos_internos_7d: 0,
       eventos_bot_7d: 0,
     };
@@ -1754,7 +1755,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
           utm_medium?: string;
           utm_campaign?: string;
           plan?: string;
-          page?: 'quiz-rol' | 'revisar-cv' | 'blog' | 'vacantes' | 'libro';
+          page?: 'quiz-rol' | 'revisar-cv' | 'blog' | 'vacantes' | 'libro' | 'encuesta-curso';
           product?: string;
           path?: string;
           interno?: boolean;

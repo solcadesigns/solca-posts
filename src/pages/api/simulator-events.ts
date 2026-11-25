@@ -44,7 +44,7 @@ interface EventBody {
     | 'cv_step'
     | 'share_clicked';
   // page_viewed: qué página se vio. path = pathname (para blog, el slug).
-  page?: 'quiz-rol' | 'revisar-cv' | 'blog' | 'vacantes';
+  page?: 'quiz-rol' | 'revisar-cv' | 'blog' | 'vacantes' | 'libro' | 'encuesta-curso';
   path?: string;
   // book_clicked: id del producto Hotmart (ej. E107847432I) y etiqueta sck/src enviada.
   product?: string;
@@ -88,7 +88,8 @@ const ALLOWED_EVENTS = new Set([
 ]);
 
 // 22 oct 2026: + buscador de vacantes.
-const ALLOWED_PAGES = new Set(['quiz-rol', 'revisar-cv', 'blog', 'vacantes', 'libro']);
+// 24 nov 2026: + encuestas del curso V2.0 (path = /encuesta-curso/<tipo>; vista de la encuesta).
+const ALLOWED_PAGES = new Set(['quiz-rol', 'revisar-cv', 'blog', 'vacantes', 'libro', 'encuesta-curso']);
 
 const SHARE_PRODUCT_RE = /^(quiz-rol|simulador-entrevistas|vacantes|revisar-cv):(linkedin|whatsapp|copy)$/;
 

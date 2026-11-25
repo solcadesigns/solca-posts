@@ -19,6 +19,8 @@
  *     v7 · 11 nov 2026: el diario (0 15) llama también a /api/encuesta-resultado-tick, después de drip-tick.
  *     Sin trigger nuevo: la cuenta está en el tope de 5 Cron Triggers. Las dos llamadas van en serie y un
  *     fallo de la primera no impide la segunda.
+ *     v8 · 24 nov 2026: el diario (0 15) llama también a /api/encuesta-curso-tick (correos de 30 y 90 días del curso V2.0;
+ *       &enviar=1 porque el tick simula en cualquier host que no sea solcaciencia.com).
  *
  * Por qué un patch post-build: el adapter de Astro solo expone `fetch`. No hay
  * forma documentada de añadir otros handlers (scheduled, queue, etc.) desde
@@ -38,11 +40,11 @@ import { dirname, resolve } from 'node:path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const WORKER_INDEX = resolve(__dirname, '..', 'dist', '_worker.js', 'index.js');
 
-const PATCH_MARKER = '/* SOLCA_CRON_PATCH_v7 */';
+const PATCH_MARKER = '/* SOLCA_CRON_PATCH_v8 */';
 
 const PATCH = `
 ${PATCH_MARKER}
-// Wrapper inyectado por scripts/patch-cron-handler.mjs (v7: el cron diario también envía la encuesta de 14 días).
+// Wrapper inyectado por scripts/patch-cron-handler.mjs (v8: el cron diario también envía la encuesta de 14 días y los correos de 30/90 días del curso).
 // Reemplaza el default export del Astro worker con un módulo que expone
 // AMBOS handlers: fetch (delegado al original) y scheduled (rutea por cron
 // pattern a endpoints internos, sin ir por HTTP externa).
@@ -72,6 +74,7 @@ const __solcaCronWrapper = {
       const rutas = [
         \`https://internal.cron/api/drip-tick?key=\${key}&trigger=\${trig}\`,
         \`https://internal.cron/api/encuesta-resultado-tick?key=\${key}&trigger=\${trig}\`,
+        \`https://internal.cron/api/encuesta-curso-tick?key=\${key}&trigger=\${trig}&enviar=1\`,
       ];
       ctx.waitUntil((async () => {
         for (const u of rutas) {
