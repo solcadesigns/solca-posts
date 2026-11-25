@@ -31,6 +31,10 @@ const anioActual = new Date().getFullYear();
 
     <form id="ec-form" novalidate data-tipo={tipo} data-meta={JSON.stringify(meta)} data-mensajes={JSON.stringify(MENSAJES_ERROR)}>
       <div id="ec-resumen" class="ec-error-global" role="alert" tabindex="-1" hidden></div>
+      <!-- Honeypot antispam: invisible para personas y lectores de pantalla; si llega lleno, el servidor lo descarta. -->
+      <div class="ec-hp" aria-hidden="true">
+        <label>Sitio web <input type="text" name="sitio_web" tabindex="-1" autocomplete="off" /></label>
+      </div>
       <ol class="ec-lista">
         {enc.preguntas.map((p: Pregunta) => {
           const idErr = `err-${p.id}`;
@@ -226,6 +230,7 @@ const anioActual = new Date().getFullYear();
         utm_content: utm.utm_content, utm_term: utm.utm_term,
         referrer: document.referrer || undefined,
         alumno: window.__alumno === true ? true : undefined,
+        sitio_web: (form.querySelector('[name=sitio_web]') || {}).value || undefined,
       }, window.__attr ? window.__attr() : {});
       fetch('/api/encuesta-curso', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
         .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
@@ -297,6 +302,7 @@ const anioActual = new Date().getFullYear();
   .ec-err:empty { display: none; }
   .ec-error-global { background: #FDECEA; color: #8C1D18; border-radius: 8px; padding: 12px 14px; margin: 0 0 18px; font-size: 15px; }
   .ec-error-global[hidden] { display: none !important; }
+  .ec-hp { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
   .ec-nota { font-size: 14px; color: var(--text-mute); line-height: 1.5; }
   .ec-nota a { color: var(--blue-mid); text-decoration: underline; }
   .ec-btn { width: 100%; max-width: 360px; min-height: 48px; font-size: 16px; border: 0; cursor: pointer; }
