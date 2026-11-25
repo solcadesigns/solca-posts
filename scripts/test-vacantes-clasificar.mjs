@@ -46,7 +46,7 @@ rol('Técnico de Manufatura', 'operaciones');
 rol('Associate Project Manager, Device Logistics', 'operaciones');
 rol('Senior Statistical Programmer', 'datos_clinicos');
 rol('Sr Clin Data Team Lead', 'datos_clinicos');
-rol('Lead Data Manager', 'datos_clinicos');
+rol('Lead Data Manager', 'datos_ti'); // sin contexto: solo es de datos clínicos en una CRO (ver abajo)
 rol('Senior Medical Coding Specialist', 'datos_clinicos');
 rol('Principal Biostatistician (FSP - client embedded)', 'datos_clinicos');
 rol('Proposal Developer 1', 'comercial_marketing');
@@ -75,6 +75,29 @@ nivel('Senior Statistical Programmer', 8, 'senior');
 nivel('CRA II', 8, 'intermedio');
 nivel('Associate Director, Data Engineer', 10, 'gerencia');
 
+// ── Revisión independiente (25 nov 2026): adversarios
+const noEs = (t, r, tipo = 'farma') => prueba(`no ${r}: ${t}`, () => assert.notEqual(clasificarRolEmpresa(t, tipo), r));
+rol('Medical Advisor SMA', 'medical_affairs'); // SMA = atrofia muscular espinal
+noEs('Brand Manager SMA', 'investigacion_clinica');
+noEs('Customer Service Representative - CTC', 'investigacion_clinica');
+rol('FSP Principal CTC', 'investigacion_clinica');
+rol('Clinical Trial Coordinator II', 'investigacion_clinica');
+rol('Site Management Associate II', 'investigacion_clinica');
+rol('Clinical Trial Manager, Data Review', 'clinical_pm');
+rol('Medical Information Data Review', 'medical_affairs');
+noEs('Master Data Manager', 'datos_clinicos');
+noEs('Master Data Manager', 'datos_clinicos', 'cro');
+noEs('Statistical Process Control Engineer', 'datos_clinicos');
+noEs('Sales Statistics Analyst', 'datos_clinicos');
+noEs('Sales Statistics Analyst', 'datos_clinicos', 'cro');
+rol('Senior Statistician I', 'datos_ti'); // sin contexto clínico en el título ni CRO
+prueba('Statistician en CRO: datos clínicos', () => assert.equal(clasificarRolEmpresa('Statistical Scientist', 'cro'), 'datos_clinicos'));
+prueba('Lead Data Manager en CRO: datos clínicos', () => assert.equal(clasificarRolEmpresa('Lead Data Manager', 'cro'), 'datos_clinicos'));
+rol('Clinical Data Manager', 'datos_clinicos');
+rol('Statistician, Clinical Trials', 'datos_clinicos');
+rol('Talent Sourcing Specialist', 'corporativo');
+rol('Legal Manufacturer Quality Specialist', 'calidad_manufactura');
+
 // ── Catálogo: todo rol que asignan las reglas existe en ROLES_VACANTE
 prueba('roles en catálogo', () => {
   const ids = new Set(ROLES_VACANTE.map((r) => r.id));
@@ -93,6 +116,13 @@ prueba('Thermo Fisher rol clínico: cro', () => assert.equal(tipoEmpresaVacante(
 prueba('ICON siempre cro', () => assert.equal(tipoEmpresaVacante(icon, 'Accountant', ''), 'cro'));
 prueba('Project Manager en proveedor no es clinical_pm', () => assert.equal(clasificarRolEmpresa('Project Manager', 'proveedor'), 'otro'));
 prueba('Project Manager en CRO sí es clinical_pm', () => assert.equal(clasificarRolEmpresa('Project Manager', 'cro'), 'clinical_pm'));
+
+prueba('Thermo NGS comercial (clinical suelto): proveedor', () =>
+  assert.equal(tipoEmpresaVacante(thermo, 'Senior Director, Commercial Clinical Next-Generation Sequencing', 'Grow clinical NGS sales in hospital labs.'), 'proveedor'));
+prueba('Thermo regulatorio de IVD: proveedor', () =>
+  assert.equal(tipoEmpresaVacante(thermo, 'Regulatory Affairs Specialist II', 'Registrations for in vitro diagnostic (IVD) reagents and instruments.'), 'proveedor'));
+prueba('Thermo regulatorio de PPD: cro', () =>
+  assert.equal(tipoEmpresaVacante(thermo, 'Regulatory Affairs Specialist II', 'Support submissions for clinical trials with our PPD clinical research teams.'), 'cro'));
 
 // ── Duplicados
 // Texto de plantilla sin repeticiones, del largo típico de una ficha (los fragmentos repetidos no cuentan dos veces).
