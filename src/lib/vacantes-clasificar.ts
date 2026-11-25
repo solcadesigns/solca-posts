@@ -97,7 +97,7 @@ const ROL_REGLAS: Array<[string, { test(titulo: string): boolean }]> = [
 const ROLES_CLINICOS = new Set(['investigacion_clinica', 'clinical_pm', 'farmacovigilancia', 'medical_affairs', 'msl', 'datos_clinicos']);
 // Señal en título o descripción: PPD, FSP (proveedor de servicios funcionales de la CRO), GCP, ensayos clínicos.
 // "clinical" suelto no basta: "Commercial Clinical Next-Generation Sequencing" es de equipos.
-const RX_SENAL_CRO = /(\bPPD\b|\bFSP\b|\bGCP\b|good clinical practice|clinical trials?|clinical research|clinical stud(y|ies)|estudios? cl[ií]nicos?|ensayos? cl[ií]nicos?|pesquisa cl[ií]nica|estudos? cl[ií]nicos?|drug development)/i;
+const RX_SENAL_CRO = /(\bPPD\b|\bFSP\b|\bGCP\b|good clinical practice|clinical trials?|clinical research|clinical stud(y|ies)|clinical (team|operations|suppl(y|ies)|translations?)|estudios? cl[ií]nicos?|ensayos? cl[ií]nicos?|pesquisa cl[ií]nica|estudos? cl[ií]nicos?|drug development)/i;
 // Solo en el título: la descripción de reactivos y equipos también menciona pacientes.
 const RX_SENAL_CRO_TITULO = /(med(ical)? info|patient)/i;
 export function tipoEmpresaVacante(

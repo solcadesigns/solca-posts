@@ -121,6 +121,10 @@ prueba('Project Manager en CRO sí es clinical_pm', () => assert.equal(clasifica
 
 prueba('Thermo NGS comercial (clinical suelto): proveedor', () =>
   assert.equal(tipoEmpresaVacante(thermo, 'Senior Director, Commercial Clinical Next-Generation Sequencing', 'Grow clinical NGS sales in hospital labs.'), 'proveedor'));
+prueba('Thermo suministros para ensayos: cro', () =>
+  assert.equal(tipoEmpresaVacante(thermo, 'Vendor Management Coordinator', 'Coordinate vendors for clinical supplies of each study.'), 'cro'));
+prueba('Thermo diagnóstico clínico: proveedor', () =>
+  assert.equal(tipoEmpresaVacante(thermo, 'Market Development Manager Hemato Oncology', 'Grow our clinical diagnostic portfolio in the clinical industry.'), 'proveedor'));
 prueba('Thermo regulatorio de IVD: proveedor', () =>
   assert.equal(tipoEmpresaVacante(thermo, 'Regulatory Affairs Specialist II', 'Registrations for in vitro diagnostic (IVD) reagents and instruments.'), 'proveedor'));
 prueba('Thermo regulatorio de PPD: cro', () =>
