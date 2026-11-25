@@ -4,10 +4,11 @@
  *
  * Dos pasos, cada uno con una llamada a Haiku 5.5 (salida estructurada):
  *   1. clasificarVacante: extrae los requisitos de la vacante UNA vez por vacante (se guarda en KV por el hash del
- *      texto). El modelo solo cita; la prioridad la decide el código: "indispensable" únicamente si la marca citada
- *      (encabezado o frase de la vacante) contiene una palabra de obligación de la lista cerrada y el propio
- *      requisito no dice "preferred", "deseable", etc. Regla de Oscar (10 nov 2026): indispensable solo si la vacante
- *      lo marca como obligatorio; lo dudoso es deseable. Así la misma vacante da siempre la misma lista.
+ *      texto). El modelo solo cita; la prioridad la decide el código (prioridadPorMarca), así la misma vacante da
+ *      siempre la misma lista. c3 (24 nov 2026, pruebas del curso: con encabezados neutros como "Qualifications" o
+ *      "What you bring" todo salía "deseable"): "indispensable" si la marca o el propio requisito usan lenguaje de
+ *      obligación (required, must, minimum, años de experiencia, título exigido); "deseable" solo con señal explícita
+ *      de preferencia (preferred, nice to have, a plus, deseable); "sin_indicar" cuando no hay señal.
  *   2. evaluarCv: para cada requisito, si aparece en el CV, con cita literal del CV. Sin cita verificable no cuenta
  *      como cumplido ("No aparece en tu CV"); el modelo nunca decide solo.
  *
@@ -21,10 +22,12 @@ import { normalizar, prepararFuentes, citaEnFuentes, detectarIdioma, parsearJson
 // c2 (10 nov 2026, 9 pruebas reales): obligación en la frase del requisito aunque la marca sea neutra; preferencia
 // también en el nombre del requisito; cita propia por cada parte de un requisito dividido.
 // c3 (16 nov 2026): sugerencia fija de expresar el nivel de idioma con el MCER (B1, B2, C1) o un examen con puntaje.
-export const COTEJO_VERSION = 'c3-2026-11';
+// c4 (24 nov 2026): tercera prioridad "sin_indicar" y conteo propio en la respuesta.
+export const COTEJO_VERSION = 'c4-2026-11';
 /** Versión de la clasificación de vacantes (llave KV y v.version). Separada de COTEJO_VERSION para que un cambio
  * solo en la evaluación no invalide la caché ni cambie los requisitos que ya vio la persona. */
-export const COTEJO_CLASIFICACION_VERSION = 'c2-2026-11';
+// c3-2026-11 (24 nov 2026): prioridad inferida del lenguaje del requisito (años, título, minimum) y "sin_indicar".
+export const COTEJO_CLASIFICACION_VERSION = 'c3-2026-11';
 export const COTEJO_MIN_CV = 200;
 export const COTEJO_MAX_CV = 15_000;
 export const COTEJO_MIN_VACANTE = 200;
@@ -36,10 +39,15 @@ export const COTEJO_MAX_REQUISITOS = 12;
 export const COTEJO_CACHE_TTL_S = 60 * 60 * 24 * 30;
 
 export type EstadoCotejo = 'cumple' | 'parcial' | 'no_aparece';
+/**
+ * Prioridad de la comparación. "sin_indicar": la vacante no da señal de obligación ni de preferencia. Desde p6 el CV
+ * a la medida (cv-medida.ts) también la conoce y requisitosParaMedida la pasa tal cual.
+ */
+export type PrioridadCotejo = Prioridad | 'sin_indicar';
 
 export interface RequisitoVacante {
   requisito: string;
-  prioridad: Prioridad;
+  prioridad: PrioridadCotejo;
   /** Fragmento literal de la vacante con el requisito. */
   cita: string;
   /** Encabezado o frase literal de la vacante que lo marca (obligación o preferencia); '' si no hay. */
@@ -59,7 +67,7 @@ export interface VacanteClasificada {
 
 export interface RequisitoEvaluado {
   requisito: string;
-  prioridad: Prioridad;
+  prioridad: PrioridadCotejo;
   estado: EstadoCotejo;
   /** Cita literal del CV que lo respalda; '' si no aparece. */
   evidencia: string;
@@ -73,6 +81,8 @@ export interface ResultadoCotejo {
   rol: CvmRol;
   indispensables: { total: number; cumple: number; parcial: number; no_aparece: number };
   deseables: { total: number; cumple: number; parcial: number; no_aparece: number };
+  /** c4: requisitos sin señal de obligación ni de preferencia en la vacante. */
+  sin_indicar: { total: number; cumple: number; parcial: number; no_aparece: number };
   requisitos: RequisitoEvaluado[];
   /** Evidencias del modelo que no se encontraron en el CV (se bajaron a "no aparece"). */
   evidenciasDescartadas: number;
@@ -114,6 +124,82 @@ export function obligacionEnCita(citaNorm: string): boolean {
   }
   return false;
 }
+/**
+ * c3 (24 nov 2026): lenguaje que exige aunque no diga "required". Se busca en la cita normalizada (minúsculas, sin
+ * acentos ni apóstrofos: "bachelor's" → "bachelor s", "años" → "anos"). Una negación en las 3 palabras previas
+ * ("no degree required", "sin título") anula la señal.
+ *   - Años de experiencia: "3+ years", "1-4 years", "mínimo 2 años", "two years". Un rango desde 0 ("0-2 años") no.
+ *   - Título exigido: licenciatura, bachelor, master's, maestría, doctorado, PhD, PharmD, "degree in/from", "título
+ *     universitario". "A high degree of…" no cuenta.
+ *   - Mínimo: "minimum", "mínimo", "at least", "al menos" seguido de una cifra, un nivel MCER o un grado.
+ *   - "Required"/"requerido"/"indispensable"/"excluyente" al inicio de la cita ("Required: fluent English").
+ */
+const NUM_PAL = '(?:\\d+ ?\\+?|one|two|three|four|five|six|seven|eight|nine|ten|un|uno|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)';
+const RE_ANIOS = new RegExp(`\\b${NUM_PAL} ?(?:(?:to|a|or|o|y|and) )?(?:\\d+ ?\\+? ?)?(?:years?|yrs?|anos?)\\b`);
+const GRADO = '(?:bachelor s|bachelors|bachelor|master s|masters|master of|master in|maestria|licenciatura|licenciado|licenciada|doctorado|doctorate|phd|ph d|pharmd|pharm d|bsc|b sc|msc|m sc|degree in|degree from|degree or equivalent|university degree|college degree|bachelor degree|titulo universitario|titulo profesional|titulo de|titulado|titulada|grado en|graduado en|graduada en|egresado de|egresada de|ingenieria en)';
+const RE_GRADO = new RegExp(`\\b${GRADO}\\b`);
+const MINIMO = '\\b(?:minimum|minimo|minima|at least|al menos)(?: of)?(?: (?:a|an|un|una|nivel|level))? ';
+const RE_MINIMO = new RegExp(`${MINIMO}(?:\\d|[abc][12]\\b)`);
+const RE_MINIMO_GRADO = new RegExp(`${MINIMO}${GRADO}`);
+/**
+ * Revisión 3 (24 nov 2026): si la cita acepta experiencia en lugar del título ("or equivalent (relevant) experience",
+ * "y/o experiencia", "o experiencia equivalente"), el título no es señal de exigencia (sin_indicar si no hay otra).
+ */
+const RE_EXPERIENCIA_EQUIVALENTE = /\b(?:(?:and )?or (?:an? )?equivalent (?:[a-z]+ ){0,2}experience|y o experiencia|o experiencia (?:[a-z]+ ){0,2}equivalente|o (?:su )?equivalente en experiencia)\b/;
+const RE_DESDE_CERO = /^0(?!\d)/;
+const RE_REQ_INICIO = /^(?:required|requerido|requerida|requeridos|requeridas|indispensable|imprescindible|excluyente)\b/;
+const NEGACION = ['no', 'not', 'nor', 'sin', 'ni', 'without'];
+// Revisión 2 (24 nov 2026): "no menor a", "no less than"… exigen un mínimo; no son negación.
+const RE_NO_MENOR = /\b(?:no|not) (?:less than|fewer than|lower than|menor a|menor de|menores a|menos de|inferior a|inferior de)\b/g;
+function experienciaCerca(c: string, ini: number, fin: number): boolean {
+  const antes = c.slice(0, ini).split(' ').filter(Boolean).slice(-4);
+  const despues = c.slice(fin).split(' ').filter(Boolean).slice(0, 4);
+  return [...antes, ...despues].some((w) => w.startsWith('experien'));
+}
+/**
+ * Revisión 4 (24 nov 2026): años como experiencia exigida. Cuentan "years of …", "years in/en …", "años de/en …",
+ * "experience"/"experiencia" a ±4 palabras y "minimum/at least/al menos/mínimo" antes de los años. No cuentan: una
+ * cifra mayor de 20 ("100 years of development"), los años sueltos ("Fixed Term, 2 Years") ni una duración con
+ * "for/por/durante" ("for one year") sin la palabra experiencia cerca.
+ */
+function aniosExigidos(c: string, match: string, ini: number): boolean {
+  const fin = ini + match.length;
+  const num = /^\d+/.exec(match);
+  if (num && Number(num[0]) > 20) return false;
+  const antes = c.slice(0, ini).split(' ').filter(Boolean);
+  const despues = c.slice(fin).split(' ').filter(Boolean);
+  if (experienciaCerca(c, ini, fin)) return true;
+  if (['for', 'por', 'durante'].includes(antes[antes.length - 1] ?? '')) return false;
+  if (['of', 'in', 'de', 'en'].includes(despues[0] ?? '')) return true;
+  return antes.slice(-3).some((w) => ['minimum', 'minimo', 'minima', 'least', 'menos'].includes(w));
+}
+function negado(c: string, idx: number): boolean {
+  return c.slice(0, idx).split(' ').filter(Boolean).slice(-3).some((w) => NEGACION.includes(w));
+}
+/**
+ * true si la cita exige por su propio lenguaje (años, título, mínimo o "required" al inicio). Pura (para pruebas).
+ * Recibe la cita cruda (o ya normalizada) y la parte en cláusulas por ";" y ",": una negación solo anula la señal de
+ * su misma cláusula ("No relocation, 3+ years of experience" exige). Revisa todas las coincidencias de cada patrón.
+ */
+export function exigenciaImplicita(cita: string): boolean {
+  const patrones = RE_EXPERIENCIA_EQUIVALENTE.test(normalizar(cita)) ? [RE_ANIOS, RE_MINIMO] : [RE_ANIOS, RE_GRADO, RE_MINIMO, RE_MINIMO_GRADO];
+  for (const parte of cita.split(/[;,]/)) {
+    const c = normalizar(parte).replace(RE_NO_MENOR, 'minimum');
+    if (!c) continue;
+    if (RE_REQ_INICIO.test(c)) return true;
+    for (const re of patrones) {
+      for (const m of c.matchAll(new RegExp(re.source, 'g'))) {
+        // Un rango que empieza en 0 ("0 to 2 years", "0-2 años") acepta a quien no tiene experiencia: no exige.
+        if (re === RE_ANIOS && RE_DESDE_CERO.test(m[0])) continue;
+        // Revisión 4: los años solo cuentan si son experiencia exigida (ver aniosExigidos).
+        if (re === RE_ANIOS && !aniosExigidos(c, m[0], m.index ?? 0)) continue;
+        if (!negado(c, m.index ?? 0)) return true;
+      }
+    }
+  }
+  return false;
+}
+
 // Palabras que marcan preferencia; en el texto del propio requisito ganan sobre la marca de su sección.
 const PREFERENCIA = [
   'deseable', 'deseables', 'preferente', 'preferentemente', 'preferible', 'de preferencia', 'se valora', 'se valorara',
@@ -132,10 +218,16 @@ function contieneFrase(textoNorm: string, frases: string[]): boolean {
 }
 
 /**
- * Prioridad decidida por código. Indispensable solo si la marca (literal de la vacante) contiene una palabra de
- * obligación y ni el requisito ni la marca dicen preferencia. Todo lo demás, deseable.
+ * Prioridad decidida por código (c3, 24 nov 2026), en este orden:
+ *   1. Preferencia explícita en el requisito o su cita ("preferred", "nice to have", "a plus", "deseable") → deseable.
+ *   2. Marca con obligación y sin preferencia ("Requirements", "Requisitos", "Minimum qualifications") → indispensable.
+ *   3. Marca con preferencia ("Preferred qualifications", "Deseable", "Nice to have") → deseable.
+ *   4. Obligación en la frase del requisito ("requires", "must", "is required") o exigencia implícita (años de
+ *      experiencia, título, "minimum", "required" al inicio) → indispensable, aunque la marca sea neutra
+ *      ("Qualifications", "What you bring").
+ *   5. Sin señal → sin_indicar (antes, deseable).
  */
-export function prioridadPorMarca(cita: string, marca: string, opts: { requisito?: string } = {}): Prioridad {
+export function prioridadPorMarca(cita: string, marca: string, opts: { requisito?: string } = {}): PrioridadCotejo {
   const c = normalizar(cita);
   const m = normalizar(marca);
   const r = normalizar(opts.requisito ?? '');
@@ -147,8 +239,8 @@ export function prioridadPorMarca(cita: string, marca: string, opts: { requisito
   if (m && contieneFrase(m, PREFERENCIA)) return 'deseable';
   // c2: la obligación también puede venir en la frase del propio requisito ("This role typically requires 0-2 years…")
   // aunque la marca sea un encabezado neutro ("Experience and skills").
-  if (obligacionEnCita(c)) return 'indispensable';
-  return 'deseable';
+  if (obligacionEnCita(c) || exigenciaImplicita(cita)) return 'indispensable';
+  return 'sin_indicar';
 }
 
 // ── Paso 1: clasificar la vacante ──────────────────────────────────────────────────────────────────
@@ -446,7 +538,7 @@ function conteo(rs: RequisitoEvaluado[]) {
 
 /**
  * Une la salida del paso 2 con los requisitos. Pura (para pruebas). Un requisito sin evaluación o con evidencia que
- * no está en el CV queda como "no_aparece". Orden: indispensables primero, luego deseables, cada grupo en el orden
+ * no está en el CV queda como "no_aparece". Orden: indispensables, deseables y sin indicar, cada grupo en el orden
  * de la vacante.
  */
 export function unirEvaluacion(salida: unknown, vac: VacanteClasificada, cv: string): ResultadoCotejo {
@@ -487,13 +579,16 @@ export function unirEvaluacion(salida: unknown, vac: VacanteClasificada, cv: str
   });
   const ind = requisitos.filter((r) => r.prioridad === 'indispensable');
   const des = requisitos.filter((r) => r.prioridad === 'deseable');
+  // Cualquier otro valor (incluida una caché vieja sin prioridad) cuenta como sin indicar: nunca se pierde un requisito.
+  const sin = requisitos.filter((r) => r.prioridad !== 'indispensable' && r.prioridad !== 'deseable');
   return {
     puesto: vac.puesto,
     empresa: vac.empresa,
     rol: vac.rol,
     indispensables: conteo(ind),
     deseables: conteo(des),
-    requisitos: [...ind, ...des],
+    sin_indicar: conteo(sin),
+    requisitos: [...ind, ...des, ...sin],
     evidenciasDescartadas,
     rechazadas,
   };
@@ -551,7 +646,8 @@ export async function vacanteClasificada(
 // ── Preguntas antes del pago (10-11 nov 2026) ──────────────────────────────────────────────────────
 //
 // Las arma el código, no el modelo: salen de los requisitos que no aparecen o aparecen en parte, en este orden:
-// indispensables que no aparecen, indispensables en parte, deseables que no aparecen, deseables en parte. Máximo 5.
+// indispensables que no aparecen, indispensables en parte, sin indicar (no aparecen, en parte), deseables que no
+// aparecen, deseables en parte. Máximo 5.
 // Respuesta cerrada primero (empleo / proyecto, tesis o curso / no tengo esto) y, si dice que sí, una frase opcional.
 // Nada se genera hasta el pago; las respuestas viajan al pedido como texto que la persona escribió (fuente citable).
 
@@ -561,7 +657,7 @@ export type TipoRespuesta = 'empleo' | 'proyecto' | 'no_tengo';
 
 export interface PreguntaCotejo {
   requisito: string;
-  prioridad: Prioridad;
+  prioridad: PrioridadCotejo;
   estado: EstadoCotejo;
 }
 
@@ -571,9 +667,11 @@ export interface RespuestaCotejo {
   detalle: string;
 }
 
-export function preguntasDeCotejo(requisitos: Array<{ requisito: string; prioridad: Prioridad; estado: EstadoCotejo }>): PreguntaCotejo[] {
-  const peso = (q: { prioridad: Prioridad; estado: EstadoCotejo }) =>
-    (q.prioridad === 'indispensable' ? 0 : 2) + (q.estado === 'no_aparece' ? 0 : 1);
+const PESO_PRIORIDAD: Record<PrioridadCotejo, number> = { indispensable: 0, sin_indicar: 2, deseable: 4 };
+
+export function preguntasDeCotejo(requisitos: Array<{ requisito: string; prioridad: PrioridadCotejo; estado: EstadoCotejo }>): PreguntaCotejo[] {
+  const peso = (q: { prioridad: PrioridadCotejo; estado: EstadoCotejo }) =>
+    (PESO_PRIORIDAD[q.prioridad] ?? 2) + (q.estado === 'no_aparece' ? 0 : 1);
   return requisitos
     .map((q, i) => ({ q, i }))
     .filter(({ q }) => q.estado !== 'cumple')
@@ -625,6 +723,29 @@ function sinCifras(s: string): string {
 /** Texto de una vacante del buscador, igual en la comparación y en el pedido (misma llave de caché). */
 export function textoVacanteBuscador(row: { titulo: string; empresa: string; descripcion: string }): string {
   return `${row.titulo} · ${row.empresa}\n\n${row.descripcion}`.slice(0, COTEJO_MAX_VACANTE_BUSCADOR);
+}
+
+/**
+ * Transición c4 (24 nov 2026): el JS de /comparar-cv anterior a c4 (pestañas abiertas antes del despliegue) lee
+ * `deseables` como "todo lo que no es indispensable"; sin los sin_indicar mostraría "0 de 0". La API manda en
+ * `deseables` esta suma y los deseables estrictos en `deseables_solo`. Se puede quitar (y volver a
+ * `deseables: r.deseables`) cuando ya no haya páginas viejas abiertas, p. ej. una semana después del despliegue.
+ */
+export function deseablesTransicion(r: Pick<ResultadoCotejo, 'deseables' | 'sin_indicar'>): ResultadoCotejo['deseables'] {
+  const a = r.deseables;
+  const b = r.sin_indicar;
+  return { total: a.total + b.total, cumple: a.cumple + b.cumple, parcial: a.parcial + b.parcial, no_aparece: a.no_aparece + b.no_aparece };
+}
+
+/**
+ * Lista clasificada para el CV a la medida. Desde p6 (24 nov 2026, aprobado por Oscar) "sin_indicar" viaja tal cual
+ * (antes se convertía en deseable); cualquier valor desconocido va como sin_indicar.
+ */
+export function requisitosParaMedida(v: VacanteClasificada): Array<{ requisito: string; prioridad: Prioridad }> {
+  return v.requisitos.map((q) => ({
+    requisito: q.requisito,
+    prioridad: q.prioridad === 'indispensable' || q.prioridad === 'deseable' ? q.prioridad : 'sin_indicar',
+  }));
 }
 
 /** Solo la clasificación guardada (sin llamar al modelo). Para el pedido: si no está, el CV a la medida clasifica solo. */

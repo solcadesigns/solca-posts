@@ -23,6 +23,7 @@ import {
   cursoLead,
   rolLabel,
   rolContexto,
+  rolTerminos,
   esDesdeCurso,
   ROLE_OPTIONS,
 } from '../src/lib/cv-review-rubric.ts';
@@ -451,12 +452,58 @@ await test('rol del formulario: solo valores del catálogo', () => {
 await test('CRC: rol solo del revisor con contexto en el mensaje', () => {
   assert.equal(readRolObjetivo('CRC'), 'CRC');
   assert.equal(rolLabel('CRC'), 'Coordinador de estudios clínicos (CRC)');
-  assert.ok(ROLE_OPTIONS.some(([v]) => v === 'CRC') && ROLE_OPTIONS.length === 11);
+  assert.ok(ROLE_OPTIONS.some(([v]) => v === 'CRC') && ROLE_OPTIONS.length === 15);
   assert.equal(rolContexto('CRA'), undefined);
   const msg = buildCvReviewUserMessage({ cv: CV, rolLabel: rolLabel('CRC'), rolContexto: rolContexto('CRC'), origen: 'pdf', paginas: 2, saltos: 10, hoy: new Date('2026-11-13T12:00:00Z') });
   assert.ok(msg.includes('Fecha de hoy (año-mes): 2026-11'));
   assert.ok(msg.includes('Coordinador de estudios clínicos (CRC)\n- Funciones típicas de ese rol: coordinación de estudios clínicos'));
   assert.ok(!buildCvReviewUserMessage({ cv: CV, rolLabel: rolLabel('CRA'), origen: 'pdf', paginas: 2, saltos: 10 }).includes('Funciones típicas'));
+});
+
+// 24 nov 2026: cuatro roles más solo del revisor (pruebas del curso: se marcaban como "Aún no lo decido").
+await test('roles nuevos del revisor: calidad, laboratorio/I+D, datos clínicos, bioestadística', () => {
+  const nuevos = {
+    Quality: 'Calidad (aseguramiento y control de calidad, BPF)',
+    Lab_RD: 'Laboratorio / I+D',
+    Clinical_Data_Management: 'Gestión de datos clínicos',
+    Biostat_Data_Science: 'Ciencia de datos y bioestadística en farma',
+  };
+  const valores = ROLE_OPTIONS.map(([v]) => v);
+  assert.equal(new Set(valores).size, valores.length, 'valores repetidos en el selector');
+  assert.equal(new Set(ROLE_OPTIONS.map(([, l]) => l)).size, ROLE_OPTIONS.length, 'etiquetas repetidas en el selector');
+  for (const [v, label] of Object.entries(nuevos)) {
+    assert.equal(readRolObjetivo(v), v, v);
+    assert.equal(rolLabel(v), label, v);
+    assert.ok(ROLE_OPTIONS.some(([x, l]) => x === v && l === label), v);
+    // Misma estructura que CRC: funciones típicas y términos estándar.
+    assert.ok(rolContexto(v) && rolContexto(v).length > 60, `${v} sin contexto`);
+    const t = rolTerminos(v);
+    assert.ok(Array.isArray(t) && t.length >= 6 && t.every((x) => typeof x === 'string' && x.trim()), `${v} sin términos`);
+    // Términos conservadores: sin cifras de mercado, porcentajes ni comparativos.
+    assert.ok(!t.some((x) => /%|\b(mayoría|más demandad|top|mejor pagad|\d{2,})/i.test(x.replace(/ICH [A-Z]\d+|E6|E9|Q2/g, ''))), `${v}: ${t.join('; ')}`);
+    const msg = buildCvReviewUserMessage({ cv: CV, rolLabel: rolLabel(v), rolContexto: rolContexto(v), rolTerminos: t, origen: 'pdf', paginas: 2, saltos: 10 });
+    assert.ok(msg.includes(`Rol objetivo declarado: ${label}\n- Funciones típicas de ese rol: `), v);
+    assert.ok(msg.includes('- Términos estándar de ese rol (referencia para los criterios 10 y 11; no exijas que aparezcan todos'), v);
+    assert.ok(msg.indexOf('Términos estándar') < msg.indexOf('<<<CV'), v);
+  }
+  assert.ok(rolTerminos('CRC').length >= 6);
+  // Los roles del simulador no llevan términos y el mensaje no cambia para ellos.
+  assert.equal(rolTerminos('CRA'), undefined);
+  assert.equal(rolTerminos('toString'), undefined);
+  assert.ok(!buildCvReviewUserMessage({ cv: CV, rolLabel: rolLabel('CRA'), rolTerminos: rolTerminos('CRA'), origen: 'pdf', paginas: 2, saltos: 10 }).includes('Términos estándar'));
+  // Datos clínicos y bioestadística no se confunden entre sí.
+  assert.ok(rolContexto('Clinical_Data_Management').includes('no es análisis estadístico'));
+  assert.ok(rolContexto('Biostat_Data_Science').includes('no es gestión de datos clínicos'));
+});
+
+await test('"Analista de datos en salud" separado de HEOR', () => {
+  assert.equal(rolLabel('Healthcare_Analyst'), 'Analista de datos comerciales y de mercado en salud');
+  assert.ok(!/HEOR|economía/i.test(rolLabel('Healthcare_Analyst')));
+  assert.ok(rolContexto('Healthcare_Analyst').includes('no es HEOR'));
+  assert.ok(rolContexto('HEOR').includes('no es análisis comercial'));
+  assert.equal(rolLabel('HEOR'), 'HEOR (economía de la salud)');
+  const msg = buildCvReviewUserMessage({ cv: CV, rolLabel: rolLabel('Healthcare_Analyst'), rolContexto: rolContexto('Healthcare_Analyst'), origen: 'pegado', paginas: null, saltos: 10 });
+  assert.ok(msg.includes('Funciones típicas de ese rol: análisis de datos comerciales y de mercado'));
 });
 
 await test('rúbrica v4: guías de los criterios 7, 19 y 20', () => {
@@ -504,6 +551,14 @@ await test('scrubBanned no borra oraciones limpias tras una letra suelta ni part
   assert.equal(scrubBanned('Habla con la Dra. López. Conseguirás entrevistas.'), 'Habla con la Dra. López.');
 });
 
+await test('prompt_version en el evento del revisor (24 nov 2026)', async () => {
+  const { CV_REVIEW_PROMPT_VERSION } = await import('../src/lib/cv-review-prompt.ts');
+  assert.equal(CV_REVIEW_PROMPT_VERSION, 'pr2-2026-11');
+  const { readFileSync } = await import('node:fs');
+  const run = readFileSync(new URL('../src/lib/cv-review-run.ts', import.meta.url), 'utf8');
+  assert.ok(run.includes('prompt_version: CV_REVIEW_PROMPT_VERSION'));
+});
+
 console.log(`\n${n} pruebas OK`);
 
 // Con CV_FIXTURES_DIR=<carpeta> escribe las respuestas validadas (como las devolvería /api/cv-review)
@@ -524,5 +579,5 @@ if (process.env.CV_FIXTURES_DIR) {
   const solido = structuredClone(BUENA);
   solido.observaciones = solido.observaciones.map((o) => ({ ...o, estado: o.estado === 'prioritario' ? 'solido' : o.estado }));
   out('sin-prioritarios', solido, ctxPdf);
-  console.log(`fixtures en ${process.env.CV_FIXTURES_DIR}`);
+console.log(`fixtures en ${process.env.CV_FIXTURES_DIR}`);
 }

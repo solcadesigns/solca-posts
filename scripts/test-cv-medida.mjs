@@ -823,9 +823,9 @@ await prueba('Q5: viñetas de relleno que repiten el encabezado se quitan', asyn
   assert.equal(v.reporte.vinetas_quitadas_relleno, 1);
 });
 
-await prueba('Q6: prompt con las reglas de p2 (versión vigente p3)', async () => {
+await prueba('Q6: prompt con las reglas de p2 (versión vigente p6)', async () => {
   const { CVM_PROMPT_VERSION, CVM_SYSTEM_PROMPT } = await import('../src/lib/cv-medida.ts');
-  assert.equal(CVM_PROMPT_VERSION, 'p5-2026-11');
+  assert.equal(CVM_PROMPT_VERSION, 'p6-2026-11');
   for (const t of ['NUNCA copies el título del puesto', 'primera persona implícita', 'NOMBRE el dato que falta', 'solo repiten el encabezado'])
     assert.ok(CVM_SYSTEM_PROMPT.includes(t), t);
 });
@@ -1050,6 +1050,45 @@ await prueba('P4: prioridad indispensable/deseable, orden, etiqueta en el correo
   s2.coincidencia = ['Must-have', 'Excluyente', 'Requerida', 'Plus', ''].map((p, i) => ({ requisito: `R${i}`, prioridad: p, estado: 'no_cumple', evidencia: '', comentario: '' }));
   const v2 = validarCvMedida(s2, ctxEs);
   assert.deepEqual(v2.cv.coincidencia.map((q) => q.prioridad), ['indispensable', 'indispensable', 'indispensable', 'deseable', 'deseable']);
+});
+
+await prueba('P6: "sin indicar" de la comparación llega tal cual: orden, correo, conteos, prompt y mensaje', async () => {
+  const { conteoPorPrioridad, mensajeUsuario, CVM_SYSTEM_PROMPT } = await import('../src/lib/cv-medida.ts');
+  const { requisitosParaMedida } = await import('../src/lib/cv-cotejo.ts');
+  const requisitos = requisitosParaMedida({ requisitos: [
+    { requisito: 'Experiencia en monitoreo', prioridad: 'deseable' },
+    { requisito: 'Manejo de datos', prioridad: 'sin_indicar' },
+    { requisito: 'Inglés avanzado', prioridad: 'indispensable' },
+    { requisito: 'GCP', prioridad: 'raro' },
+  ] });
+  assert.deepEqual(requisitos.map((q) => q.prioridad), ['deseable', 'sin_indicar', 'indispensable', 'sin_indicar']);
+  const s = salidaBuena();
+  // El modelo puede equivocar la prioridad: manda la lista clasificada.
+  s.coincidencia = [
+    { requisito: 'Experiencia en monitoreo', prioridad: 'indispensable', estado: 'no_cumple', evidencia: '', comentario: '' },
+    { requisito: 'Manejo de datos', prioridad: 'deseable', estado: 'parcial', evidencia: 'Análisis estadístico en SAS y R.', comentario: '' },
+    { requisito: 'Inglés avanzado', prioridad: 'sin_indicar', estado: 'cumple', evidencia: 'Inglés avanzado (C1)', comentario: '' },
+    { requisito: 'GCP', prioridad: 'sin_indicar', estado: 'no_cumple', evidencia: '', comentario: '' },
+  ];
+  const v = validarCvMedida(s, { ...ctxEs, requisitos });
+  assert.deepEqual(v.cv.coincidencia.map((q) => [q.requisito, q.prioridad]), [
+    ['Inglés avanzado', 'indispensable'],
+    ['Manejo de datos', 'sin_indicar'],
+    ['GCP', 'sin_indicar'],
+    ['Experiencia en monitoreo', 'deseable'],
+  ]);
+  const c = conteoPorPrioridad(v.cv);
+  assert.deepEqual([c.ind_cumple, c.sin_parcial, c.sin_no_cumple, c.des_no_cumple, c.des_parcial], [1, 1, 1, 1, 0]);
+  const r = renderEntrega(v.cv, v.reporte, { downloadId: 'x', venceEl: 'hoy' });
+  assert.ok(r.html.includes('Sin indicar en la vacante'));
+  const t = r.text;
+  assert.ok(t.indexOf('(indispensable)') < t.indexOf('(sin indicar en la vacante)') && t.indexOf('(sin indicar en la vacante)') < t.indexOf('(deseable)'));
+  // La salida del modelo con "sin_indicar" sin lista también se lee como sin indicar, no como deseable.
+  const s2 = salidaBuena();
+  s2.coincidencia = [{ requisito: 'R', prioridad: 'sin_indicar', estado: 'no_cumple', evidencia: '', comentario: '' }];
+  assert.equal(validarCvMedida(s2, ctxEs).cv.coincidencia[0].prioridad, 'sin_indicar');
+  assert.ok(mensajeUsuario({ cv: 'x', vacante: 'y', textoLibre: '', idioma: 'es', requisitos }).includes('- [sin_indicar] Manejo de datos'));
+  assert.ok(CVM_SYSTEM_PROMPT.includes('copia "sin_indicar" tal cual y trátalo igual que "deseable"'));
 });
 
 await prueba('P5: marcadores en el idioma del CV', async () => {

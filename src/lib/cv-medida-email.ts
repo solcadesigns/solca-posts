@@ -18,16 +18,16 @@ const ESTADO: Record<EstadoRequisito, { sym: string; label: string; color: strin
   no_cumple: { sym: '▲', label: 'No cumple', color: '#B23A2A' },
 };
 
-const PRIORIDAD_LABEL = { indispensable: 'Indispensable', deseable: 'Deseable' } as const;
+/** Mismo orden que ORDEN_PRIORIDAD de cv-medida.ts (copia local: este archivo solo importa tipos). */
+const ORDEN_PRIORIDAD = { indispensable: 0, sin_indicar: 1, deseable: 2 } as const;
+const PRIORIDAD_LABEL = { indispensable: 'Indispensable', sin_indicar: 'Sin indicar en la vacante', deseable: 'Deseable' } as const;
 
-/** p3: indispensables primero (la validación ya los ordena; aquí se asegura) y etiqueta de prioridad. */
+/** p6: indispensables, sin indicar y deseables (la validación ya los ordena; aquí se asegura) y etiqueta de prioridad. */
 export function requisitosOrdenados(cv: CvMedida): CvmRequisito[] {
-  return [...cv.coincidencia].sort((a, b) =>
-    (a.prioridad ?? 'deseable') === (b.prioridad ?? 'deseable') ? 0 : (a.prioridad ?? 'deseable') === 'indispensable' ? -1 : 1,
-  );
+  return [...cv.coincidencia].sort((a, b) => (ORDEN_PRIORIDAD[a.prioridad ?? 'deseable'] ?? 2) - (ORDEN_PRIORIDAD[b.prioridad ?? 'deseable'] ?? 2));
 }
-function etiquetaPrioridad(q: CvmRequisito): string {
-  return PRIORIDAD_LABEL[q.prioridad ?? 'deseable'];
+export function etiquetaPrioridad(q: Pick<CvmRequisito, 'prioridad'>): string {
+  return PRIORIDAD_LABEL[q.prioridad ?? 'deseable'] ?? PRIORIDAD_LABEL.deseable;
 }
 
 function esc(s: string): string {

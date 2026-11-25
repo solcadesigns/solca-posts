@@ -11,6 +11,15 @@
 
 import { CRITERIOS, NIVELES, RUBRIC_VERSION } from './cv-review-rubric.ts';
 
+/**
+ * Versión del prompt (sistema + mensaje al modelo), aparte de RUBRIC_VERSION: los criterios no cambian, así que la
+ * rúbrica que ve la persona y la comparación de estados por versión siguen igual. Va en el evento del revisor
+ * (extra.prompt_version) para separar en D1 el antes y el después de cada cambio de prompt.
+ *   pr1-2026-11: hasta el 24 nov 2026 (eventos sin prompt_version).
+ *   pr2-2026-11 (24 nov 2026, f7f9729): roles solo del revisor con funciones y términos (ROL_CONTEXTO, ROL_TERMINOS).
+ */
+export const CV_REVIEW_PROMPT_VERSION = 'pr2-2026-11';
+
 const rubrica = CRITERIOS.map((c) => `${c.id}. ${c.nombre}: ${c.guia}`).join('\n');
 const niveles = NIVELES.map((n) => `"${n}"`).join(', ');
 
@@ -78,6 +87,8 @@ export function buildCvReviewUserMessage(args: {
   rolLabel?: string;
   /** Funciones típicas del rol (solo roles que el modelo podría no distinguir, p. ej. CRC). */
   rolContexto?: string;
+  /** Términos estándar del rol (solo roles del revisor; referencia para los criterios 10 y 11). */
+  rolTerminos?: string[];
   rolNoSeguro?: boolean;
   origen: 'pdf' | 'pegado';
   paginas: number | null;
@@ -98,7 +109,11 @@ export function buildCvReviewUserMessage(args: {
   return `Datos del formulario (no forman parte del CV):
 - Fecha de hoy (año-mes): ${hoy}
 - País: ${args.country || 'no especificado'}
-- Rol objetivo declarado: ${rol}${args.rolContexto ? `\n- Funciones típicas de ese rol: ${args.rolContexto}` : ''}
+- Rol objetivo declarado: ${rol}${args.rolContexto ? `\n- Funciones típicas de ese rol: ${args.rolContexto}` : ''}${
+    args.rolTerminos?.length
+      ? `\n- Términos estándar de ese rol (referencia para los criterios 10 y 11; no exijas que aparezcan todos ni sugieras agregar uno que el CV no respalde): ${args.rolTerminos.join('; ')}`
+      : ''
+  }
 - Origen del texto: ${origen}
 - Caracteres: ${args.cv.length}
 - Saltos de línea en el texto: ${args.saltos}

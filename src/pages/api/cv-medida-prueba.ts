@@ -11,7 +11,7 @@ import { generarCvMedida } from '../../lib/cv-medida-run';
 import { construirDocx, aBase64, nombreArchivo } from '../../lib/cv-medida-docx';
 import { detectarIdioma, CVM_MAX_CV, CVM_MAX_VACANTE, CVM_MAX_TEXTO_LIBRE } from '../../lib/cv-medida';
 import type { CvmJob } from '../../lib/cv-medida-queue';
-import { leerRespuestas, respuestasATexto, clasificacionGuardada } from '../../lib/cv-cotejo';
+import { leerRespuestas, respuestasATexto, clasificacionGuardada, requisitosParaMedida } from '../../lib/cv-cotejo';
 
 export const prerender = false;
 
@@ -48,7 +48,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     textoLibre,
     idioma: detectarIdioma(vacante),
     interno: true,
-    ...(clasif ? { requisitos: clasif.requisitos.map((q) => ({ requisito: q.requisito, prioridad: q.prioridad })) } : {}),
+    ...(clasif ? { requisitos: requisitosParaMedida(clasif) } : {}),
   } as unknown as CvmJob;
   const g = await generarCvMedida(apiKey, job, env.SIMULATOR_METRICS_DB as D1Database | undefined);
   if (!g.ok || !g.cv) return json({ ok: false, status: g.status, ms: g.ms, outputTokens: g.outputTokens, modelo: g.modelo }, 502);

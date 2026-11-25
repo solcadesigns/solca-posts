@@ -119,7 +119,9 @@ import { navLinks, esActual } from '../lib/nav';
       <ul class="cot-lista" id="r-ind"></ul>
       <h3 id="r-h-des">Deseables</h3>
       <ul class="cot-lista" id="r-des"></ul>
-      <p class="cvm-letra">Consideramos indispensables los requisitos que la vacante identifica como obligatorios (required, must, excluyente). Evaluamos únicamente la información escrita en tu CV. Si algo no aparece, no podemos considerarlo acreditado. La comparación se realiza con IA y puede contener errores.</p>
+      <h3 id="r-h-sin">Sin indicar en la vacante</h3>
+      <ul class="cot-lista" id="r-sin"></ul>
+      <p class="cvm-letra">Consideramos indispensables los requisitos que la vacante presenta como obligatorios (required, must, excluyente, un mínimo, años de experiencia o un título que pide). Deseables, los que marca como preferidos (preferred, nice to have, a plus, deseable). Si la vacante no da ninguna de esas señales, el requisito queda sin indicar. Evaluamos únicamente la información escrita en tu CV. Si algo no aparece, no podemos considerarlo acreditado. La comparación se realiza con IA y puede contener errores.</p>
       <div class="cot-siguiente">
         <h3 id="ir-preguntas-titulo">Completa tu información para esta vacante</h3>
         <p id="ir-preguntas-nota"></p>
@@ -311,7 +313,7 @@ import { navLinks, esActual } from '../lib/nav';
 
   type Conteo = { total: number; cumple: number; parcial: number; no_aparece: number };
   type Pregunta = { requisito: string; prioridad: string; estado: string };
-  type Res = { ok?: boolean; message?: string; puesto?: string; empresa?: string; indispensables?: Conteo; deseables?: Conteo; requisitos?: Array<{ requisito: string; prioridad: string; estado: string; sugerencia?: string }>; preguntas?: Pregunta[] };
+  type Res = { ok?: boolean; message?: string; puesto?: string; empresa?: string; indispensables?: Conteo; deseables?: Conteo; deseables_solo?: Conteo; sin_indicar?: Conteo; requisitos?: Array<{ requisito: string; prioridad: string; estado: string; sugerencia?: string }>; preguntas?: Pregunta[] };
 
   // ---- Preguntas antes del pago y resumen (11 nov 2026) ----
   type Tipo = 'empleo' | 'proyecto' | 'no_tengo';
@@ -484,22 +486,28 @@ import { navLinks, esActual } from '../lib/nav';
 
   function mostrar(r: Res) {
     const ind = r.indispensables!;
-    const des = r.deseables!;
+    // Transición c4: `deseables` llega sumado con sin_indicar para el JS viejo; aquí se usan los estrictos.
+    const des = r.deseables_solo ?? r.deseables!;
+    const sin = r.sin_indicar ?? { total: 0, cumple: 0, parcial: 0, no_aparece: 0 };
     const reqs = r.requisitos ?? [];
     $('r-puesto')!.textContent = [r.puesto, r.empresa].filter(Boolean).join(' · ');
     if (ind.total > 0) {
       $('r-titular')!.textContent = `Tu CV cumple con ${ind.cumple} de ${ind.total} requisitos indispensables.`;
       $('r-sub')!.textContent = ind.parcial ? `${ind.parcial} ${ind.parcial === 1 ? 'aparece' : 'aparecen'} parcialmente.` : '';
     } else {
-      $('r-titular')!.textContent = `Tu CV cumple con ${des.cumple} de ${des.total} requisitos.`;
+      $('r-titular')!.textContent = `Tu CV cumple con ${des.cumple + sin.cumple} de ${des.total + sin.total} requisitos.`;
       $('r-sub')!.textContent = 'La vacante no especifica cuáles son indispensables.';
     }
     const indL = reqs.filter((q) => q.prioridad === 'indispensable');
-    const desL = reqs.filter((q) => q.prioridad !== 'indispensable');
+    const desL = reqs.filter((q) => q.prioridad === 'deseable');
+    // c4 (24 nov 2026): sin señal de obligación ni de preferencia (o cualquier valor desconocido) va aparte.
+    const sinL = reqs.filter((q) => q.prioridad !== 'indispensable' && q.prioridad !== 'deseable');
     $('r-h-ind')!.hidden = indL.length === 0;
     $('r-h-des')!.hidden = desL.length === 0;
+    $('r-h-sin')!.hidden = sinL.length === 0;
     lista($('r-ind'), indL);
     lista($('r-des'), desL);
+    lista($('r-sin'), sinL);
     preguntas = r.preguntas ?? [];
     respuestas = [];
     const ir = $('ir-preguntas');
