@@ -503,7 +503,7 @@ await prueba('c3 unirEvaluacion: conteo sin_indicar aparte y orden indispensable
   assert.equal(r.indispensables.total + r.deseables.total + r.sin_indicar.total, vac.requisitos.length);
 });
 
-await prueba('c3 preguntas y CV a la medida: sin_indicar va entre indispensables y deseables; a la medida viaja como deseable', async () => {
+await prueba('c3 preguntas y CV a la medida: sin_indicar va entre indispensables y deseables; a la medida viaja tal cual (p6)', async () => {
   const { preguntasDeCotejo, requisitosParaMedida } = await import('../src/lib/cv-cotejo.ts');
   const qs = preguntasDeCotejo([
     { requisito: 'D-no', prioridad: 'deseable', estado: 'no_aparece' },
@@ -517,7 +517,7 @@ await prueba('c3 preguntas y CV a la medida: sin_indicar va entre indispensables
     { requisito: 'B', prioridad: 'sin_indicar', cita: '', marca: '' },
     { requisito: 'C', prioridad: 'deseable', cita: '', marca: '' },
   ] });
-  assert.deepEqual(m, [{ requisito: 'A', prioridad: 'indispensable' }, { requisito: 'B', prioridad: 'deseable' }, { requisito: 'C', prioridad: 'deseable' }]);
+  assert.deepEqual(m, [{ requisito: 'A', prioridad: 'indispensable' }, { requisito: 'B', prioridad: 'sin_indicar' }, { requisito: 'C', prioridad: 'deseable' }]); // p6: viaja tal cual
 });
 
 await prueba('revisión 1: rango de años desde 0 no es indispensable', async () => {

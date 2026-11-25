@@ -40,8 +40,8 @@ export const COTEJO_CACHE_TTL_S = 60 * 60 * 24 * 30;
 
 export type EstadoCotejo = 'cumple' | 'parcial' | 'no_aparece';
 /**
- * Prioridad de la comparación. "sin_indicar": la vacante no da señal de obligación ni de preferencia. El CV a la
- * medida (cv-medida.ts) solo conoce indispensable/deseable: requisitosParaMedida lo pasa como deseable allá.
+ * Prioridad de la comparación. "sin_indicar": la vacante no da señal de obligación ni de preferencia. Desde p6 el CV
+ * a la medida (cv-medida.ts) también la conoce y requisitosParaMedida la pasa tal cual.
  */
 export type PrioridadCotejo = Prioridad | 'sin_indicar';
 
@@ -722,11 +722,14 @@ export function deseablesTransicion(r: Pick<ResultadoCotejo, 'deseables' | 'sin_
 }
 
 /**
- * Lista clasificada para el CV a la medida, que solo distingue indispensable/deseable: "sin_indicar" viaja como
- * deseable (allá lo dudoso es deseable).
+ * Lista clasificada para el CV a la medida. Desde p6 (24 nov 2026, aprobado por Oscar) "sin_indicar" viaja tal cual
+ * (antes se convertía en deseable); cualquier valor desconocido va como sin_indicar.
  */
 export function requisitosParaMedida(v: VacanteClasificada): Array<{ requisito: string; prioridad: Prioridad }> {
-  return v.requisitos.map((q) => ({ requisito: q.requisito, prioridad: q.prioridad === 'indispensable' ? 'indispensable' : 'deseable' }));
+  return v.requisitos.map((q) => ({
+    requisito: q.requisito,
+    prioridad: q.prioridad === 'indispensable' || q.prioridad === 'deseable' ? q.prioridad : 'sin_indicar',
+  }));
 }
 
 /** Solo la clasificación guardada (sin llamar al modelo). Para el pedido: si no está, el CV a la medida clasifica solo. */
