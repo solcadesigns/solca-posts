@@ -13,7 +13,7 @@ import {
 } from '../src/lib/vacantes-clasificar.ts';
 import { FUENTES } from '../src/lib/vacantes-fuentes.ts';
 import { agruparSimilares, grupoBase, huella, similitud } from '../src/lib/vacantes-duplicados.ts';
-import { reglasMinimas, soltarCandado, tomarCandado } from '../src/lib/vacantes-candado.ts';
+import { reglasMinimas, soltarCandado, tomarCandado, SQL_REGLAS_PENDIENTES } from '../src/lib/vacantes-candado.ts';
 import { DatabaseSync } from 'node:sqlite';
 
 let n = 0;
@@ -216,6 +216,14 @@ await pruebaAsync('candado: vence y otro lo toma (corrida que murió sin soltarl
   const t0 = new Date('2026-11-25T11:00:00Z');
   assert.ok(await tomarCandado(bd, 'reprocesar', t0));
   assert.ok(await tomarCandado(bd, 'reprocesar', new Date(t0.getTime() + 31 * 60_000)));
+});
+
+prueba('reglas pendientes cuenta r8, vacías y nulas; no las vigentes', () => {
+  const db = new DatabaseSync(':memory:');
+  db.exec('CREATE TABLE v (clasificacion_version TEXT, descriptores_version TEXT)');
+  for (const [c, d] of [['r9', 'd5'], ['r8', 'd5'], ['', 'd5'], ['r9', null], [null, 'd5'], ['r9', 'd5']]) db.prepare('INSERT INTO v VALUES (?, ?)').run(c, d);
+  const r = db.prepare(`SELECT SUM(${SQL_REGLAS_PENDIENTES}) AS n FROM v`).get('r9', 'd5');
+  assert.equal(r.n, 4);
 });
 
 console.log(`ok: ${n} pruebas`);

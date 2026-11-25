@@ -23,6 +23,9 @@
 
 import type { APIRoute } from 'astro';
 import { DRIP_STEPS } from '../../lib/drip';
+import { CLASIFICACION_VERSION } from '../../lib/vacantes-clasificar';
+import { DESCRIPTORES_VERSION } from '../../lib/vacantes-descriptores';
+import { SQL_REGLAS_PENDIENTES } from '../../lib/vacantes-candado';
 import { LeadAttribution, type AtribucionReport } from '../../lib/report-atribucion';
 import { contarSesionesPrueba, filtroSesionesReales } from '../../lib/simulator-test-sessions';
 import {
@@ -1255,12 +1258,13 @@ async function buildVacantes(db: D1Database, sinceIso: string): Promise<Vacantes
          SUM(fecha_publicacion < ?) AS perpetuas_mas_365_dias,
          SUM(tipo_publicacion = 'banco_talento') AS bancos_talento,
          SUM(id_llave = 'ruta') AS ids_por_ruta,
-         SUM(clasificacion_version IS NULL OR clasificacion_version = '' OR descriptores_version IS NULL) AS reglas_pendientes,
+         -- Pendientes de reprocesar con las reglas vigentes (también las de versión anterior, no solo las vacías).
+         SUM(${SQL_REGLAS_PENDIENTES}) AS reglas_pendientes,
          COUNT(*) - COUNT(DISTINCT grupo_dup) AS plazas_repetidas,
          COUNT(*) AS activas
        FROM vacantes WHERE activa = 1`,
     )
-    .bind(hace365)
+    .bind(hace365, CLASIFICACION_VERSION, DESCRIPTORES_VERSION)
     .first<Record<string, number>>();
   const sosp = await db
     .prepare("SELECT COUNT(*) AS n FROM vacantes_corridas WHERE ts >= ? AND estado = 'sospechosa'")

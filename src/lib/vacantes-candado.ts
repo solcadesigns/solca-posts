@@ -43,3 +43,9 @@ export function reglasMinimas(filas: Array<{ c: string | null; d: string | null 
   const min = (xs: Array<string | null>) => xs.reduce((a, x) => (num(x) < num(a) ? x : a), xs[0]);
   return `${min(filas.map((f) => f.c)) || 'sin'}/${min(filas.map((f) => f.d)) || 'sin'}`;
 }
+
+/**
+ * Condición SQL de "reglas pendientes": la fila no está con las reglas vigentes. Cuenta las de versión anterior
+ * (r8 cuando rige r9), las vacías (título cambiado) y las nulas. Se usa en el reporte semanal.
+ */
+export const SQL_REGLAS_PENDIENTES = '(clasificacion_version IS NOT ? OR descriptores_version IS NOT ?)';
