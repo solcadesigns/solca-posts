@@ -455,7 +455,6 @@ await prueba('c3 exigencia implícita: casos adversarios', async () => {
   const si = [
     '3+ years of experience in pharmacovigilance',
     '1-4 years of business experience',
-    'At least two years in a CRO',
     'Al menos un año de experiencia en farmacovigilancia',
     'Experiencia comprobable de 2 años en monitoreo',
     "Master's degree in Public Health",
@@ -565,6 +564,15 @@ await prueba('revisión 3: título con experiencia equivalente como alternativa 
   assert.equal(exigenciaImplicita("Bachelor's degree in Life Sciences"), true);
   assert.equal(exigenciaImplicita('Minimum of a bachelor degree or equivalent experience'), false);
   assert.equal(exigenciaImplicita("Bachelor's degree or equivalent experience; 3+ years of experience in QA"), true);
+});
+
+await prueba('revisión 4: años solo con "experience"/"experiencia" a ±4 palabras', async () => {
+  const { exigenciaImplicita } = await import('../src/lib/cv-cotejo.ts');
+  for (const c of ['Company with 100 years of development', 'Fixed Term, 2 Years', 'Contract for one year', 'At least two years in a CRO'])
+    assert.equal(exigenciaImplicita(c), false, c);
+  for (const c of ['3+ years of experience in pharmacovigilance', 'Experiencia comprobable de 2 años en monitoreo', '1-4 years of business experience', 'Two years of clinical research experience'])
+    assert.equal(exigenciaImplicita(c), true, c);
+  assert.equal(prioridadPorMarca('Fixed Term, 2 Years', 'Job details'), 'sin_indicar');
 });
 
 await prueba('c3 interfaz y endpoint: sección "Sin indicar" y conteo en la respuesta', () => {

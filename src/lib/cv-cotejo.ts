@@ -151,6 +151,11 @@ const RE_REQ_INICIO = /^(?:required|requerido|requerida|requeridos|requeridas|in
 const NEGACION = ['no', 'not', 'nor', 'sin', 'ni', 'without'];
 // Revisión 2 (24 nov 2026): "no menor a", "no less than"… exigen un mínimo; no son negación.
 const RE_NO_MENOR = /\b(?:no|not) (?:less than|fewer than|lower than|menor a|menor de|menores a|menos de|inferior a|inferior de)\b/g;
+function experienciaCerca(c: string, ini: number, fin: number): boolean {
+  const antes = c.slice(0, ini).split(' ').filter(Boolean).slice(-4);
+  const despues = c.slice(fin).split(' ').filter(Boolean).slice(0, 4);
+  return [...antes, ...despues].some((w) => w.startsWith('experien'));
+}
 function negado(c: string, idx: number): boolean {
   return c.slice(0, idx).split(' ').filter(Boolean).slice(-3).some((w) => NEGACION.includes(w));
 }
@@ -169,6 +174,9 @@ export function exigenciaImplicita(cita: string): boolean {
       for (const m of c.matchAll(new RegExp(re.source, 'g'))) {
         // Un rango que empieza en 0 ("0 to 2 years", "0-2 años") acepta a quien no tiene experiencia: no exige.
         if (re === RE_ANIOS && RE_DESDE_CERO.test(m[0])) continue;
+        // Revisión 4: los años solo cuentan con "experience"/"experiencia" a ±4 palabras ("100 years of development",
+        // "Fixed Term, 2 Years" y "for one year" no son experiencia).
+        if (re === RE_ANIOS && !experienciaCerca(c, m.index ?? 0, (m.index ?? 0) + m[0].length)) continue;
         if (!negado(c, m.index ?? 0)) return true;
       }
     }
