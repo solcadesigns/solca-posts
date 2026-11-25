@@ -5,9 +5,10 @@
  */
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
+import { DatabaseSync } from 'node:sqlite';
 import {
-  ENCUESTAS, TIPOS, ROLES, validarRespuestas, programarSeguimiento, seguimientosVencidos, renderSeguimiento, urlEncuesta,
-  PREFIJO_SEGUIMIENTO, PREFIJO_PROGRAMADO,
+  ENCUESTAS, TIPOS, ROLES, validarRespuestas, programarSeguimiento, puedeProgramar, seguimientosVencidos, renderSeguimiento, urlEncuesta,
+  PREFIJO_SEGUIMIENTO,
 } from '../src/lib/encuesta-curso.ts';
 
 let n = 0;
@@ -96,23 +97,41 @@ await prueba('30/90 días: rol del nuevo empleo y uso del curso son opcionales',
   assert.equal(validarRespuestas('90-dias', { correo: 'a@b.co', punto: 'sigo_buscando', postulaciones: 10, entrevistas: 3 }).error, 'requerida');
 });
 
-await prueba('seguimiento: dos envíos (30 y 90 días) una sola vez por correo; caducan 7 días después del envío', async () => {
+await prueba('seguimiento: dos envíos (30 y 90 días) que caducan 7 días después del envío', async () => {
   const kv = kvFalso();
-  assert.equal(await programarSeguimiento(kv, { email: 'a@b.co', emailHash: 'h1', interno: false }, T0), 2);
-  assert.equal(await programarSeguimiento(kv, { email: 'a@b.co', emailHash: 'h1', interno: false }, T0 + DIA), 0, 'no duplica');
+  assert.equal(await programarSeguimiento(kv, { email: 'a@b.co', interno: false }, T0), 2);
   const pend = [...kv.m.keys()].filter((k) => k.startsWith(PREFIJO_SEGUIMIENTO)).sort();
   assert.equal(pend.length, 2);
   assert.ok(pend[0].startsWith(`${PREFIJO_SEGUIMIENTO}${new Date(T0 + 30 * DIA).toISOString()}:30-dias:`));
   assert.ok(pend[1].startsWith(`${PREFIJO_SEGUIMIENTO}${new Date(T0 + 90 * DIA).toISOString()}:90-dias:`));
   assert.equal(kv.m.get(pend[0]).o.expiration, Math.floor((T0 + 37 * DIA) / 1000));
-  assert.ok(kv.m.has(PREFIJO_PROGRAMADO + 'h1'));
-  assert.equal(await programarSeguimiento(kv, { email: '', emailHash: 'h2', interno: false }, T0), 0);
+  assert.equal(await programarSeguimiento(kv, { email: '', interno: false }, T0), 0);
+});
+
+await prueba('puedeProgramar: solo comprador con PURCHASE_APPROVED y primer cierre no interno; falla cerrado', async () => {
+  const sql = new DatabaseSync(':memory:');
+  for (const f of ['0008_hotmart_ventas.sql', '0010_hotmart_comprador_hash.sql', '0015_curso_encuestas.sql'])
+    sql.exec(readFileSync(new URL(`../migrations/${f}`, import.meta.url), 'utf8'));
+  const d1 = { prepare(q) { const st = sql.prepare(q); return { bind: (...a) => ({ first: async () => st.get(...a) ?? null }) }; } };
+  const cierre = (id, h, interno = 0) => sql.prepare("INSERT INTO curso_encuestas (id,ts,dia,curso,tipo,version,email_hash,respuestas,interno) VALUES (?,'t','d','curso_cv_v2','cierre','v',?,'{}',?)").run(id, h, interno);
+  sql.prepare("INSERT INTO hotmart_eventos (id,transaccion,evento,creado_ms,recibido,comprador_hash) VALUES ('e1','t1','PURCHASE_APPROVED',1,'x','comprador')").run();
+  sql.prepare("INSERT INTO hotmart_eventos (id,transaccion,evento,creado_ms,recibido,comprador_hash) VALUES ('e2','t2','PURCHASE_REFUNDED',1,'x','reembolso')").run();
+  cierre('1', 'comprador');
+  cierre('i', 'comprador', 1); // un cierre interno no cuenta
+  assert.deepEqual(await puedeProgramar(d1, 'comprador'), { ok: true, motivo: 'programar' });
+  cierre('2', 'comprador');
+  assert.equal((await puedeProgramar(d1, 'comprador')).motivo, 'duplicado');
+  cierre('3', 'nadie');
+  assert.equal((await puedeProgramar(d1, 'nadie')).motivo, 'sin_compra');
+  assert.equal((await puedeProgramar(d1, 'reembolso')).motivo, 'sin_compra');
+  const roto = { prepare() { throw new Error('sin tabla'); } };
+  assert.deepEqual(await puedeProgramar(roto, 'comprador'), { ok: false, motivo: 'error' });
 });
 
 await prueba('vencidos: solo los de fecha pasada, en orden y con tope', async () => {
   const kv = kvFalso();
-  await programarSeguimiento(kv, { email: 'a@b.co', emailHash: 'a', interno: false }, T0);
-  await programarSeguimiento(kv, { email: 'c@d.co', emailHash: 'c', interno: false }, T0 + 10 * DIA);
+  await programarSeguimiento(kv, { email: 'a@b.co', interno: false }, T0);
+  await programarSeguimiento(kv, { email: 'c@d.co', interno: false }, T0 + 10 * DIA);
   assert.equal((await seguimientosVencidos(kv, T0 + 29 * DIA)).length, 0);
   assert.equal((await seguimientosVencidos(kv, T0 + 30 * DIA)).length, 1);
   assert.equal((await seguimientosVencidos(kv, T0 + 40 * DIA)).length, 2);
@@ -127,7 +146,10 @@ await prueba('correos: asunto y texto del documento, enlace con UTM, sin nombre 
   assert.ok(r30.text.includes('Hace un mes terminaste el curso De la ciencia a la industria.'));
   assert.ok(r30.text.includes('Si cambiaste de objetivo o pausaste la búsqueda, también nos sirve saberlo.'));
   assert.ok(r30.text.includes('https://solcaciencia.com/encuesta-curso/30-dias/?utm_source=email&utm_medium=curso&utm_campaign=curso-cv-v2&utm_content=30-dias-alumno'));
-  const r90 = renderSeguimiento('90-dias', 'Ana <b>');
+  assert.ok(!r30.text.includes('baja'), 'sin enlace de baja no hay pie');
+  const r90 = renderSeguimiento('90-dias', { nombre: 'Ana <b>', bajaUrl: 'https://solcaciencia.com/api/drip-unsubscribe?email=a%40b.co&sig=x&scope=curso-encuestas' });
+  assert.ok(r90.text.includes('Date de baja aquí: https://solcaciencia.com/api/drip-unsubscribe?email=a%40b.co&sig=x&scope=curso-encuestas'));
+  assert.ok(r90.html.includes('sig=x&amp;scope=curso-encuestas'));
   assert.equal(r90.subject, 'Tres meses después: ¿qué pasó con tu búsqueda?');
   assert.ok(r90.text.startsWith('Hola, Ana <b>:'));
   assert.ok(r90.html.includes('Hola, Ana &lt;b&gt;:'), 'escapa HTML');

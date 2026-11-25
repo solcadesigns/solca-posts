@@ -3,9 +3,10 @@
 -- src/lib/encuesta-curso.ts (copia fiel de ../consultoria/curso-cv-v2/textos-finales/06-encuestas-y-correos.md).
 --
 -- Una fila por envío del formulario. Sin TTL (historia permanente).
--- Identificador del alumno: el correo de compra (lo escribe el alumno). email_hash = sha256(lower(trim(email))) en
--- hex completo, el mismo de hotmart_eventos.comprador_hash (0010) y de consentimientos (0013): une la respuesta con
--- la venta sin depender del correo en claro.
+-- Identificador del alumno: el correo de compra (lo escribe el alumno), guardado SOLO como email_hash =
+-- sha256(lower(trim(email))) en hex completo, el mismo de hotmart_eventos.comprador_hash (0010) y de
+-- consentimientos (0013): une las encuestas entre sí y con la venta. El correo en claro no entra a D1; solo vive en
+-- KV (CV_LIMITS) mientras haya un envío de 30/90 días pendiente, y se borra al salir.
 -- respuestas: JSON {id_pregunta: valor}; valores con código estable para comparar entre encuestas
 -- (p. ej. $.claridad en inicio y cierre). Consultar con json_extract(respuestas, '$.claridad').
 -- Si alguien responde dos veces la misma encuesta, quedan dos filas: el análisis toma la más reciente por
@@ -21,7 +22,6 @@ CREATE TABLE IF NOT EXISTS curso_encuestas (
   curso TEXT NOT NULL,               -- etiqueta del curso: curso_cv_v2
   tipo TEXT NOT NULL,                -- inicio | cierre | 30-dias | 90-dias
   version TEXT NOT NULL,             -- versión del catálogo de preguntas (src/lib/encuesta-curso.ts)
-  email TEXT NOT NULL,               -- correo de compra, en minúsculas
   email_hash TEXT NOT NULL,          -- sha256 hex de lower(trim(email))
   respuestas TEXT NOT NULL,          -- JSON
   utm_source TEXT, utm_medium TEXT, utm_campaign TEXT, utm_content TEXT, utm_term TEXT,

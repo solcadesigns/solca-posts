@@ -404,7 +404,6 @@ const DIA_MS = 24 * 60 * 60 * 1000;
 export const SEGUIMIENTO_MAX_INTENTOS = 3;
 export const SEGUIMIENTO_MAX_POR_CORRIDA = 40;
 export const PREFIJO_SEGUIMIENTO = 'curso-enc:';
-export const PREFIJO_PROGRAMADO = 'curso-enc-prog:';
 export const CORREO_REMITENTE = 'Solca Ciencia <hola@solcaciencia.com>';
 
 export interface SeguimientoPendiente {
@@ -423,19 +422,17 @@ export interface KvSeguimiento {
 }
 
 /**
- * Programa los correos de 30 y 90 días al recibir la encuesta de cierre. Una sola vez por correo (marca
- * `curso-enc-prog:<hash>` durante 100 días): responder el cierre dos veces no duplica los envíos. Nunca lanza.
- * Devuelve cuántos envíos programó (0 o 2).
+ * Programa los correos de 30 y 90 días. Quién califica (comprador con PURCHASE_APPROVED y primer cierre no interno)
+ * lo decide el endpoint con D1 (ver puedeProgramar). Aquí solo se escriben los dos pendientes en KV, con el correo
+ * en claro, que se borra al salir cada envío (o caduca 7 días después de su fecha). Nunca lanza. Devuelve 0 o 2.
  */
 export async function programarSeguimiento(
   kv: KvSeguimiento,
-  datos: { email: string; emailHash: string; interno: boolean },
+  datos: { email: string; interno: boolean },
   now = Date.now(),
 ): Promise<number> {
-  if (!datos.email || !datos.emailHash) return 0;
+  if (!datos.email) return 0;
   try {
-    const marca = PREFIJO_PROGRAMADO + datos.emailHash;
-    if (await kv.get(marca)) return 0;
     const cierre = new Date(now).toISOString();
     for (const tipo of ['30-dias', '90-dias'] as const) {
       const venceMs = now + SEGUIMIENTO_DIAS[tipo] * DIA_MS;
@@ -445,13 +442,43 @@ export async function programarSeguimiento(
         expiration: Math.floor((venceMs + 7 * DIA_MS) / 1000),
       });
     }
-    await kv.put(marca, cierre, { expiration: Math.floor((now + 100 * DIA_MS) / 1000) });
     return 2;
   } catch (err) {
     console.warn('encuesta-curso: no se pudo programar el seguimiento', String(err).slice(0, 160));
     return 0;
   }
 }
+
+/**
+ * ¿Se programan los correos de 30/90 días para este cierre? Solo si (1) el hash corresponde a una compra aprobada
+ * en Hotmart (hotmart_eventos.evento = 'PURCHASE_APPROVED', columna comprador_hash, migraciones 0008 y 0010) y
+ * (2) es el primer cierre no interno de ese correo (la fila recién insertada es la única). Falla cerrado: si la
+ * consulta falla, no programa.
+ */
+export async function puedeProgramar(
+  db: { prepare(q: string): { bind(...a: unknown[]): { first<T = Record<string, unknown>>(): Promise<T | null> } } },
+  emailHash: string,
+): Promise<{ ok: boolean; motivo: 'programar' | 'sin_compra' | 'duplicado' | 'error' }> {
+  try {
+    const compra = await db
+      .prepare("SELECT 1 AS x FROM hotmart_eventos WHERE comprador_hash = ? AND evento = 'PURCHASE_APPROVED' LIMIT 1")
+      .bind(emailHash)
+      .first();
+    if (!compra) return { ok: false, motivo: 'sin_compra' };
+    const r = await db
+      .prepare("SELECT COUNT(*) AS n FROM curso_encuestas WHERE email_hash = ? AND tipo = 'cierre' AND interno = 0")
+      .bind(emailHash)
+      .first<{ n: number }>();
+    if (Number(r?.n ?? 0) !== 1) return { ok: false, motivo: 'duplicado' };
+    return { ok: true, motivo: 'programar' };
+  } catch (err) {
+    console.warn('encuesta-curso: no se pudo verificar compra o duplicado', String(err).slice(0, 160));
+    return { ok: false, motivo: 'error' };
+  }
+}
+
+/** Llave de baja propia de estas encuestas (KV EMAILS), la escribe /api/drip-unsubscribe?scope=curso-encuestas. */
+export const SCOPE_BAJA = 'curso-encuestas';
 
 /** Llaves cuya fecha de envío ya pasó, en orden de fecha y con tope. */
 export async function seguimientosVencidos(kv: KvSeguimiento, now = Date.now(), max = SEGUIMIENTO_MAX_POR_CORRIDA): Promise<string[]> {
@@ -471,6 +498,10 @@ export async function seguimientosVencidos(kv: KvSeguimiento, now = Date.now(), 
   return out;
 }
 
+// Pie de baja (agregado a pedido de la revisión del 25 nov 2026; no está en 06-encuestas-y-correos.md).
+export const BAJA_TEXTO = '¿No quieres recibir más correos de las encuestas del curso?';
+export const BAJA_ENLACE = 'Date de baja aquí';
+
 function esc(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string);
 }
@@ -480,7 +511,8 @@ function esc(s: string): string {
  * El saludo del documento es "Hola, [nombre]:". Hoy no hay nombre: ninguna encuesta lo pide y el webhook de
  * Hotmart no lo guarda. Sin nombre, el saludo queda "Hola:".
  */
-export function renderSeguimiento(tipo: TipoSeguimiento, nombre?: string): { subject: string; html: string; text: string } {
+export function renderSeguimiento(tipo: TipoSeguimiento, opts: { nombre?: string; bajaUrl?: string } = {}): { subject: string; html: string; text: string } {
+  const nombre = opts.nombre;
   const url = urlEncuesta(tipo, 'email');
   const n = (nombre ?? '').trim().slice(0, 60);
   const saludo = n ? `Hola, ${n}:` : 'Hola:';
@@ -508,7 +540,8 @@ ${c.parrafos.map((p) => `<p>${esc(p)}</p>`).join('\n')}
 <p><a href="${esc(url)}" style="display:inline-block;padding:12px 18px;background:#0F2748;border-radius:6px;color:#ffffff;text-decoration:none;font-weight:bold">${esc(boton)}</a></p>
 <p>${esc(c.despues)}</p>
 <p>${esc(firma)}</p>
+${opts.bajaUrl ? `<p style="color:#666;font-size:12px">${esc(BAJA_TEXTO)} <a href="${esc(opts.bajaUrl)}" style="color:#666">${esc(BAJA_ENLACE)}</a>.</p>` : ''}
 </div>`;
-  const text = [saludo, '', ...c.parrafos, '', `${boton}: ${url}`, '', c.despues, '', firma].join('\n');
+  const text = [saludo, '', ...c.parrafos, '', `${boton}: ${url}`, '', c.despues, '', firma, ...(opts.bajaUrl ? ['', `${BAJA_TEXTO} ${BAJA_ENLACE}: ${opts.bajaUrl}`] : [])].join('\n');
   return { subject: c.subject, html, text };
 }
