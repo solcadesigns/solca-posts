@@ -521,6 +521,16 @@ await prueba('c3 preguntas y CV a la medida: sin_indicar va entre indispensables
   assert.deepEqual(m, [{ requisito: 'A', prioridad: 'indispensable' }, { requisito: 'B', prioridad: 'deseable' }, { requisito: 'C', prioridad: 'deseable' }]);
 });
 
+await prueba('revisión 1: rango de años desde 0 no es indispensable', async () => {
+  const { exigenciaImplicita } = await import('../src/lib/cv-cotejo.ts');
+  const { normalizar } = await import('../src/lib/cv-medida.ts');
+  for (const c of ['0 to 2 years of experience in clinical research', '0-2 años de experiencia en farmacovigilancia', '0 - 1 year of experience'])
+    assert.equal(exigenciaImplicita(normalizar(c)), false, c);
+  assert.equal(prioridadPorMarca('0-2 años de experiencia en farmacovigilancia', 'Qualifications'), 'sin_indicar');
+  assert.equal(exigenciaImplicita(normalizar('2-4 years of experience')), true);
+  assert.equal(exigenciaImplicita(normalizar('10 years of experience')), true);
+});
+
 await prueba('c3 interfaz y endpoint: sección "Sin indicar" y conteo en la respuesta', () => {
   const pag = readFileSync(new URL('../src/pages/comparar-cv.astro', import.meta.url), 'utf8');
   assert.ok(pag.includes('id="r-h-sin"') && pag.includes('id="r-sin"'));

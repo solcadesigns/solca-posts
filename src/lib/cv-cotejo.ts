@@ -128,7 +128,7 @@ export function obligacionEnCita(citaNorm: string): boolean {
  * c3 (24 nov 2026): lenguaje que exige aunque no diga "required". Se busca en la cita normalizada (minúsculas, sin
  * acentos ni apóstrofos: "bachelor's" → "bachelor s", "años" → "anos"). Una negación en las 3 palabras previas
  * ("no degree required", "sin título") anula la señal.
- *   - Años de experiencia: "3+ years", "1-4 years", "mínimo 2 años", "two years".
+ *   - Años de experiencia: "3+ years", "1-4 years", "mínimo 2 años", "two years". Un rango desde 0 ("0-2 años") no.
  *   - Título exigido: licenciatura, bachelor, master's, maestría, doctorado, PhD, PharmD, "degree in/from", "título
  *     universitario". "A high degree of…" no cuenta.
  *   - Mínimo: "minimum", "mínimo", "at least", "al menos" seguido de una cifra, un nivel MCER o un grado.
@@ -139,6 +139,7 @@ const RE_ANIOS = new RegExp(`\\b${NUM_PAL} ?(?:(?:to|a|or|o|y|and) )?(?:\\d+ ?\\
 const GRADO = '(?:bachelor s|bachelors|bachelor|master s|masters|master of|master in|maestria|licenciatura|licenciado|licenciada|doctorado|doctorate|phd|ph d|pharmd|pharm d|bsc|b sc|msc|m sc|degree in|degree from|degree or equivalent|university degree|college degree|bachelor degree|titulo universitario|titulo profesional|titulo de|titulado|titulada|grado en|graduado en|graduada en|egresado de|egresada de|ingenieria en)';
 const RE_GRADO = new RegExp(`\\b${GRADO}\\b`);
 const RE_MINIMO = new RegExp(`\\b(?:minimum|minimo|minima|at least|al menos)(?: of)?(?: (?:a|an|un|una|nivel|level))? (?:\\d|[abc][12]\\b|${GRADO})`);
+const RE_DESDE_CERO = /^0(?!\d)/;
 const RE_REQ_INICIO = /^(?:required|requerido|requerida|requeridos|requeridas|indispensable|imprescindible|excluyente)\b/;
 const NEGACION = ['no', 'not', 'nor', 'sin', 'ni', 'without'];
 function negado(c: string, idx: number): boolean {
@@ -150,6 +151,8 @@ export function exigenciaImplicita(citaNorm: string): boolean {
   if (RE_REQ_INICIO.test(c)) return true;
   for (const re of [RE_ANIOS, RE_GRADO, RE_MINIMO]) {
     const m = re.exec(c);
+    // Un rango que empieza en 0 ("0 to 2 years", "0-2 años") acepta a quien no tiene experiencia: no exige.
+    if (m && re === RE_ANIOS && RE_DESDE_CERO.test(m[0])) continue;
     if (m && !negado(c, m.index)) return true;
   }
   return false;
