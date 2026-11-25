@@ -142,18 +142,28 @@ const RE_MINIMO = new RegExp(`\\b(?:minimum|minimo|minima|at least|al menos)(?: 
 const RE_DESDE_CERO = /^0(?!\d)/;
 const RE_REQ_INICIO = /^(?:required|requerido|requerida|requeridos|requeridas|indispensable|imprescindible|excluyente)\b/;
 const NEGACION = ['no', 'not', 'nor', 'sin', 'ni', 'without'];
+// Revisión 2 (24 nov 2026): "no menor a", "no less than"… exigen un mínimo; no son negación.
+const RE_NO_MENOR = /\b(?:no|not) (?:less than|fewer than|lower than|menor a|menor de|menores a|menos de|inferior a|inferior de)\b/g;
 function negado(c: string, idx: number): boolean {
   return c.slice(0, idx).split(' ').filter(Boolean).slice(-3).some((w) => NEGACION.includes(w));
 }
-/** true si la cita exige por su propio lenguaje (años, título, mínimo o "required" al inicio). Pura (para pruebas). */
-export function exigenciaImplicita(citaNorm: string): boolean {
-  const c = citaNorm;
-  if (RE_REQ_INICIO.test(c)) return true;
-  for (const re of [RE_ANIOS, RE_GRADO, RE_MINIMO]) {
-    const m = re.exec(c);
-    // Un rango que empieza en 0 ("0 to 2 years", "0-2 años") acepta a quien no tiene experiencia: no exige.
-    if (m && re === RE_ANIOS && RE_DESDE_CERO.test(m[0])) continue;
-    if (m && !negado(c, m.index)) return true;
+/**
+ * true si la cita exige por su propio lenguaje (años, título, mínimo o "required" al inicio). Pura (para pruebas).
+ * Recibe la cita cruda (o ya normalizada) y la parte en cláusulas por ";" y ",": una negación solo anula la señal de
+ * su misma cláusula ("No relocation, 3+ years of experience" exige). Revisa todas las coincidencias de cada patrón.
+ */
+export function exigenciaImplicita(cita: string): boolean {
+  for (const parte of cita.split(/[;,]/)) {
+    const c = normalizar(parte).replace(RE_NO_MENOR, 'minimum');
+    if (!c) continue;
+    if (RE_REQ_INICIO.test(c)) return true;
+    for (const re of [RE_ANIOS, RE_GRADO, RE_MINIMO]) {
+      for (const m of c.matchAll(new RegExp(re.source, 'g'))) {
+        // Un rango que empieza en 0 ("0 to 2 years", "0-2 años") acepta a quien no tiene experiencia: no exige.
+        if (re === RE_ANIOS && RE_DESDE_CERO.test(m[0])) continue;
+        if (!negado(c, m.index ?? 0)) return true;
+      }
+    }
   }
   return false;
 }
@@ -197,7 +207,7 @@ export function prioridadPorMarca(cita: string, marca: string, opts: { requisito
   if (m && contieneFrase(m, PREFERENCIA)) return 'deseable';
   // c2: la obligación también puede venir en la frase del propio requisito ("This role typically requires 0-2 years…")
   // aunque la marca sea un encabezado neutro ("Experience and skills").
-  if (obligacionEnCita(c) || exigenciaImplicita(c)) return 'indispensable';
+  if (obligacionEnCita(c) || exigenciaImplicita(cita)) return 'indispensable';
   return 'sin_indicar';
 }
 

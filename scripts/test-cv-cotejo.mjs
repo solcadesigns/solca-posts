@@ -531,6 +531,24 @@ await prueba('revisión 1: rango de años desde 0 no es indispensable', async ()
   assert.equal(exigenciaImplicita(normalizar('10 years of experience')), true);
 });
 
+await prueba('revisión 2: "no menor a" no es negación; la negación no cruza ";" ni ","; todas las coincidencias', async () => {
+  const { exigenciaImplicita } = await import('../src/lib/cv-cotejo.ts');
+  const si = [
+    'Experiencia no menor a 2 años en farmacovigilancia',
+    'No less than 3 years of experience in clinical monitoring',
+    'Not less than 2 years of relevant experience',
+    'Experiencia no inferior a 3 años en estudios clínicos',
+    'No relocation needed; 3+ years of experience in pharmacovigilance',
+    'Sin viajes, licenciatura en Química',
+    // Primera coincidencia negada, segunda no: cuenta la segunda.
+    'No degree required for the internship; PhD required for the scientist track',
+  ];
+  for (const c of si) assert.equal(exigenciaImplicita(c), true, c);
+  assert.equal(exigenciaImplicita('No degree required for this internship'), false);
+  assert.equal(exigenciaImplicita('Sin título universitario; aceptamos pasantes'), false);
+  assert.equal(prioridadPorMarca('Experiencia no menor a 2 años en farmacovigilancia', 'Perfil'), 'indispensable');
+});
+
 await prueba('c3 interfaz y endpoint: sección "Sin indicar" y conteo en la respuesta', () => {
   const pag = readFileSync(new URL('../src/pages/comparar-cv.astro', import.meta.url), 'utf8');
   assert.ok(pag.includes('id="r-h-sin"') && pag.includes('id="r-sin"'));
