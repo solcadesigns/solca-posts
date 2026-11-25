@@ -12,7 +12,8 @@
  * (están en la URL de su portal: https://<host>/<site>).
  */
 
-export type TipoEmpresa = 'farma' | 'cro' | 'medtech' | 'consultoria';
+// 'proveedor': reactivos, equipos y manufactura por contrato (r9, 24 nov 2026; hoy solo la parte no clínica de Thermo Fisher).
+export type TipoEmpresa = 'farma' | 'cro' | 'medtech' | 'consultoria' | 'proveedor';
 
 export interface FuenteWorkday {
   plataforma?: 'workday'; // por omisión
@@ -37,6 +38,8 @@ export interface FuentePhenom {
   alta: string;
   empresa: string;
   tipo: TipoEmpresa;
+  // Fuente que mezcla negocios: sin señal clínica, la vacante toma este tipo (ver tipoEmpresaVacante).
+  tipoNoClinico?: TipoEmpresa;
   base: string;
 }
 
@@ -99,7 +102,7 @@ export const FUENTES: Fuente[] = [
   // Las fuentes Phenom van al final: son las más lentas (una ficha a la vez).
   { plataforma: 'phenom', id: 'merckkgaa', alta: '2026-10-23', empresa: 'Merck KGaA (EMD)', tipo: 'farma', base: 'https://careers.emdgroup.com/us/en' },
   // Thermo Fisher (incluye PPD): su sitio Workday prohíbe la lectura en robots.txt, pero su portal público (Phenom) la permite.
-  { plataforma: 'phenom', id: 'thermofisher', alta: '2026-10-23', empresa: 'Thermo Fisher (PPD)', tipo: 'cro', base: 'https://jobs.thermofisher.com/global/en' },
+  { plataforma: 'phenom', id: 'thermofisher', alta: '2026-10-23', empresa: 'Thermo Fisher (PPD)', tipo: 'cro', tipoNoClinico: 'proveedor', base: 'https://jobs.thermofisher.com/global/en' },
 ];
 
 /** Nombre del país como lo filtran los portales Phenom (parámetro qcountry). */

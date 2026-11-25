@@ -140,9 +140,15 @@ function esSecundaria(v: Vacante): boolean {
   if (v.pais_principal_iso) return !(PAISES_OBJETIVO as readonly string[]).includes(v.pais_principal_iso);
   return ubicacionFueraDeObjetivo(v.ubicacion); // filas sin país de sede
 }
-function paisesDe(v: Vacante): string {
-  const ps = (v.paises ?? v.pais ?? '').split(',').filter(Boolean) as PaisObjetivo[];
+function paisesDe(v: Vacante, sin?: string | null): string {
+  const ps = (v.paises ?? v.pais ?? '').split(',').filter((p) => p && p !== sin) as PaisObjetivo[];
   return ps.map((p) => PAIS_NOMBRE[p] ?? p).join(' · ');
+}
+// Filtro por un país que no es la sede (ej. filtro México, sede São Paulo y México como ubicación adicional):
+// la vacante sí lista ese país, pero se dice dónde está la sede para que no parezca un error.
+function sedeEnOtroPais(v: Vacante): boolean {
+  return Boolean(paisOk && v.pais_principal_iso && v.pais_principal_iso !== paisOk
+    && (PAISES_OBJETIVO as readonly string[]).includes(v.pais_principal_iso));
 }
 function qs(over: Record<string, string>): string {
   const p = new URLSearchParams();
@@ -248,6 +254,12 @@ import { navLinks, esActual } from '../lib/nav';
               <>
                 {v.ubicacion && <span class="vac-ubic">{v.ubicacion}</span>}
                 <span>También en {paisesDe(v)}</span>
+              </>
+            ) : sedeEnOtroPais(v) ? (
+              <>
+                <span>Sede en {PAIS_NOMBRE[v.pais_principal_iso as PaisObjetivo]}</span>
+                {v.ubicacion && <span class="vac-ubic">{v.ubicacion}</span>}
+                <span>También en {paisesDe(v, v.pais_principal_iso)}</span>
               </>
             ) : (
               <>

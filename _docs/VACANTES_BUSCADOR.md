@@ -161,6 +161,18 @@ Cada evento lleva el identificador anónimo `aid`, los UTM y el dominio de orige
 
 El reporte semanal lee la sección `vacantes`: vacantes activas, nuevas y cerradas, fuentes con error, eventos, personas únicas, clics por rol y país, paso a herramientas y campañas. Para el análisis semestral, cruza los clics por rol con `mercado_respuestas.rol_interes`.
 
+## Reglas r9 (24 nov 2026): hallazgos de las pruebas del curso
+
+Pruebas: `node scripts/test-vacantes-clasificar.mjs` (casos reales y adversarios).
+
+- **Roles nuevos.** `datos_clinicos` ("Datos clínicos y bioestadística": gestión y revisión de datos clínicos, bioestadística, programación estadística, codificación médica) sale de `datos_ti`, que pasa a "TI, datos y analítica". `operaciones` ("Producción, mantenimiento y cadena de suministro") sale de `calidad_manufactura`, que conserva su id para no romper la serie ni los enlaces guardados, pero ahora es "Calidad y validación". Los puestos legales van a `corporativo` antes que a calidad.
+- **Otros arreglos de rol:** errata "Clinial Research Associate", SMA, SrCRA, CTC y Country Approval van a investigación clínica; "Business Developer" y "Proposal Developer" a comercial.
+- **Nivel.** "All levels" queda sin nivel. Una vacante que el título marca como de entrada y que pide 5 años o más (`anios_min`) queda sin nivel.
+- **Tipo de empresa por vacante.** Thermo Fisher publica PPD (CRO) junto con reactivos, equipos y manufactura. Sus vacantes son `cro` solo si el rol es clínico o el texto nombra PPD, FSP, GCP o lo clínico; si no, `proveedor`. Las funciones corporativas sin señal clínica también quedan como `proveedor`.
+- **Duplicados.** `grupo_dup` conserva la fórmula de r8 y, después de cada corrida, une las plazas de la misma fuente y el mismo título con descripción casi igual (Jaccard ≥ 0.9 sobre fragmentos de 3 palabras; `src/lib/vacantes-duplicados.ts`). Antes los separaba un tabulador o un subtítulo distinto.
+- **País.** Una vacante con sede en São Paulo y México como ubicación adicional sí es de México según el portal; no se quita del filtro. Al filtrar por un país que no es la sede, la tarjeta dice "Sede en Brasil · También en México".
+- **Efecto medido sobre las 1,535 activas del 24 nov:** 202 cambian de rol, 5 de nivel, 40 de tipo de empresa y 77 de grupo (ofertas distintas: de 1,430 a 1,398). La serie de `vacantes_diario` de `calidad_manufactura` y `datos_ti` no es comparable antes y después del 24 nov (columna `reglas`).
+
 ## Pendiente para el 27 nov
 
 - Sumar fuentes que no usan Workday: Parexel, Syneos, PPD (Thermo Fisher), Takeda, AbbVie, Novo Nordisk, Lilly y laboratorios locales (Liomont, Sanfer, Silanes, Eurofarma, EMS, Aché, Bagó, Tecnoquímicas, Procaps, Grifols, Esteve, Ferrer, Rovi).
