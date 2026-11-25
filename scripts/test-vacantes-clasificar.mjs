@@ -13,6 +13,8 @@ import {
 } from '../src/lib/vacantes-clasificar.ts';
 import { FUENTES } from '../src/lib/vacantes-fuentes.ts';
 import { agruparSimilares, grupoBase, huella, similitud } from '../src/lib/vacantes-duplicados.ts';
+import { reglasMinimas, soltarCandado, tomarCandado } from '../src/lib/vacantes-candado.ts';
+import { DatabaseSync } from 'node:sqlite';
 
 let n = 0;
 function prueba(nombre, fn) {
@@ -177,6 +179,43 @@ prueba('misma descripción, otra empresa: dos grupos', () => {
 prueba('similitud simétrica y acotada', () => {
   assert.equal(similitud(cuerpo, cuerpo), 1);
   assert.equal(similitud('uno dos tres cuatro', 'cinco seis siete ocho'), 0);
+});
+
+// ── Foto diaria: versión mínima de las activas
+prueba('foto con filas viejas dice r8', () => assert.equal(reglasMinimas([{ c: 'r9', d: 'd5' }, { c: 'r8', d: 'd5' }], 'r9/d5'), 'r8/d5'));
+prueba('foto con título cambiado pendiente dice sin', () => assert.equal(reglasMinimas([{ c: 'r9', d: 'd5' }, { c: '', d: null }], 'r9/d5'), 'sin/sin'));
+prueba('r10 es posterior a r9', () => assert.equal(reglasMinimas([{ c: 'r10', d: 'd5' }, { c: 'r9', d: 'd5' }], 'r10/d5'), 'r9/d5'));
+prueba('foto todo vigente', () => assert.equal(reglasMinimas([{ c: 'r9', d: 'd5' }], 'r9/d5'), 'r9/d5'));
+
+// ── Candado (D1 simulado con SQLite en memoria)
+function bdFalsa() {
+  const db = new DatabaseSync(':memory:');
+  const stmt = (sql, args = []) => ({
+    bind: (...v) => stmt(sql, v),
+    run: async () => db.prepare(sql).run(...args),
+    _exec: () => db.prepare(sql).run(...args),
+  });
+  return { prepare: (sql) => stmt(sql), batch: async (xs) => xs.map((x) => ({ meta: { changes: Number(x._exec().changes) } })) };
+}
+async function pruebaAsync(nombre, fn) {
+  try { await fn(); n++; } catch (e) { console.error(`FALLÓ: ${nombre}\n`, e); process.exit(1); }
+}
+await pruebaAsync('candado: el segundo no entra mientras el primero lo tiene', async () => {
+  const bd = bdFalsa();
+  const t0 = new Date('2026-11-25T11:00:00Z');
+  const a = await tomarCandado(bd, 'reprocesar', t0);
+  assert.ok(a);
+  assert.equal(await tomarCandado(bd, 'reprocesar', new Date(t0.getTime() + 60_000)), null);
+  await soltarCandado(bd, 'reprocesar', 'otro-dueno'); // soltar con otro dueño no lo libera
+  assert.equal(await tomarCandado(bd, 'reprocesar', new Date(t0.getTime() + 120_000)), null);
+  await soltarCandado(bd, 'reprocesar', a);
+  assert.ok(await tomarCandado(bd, 'reprocesar', new Date(t0.getTime() + 180_000)));
+});
+await pruebaAsync('candado: vence y otro lo toma (corrida que murió sin soltarlo)', async () => {
+  const bd = bdFalsa();
+  const t0 = new Date('2026-11-25T11:00:00Z');
+  assert.ok(await tomarCandado(bd, 'reprocesar', t0));
+  assert.ok(await tomarCandado(bd, 'reprocesar', new Date(t0.getTime() + 31 * 60_000)));
 });
 
 console.log(`ok: ${n} pruebas`);

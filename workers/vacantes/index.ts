@@ -19,6 +19,7 @@ import {
 } from '../../src/lib/vacantes-clasificar';
 import { DESCRIPTORES_VERSION, extraerDescriptores, type Descriptores } from '../../src/lib/vacantes-descriptores';
 import { agruparSimilares, grupoBase, tituloDup } from '../../src/lib/vacantes-duplicados';
+import { reglasMinimas, soltarCandado, tomarCandado } from '../../src/lib/vacantes-candado';
 import { detalle, listar, robotsPermite, rutasDe } from './plataformas';
 
 interface Env {
@@ -58,7 +59,8 @@ function descriptoresStmts(db: D1Database, id: string, d: Descriptores): D1Prepa
 async function reprocesar(env: Env, limite = 400): Promise<number> {
   const rows = await env.DB.prepare(
     `SELECT id, fuente, titulo, descripcion, tipo_empresa, ubicacion, paises, pais_principal_iso FROM vacantes
-     WHERE clasificacion_version IS NOT ? OR descriptores_version IS NOT ? LIMIT ?`,
+     WHERE clasificacion_version IS NOT ? OR descriptores_version IS NOT ?
+     ORDER BY activa DESC LIMIT ?`, // primero las activas: son las que ven la página y la foto diaria
   )
     .bind(CLASIFICACION_VERSION, DESCRIPTORES_VERSION, limite)
     .all();
@@ -349,8 +351,25 @@ async function fotoDiaria(env: Env, ahora: string): Promise<void> {
          ON (',' || v.paises || ',') LIKE '%,' || p.k || ',%'
        WHERE v.activa = 1 AND COALESCE(v.tipo_publicacion, 'vacante') = 'vacante'
        GROUP BY v.fuente, p.k, v.rol, v.nivel`,
-    ).bind(fecha, `${CLASIFICACION_VERSION}/${DESCRIPTORES_VERSION}`),
+    ).bind(fecha, await reglasDeActivas(env)),
   ]);
+}
+
+async function reglasDeActivas(env: Env): Promise<string> {
+  const r = await env.DB.prepare(
+    'SELECT DISTINCT clasificacion_version AS c, descriptores_version AS d FROM vacantes WHERE activa = 1',
+  ).all<{ c: string | null; d: string | null }>();
+  return reglasMinimas((r.results ?? []) as Array<{ c: string | null; d: string | null }>, `${CLASIFICACION_VERSION}/${DESCRIPTORES_VERSION}`);
+}
+
+/** Reagrupa duplicados sin tumbar la corrida si falla. */
+async function agruparDuplicadosSeguro(env: Env): Promise<number> {
+  try {
+    return await agruparDuplicados(env);
+  } catch (err) {
+    console.error('agrupar duplicados falló', String(err));
+    return -1;
+  }
 }
 
 async function correr(env: Env, soloFuente: string | undefined, opt: Opciones): Promise<Resultado[]> {
@@ -371,14 +390,19 @@ export default {
     const inicio = Date.now();
     // 12 min para leer fichas; el resto queda para cerrar, la foto diaria y reprocesar.
     const r = await correr(env, undefined, { limite: inicio + 12 * 60 * 1000, enCron: true });
-    const reproc = Date.now() - inicio < 13.5 * 60 * 1000 ? await reprocesar(env) : 0;
+    let reproc = 0;
     let reagrupadas = 0;
-    try {
-      reagrupadas = await agruparDuplicados(env);
-    } catch (err) {
-      console.error('agrupar duplicados falló', String(err));
+    const dueno = await tomarCandado(env.DB, 'reprocesar');
+    if (!dueno) console.log('reprocesar ocupado por una corrida manual; se salta hoy');
+    else {
+      try {
+        reproc = Date.now() - inicio < 13.5 * 60 * 1000 ? await reprocesar(env) : 0;
+        reagrupadas = await agruparDuplicadosSeguro(env);
+        if (reproc > 0) await fotoDiaria(env, new Date().toISOString()); // la foto del día con las reglas vigentes
+      } finally {
+        await soltarCandado(env.DB, 'reprocesar', dueno);
+      }
     }
-    if (reproc > 0) await fotoDiaria(env, new Date().toISOString()); // la foto del día con las reglas vigentes
     console.log('vacantes', JSON.stringify(r), 'reprocesadas', reproc, 'reagrupadas', reagrupadas);
   },
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -386,18 +410,24 @@ export default {
     if (url.pathname !== '/run') return new Response('solca-vacantes', { status: 200 });
     if (!env.RUN_KEY || url.searchParams.get('key') !== env.RUN_KEY) return new Response('unauthorized', { status: 401 });
     if (url.searchParams.get('modo') === 'reprocesar') {
-      let total = 0;
-      for (let n = await reprocesar(env); n > 0; n = await reprocesar(env)) total += n;
-      const reagrupadas = await agruparDuplicados(env);
-      await fotoDiaria(env, new Date().toISOString());
-      return new Response(JSON.stringify({ reprocesadas: total, reagrupadas }), { headers: { 'Content-Type': 'application/json' } });
+      const dueno = await tomarCandado(env.DB, 'reprocesar');
+      if (!dueno) return new Response(JSON.stringify({ error: 'reprocesar ya está corriendo (cron u otra carga); intenta en 30 min' }), { status: 409, headers: { 'Content-Type': 'application/json' } });
+      try {
+        let total = 0;
+        for (let n = await reprocesar(env); n > 0; n = await reprocesar(env)) total += n;
+        const reagrupadas = await agruparDuplicadosSeguro(env);
+        await fotoDiaria(env, new Date().toISOString());
+        return new Response(JSON.stringify({ reprocesadas: total, reagrupadas }), { headers: { 'Content-Type': 'application/json' } });
+      } finally {
+        await soltarCandado(env.DB, 'reprocesar', dueno);
+      }
     }
     // Carga manual por HTTP: sin límite de reloj (la primera carga de una fuente grande va por aquí).
     // ?aceptar=1 (solo con ?fuente=): acepta una caída que el control de calidad marcó como sospechosa.
     const fuente = url.searchParams.get('fuente') ?? undefined;
     const aceptar = url.searchParams.get('aceptar') === '1' && fuente !== undefined;
     const r = await correr(env, fuente, { limite: Number.POSITIVE_INFINITY, enCron: false, aceptar });
-    await agruparDuplicados(env);
+    await agruparDuplicadosSeguro(env);
     return new Response(JSON.stringify(r, null, 2), { headers: { 'Content-Type': 'application/json' } });
   },
 };
