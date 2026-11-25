@@ -15,8 +15,11 @@ import {
   clasificarModalidad,
   clasificarNivel,
   clasificarRolEmpresa,
+  tipoEmpresaVacante,
 } from '../../src/lib/vacantes-clasificar';
-import { DESCRIPTORES_VERSION, extraerDescriptores } from '../../src/lib/vacantes-descriptores';
+import { DESCRIPTORES_VERSION, extraerDescriptores, type Descriptores } from '../../src/lib/vacantes-descriptores';
+import { agruparSimilares, grupoBase, tituloDup } from '../../src/lib/vacantes-duplicados';
+import { reglasMinimas, soltarCandado, tomarCandado } from '../../src/lib/vacantes-candado';
 import { detalle, listar, robotsPermite, rutasDe } from './plataformas';
 
 interface Env {
@@ -36,8 +39,7 @@ interface Opciones {
 }
 
 /** Sentencias que guardan los descriptores de una vacante (columnas + etiquetas). */
-function descriptoresStmts(db: D1Database, id: string, titulo: string, descripcion: string | null): D1PreparedStatement[] {
-  const d = extraerDescriptores(descripcion, titulo);
+function descriptoresStmts(db: D1Database, id: string, d: Descriptores): D1PreparedStatement[] {
   const out: D1PreparedStatement[] = [
     db.prepare(
       `UPDATE vacantes SET idioma_anuncio = ?, ingles = ?, grado_min = ?, anios_min = ?, contrato = ?,
@@ -57,24 +59,31 @@ function descriptoresStmts(db: D1Database, id: string, titulo: string, descripci
 async function reprocesar(env: Env, limite = 400): Promise<number> {
   const rows = await env.DB.prepare(
     `SELECT id, fuente, titulo, descripcion, tipo_empresa, ubicacion, paises, pais_principal_iso FROM vacantes
-     WHERE clasificacion_version IS NOT ? OR descriptores_version IS NOT ? LIMIT ?`,
+     WHERE clasificacion_version IS NOT ? OR descriptores_version IS NOT ?
+     ORDER BY activa DESC LIMIT ?`, // primero las activas: son las que ven la página y la foto diaria
   )
     .bind(CLASIFICACION_VERSION, DESCRIPTORES_VERSION, limite)
     .all();
   type Fila = { id: string; fuente: string; titulo: string; descripcion: string | null; tipo_empresa: string; ubicacion: string | null; paises: string | null; pais_principal_iso: string | null };
   const lista = (rows.results ?? []) as Fila[];
   const upd = env.DB.prepare(
-    'UPDATE vacantes SET rol = ?, nivel = ?, clasificacion_version = ?, tipo_publicacion = ?, grupo_dup = ? WHERE id = ?',
+    'UPDATE vacantes SET rol = ?, nivel = ?, clasificacion_version = ?, tipo_publicacion = ?, grupo_dup = ?, tipo_empresa = ? WHERE id = ?',
   );
   // Filas sin país de sede (anteriores a la columna, o el portal solo daba la ciudad): se aproxima con la ubicación.
   const updPrincipal = env.DB.prepare('UPDATE vacantes SET pais_principal_iso = ?, es_principal = ? WHERE id = ?');
   let stmts: D1PreparedStatement[] = [];
+  const fuentePorId = new Map(FUENTES.map((f) => [f.id, f]));
   for (const r of lista) {
+    const desc = extraerDescriptores(r.descripcion, r.titulo);
+    // r9: el tipo sale de la fuente (Thermo Fisher separa PPD de reactivos y equipos); fuente desconocida: el guardado.
+    const f = fuentePorId.get(r.fuente);
+    const tipo = f ? tipoEmpresaVacante(f, r.titulo, r.descripcion) : r.tipo_empresa;
     stmts.push(
       upd.bind(
-        clasificarRolEmpresa(r.titulo, r.tipo_empresa), clasificarNivel(r.titulo), CLASIFICACION_VERSION,
+        clasificarRolEmpresa(r.titulo, tipo), clasificarNivel(r.titulo, desc.anios_min), CLASIFICACION_VERSION,
         RX_BANCO_TALENTO.test(r.titulo) ? 'banco_talento' : 'vacante',
-        huella(`${r.fuente}|${r.titulo.toLowerCase().replace(/\s+/g, ' ').trim()}|${(r.descripcion ?? '').slice(0, 1500)}`),
+        grupoBase(r.fuente, r.titulo, r.descripcion), // agruparDuplicados une después las casi iguales
+        tipo,
         r.id,
       ),
     );
@@ -83,7 +92,7 @@ async function reprocesar(env: Env, limite = 400): Promise<number> {
       const p = principalPorUbicacion(r.ubicacion, (r.paises ?? '').split(',').filter(Boolean));
       stmts.push(updPrincipal.bind(p, p ? 1 : 0, r.id));
     }
-    stmts.push(...descriptoresStmts(env.DB, r.id, r.titulo, r.descripcion));
+    stmts.push(...descriptoresStmts(env.DB, r.id, desc));
     if (stmts.length >= 80) {
       await env.DB.batch(stmts);
       stmts = [];
@@ -93,14 +102,36 @@ async function reprocesar(env: Env, limite = 400): Promise<number> {
   return lista.length;
 }
 
-/** Huella corta (FNV-1a) para agrupar plazas múltiples de la misma oferta. */
-function huella(texto: string): string {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < texto.length; i++) {
-    h ^= texto.charCodeAt(i);
-    h = Math.imul(h, 0x01000193) >>> 0;
+/**
+ * Une en un grupo_dup las plazas de la misma fuente y el mismo título con descripción casi igual
+ * (src/lib/vacantes-duplicados.ts). Lee id y título de todas las filas, y la descripción solo de los
+ * títulos repetidos. Escribe solo las filas cuyo grupo cambia.
+ */
+async function agruparDuplicados(env: Env): Promise<number> {
+  const todas = await env.DB.prepare('SELECT id, fuente, titulo FROM vacantes').all<{ id: string; fuente: string; titulo: string }>();
+  const cuenta = new Map<string, number>();
+  for (const r of (todas.results ?? []) as Array<{ fuente: string; titulo: string }>) {
+    const k = `${r.fuente}|${tituloDup(r.titulo)}`;
+    cuenta.set(k, (cuenta.get(k) ?? 0) + 1);
   }
-  return h.toString(16).padStart(8, '0');
+  const ids = ((todas.results ?? []) as Array<{ id: string; fuente: string; titulo: string }>)
+    .filter((r) => (cuenta.get(`${r.fuente}|${tituloDup(r.titulo)}`) ?? 0) > 1)
+    .map((r) => r.id);
+  type Fila = { id: string; fuente: string; titulo: string; descripcion: string | null; primera_vez: string; grupo_dup: string | null };
+  const filas: Fila[] = [];
+  for (let i = 0; i < ids.length; i += 50) {
+    const lote = ids.slice(i, i + 50);
+    const r = await env.DB.prepare(
+      `SELECT id, fuente, titulo, descripcion, primera_vez, grupo_dup FROM vacantes
+       WHERE id IN (${lote.map(() => '?').join(',')})`,
+    ).bind(...lote).all<Fila>();
+    filas.push(...((r.results ?? []) as Fila[]));
+  }
+  const grupos = agruparSimilares(filas);
+  const upd = env.DB.prepare('UPDATE vacantes SET grupo_dup = ? WHERE id = ?');
+  const stmts = filas.filter((f) => grupos.get(f.id) !== f.grupo_dup).map((f) => upd.bind(grupos.get(f.id)!, f.id));
+  for (let i = 0; i < stmts.length; i += 50) await env.DB.batch(stmts.slice(i, i + 50));
+  return stmts.length;
 }
 
 // "(Pipeline)": requisición permanente de Thermo Fisher para contratar de forma continua (23 oct 2026).
@@ -220,6 +251,8 @@ async function leerFuente(env: Env, f: Fuente, ahora: string, opt: Opciones): Pr
         fallasSeguidas = 0;
         if (!d) return;
         const titulo = d.titulo || x.titulo;
+        const desc = extraerDescriptores(d.descripcion, titulo);
+        const tipo = tipoEmpresaVacante(f, titulo, d.descripcion);
         if (!d.paises.length) {
           // El filtro coincidió pero ninguna ubicación es de un país objetivo: no volver a pedirla.
           pendientes.push(insDesc.bind(id, f.id, ahora, 'sin_pais_objetivo'));
@@ -230,10 +263,10 @@ async function leerFuente(env: Env, f: Fuente, ahora: string, opt: Opciones): Pr
         insertadas++;
         pendientes.push(
           ins.bind(
-            id, f.id, f.empresa, f.tipo, titulo, d.url,
+            id, f.id, f.empresa, tipo, titulo, d.url,
             principal, d.paises.join(','), d.ubicacion,
             clasificarModalidad(`${d.modalidad ?? ''} ${titulo}`),
-            clasificarRolEmpresa(titulo, f.tipo), clasificarNivel(titulo),
+            clasificarRolEmpresa(titulo, tipo), clasificarNivel(titulo, desc.anios_min),
             d.fecha,
             ahora, ahora,
             d.descripcion,
@@ -243,11 +276,11 @@ async function leerFuente(env: Env, f: Fuente, ahora: string, opt: Opciones): Pr
             d.nUbicaciones,
             primeraLectura ? 1 : 0,
             RX_BANCO_TALENTO.test(titulo) ? 'banco_talento' : 'vacante',
-            huella(`${f.id}|${titulo.toLowerCase().replace(/\s+/g, ' ').trim()}|${(d.descripcion ?? '').slice(0, 1500)}`),
+            grupoBase(f.id, titulo, d.descripcion),
             x.llave,
           ),
           ciclo.bind(id, ahora, 'alta', null),
-          ...descriptoresStmts(env.DB, id, titulo, d.descripcion),
+          ...descriptoresStmts(env.DB, id, desc),
         );
         await vaciar();
       } catch (err) {
@@ -318,8 +351,25 @@ async function fotoDiaria(env: Env, ahora: string): Promise<void> {
          ON (',' || v.paises || ',') LIKE '%,' || p.k || ',%'
        WHERE v.activa = 1 AND COALESCE(v.tipo_publicacion, 'vacante') = 'vacante'
        GROUP BY v.fuente, p.k, v.rol, v.nivel`,
-    ).bind(fecha, `${CLASIFICACION_VERSION}/${DESCRIPTORES_VERSION}`),
+    ).bind(fecha, await reglasDeActivas(env)),
   ]);
+}
+
+async function reglasDeActivas(env: Env): Promise<string> {
+  const r = await env.DB.prepare(
+    'SELECT DISTINCT clasificacion_version AS c, descriptores_version AS d FROM vacantes WHERE activa = 1',
+  ).all<{ c: string | null; d: string | null }>();
+  return reglasMinimas((r.results ?? []) as Array<{ c: string | null; d: string | null }>, `${CLASIFICACION_VERSION}/${DESCRIPTORES_VERSION}`);
+}
+
+/** Reagrupa duplicados sin tumbar la corrida si falla. */
+async function agruparDuplicadosSeguro(env: Env): Promise<number> {
+  try {
+    return await agruparDuplicados(env);
+  } catch (err) {
+    console.error('agrupar duplicados falló', String(err));
+    return -1;
+  }
 }
 
 async function correr(env: Env, soloFuente: string | undefined, opt: Opciones): Promise<Resultado[]> {
@@ -340,24 +390,44 @@ export default {
     const inicio = Date.now();
     // 12 min para leer fichas; el resto queda para cerrar, la foto diaria y reprocesar.
     const r = await correr(env, undefined, { limite: inicio + 12 * 60 * 1000, enCron: true });
-    const reproc = Date.now() - inicio < 13.5 * 60 * 1000 ? await reprocesar(env) : 0;
-    if (reproc > 0) await fotoDiaria(env, new Date().toISOString()); // la foto del día con las reglas vigentes
-    console.log('vacantes', JSON.stringify(r), 'reprocesadas', reproc);
+    let reproc = 0;
+    let reagrupadas = 0;
+    const dueno = await tomarCandado(env.DB, 'reprocesar');
+    if (!dueno) console.log('reprocesar ocupado por una corrida manual; se salta hoy');
+    else {
+      try {
+        reproc = Date.now() - inicio < 13.5 * 60 * 1000 ? await reprocesar(env) : 0;
+        reagrupadas = await agruparDuplicadosSeguro(env);
+        if (reproc > 0) await fotoDiaria(env, new Date().toISOString()); // la foto del día con las reglas vigentes
+      } finally {
+        await soltarCandado(env.DB, 'reprocesar', dueno);
+      }
+    }
+    console.log('vacantes', JSON.stringify(r), 'reprocesadas', reproc, 'reagrupadas', reagrupadas);
   },
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname !== '/run') return new Response('solca-vacantes', { status: 200 });
     if (!env.RUN_KEY || url.searchParams.get('key') !== env.RUN_KEY) return new Response('unauthorized', { status: 401 });
     if (url.searchParams.get('modo') === 'reprocesar') {
-      let total = 0;
-      for (let n = await reprocesar(env); n > 0; n = await reprocesar(env)) total += n;
-      return new Response(JSON.stringify({ reprocesadas: total }), { headers: { 'Content-Type': 'application/json' } });
+      const dueno = await tomarCandado(env.DB, 'reprocesar');
+      if (!dueno) return new Response(JSON.stringify({ error: 'reprocesar ya está corriendo (cron u otra carga); intenta en 30 min' }), { status: 409, headers: { 'Content-Type': 'application/json' } });
+      try {
+        let total = 0;
+        for (let n = await reprocesar(env); n > 0; n = await reprocesar(env)) total += n;
+        const reagrupadas = await agruparDuplicadosSeguro(env);
+        await fotoDiaria(env, new Date().toISOString());
+        return new Response(JSON.stringify({ reprocesadas: total, reagrupadas }), { headers: { 'Content-Type': 'application/json' } });
+      } finally {
+        await soltarCandado(env.DB, 'reprocesar', dueno);
+      }
     }
     // Carga manual por HTTP: sin límite de reloj (la primera carga de una fuente grande va por aquí).
     // ?aceptar=1 (solo con ?fuente=): acepta una caída que el control de calidad marcó como sospechosa.
     const fuente = url.searchParams.get('fuente') ?? undefined;
     const aceptar = url.searchParams.get('aceptar') === '1' && fuente !== undefined;
     const r = await correr(env, fuente, { limite: Number.POSITIVE_INFINITY, enCron: false, aceptar });
+    await agruparDuplicadosSeguro(env);
     return new Response(JSON.stringify(r, null, 2), { headers: { 'Content-Type': 'application/json' } });
   },
 };

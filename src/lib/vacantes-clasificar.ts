@@ -10,7 +10,7 @@
  * queda como 'no_especificado'. Al cambiar reglas, sube CLASIFICACION_VERSION.
  */
 
-export const CLASIFICACION_VERSION = 'r8';
+export const CLASIFICACION_VERSION = 'r9';
 
 export interface RolVacante {
   id: string;
@@ -28,15 +28,33 @@ export const ROLES_VACANTE: RolVacante[] = [
   { id: 'consulting', label: 'Consultoría' },
   { id: 'laboratorio_rd', label: 'Laboratorio / R&D' },
   { id: 'ventas', label: 'Ventas / visita médica' },
-  { id: 'calidad_manufactura', label: 'Calidad y manufactura' },
+  // r9 (24 nov 2026): se conserva el id para no romper la serie ni los enlaces guardados, pero ya solo es calidad.
+  // Producción, mantenimiento, logística y compras pasan a 'operaciones'.
+  { id: 'calidad_manufactura', label: 'Calidad y validación' },
+  { id: 'operaciones', label: 'Producción, mantenimiento y cadena de suministro' },
   { id: 'comercial_marketing', label: 'Marketing y comercial' },
-  { id: 'datos_ti', label: 'Datos, estadística y TI' },
+  // r9: gestión de datos clínicos, bioestadística, programación estadística y codificación médica salen de 'datos_ti'.
+  { id: 'datos_clinicos', label: 'Datos clínicos y bioestadística' },
+  { id: 'datos_ti', label: 'TI, datos y analítica' },
   { id: 'corporativo', label: 'Finanzas, RH, legal y administración' },
   { id: 'otro', label: 'Otras áreas' },
 ];
 
+// r9: datos clínicos. Los términos fuertes bastan; "data manager" y "statistic" piden contexto clínico en el título
+// (o una CRO, en clasificarRolEmpresa). Se excluyen datos maestros, control estadístico de procesos y estadística de ventas.
+const RX_DATOS_CLIN_FUERTE = /(clinical data|clin\.? data|\bCDM\b|data review|patient data|study data|datos .*cl[ií]nicos|dados cl[ií]nicos|biostatistic|bioestad|statistical programm|clinical programm|\bSAS\b|\bEDC\b|clinical systems? (designer|lead|support|optimization)|medical coding|clinical coding|coding (specialist|analyst)|pharmacometric|\bPK\/PD\b|data standards)/i;
+const RX_DATOS_CLIN_DEBIL = /(data manager\b|statistic|estad[ií]stic)/i;
+const RX_CONTEXTO_CLIN = /(clinical|cl[ií]nic|\bclin\b|study|studies|trial|ensayo|estudio|biometr|safety|medical|pharma)/i;
+const RX_NO_DATOS_CLIN = /(master ?data|statistical process control|\bSPC\b|sales (statistic|data)|commercial)/i;
+const RX_CLINICAL_PM = /(clinical project|local trial manager|global trial manager|trial delivery manager|clinical team lead|team lead - project manager|clinical project manager|clinical trial manager|\bCTM\b|study manager|global study (lead|associate director|director)|trial clinical delivery|gerente de proyectos? cl[ií]nic|project manager.*(clinical|study|trial)|(clinical|study|trial|biosampling).*project manager|gestor de projetos? cl[ií]nic)/i;
+const RX_MEDICAL_AFFAIRS = /(clinical (science|development)|medical (strategy|contact|ecosystem|education|representative)|healthcare ecosystem|opera[cç][oõ]es m[eé]dicas|eventos m[eé]dicos|medical (advisor|affairs|manager|lead|director|information|writer|writing|scientist|excellence|doctor|spain|mexico|m[eé]xico)|director medical|scientific affairs|physician|asesor m[eé]dico|gerente m[eé]dico|director m[eé]dico|assessor m[eé]dico|redactor m[eé]dico|clinical scientist)/i;
+function esDatosClinicos(t: string): boolean {
+  if (RX_NO_DATOS_CLIN.test(t) || RX_CLINICAL_PM.test(t) || RX_MEDICAL_AFFAIRS.test(t)) return false;
+  return RX_DATOS_CLIN_FUERTE.test(t) || (RX_DATOS_CLIN_DEBIL.test(t) && RX_CONTEXTO_CLIN.test(t));
+}
+
 // El orden importa: gana la primera regla que coincide.
-const ROL_REGLAS: Array<[string, RegExp]> = [
+const ROL_REGLAS: Array<[string, { test(titulo: string): boolean }]> = [
   // "(MSL) Excellence Director" y similares son gestión de Medical Affairs, no MSL de campo.
   ['medical_affairs', /(\(MSL\)|MSL) (excellence|operations|capabilit)/i],
   ['msl', /\b(MSL|medical science liai?son|medical scientific liaison|enlace cient[ií]fico|liaison m[eé]dic)/i],
@@ -45,28 +63,60 @@ const ROL_REGLAS: Array<[string, RegExp]> = [
   ['regulatorio', /(reg\.? affairs|regulatory|regulat[oó]ri|asuntos regulatorios|assuntos regulat|registro sanitario|registros sanitarios|\bRA (specialist|associate|manager|lead))/i],
   ['clinical_pm', /investigator (pricing|payments?|grants?)/i],
   ['heor_analytics', /(strategic access|access (strategy|field|manager)|field access|acceso y valor|health technology assessment|\bHTA\b|epidemiolog|licitaci|licita[cç]|tender|inteligencia de mercado|intelig[eê]ncia de mercado|market research|primary research|HEOR|health economic|econom[ií]a de la salud|market access|acceso al mercado|acesso ao mercado|\bRWE\b|real[- ]world|outcomes research|pricing|reimbursement|value (and|&) access)/i],
+  // r9: "Business Developer" y "Proposal Developer" son puestos comerciales, no de software.
+  ['comercial_marketing', /(business develop|proposals? develop|digital marketing|marketing digital)/i],
+  // r9: datos de estudios clínicos. Se evalúa aquí, antes de TI, pero cede ante clinical_pm y medical_affairs
+  // (ver esDatosClinicos): "Clinical Trial Manager, Data Review" es PM y "Medical Information Data Review" es MA.
+  ['datos_clinicos', { test: esDatosClinicos }],
   ['datos_ti', /(application security|information security|\bAI\b|artificial intelligence|digital|architect|tech(nical)? lead|\bERP\b|\bMES\b|scrum|agile|website|IIoT|clinical coding|product owner|information security|\bDDIT\b|\bRDT\b|\bIT\b|workday|informatics|system designer|data scien|data engineer|software|developer|desarrollador|programmer|programador|\bSAS\b|medical coding|statistic|estad[ií]stic|cloud|cyber)/i],
-  ['clinical_pm', /(clinical project|local trial manager|global trial manager|trial delivery manager|clinical team lead|team lead - project manager|clinical project manager|clinical trial manager|\bCTM\b|study manager|global study (lead|associate director|director)|trial clinical delivery|gerente de proyectos? cl[ií]nic|project manager.*(clinical|study|trial)|(clinical|study|trial|biosampling).*project manager|gestor de projetos? cl[ií]nic)/i],
-  ['investigacion_clinica', /(vendor program|outsourcing|study process|\bCRA ?\d?\b|start[- ]?up (specialist|associate)|startup associate|set[- ]?up specialist|site navigator|site enrollment|clin\. operations|centralized monitoring|clinical monitoring|adjudication|(psych|independent) rater|clinical trial finance|contracts? (and budget|negotiat|spec|analyst)|remote monitoring|clinical outcome|\bDCT\b|estudios cl[ií]nicos|global study associate|clinical rese?a?r?ch|investigaci[oó]n cl[ií]nica|pesquisa cl[ií]nica|investiga[cç][aã]o cl[ií]nica|monitor (cl[ií]nico|de ensayos|de estudos)|central monitor|\bsite (manager|management|monitor|activation|contracts?|payments?|specialist|engagement|identification)|feasibility|informed consent|investigator payments?|grants (specialist|analyst)|study (start[- ]up|coordinator|support|team)|patient recruitment|\bTMF\b|\bRBQM\b|\bCRC\b|clinical trial (assistant|associate|coordinator)|\bCTA\b|clinical operations|operaciones cl[ií]nicas|opera[cç][oõ]es cl[ií]nicas|in-house clinical|trial vendor)/i],
-  ['medical_affairs', /(clinical (science|development)|medical (strategy|contact|ecosystem|education|representative)|healthcare ecosystem|opera[cç][oõ]es m[eé]dicas|eventos m[eé]dicos|medical (advisor|affairs|manager|lead|director|information|writer|writing|scientist|excellence|doctor|spain|mexico|m[eé]xico)|director medical|scientific affairs|physician|asesor m[eé]dico|gerente m[eé]dico|director m[eé]dico|assessor m[eé]dico|redactor m[eé]dico|clinical scientist)/i],
+  ['clinical_pm', RX_CLINICAL_PM],
+  ['investigacion_clinica', /(vendor program|outsourcing|study process|(\b|Sr)CRA ?\d?\b|^SMA ?(I{1,3}|\d)\b|site mana?g[ae]ment associate|\bFSP\b.*\bCTC\b|\bCTC\b.*\bFSP\b|country approval|start[- ]?up (maintenance )?(specialist|associate)|startup associate|set[- ]?up specialist|site navigator|site enrollment|clin\. operations|centralized monitoring|clinical monitoring|adjudication|(psych|independent) rater|clinical trial finance|contracts? (and budget|negotiat|spec|analyst)|remote monitoring|clinical outcome|\bDCT\b|estudios cl[ií]nicos|global study associate|clinic?al rese?a?r?ch|investigaci[oó]n cl[ií]nica|pesquisa cl[ií]nica|investiga[cç][aã]o cl[ií]nica|monitor (cl[ií]nico|de ensayos|de estudos)|central monitor|\bsite (manager|management|monitor|activation|contracts?|payments?|specialist|engagement|identification)|feasibility|informed consent|investigator payments?|grants (specialist|analyst)|study (start[- ]up|coordinator|support|team)|patient recruitment|\bTMF\b|\bRBQM\b|\bCRC\b|clinical trial (assistant|associate|coordinator)|\bCTA\b|clinical operations|operaciones cl[ií]nicas|opera[cç][oõ]es cl[ií]nicas|in-house clinical|trial vendor)/i],
+  ['medical_affairs', RX_MEDICAL_AFFAIRS],
   // "Consultor de ventas" es un puesto comercial, no consultoría.
   ['ventas', /(consultor[a]? (de ventas|comercial|de vendas|t[eé]cnic|demanda)|televend)/i],
   ['corporativo', /client service rep/i],
   ['consulting', /(consultant|consultor|consultoria|consultoría|consulting|advisory)/i],
   ['laboratorio_rd', /(scientist|cient[ií]fico|research (associate|scientist)|R&D|I\+D|P&D|laborator|bioanal|formulat|analista de laborat)/i],
   ['ventas', /(delegad|delega@|agente de propaganda|promoci[oó]n m[eé]dica|visita m[eé]dica|\bAPM\b|\bKAE\b|ejecutivo de cuenta|account manager|gerente (distrital|de distrito|de cuentas|de area|de área)|area manager|business unit (director|manager)|biopharmaceutical rep|therapeutic area specialist|disease area specialist|professional relations|assessor t[eé]cnico|field application|mapping specialist|market development|product specialist|clinical selling|especialista cl[ií]nico|promotor|sell out|nutriasesor|\brep\b|sales|ventas|vendas|representante (m[eé]dico|de ventas|comercial|de salud|en salud)|heal?th representative|visitador|propagandista|key account|\bKAM\b|territory)/i],
-  ['calidad_manufactura', /(environmental|\bEHS\b|global trade|engineering graduate|\bGCP\b|operador|operator|maintenance|mantenimiento|\bMTTO\b|manuten[cç][aã]o|embalagem|packaging|procurement|buyer|compras|deviation writer|reliability|\bEHS\b|\bHSE\b|quality|calidad|qualidade|\bQA\b|\bQC\b|\bGMP\b|validation|validaci[oó]n|valida[cç][aã]o|manufactur|producci[oó]n|produ[cç][aã]o|production|supply|cadena de suministro|log[ií]stic|warehouse|almac[eé]n)/i],
-  ['comercial_marketing', /(gerente de producto|business development|launch excellence|new product planning|forecasting|jornada do paciente|programa de soporte|soluciones pacientes|\bPSP\b|marketing|brand|product manager|commercial|comercial|customer (engagement|experience)|\bCRM\b|omnichannel|market insights|franchise)/i],
+  // r9: un puesto legal no es de calidad aunque mencione compras ("Legal Manager, … Public Procurement").
+  ['corporativo', /(\blegal\b(?! manufacturer)|counsel|abogad|jur[ií]dic)/i],
+  ['calidad_manufactura', /(\bGCP\b|deviation writer|quality|calidad|qualidade|\bQA\b|\bQC\b|\bGMP\b|validation|validaci[oó]n|valida[cç][aã]o)/i],
+  ['operaciones', /(environmental|medio ambiente|\bEHS\b|\bHSE\b|global trade|engineering graduate|operador|(?<!database )operator|operari[oa]|maintenance|mantenimiento|\bMTTO\b|manuten[cç][aã]o|embalagem|envasado|empaquetado|acondicionamiento|packaging|material handler|procurement|buyer|compras|(?<!talent )sourcing(?! recruit)|reliability|manufactur|manufatur|producci[oó]n|produ[cç][aã]o|production|supply|cadena de suministro|log[ií]stic|warehouse|almac[eé]n|importa[cç]|exporta[cç]|importaci|exportaci)/i],
+  ['comercial_marketing', /(gerente de producto|business develop|launch excellence|new product planning|forecasting|jornada do paciente|programa de soporte|soluciones pacientes|\bPSP\b|marketing|brand|product manager|commercial|comercial|customer (engagement|experience)|\bCRM\b|omnichannel|market insights|franchise)/i],
   ['datos_ti', /(data|datos|dados|analytics|engineer|ingenier)/i],
   ['corporativo', /(financ|accountant|accounting|contab|contralor|controlling|\btax\b|treasury|credit and collection|audit|legal|counsel|compliance|\bHR\b|human resources|recursos humanos|departamento pessoal|talent|recruit|people|payroll|folha de pagamento|compensation|rewards|administrativ|executive assistant|facilities|public affairs|corporate (affairs|communications)|relações governamentais|relaciones gubernamentales|customer (care|service)|call center)/i],
 ];
 
 /**
- * En una CRO, "Project Manager" a secas es casi siempre gestión de estudios clínicos.
- * Fuera de las CRO se deja como 'otro' porque puede ser de cualquier área.
+ * Tipo de empresa de la vacante (r9, 24 nov 2026). Casi siempre es el de la fuente, pero el portal de
+ * Thermo Fisher publica PPD (CRO) junto con reactivos, equipos y manufactura. En esas fuentes
+ * (`tipoNoClinico` en vacantes-fuentes.ts) la vacante es de la CRO solo si el rol es clínico o la
+ * descripción nombra a PPD o la investigación clínica; si no, toma el tipo no clínico.
+ */
+// Regulatorio y HEOR no cuentan: los reactivos de diagnóstico (IVD) también tienen puestos regulatorios.
+const ROLES_CLINICOS = new Set(['investigacion_clinica', 'clinical_pm', 'farmacovigilancia', 'medical_affairs', 'msl', 'datos_clinicos']);
+// Señal en título o descripción: PPD, FSP (proveedor de servicios funcionales de la CRO), GCP, ensayos clínicos.
+// "clinical" suelto no basta: "Commercial Clinical Next-Generation Sequencing" es de equipos.
+const RX_SENAL_CRO = /(\bPPD\b|\bFSP\b|\bGCP\b|good clinical practice|clinical trials?|clinical research|clinical stud(y|ies)|clinical (team|operations|suppl(y|ies)|translations?)|estudios? cl[ií]nicos?|ensayos? cl[ií]nicos?|pesquisa cl[ií]nica|estudos? cl[ií]nicos?|drug development)/i;
+// Solo en el título: la descripción de reactivos y equipos también menciona pacientes.
+const RX_SENAL_CRO_TITULO = /(med(ical)? info|patient)/i;
+export function tipoEmpresaVacante(
+  fuente: { tipo: string; tipoNoClinico?: string },
+  titulo: string,
+  descripcion: string | null | undefined,
+): string {
+  if (!fuente.tipoNoClinico) return fuente.tipo;
+  if (ROLES_CLINICOS.has(clasificarRol(titulo)) || RX_SENAL_CRO_TITULO.test(titulo) || RX_SENAL_CRO.test(`${titulo} ${descripcion ?? ''}`)) return fuente.tipo;
+  return fuente.tipoNoClinico;
+}
+
+/**
+ * En una CRO, "Project Manager" a secas es casi siempre gestión de estudios clínicos, y "Data Manager" o
+ * "Statistician" son de datos clínicos. Fuera de las CRO se dejan como están porque pueden ser de cualquier área.
  */
 export function clasificarRolEmpresa(titulo: string, tipoEmpresa: string): string {
   const rol = clasificarRol(titulo);
+  if (rol === 'datos_ti' && tipoEmpresa === 'cro' && RX_DATOS_CLIN_DEBIL.test(titulo) && !RX_NO_DATOS_CLIN.test(titulo)) return 'datos_clinicos';
   if (rol === 'otro' && tipoEmpresa === 'cro' && /project (manager|lead)|associate project manager/i.test(titulo)) return 'clinical_pm';
   return rol;
 }
@@ -85,9 +135,23 @@ export const NIVELES = [
   { id: 'no_especificado', label: 'Sin nivel en el título' },
 ];
 
-export function clasificarNivel(titulo: string): string {
-  // "Clinical Research Associate" es el nombre del puesto, no un nivel.
-  const t = titulo.replace(/clinical rese?a?r?ch associate/ig, 'CRA');
+/**
+ * Nivel por el título. Con `aniosMin` (años mínimos que pide la descripción, de vacantes-descriptores.ts),
+ * una vacante que el título marca como de entrada pero pide 5 años o más queda sin nivel (r9, 24 nov 2026):
+ * "Associate Architect" o "Executive Assistant" con 5 a 8 años no son puestos de entrada.
+ */
+export const ANIOS_MAX_ENTRADA = 4;
+export function clasificarNivel(titulo: string, aniosMin?: number | null): string {
+  const nivel = nivelPorTitulo(titulo);
+  if (nivel === 'entrada' && aniosMin != null && aniosMin > ANIOS_MAX_ENTRADA) return 'no_especificado';
+  return nivel;
+}
+
+function nivelPorTitulo(titulo: string): string {
+  // "Clinical Research Associate" es el nombre del puesto, no un nivel (también con la errata "Clinial").
+  const t = titulo.replace(/clinic?al rese?a?r?ch associate/ig, 'CRA');
+  // "All levels": la misma oferta recluta varios niveles.
+  if (/(all levels|todos los niveles|todos os n[ií]veis)/i.test(t)) return 'no_especificado';
   if (/(intern\b|internship|trainee|becari|\bbeca\b|est[aá]gi|practicante|pr[aá]cticas?\b|estudiante|pasant|graduate program|jovem aprendiz|aprendiz|programa talento)/i.test(t)) return 'practicas';
   if (/(director|directora|head of|\bhead\b|\bVP\b|vice president|gerente|manager|chief|jefe|jefa|coordinador general)/i.test(t)) return 'gerencia';
   if (/(senior|\bsr\.?\b|s[eê]nior|\blead\b|principal|\bIII\b|\b3\b|experto|especialista s)/i.test(t)) return 'senior';
