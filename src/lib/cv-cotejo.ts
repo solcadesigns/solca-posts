@@ -138,7 +138,14 @@ const NUM_PAL = '(?:\\d+ ?\\+?|one|two|three|four|five|six|seven|eight|nine|ten|
 const RE_ANIOS = new RegExp(`\\b${NUM_PAL} ?(?:(?:to|a|or|o|y|and) )?(?:\\d+ ?\\+? ?)?(?:years?|yrs?|anos?)\\b`);
 const GRADO = '(?:bachelor s|bachelors|bachelor|master s|masters|master of|master in|maestria|licenciatura|licenciado|licenciada|doctorado|doctorate|phd|ph d|pharmd|pharm d|bsc|b sc|msc|m sc|degree in|degree from|degree or equivalent|university degree|college degree|bachelor degree|titulo universitario|titulo profesional|titulo de|titulado|titulada|grado en|graduado en|graduada en|egresado de|egresada de|ingenieria en)';
 const RE_GRADO = new RegExp(`\\b${GRADO}\\b`);
-const RE_MINIMO = new RegExp(`\\b(?:minimum|minimo|minima|at least|al menos)(?: of)?(?: (?:a|an|un|una|nivel|level))? (?:\\d|[abc][12]\\b|${GRADO})`);
+const MINIMO = '\\b(?:minimum|minimo|minima|at least|al menos)(?: of)?(?: (?:a|an|un|una|nivel|level))? ';
+const RE_MINIMO = new RegExp(`${MINIMO}(?:\\d|[abc][12]\\b)`);
+const RE_MINIMO_GRADO = new RegExp(`${MINIMO}${GRADO}`);
+/**
+ * Revisión 3 (24 nov 2026): si la cita acepta experiencia en lugar del título ("or equivalent (relevant) experience",
+ * "y/o experiencia", "o experiencia equivalente"), el título no es señal de exigencia (sin_indicar si no hay otra).
+ */
+const RE_EXPERIENCIA_EQUIVALENTE = /\b(?:(?:and )?or (?:an? )?equivalent (?:[a-z]+ ){0,2}experience|y o experiencia|o experiencia (?:[a-z]+ ){0,2}equivalente|o (?:su )?equivalente en experiencia)\b/;
 const RE_DESDE_CERO = /^0(?!\d)/;
 const RE_REQ_INICIO = /^(?:required|requerido|requerida|requeridos|requeridas|indispensable|imprescindible|excluyente)\b/;
 const NEGACION = ['no', 'not', 'nor', 'sin', 'ni', 'without'];
@@ -153,11 +160,12 @@ function negado(c: string, idx: number): boolean {
  * su misma cláusula ("No relocation, 3+ years of experience" exige). Revisa todas las coincidencias de cada patrón.
  */
 export function exigenciaImplicita(cita: string): boolean {
+  const patrones = RE_EXPERIENCIA_EQUIVALENTE.test(normalizar(cita)) ? [RE_ANIOS, RE_MINIMO] : [RE_ANIOS, RE_GRADO, RE_MINIMO, RE_MINIMO_GRADO];
   for (const parte of cita.split(/[;,]/)) {
     const c = normalizar(parte).replace(RE_NO_MENOR, 'minimum');
     if (!c) continue;
     if (RE_REQ_INICIO.test(c)) return true;
-    for (const re of [RE_ANIOS, RE_GRADO, RE_MINIMO]) {
+    for (const re of patrones) {
       for (const m of c.matchAll(new RegExp(re.source, 'g'))) {
         // Un rango que empieza en 0 ("0 to 2 years", "0-2 años") acepta a quien no tiene experiencia: no exige.
         if (re === RE_ANIOS && RE_DESDE_CERO.test(m[0])) continue;

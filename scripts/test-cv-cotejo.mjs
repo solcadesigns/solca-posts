@@ -549,6 +549,24 @@ await prueba('revisión 2: "no menor a" no es negación; la negación no cruza "
   assert.equal(prioridadPorMarca('Experiencia no menor a 2 años en farmacovigilancia', 'Perfil'), 'indispensable');
 });
 
+await prueba('revisión 3: título con experiencia equivalente como alternativa es sin_indicar', async () => {
+  const { exigenciaImplicita } = await import('../src/lib/cv-cotejo.ts');
+  const casos = [
+    "Bachelor's degree in Life Sciences or equivalent experience",
+    "Bachelor's degree in a scientific discipline, or equivalent relevant experience",
+    'Licenciatura en Química y/o experiencia en control de calidad',
+    'Licenciatura en Biología o experiencia equivalente',
+  ];
+  for (const c of casos) {
+    assert.equal(exigenciaImplicita(c), false, c);
+    assert.equal(prioridadPorMarca(c, 'Qualifications'), 'sin_indicar', c);
+  }
+  // Sin la alternativa, el título sigue exigiendo; y los años siguen contando aunque haya alternativa al título.
+  assert.equal(exigenciaImplicita("Bachelor's degree in Life Sciences"), true);
+  assert.equal(exigenciaImplicita('Minimum of a bachelor degree or equivalent experience'), false);
+  assert.equal(exigenciaImplicita("Bachelor's degree or equivalent experience; 3+ years of experience in QA"), true);
+});
+
 await prueba('c3 interfaz y endpoint: sección "Sin indicar" y conteo en la respuesta', () => {
   const pag = readFileSync(new URL('../src/pages/comparar-cv.astro', import.meta.url), 'utf8');
   assert.ok(pag.includes('id="r-h-sin"') && pag.includes('id="r-sin"'));
