@@ -117,10 +117,10 @@ async function agruparDuplicados(env: Env): Promise<number> {
     .map((r) => r.id);
   type Fila = { id: string; fuente: string; titulo: string; descripcion: string | null; primera_vez: string; grupo_dup: string | null };
   const filas: Fila[] = [];
-  for (let i = 0; i < ids.length; i += 90) {
-    const lote = ids.slice(i, i + 90);
+  for (let i = 0; i < ids.length; i += 50) {
+    const lote = ids.slice(i, i + 50);
     const r = await env.DB.prepare(
-      `SELECT id, fuente, titulo, substr(descripcion, 1, 1500) AS descripcion, primera_vez, grupo_dup FROM vacantes
+      `SELECT id, fuente, titulo, descripcion, primera_vez, grupo_dup FROM vacantes
        WHERE id IN (${lote.map(() => '?').join(',')})`,
     ).bind(...lote).all<Fila>();
     filas.push(...((r.results ?? []) as Fila[]));

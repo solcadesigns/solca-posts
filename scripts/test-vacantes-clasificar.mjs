@@ -151,6 +151,22 @@ prueba('mismo título, otra descripción: dos grupos', () => {
   ]);
   assert.notEqual(g.get('a:1'), g.get('a:2'));
 });
+prueba('mismo inicio y requisitos distintos al final: dos grupos (ICON JR162256/JR163401)', () => {
+  const inicio = Array.from({ length: 220 }, (_, i) => `plantilla${i}`).join(' ');
+  const g = agruparSimilares([
+    { id: 'icon:JR162256', fuente: 'icon', titulo: 'Clinical Trial Manager', descripcion: inicio + ' ' + Array.from({ length: 60 }, (_, i) => `cvrm${i}`).join(' '), primera_vez: '2026-11-01' },
+    { id: 'icon:JR163401', fuente: 'icon', titulo: 'Clinical Trial Manager', descripcion: inicio + ' ' + Array.from({ length: 60 }, (_, i) => `oncologia${i}`).join(' '), primera_vez: '2026-11-02' },
+  ]);
+  assert.notEqual(g.get('icon:JR162256'), g.get('icon:JR163401'));
+});
+prueba('plantilla final larga compartida no basta: dos grupos', () => {
+  const pie = Array.from({ length: 600 }, (_, i) => `beneficios${i}`).join(' ');
+  const g = agruparSimilares([
+    { id: 'x:1', fuente: 'x', titulo: 'Analyst', descripcion: Array.from({ length: 220 }, (_, i) => `finanzas${i}`).join(' ') + ' ' + pie, primera_vez: '2026-11-01' },
+    { id: 'x:2', fuente: 'x', titulo: 'Analyst', descripcion: Array.from({ length: 220 }, (_, i) => `ventas${i}`).join(' ') + ' ' + pie, primera_vez: '2026-11-02' },
+  ]);
+  assert.notEqual(g.get('x:1'), g.get('x:2'));
+});
 prueba('misma descripción, otra empresa: dos grupos', () => {
   const g = agruparSimilares([
     { id: 'a:1', fuente: 'a', titulo: 'CRA II', descripcion: cuerpo, primera_vez: '2026-11-01' },
