@@ -11,6 +11,15 @@
 
 import { CRITERIOS, NIVELES, RUBRIC_VERSION } from './cv-review-rubric.ts';
 
+/**
+ * Versión del prompt (sistema + mensaje al modelo), aparte de RUBRIC_VERSION: los criterios no cambian, así que la
+ * rúbrica que ve la persona y la comparación de estados por versión siguen igual. Va en el evento del revisor
+ * (extra.prompt_version) para separar en D1 el antes y el después de cada cambio de prompt.
+ *   pr1-2026-11: hasta el 24 nov 2026 (eventos sin prompt_version).
+ *   pr2-2026-11 (24 nov 2026, f7f9729): roles solo del revisor con funciones y términos (ROL_CONTEXTO, ROL_TERMINOS).
+ */
+export const CV_REVIEW_PROMPT_VERSION = 'pr2-2026-11';
+
 const rubrica = CRITERIOS.map((c) => `${c.id}. ${c.nombre}: ${c.guia}`).join('\n');
 const niveles = NIVELES.map((n) => `"${n}"`).join(', ');
 

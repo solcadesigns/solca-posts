@@ -551,6 +551,14 @@ await test('scrubBanned no borra oraciones limpias tras una letra suelta ni part
   assert.equal(scrubBanned('Habla con la Dra. López. Conseguirás entrevistas.'), 'Habla con la Dra. López.');
 });
 
+await test('prompt_version en el evento del revisor (24 nov 2026)', async () => {
+  const { CV_REVIEW_PROMPT_VERSION } = await import('../src/lib/cv-review-prompt.ts');
+  assert.equal(CV_REVIEW_PROMPT_VERSION, 'pr2-2026-11');
+  const { readFileSync } = await import('node:fs');
+  const run = readFileSync(new URL('../src/lib/cv-review-run.ts', import.meta.url), 'utf8');
+  assert.ok(run.includes('prompt_version: CV_REVIEW_PROMPT_VERSION'));
+});
+
 console.log(`\n${n} pruebas OK`);
 
 // Con CV_FIXTURES_DIR=<carpeta> escribe las respuestas validadas (como las devolvería /api/cv-review)
@@ -571,5 +579,5 @@ if (process.env.CV_FIXTURES_DIR) {
   const solido = structuredClone(BUENA);
   solido.observaciones = solido.observaciones.map((o) => ({ ...o, estado: o.estado === 'prioritario' ? 'solido' : o.estado }));
   out('sin-prioritarios', solido, ctxPdf);
-  console.log(`fixtures en ${process.env.CV_FIXTURES_DIR}`);
+console.log(`fixtures en ${process.env.CV_FIXTURES_DIR}`);
 }

@@ -8,7 +8,7 @@
  * documentados en cv-pending.ts. Se crea solo si falla la llamada al modelo o el resultado no sirve.
  */
 
-import { CV_REVIEW_SYSTEM_PROMPT, buildCvReviewUserMessage } from './cv-review-prompt';
+import { CV_REVIEW_SYSTEM_PROMPT, CV_REVIEW_PROMPT_VERSION, buildCvReviewUserMessage } from './cv-review-prompt';
 import {
   RUBRIC_VERSION,
   ROL_NO_SEGURO,
@@ -462,6 +462,7 @@ export async function recordCvAttemptD1(db: D1Database | undefined, ctx: CvAttem
       intento: ctx.intento, // une started con su resultado; prefijo de 12 caracteres del hash, no el correo
       // 6 nov 2026 (rúbrica v2): rol del formulario, origen del texto y conteos por estado. Sin texto del CV.
       rubric_version: RUBRIC_VERSION,
+      prompt_version: CV_REVIEW_PROMPT_VERSION, // 24 nov 2026: separa en D1 los cambios de prompt sin subir la rúbrica
       rol_objetivo: ctx.rolObjetivo,
       origen: ctx.origen,
       paginas: ctx.paginas ?? undefined,
